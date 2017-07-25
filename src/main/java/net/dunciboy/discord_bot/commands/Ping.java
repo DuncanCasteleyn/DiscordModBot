@@ -41,6 +41,6 @@ public class Ping extends CommandModule {
     @Override
     public void commandExec(MessageReceivedEvent event, String command, String arguments) {
         long millisBeforeRequest = System.currentTimeMillis();
-        event.getChannel().sendMessage("pong!\nIt took discord " + event.getJDA().getPing() + " milliseconds to respond to our last heartbeat.").queue(message -> message.editMessage(message.getRawContent() + "\nIt took Discord " + (System.currentTimeMillis() - millisBeforeRequest) + "milliseconds to process this message.").queue());
+        event.getChannel().sendMessage("pong!\nIt took Discord " + event.getJDA().getPing() + " milliseconds to respond to our last heartbeat.").queue(message -> message.editMessage(message.getRawContent() + "\nIt took Discord " + (System.currentTimeMillis() - millisBeforeRequest) + " milliseconds to process this message.").queue());
     }
 }
