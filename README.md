@@ -24,4 +24,4 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-Certain libraries used in this project might have been published on a difrent license.
+Certain libraries used in this project might have been published on a different license.
