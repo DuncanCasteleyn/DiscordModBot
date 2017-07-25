@@ -61,3 +61,15 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+# Idea files
+.idea/
+
+#Build files
+build/
+
+#config files are stored in JSON files
+*.json
+
+#old & depracted source files that are no longer used
+src_old/
