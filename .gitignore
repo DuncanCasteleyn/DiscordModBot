@@ -73,3 +73,6 @@ build/
 
 #old & depracted source files that are no longer used
 src_old/
+
+#Gradle cache files
+.gradle/
