@@ -36,7 +36,7 @@ apply plugin: 'kotlin'
 
 mainClassName = 'net.dunciboy.discord_bot.RunBots'
 
-version '1.1.0_12'
+version '1.1.0_13'
 
 sourceCompatibility = 1.8
 

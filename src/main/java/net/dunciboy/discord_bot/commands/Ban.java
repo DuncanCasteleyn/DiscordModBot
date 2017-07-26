@@ -102,7 +102,8 @@ public class Ban extends CommandModule {
                     .setColor(Color.red)
                     .setAuthor(JDALibHelper.getEffectiveNameAndUsername(event.getMember()), null, event.getAuthor().getEffectiveAvatarUrl())
                     .setTitle(event.getGuild().getName() + ": You have been banned by " + JDALibHelper.getEffectiveNameAndUsername(event.getMember()), null)
-                    .setDescription("Reason: " + reason)
+                    .setDescription("Reason: " + reason + "\n\n" +
+                            "If you'd like to appeal the ban, please use this form: https://goo.gl/forms/SpWg49gaQlMt4lSG3")
                     .build();
 
             toBan.getUser().openPrivateChannel().queue(

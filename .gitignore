@@ -71,7 +71,7 @@ build/
 #config files are stored in JSON files
 *.json
 
-#old & depracted source files that are no longer used
+#old & deprecated source files that are no longer used
 src_old/
 
 #Gradle cache files
