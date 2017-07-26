@@ -98,12 +98,17 @@ public class Ban extends CommandModule {
                 throw new PermissionException("You can't interact with this member");
             }
             RestAction<Void> banRestAction = event.getGuild().getController().ban(toBan, 1, reason);
+            StringBuilder description = new StringBuilder("Reason: " + reason);
+            if(event.getGuild().getIdLong() == 175856762677624832L) {
+                description.append("\n\n")
+                        .append("If you'd like to appeal the ban, please use this form: https://goo.gl/forms/SpWg49gaQlMt4lSG3");
+                //todo make this configurable per guild.
+            }
             MessageEmbed userKickNotification = new EmbedBuilder()
                     .setColor(Color.red)
                     .setAuthor(JDALibHelper.getEffectiveNameAndUsername(event.getMember()), null, event.getAuthor().getEffectiveAvatarUrl())
                     .setTitle(event.getGuild().getName() + ": You have been banned by " + JDALibHelper.getEffectiveNameAndUsername(event.getMember()), null)
-                    .setDescription("Reason: " + reason + "\n\n" +
-                            "If you'd like to appeal the ban, please use this form: https://goo.gl/forms/SpWg49gaQlMt4lSG3")
+                    .setDescription(description.toString())
                     .build();
 
             toBan.getUser().openPrivateChannel().queue(
