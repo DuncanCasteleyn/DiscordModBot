@@ -27,11 +27,9 @@ import net.dv8tion.jda.core.exceptions.PermissionException;
 import net.dv8tion.jda.core.utils.SimpleLog;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -72,7 +70,6 @@ public class LogToChannel {
     }
 
     /**
-
      * With this method you receive a list of guilds that have the user in there guild and want information about them logged.
      *
      * @param user the user to check.

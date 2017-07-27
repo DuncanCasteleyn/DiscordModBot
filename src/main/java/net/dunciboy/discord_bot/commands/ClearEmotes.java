@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
  * Created by Duncan on 7/05/2017.
  * <p>
  * This class creates a command that allows you to remove emotes from a message.
+ *
  * @deprecated No longer required clients can now right click on a message to delete all reactions if they have the permission to do so.
  */
 @Deprecated

@@ -66,7 +66,7 @@ abstract class Sequence @JvmOverloads protected constructor(val user: User, val 
                         "\nA sequence automatically expires after not receiving a message for 5 minutes in this channel.\n" +
                         "You can also kill a sequence by sending \"STOP\"").complete()
                 addMessageToCleaner(sequenceInformMessage)
-            } catch (e : Exception) {
+            } catch (e: Exception) {
                 LOG.log(e)
             }
         }
@@ -101,9 +101,9 @@ abstract class Sequence @JvmOverloads protected constructor(val user: User, val 
     }
 
     override fun onGuildMemberLeave(event: GuildMemberLeaveEvent) {
-        if(channel is TextChannel && channel.guild == event.member.guild && user == event.user) {
+        if (channel is TextChannel && channel.guild == event.member.guild && user == event.user) {
             destroy()
-        } else if(event.user.mutualGuilds.isEmpty()) {
+        } else if (event.user.mutualGuilds.isEmpty()) {
             destroy()
         }
     }
@@ -133,7 +133,7 @@ abstract class Sequence @JvmOverloads protected constructor(val user: User, val 
         if (message.channel != channel) {
             throw IllegalArgumentException("The message needs to be from the same channel as the sequence.")
         }
-        if(sequenceKillerExecutor.isShutdown) {
+        if (sequenceKillerExecutor.isShutdown) {
             throw IllegalStateException("Cleaner shutdown.")
         }
         cleanAfterSequence?.let {
