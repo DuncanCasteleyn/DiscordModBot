@@ -24,6 +24,7 @@ import net.dv8tion.jda.core.exceptions.PermissionException
 import net.dv8tion.jda.core.hooks.ListenerAdapter
 import net.dv8tion.jda.core.utils.SimpleLog
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 /**
  * an abstract class that can be used to listen for commands.
@@ -73,14 +74,14 @@ abstract class CommandModule @JvmOverloads protected constructor(internal val al
                     LOG.info("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " completed executing " + event.message.content + " command from user " + event.author.toString())
                 } catch (pe: PermissionException) {
                     LOG.warn("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " failed executing " + event.message.content + " command from user " + event.author.toString())
-                    val exceptionMessage = MessageBuilder().append("Cannot complete action due to an error, see the message below for details. If the problem persist contact Dunciboy with the message bellow.").appendCodeBlock(pe.javaClass.simpleName + ": " + pe.message, "text").build()
-                    event.author.openPrivateChannel().queue { privateChannel -> privateChannel.sendMessage(exceptionMessage).queue() }
+                    val exceptionMessage = MessageBuilder().append("Cannot complete action due to a permission issue, see the message below for details.").appendCodeBlock(pe.javaClass.simpleName + ": " + pe.message, "text").build()
+                    event.channel.sendMessage(exceptionMessage).queue { it.delete().queueAfter(5, TimeUnit.MINUTES) }
 
                 } catch (t: Throwable) {
                     LOG.fatal("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " failed executing " + event.message.content + " command from user " + event.author.toString())
                     LOG.log(t)
-                    val exceptionMessage = MessageBuilder().append("Cannot complete action due to an error, see the message below for details. If the problem persist contact Dunciboy with the message bellow.").appendCodeBlock(t.javaClass.simpleName + ": " + t.message, "text").build()
-                    event.author.openPrivateChannel().queue { privateChannel -> privateChannel.sendMessage(exceptionMessage).queue() }
+                    val exceptionMessage = MessageBuilder().append("Cannot complete action due to an error, see the message below for details.").appendCodeBlock(t.javaClass.simpleName + ": " + t.message, "text").build()
+                    event.channel.sendMessage(exceptionMessage).queue { it.delete().queueAfter(5, TimeUnit.MINUTES) }
                 }
 
                 try {
