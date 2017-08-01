@@ -59,6 +59,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
 
     internal val questions: ArrayList<Question>
     private val needManualApproval: LinkedMap<Long, String> = LinkedMap()
+    private val informUserMessageIds: HashMap<Long, Long> = HashMap()
 
     init {
         var tempQuestions: ArrayList<Question>
@@ -170,10 +171,21 @@ open class MemberGate internal constructor(private val guildId: Long, private va
         val guild = member.guild
         val textChannel = guild.getTextChannelById(gateTextChannel)
         textChannel.sendMessage(member.asMention + " Sorry it appears the answer you gave was not correct, the mods will now manually check your answer and ask further questions if required.\n\n" +
-                "A moderator can use ``!" + super.aliases[2] + " " + member.user.idLong + "``").queue()
+                "A moderator can use ``!" + super.aliases[2] + " " + member.user.idLong + "``").queue {
+            synchronized(informUserMessageIds) {
+                informUserMessageIds.put(member.user.idLong, it.idLong)
+            }
+        }
         synchronized(needManualApproval) {
             while (needManualApproval.size >= 50) {
-                needManualApproval.remove(needManualApproval.firstKey())
+                val userId = needManualApproval.firstKey()
+                needManualApproval.remove(userId)
+                synchronized(informUserMessageIds) {
+                    val messageToRemove = informUserMessageIds.remove(userId)
+                    if (messageToRemove != null) {
+                        member.jda.getTextChannelById(gateTextChannel).getMessageById(messageToRemove).queue { it.delete().queue() }
+                    }
+                }
             }
             needManualApproval.put(member.user.idLong, question + "\n" + answer)
         }
@@ -358,11 +370,23 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                         super.channel.sendMessage("The user has been approved.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                         accept(event.guild.getMemberById(userId))
                         needManualApproval.remove(userId)
+                        synchronized(informUserMessageIds) {
+                            val messageToRemove = informUserMessageIds.remove(userId)
+                            if (messageToRemove != null) {
+                                event.jda.getTextChannelById(gateTextChannel).getMessageById(messageToRemove).queue { it.delete().queue() }
+                            }
+                        }
                         destroy()
                     }
                     "no" -> {
                         super.channel.sendMessage("Please give the user a new question in the chat, that can be manually checked by you or by another moderator.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                         needManualApproval.replace(userId, null)
+                        synchronized(informUserMessageIds) {
+                            val messageToRemove = informUserMessageIds.remove(userId)
+                            if (messageToRemove != null) {
+                                event.jda.getTextChannelById(gateTextChannel).getMessageById(messageToRemove).queue { it.delete().queue() }
+                            }
+                        }
                         destroy()
                     }
                     else -> {
