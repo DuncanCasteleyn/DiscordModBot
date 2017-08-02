@@ -58,7 +58,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
     }
 
     internal val questions: ArrayList<Question>
-    private val needManualApproval: LinkedMap<Long, String> = LinkedMap()
+    private val needManualApproval: LinkedMap<Long, String?> = LinkedMap()
     private val informUserMessageIds: HashMap<Long, Long> = HashMap()
 
     init {
@@ -367,8 +367,13 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                 val messageContent: String = event.message.content.toLowerCase()
                 when (messageContent) {
                     "yes" -> {
-                        super.channel.sendMessage("The user has been approved.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
-                        accept(event.guild.getMemberById(userId))
+                        val member: Member? = event.guild.getMemberById(userId)
+                        if (member != null) {
+                            super.channel.sendMessage("The user has been approved.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                            accept(member)
+                        } else {
+                            super.channel.sendMessage("The user already left, no further action is needed.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                        }
                         needManualApproval.remove(userId)
                         synchronized(informUserMessageIds) {
                             val messageToRemove = informUserMessageIds.remove(userId)
@@ -379,7 +384,12 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                         destroy()
                     }
                     "no" -> {
-                        super.channel.sendMessage("Please give the user a new question in the chat, that can be manually checked by you or by another moderator.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                        val member: Member? = event.guild.getMemberById(userId)
+                        if (member != null) {
+                            super.channel.sendMessage("Please give " + member.user.asMention + "  a new question in the chat, that can be manually checked by you or by another moderator.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                        } else {
+                            super.channel.sendMessage("The user already left, no further actions is needed unless the user joins again.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                        }
                         needManualApproval.replace(userId, null)
                         synchronized(informUserMessageIds) {
                             val messageToRemove = informUserMessageIds.remove(userId)

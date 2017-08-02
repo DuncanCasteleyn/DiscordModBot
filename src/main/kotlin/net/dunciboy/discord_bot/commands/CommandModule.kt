@@ -53,9 +53,9 @@ abstract class CommandModule @JvmOverloads protected constructor(internal val al
      * @param event A message event.
      */
     override fun onMessageReceived(event: MessageReceivedEvent) {
-        val messageContent = event.message.rawContent
+        val messageContent = event.message.rawContent.replace("  ", " ")
 
-        if (event.author.isBot || messageContent == null || messageContent == "" || event.jda.registeredListeners.stream().anyMatch { o -> o is Sequence && o.user === event.author }) {
+        if (event.author.isBot || messageContent == "" || event.jda.registeredListeners.stream().anyMatch { o -> o is Sequence && o.user === event.author }) {
             return
         }
 
