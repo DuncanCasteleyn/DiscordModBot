@@ -210,22 +210,23 @@ public class GuildLogger extends ListenerAdapter {
                         User moderator = null;
                         {
                             int i = 0;
-                            for (AuditLogEntry logEntry : event.getGuild().getAuditLogs().type(ActionType.MESSAGE_DELETE).cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) { //todo check way to fix deletion checks false positives
+                            AuditLogEntry firstCheckedAuditLogEntry = null;
+                            for (AuditLogEntry logEntry : event.getGuild().getAuditLogs().type(ActionType.MESSAGE_DELETE).cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
+                                if (i == 0) {
+                                    firstCheckedAuditLogEntry = logEntry;
+                                }
                                 if (!lastCheckedMessageDeleteEntries.containsKey(event.getGuild().getIdLong())) {
-                                    lastCheckedMessageDeleteEntries.put(event.getGuild().getIdLong(), logEntry);
                                     i = LOG_ENTRY_CHECK_LIMIT;
                                 } else {
-                                    AuditLogEntry auditLogEntry = lastCheckedMessageDeleteEntries.get(event.getGuild().getIdLong());
-                                    if (logEntry.getIdLong() == auditLogEntry.getIdLong()) {
-                                        if (logEntry.getTargetIdLong() == oldMessage.getAuthor().getIdLong() && !logEntry.getOption(AuditLogOption.COUNT).equals(auditLogEntry.getOption(AuditLogOption.COUNT))) {
-                                            lastCheckedMessageDeleteEntries.put(event.getGuild().getIdLong(), logEntry);
+                                    AuditLogEntry cachedAuditLogEntry = lastCheckedMessageDeleteEntries.get(event.getGuild().getIdLong());
+                                    if (logEntry.getIdLong() == cachedAuditLogEntry.getIdLong()) {
+                                        if (logEntry.getTargetIdLong() == oldMessage.getAuthor().getIdLong() && !logEntry.getOption(AuditLogOption.COUNT).equals(cachedAuditLogEntry.getOption(AuditLogOption.COUNT))) {
                                             moderator = logEntry.getUser();
                                         }
                                         break;
                                     }
                                 }
                                 if (logEntry.getTargetIdLong() == oldMessage.getAuthor().getIdLong()) {
-                                    lastCheckedMessageDeleteEntries.put(event.getGuild().getIdLong(), logEntry);
                                     moderator = logEntry.getUser();
                                     break;
                                 }
@@ -233,6 +234,9 @@ public class GuildLogger extends ListenerAdapter {
                                 if (i >= LOG_ENTRY_CHECK_LIMIT) {
                                     break;
                                 }
+                            }
+                            if (firstCheckedAuditLogEntry != null) {
+                                lastCheckedMessageDeleteEntries.put(event.getGuild().getIdLong(), firstCheckedAuditLogEntry);
                             }
                         }
 
