@@ -51,7 +51,7 @@ class IAmNot extends CommandModule {
     @Override
     public void commandExec(MessageReceivedEvent event, String command, String arguments) {
         if (event.isFromType(ChannelType.TEXT)) {
-            if (event.getChannel().getId().equals("221686172793962496") && arguments != null && (event.getGuild().getRoles().stream().anyMatch(role -> roleCommands.getIAmRoles()[0].isListed(role) && role.getName().toLowerCase().contains(arguments.toLowerCase())) || event.getGuild().getRoles().stream().anyMatch(role -> roleCommands.getIAmRoles()[1].isListed(role) && role.getName().toLowerCase().contains(arguments.toLowerCase()))) /*|| Permissions.hasPermission(event.getMember(), 0)*/) {
+            if (event.getChannel().getIdLong() == 263725615675342849L && arguments != null && (event.getGuild().getRoles().stream().anyMatch(role -> roleCommands.getIAmRoles()[0].isListed(role) && role.getName().toLowerCase().contains(arguments.toLowerCase())) || event.getGuild().getRoles().stream().anyMatch(role -> roleCommands.getIAmRoles()[1].isListed(role) && role.getName().toLowerCase().contains(arguments.toLowerCase()))) /*|| Permissions.hasPermission(event.getMember(), 0)*/) {
                 removeFromRole(event, arguments);
             } else {
                 event.getChannel().sendMessage(event.getAuthor().getAsMention() + " The role you have requested either does not exist, or you do not have permission to remove yourself from that role.").queue(message -> message.delete().queueAfter(1, TimeUnit.MINUTES));

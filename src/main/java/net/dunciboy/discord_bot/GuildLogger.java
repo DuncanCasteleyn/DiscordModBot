@@ -47,6 +47,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.concurrent.Executors;
@@ -294,7 +295,7 @@ public class GuildLogger extends ListenerAdapter {
         Path bulkDeleteLog = null;
         final BufferedWriter logWriter;
         try {
-            bulkDeleteLog = Files.createTempFile(event.getChannel().getName() + System.nanoTime(), ".log");
+            bulkDeleteLog = Files.createTempFile(event.getChannel().getName() + " " + OffsetDateTime.now().format(DATE_TIME_FORMATTER), ".log");
             logWriter = Files.newBufferedWriter(bulkDeleteLog, Charset.forName("UTF-8"), StandardOpenOption.WRITE);
         } catch (IOException e) {
             if (bulkDeleteLog != null) {

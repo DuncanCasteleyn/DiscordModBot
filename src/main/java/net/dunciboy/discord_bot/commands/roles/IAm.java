@@ -55,7 +55,7 @@ class IAm extends CommandModule {
                             /*if (Permissions.hasPermission(event.getMember(), 0)) {
                                 if (addToRole(event, allArguments)) break;
                             } else */
-                if (event.getChannel().getId().equals("221686172793962496") && roleCommands.getIAmRoles() != null) {
+                if (event.getChannel().getIdLong() == 263725615675342849L && roleCommands.getIAmRoles() != null) {
                     if (event.getGuild().getRoles().stream().anyMatch(role -> roleCommands.getIAmRoles()[0].isListed(role) && role.getName().toLowerCase().contains(arguments.toLowerCase()))) {
                         if (event.getMember().getRoles().stream().noneMatch(r -> roleCommands.getIAmRoles()[0].isListed(r))) {
                             addToRole(event, arguments);
