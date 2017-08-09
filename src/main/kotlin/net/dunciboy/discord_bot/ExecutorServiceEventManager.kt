@@ -30,9 +30,6 @@ import java.util.concurrent.Executors
  * @since 1.1.0
  */
 internal class ExecutorServiceEventManager : InterfacedEventManager() {
-    companion object {
-        private val LOG: SimpleLog = SimpleLog.getLog(ExecutorServiceEventManager::class.java.simpleName)
-    }
 
     private val executor: ExecutorService
 

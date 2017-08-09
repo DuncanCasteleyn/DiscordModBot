@@ -76,6 +76,7 @@ class Eval : CommandModule(ALIASES, DESCRIPTION, ARGUMENTATION, false) {
             val out: Any? = future.get(10, TimeUnit.SECONDS);
             if (!future.isDone) {
                 future.cancel(true);
+                return
             }
             messageBuilder.appendCodeBlock(out?.toString() ?: "Executed without error.", "text")
         } catch (executionException: ExecutionException) {
