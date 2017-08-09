@@ -17,7 +17,6 @@ package net.dunciboy.discord_bot
 
 import net.dv8tion.jda.core.events.Event
 import net.dv8tion.jda.core.hooks.InterfacedEventManager
-import net.dv8tion.jda.core.utils.SimpleLog
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 

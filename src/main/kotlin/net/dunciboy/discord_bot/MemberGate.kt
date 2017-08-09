@@ -50,7 +50,7 @@ import kotlin.collections.ArrayList
  * <p>
  * Welcomes users when the join, get accepted and makes them answer questions before they get accepted.
  */
-open class MemberGate internal constructor(private val guildId: Long, private val memberRole: Long, private val gateTextChannel: Long, private val welcomeTextChannel: Long, private val welcomeMessages: Array<WelcomeMessage>) : CommandModule(ALIASES, null, null) {
+open class MemberGate internal constructor(private val guildId: Long, private val memberRole: Long, val rulesTextChannel: Long, private val gateTextChannel: Long, private val welcomeTextChannel: Long, private val welcomeMessages: Array<WelcomeMessage>) : CommandModule(ALIASES, null, null) {
     companion object {
         private val ALIASES: Array<String> = arrayOf("gateConfig", "join", "review")
         private val FILE_PATH: Path = Paths.get("MemberGate.json")
@@ -117,7 +117,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
         if (event.guild.idLong != guildId) {
             return
         }
-        event.jda.getTextChannelById(gateTextChannel).sendMessage("Welcome " + event.member.asMention + ", this server requires you to read the " + event.guild.publicChannel.asMention + " and answer a question regarding those before you gain full access.\n\n" +
+        event.jda.getTextChannelById(gateTextChannel).sendMessage("Welcome " + event.member.asMention + ", this server requires you to read the " + event.guild.getTextChannelById(rulesTextChannel).asMention + " and answer a question regarding those before you gain full access.\n\n" +
                 "If you have read the rules and are ready to answer the question type ``!" + super.aliases[1] + "`` and follow the instructions from the bot.\n\n" +
                 "Please read the pinned message for more information.").queue({ message -> message.delete().queueAfter(5, TimeUnit.MINUTES) })
     }
