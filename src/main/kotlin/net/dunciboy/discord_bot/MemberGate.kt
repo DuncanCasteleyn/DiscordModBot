@@ -170,7 +170,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
     private fun failedQuestion(member: Member, question: String, answer: String) {
         val guild = member.guild
         val textChannel = guild.getTextChannelById(gateTextChannel)
-        textChannel.sendMessage(member.asMention + " Sorry it appears the answer you gave was not correct, the mods will now manually check your answer and ask further questions if required.\n\n" +
+        textChannel.sendMessage(member.asMention + " Sorry it appears the answer you gave was not correct, please wait while a mod manually checks your answer or asks another question.\n\n" +
                 "A moderator can use ``!" + super.aliases[2] + " " + member.user.idLong + "``").queue {
             synchronized(informUserMessageIds) {
                 informUserMessageIds.put(member.user.idLong, it.idLong)
