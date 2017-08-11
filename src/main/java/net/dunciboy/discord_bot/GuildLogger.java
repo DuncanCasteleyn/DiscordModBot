@@ -338,6 +338,7 @@ public class GuildLogger extends ListenerAdapter {
             if(messageLogged[0]) {
                 logBulkDelete(event, logEmbed, bulkDeleteLog);
             } else {
+                logBulkDelete(event, logEmbed);
                 ioCleanup(bulkDeleteLog.toFile(), null);
             }
         } catch (IOException e) {
