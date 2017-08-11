@@ -319,12 +319,12 @@ public class GuildLogger extends ListenerAdapter {
         event.getMessageIds().forEach(id -> {
             Message message = history.getMessage(Long.parseUnsignedLong(id));
             if (message != null) {
+                messageLogged[0] = true;
                 try {
                     logWriter.append(message.getAuthor().toString()).append(":\n").append(message.getContent()).append("\n");
                     String attachmentString = history.getAttachmentsString(Long.parseUnsignedLong(id));
                     if (attachmentString != null) {
                         logWriter.append("Attachment(s):\n").append(attachmentString).append("\n");
-                        messageLogged[0] = true;
                     } else {
                         logWriter.append("\n");
                     }
