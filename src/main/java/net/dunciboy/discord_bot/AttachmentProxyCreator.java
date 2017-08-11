@@ -133,7 +133,7 @@ class AttachmentProxyCreator {
 
     synchronized void cleanCache() {
         if (attachmentCache.size() > 0) {
-            JDALibHelper.limitLessBulkDelete(attachmentCache.get(attachmentCache.firstKey()).getJDA().getTextChannelById(CACHE_CHANNEL), new ArrayList<>(attachmentCache.values()));
+            JDALibHelper.INSTANCE.limitLessBulkDelete(attachmentCache.get(attachmentCache.firstKey()).getJDA().getTextChannelById(CACHE_CHANNEL), new ArrayList<>(attachmentCache.values()));
         }
     }
 }

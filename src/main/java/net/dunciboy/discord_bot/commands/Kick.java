@@ -91,8 +91,8 @@ public class Kick extends CommandModule {
 
             MessageEmbed userKickNotification = new EmbedBuilder()
                     .setColor(Color.RED)
-                    .setAuthor(JDALibHelper.getEffectiveNameAndUsername(event.getMember()), null, event.getAuthor().getEffectiveAvatarUrl())
-                    .setTitle(event.getGuild().getName() + ": You have been kicked by " + JDALibHelper.getEffectiveNameAndUsername(event.getMember()), null)
+                    .setAuthor(JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), null, event.getAuthor().getEffectiveAvatarUrl())
+                    .setTitle(event.getGuild().getName() + ": You have been kicked by " + JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), null)
                     .setDescription("Reason: " + reason)
                     .build();
 
@@ -112,8 +112,8 @@ public class Kick extends CommandModule {
             EmbedBuilder logEmbed = new EmbedBuilder()
                     .setColor(Color.RED)
                     .setTitle("User was kicked | Case: " + GuildLogger.getCaseNumberSerializable(event.getGuild().getIdLong()))
-                    .addField("User", JDALibHelper.getEffectiveNameAndUsername(toKick), true)
-                    .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.getMember()), true)
+                    .addField("User", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(toKick), true)
+                    .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true)
                     .addField("Reason", reason, false);
 
             runBots.getLogToChannel().log(logEmbed, toKick.getUser(), event.getGuild(), null);

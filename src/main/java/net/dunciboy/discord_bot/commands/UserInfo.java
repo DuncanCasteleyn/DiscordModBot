@@ -66,7 +66,7 @@ public class UserInfo extends CommandModule {
 //                                        "Guild join date: " + member.getJoinDate().format(DATE_TIME_FORMATTER) + "\n" +
 //                                        "Account creation date: " + member.getUser().getCreationTime().format(DATE_TIME_FORMATTER)).queue();
                         MessageEmbed userDateMessage = new EmbedBuilder()
-                                .setAuthor(JDALibHelper.getEffectiveNameAndUsername(member), null, member.getUser().getEffectiveAvatarUrl())
+                                .setAuthor(JDALibHelper.INSTANCE.getEffectiveNameAndUsername(member), null, member.getUser().getEffectiveAvatarUrl())
                                 .setThumbnail(member.getUser().getEffectiveAvatarUrl())
                                 .setTitle("Guild: " + member.getGuild().getName(), null)
                                 .addField("User id", member.getUser().getId(), false)

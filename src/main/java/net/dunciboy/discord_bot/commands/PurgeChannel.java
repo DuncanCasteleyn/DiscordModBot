@@ -90,7 +90,7 @@ public class PurgeChannel extends CommandModule {
                 }
             }
             int amountDeleted = messageList.size();
-            JDALibHelper.limitLessBulkDelete(textChannel, messageList);
+            JDALibHelper.INSTANCE.limitLessBulkDelete(textChannel, messageList);
             StringBuilder stringBuilder = new StringBuilder(event.getAuthor().getAsMention()).append(" deleted ").append(amountDeleted).append(" most recent messages from ");
             for (int i = 0; i < targetUsers.size(); i++) {
                 stringBuilder.append(targetUsers.get(i).getAsMention());
@@ -115,7 +115,7 @@ public class PurgeChannel extends CommandModule {
                 EmbedBuilder logEmbed = new EmbedBuilder()
                         .setColor(Color.YELLOW)
                         .setTitle("Filtered channel purge", null)
-                        .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.getMember()), true)
+                        .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true)
                         .addField("Channel", textChannel.getName(), true)
                         .addField("Filter", filterString.toString(), true);
 
@@ -145,7 +145,7 @@ public class PurgeChannel extends CommandModule {
                 }
             }
             int amountDeleted = messageList.size();
-            JDALibHelper.limitLessBulkDelete(textChannel, messageList);
+            JDALibHelper.INSTANCE.limitLessBulkDelete(textChannel, messageList);
             textChannel.sendMessage(event.getAuthor().getAsMention() + " deleted " + amountDeleted + " most recent messages not older than 2 weeks.").queue(message -> message.delete().queueAfter(1, TimeUnit.MINUTES));
 
             RunBots runBots = RunBots.Companion.getRunBot(event.getJDA());
@@ -159,7 +159,7 @@ public class PurgeChannel extends CommandModule {
                 EmbedBuilder logEmbed = new EmbedBuilder()
                         .setColor(Color.YELLOW)
                         .setTitle("Channel purge", null)
-                        .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.getMember()), true)
+                        .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true)
                         .addField("Channel", textChannel.getName(), true);
 
                 runBots.getLogToChannel().log(logEmbed, event.getAuthor(), event.getGuild(), null);

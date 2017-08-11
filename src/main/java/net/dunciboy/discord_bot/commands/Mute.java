@@ -92,16 +92,16 @@ public class Mute extends CommandModule {
                     EmbedBuilder logEmbed = new EmbedBuilder()
                             .setColor(Color.YELLOW)
                             .setTitle("User was muted | Case: " + serializableCaseResult)
-                            .addField("User", JDALibHelper.getEffectiveNameAndUsername(toMute), true)
-                            .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.getMember()), true)
+                            .addField("User", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(toMute), true)
+                            .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true)
                             .addField("Reason", reason, false);
 
                     runBots.getLogToChannel().log(logEmbed, toMute.getUser(), event.getGuild(), null);
                 }
                 EmbedBuilder userMuteWarning = new EmbedBuilder()
                         .setColor(Color.YELLOW)
-                        .setAuthor(JDALibHelper.getEffectiveNameAndUsername(event.getMember()), null, event.getAuthor().getEffectiveAvatarUrl())
-                        .setTitle(event.getGuild().getName() + ": You have been muted by " + JDALibHelper.getEffectiveNameAndUsername(event.getMember()))
+                        .setAuthor(JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), null, event.getAuthor().getEffectiveAvatarUrl())
+                        .setTitle(event.getGuild().getName() + ": You have been muted by " + JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()))
                         .addField("Reason", reason, false);
 
                 toMute.getUser().openPrivateChannel().queue(

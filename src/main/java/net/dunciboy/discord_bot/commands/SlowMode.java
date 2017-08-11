@@ -90,7 +90,7 @@ public class SlowMode extends CommandModule {
                             EmbedBuilder logEmbed = new EmbedBuilder()
                                     .setColor(Color.GREEN)
                                     .setTitle("Slow mode disabled", null)
-                                    .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.getMember()), true)
+                                    .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true)
                                     .addField("Channel", event.getTextChannel().getName(), true);
 
                             runBots.getLogToChannel().log(logEmbed, event.getAuthor(), event.getGuild(), null);
@@ -109,7 +109,7 @@ public class SlowMode extends CommandModule {
                                 EmbedBuilder logEmbed = new EmbedBuilder()
                                         .setColor(Color.YELLOW)
                                         .setTitle("Slow mode enabled", null)
-                                        .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.getMember()), true)
+                                        .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true)
                                         .addField("Channel", event.getTextChannel().getName(), true)
                                         .addBlankField(false)
                                         .addField("Threshold", args[0], true)
@@ -132,7 +132,7 @@ public class SlowMode extends CommandModule {
                             EmbedBuilder logEmbed = new EmbedBuilder()
                                     .setColor(Color.YELLOW)
                                     .setTitle("Slow mode enabled", null)
-                                    .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.getMember()), true)
+                                    .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true)
                                     .addField("Channel", event.getTextChannel().getName(), true)
                                     .addBlankField(false)
                                     .addField("Threshold", String.valueOf(threshold), true)

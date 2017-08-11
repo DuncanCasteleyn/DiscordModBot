@@ -92,8 +92,8 @@ public class Warn extends CommandModule {
                 EmbedBuilder logEmbed = new EmbedBuilder()
                         .setColor(Color.YELLOW)
                         .setTitle("User was warned | Case: " + serializableCaseResult)
-                        .addField("User", JDALibHelper.getEffectiveNameAndUsername(toWarn), true)
-                        .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.getMember()), true)
+                        .addField("User", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(toWarn), true)
+                        .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true)
                         .addField("Reason", reason, false);
 
                 runBots.getLogToChannel().log(logEmbed, toWarn.getUser(), event.getGuild(), null);
@@ -103,8 +103,8 @@ public class Warn extends CommandModule {
 
             EmbedBuilder userWarning = new EmbedBuilder()
                     .setColor(Color.YELLOW)
-                    .setAuthor(JDALibHelper.getEffectiveNameAndUsername(event.getMember()), null, event.getAuthor().getEffectiveAvatarUrl())
-                    .setTitle(event.getGuild().getName() + ": You have been warned by " + JDALibHelper.getEffectiveNameAndUsername(event.getMember()), null)
+                    .setAuthor(JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), null, event.getAuthor().getEffectiveAvatarUrl())
+                    .setTitle(event.getGuild().getName() + ": You have been warned by " + JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), null)
                     .addField("Reason", reason, false);
 
             toWarn.getUser().openPrivateChannel().queue(

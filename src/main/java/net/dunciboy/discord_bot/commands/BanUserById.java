@@ -85,7 +85,7 @@ public class BanUserById extends Ban {
                                 .setColor(Color.RED)
                                 .setTitle("User was banned by id  | Case: " + GuildLogger.getCaseNumberSerializable(event.getGuild().getIdLong()))
                                 .addField("User", toBan.getName(), true)
-                                .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.getMember()), true)
+                                .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true)
                                 .addField("Reason", reason, false);
 
                         runBots.getLogToChannel().log(logEmbed, toBan, event.getGuild(), null);

@@ -106,8 +106,8 @@ public class Ban extends CommandModule {
             }
             MessageEmbed userKickNotification = new EmbedBuilder()
                     .setColor(Color.red)
-                    .setAuthor(JDALibHelper.getEffectiveNameAndUsername(event.getMember()), null, event.getAuthor().getEffectiveAvatarUrl())
-                    .setTitle(event.getGuild().getName() + ": You have been banned by " + JDALibHelper.getEffectiveNameAndUsername(event.getMember()), null)
+                    .setAuthor(JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), null, event.getAuthor().getEffectiveAvatarUrl())
+                    .setTitle(event.getGuild().getName() + ": You have been banned by " + JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), null)
                     .setDescription(description.toString())
                     .build();
 
@@ -127,8 +127,8 @@ public class Ban extends CommandModule {
             EmbedBuilder logEmbed = new EmbedBuilder()
                     .setColor(Color.RED)
                     .setTitle("User was banned | Case: " + GuildLogger.getCaseNumberSerializable(event.getGuild().getIdLong()))
-                    .addField("User", JDALibHelper.getEffectiveNameAndUsername(toBan), true)
-                    .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.getMember()), true)
+                    .addField("User", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(toBan), true)
+                    .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true)
                     .addField("Reason", reason, false);
 
             runBots.getLogToChannel().log(logEmbed, toBan.getUser(), event.getGuild(), null);

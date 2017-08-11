@@ -21,10 +21,7 @@ import net.dunciboy.discord_bot.sequence.Sequence
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
-import net.dv8tion.jda.core.entities.Member
-import net.dv8tion.jda.core.entities.Message
-import net.dv8tion.jda.core.entities.MessageChannel
-import net.dv8tion.jda.core.entities.User
+import net.dv8tion.jda.core.entities.*
 import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent
 import net.dv8tion.jda.core.events.guild.member.GuildMemberRoleAddEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
@@ -162,6 +159,15 @@ open class MemberGate internal constructor(private val guildId: Long, private va
     private fun accept(member: Member) {
         val guild = member.guild
         guild.controller.addRolesToMember(member, guild.getRoleById(memberRole)).queue()
+
+        val gateTextChannel: TextChannel = guild.getTextChannelById(this.gateTextChannel)
+        val userMessages: ArrayList<Message> = ArrayList()
+        gateTextChannel.iterableHistory.map {
+            if (it.author == member.user) {
+                userMessages.add(it)
+            }
+        }
+        JDALibHelper.limitLessBulkDelete(gateTextChannel, userMessages)
     }
 
     /**

@@ -143,7 +143,7 @@ public class GuildLogger extends ListenerAdapter {
             {
                 String tempName;
                 try {
-                    tempName = JDALibHelper.getEffectiveNameAndUsername(oldMessage.getGuild().getMember(oldMessage.getAuthor()));
+                    tempName = JDALibHelper.INSTANCE.getEffectiveNameAndUsername(oldMessage.getGuild().getMember(oldMessage.getAuthor()));
                 } catch (IllegalArgumentException e) {
                     tempName = oldMessage.getAuthor().getName();
                 }
@@ -200,7 +200,7 @@ public class GuildLogger extends ListenerAdapter {
             {
                 String tempName;
                 try {
-                    tempName = JDALibHelper.getEffectiveNameAndUsername(oldMessage.getGuild().getMember(oldMessage.getAuthor()));
+                    tempName = JDALibHelper.INSTANCE.getEffectiveNameAndUsername(oldMessage.getGuild().getMember(oldMessage.getAuthor()));
                 } catch (IllegalArgumentException e) {
                     tempName = oldMessage.getAuthor().getName();
                 }
@@ -248,7 +248,7 @@ public class GuildLogger extends ListenerAdapter {
                         }
                         logEmbed.addField("Author", name, true);
                         if (moderator != null) {
-                            logEmbed.addField("Deleted by", JDALibHelper.getEffectiveNameAndUsername(event.getGuild().getMember(moderator)), true)
+                            logEmbed.addField("Deleted by", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getGuild().getMember(moderator)), true)
                                     .setColor(Color.YELLOW);
                         } else {
                             logEmbed.setColor(LIGHT_BLUE);
@@ -385,12 +385,12 @@ public class GuildLogger extends ListenerAdapter {
 
             EmbedBuilder logEmbed = new EmbedBuilder()
                     .setColor(Color.RED)
-                    .addField("User", JDALibHelper.getEffectiveNameAndUsername(event.getMember()), true);
+                    .addField("User", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true);
             if (moderator == null) {
                 logEmbed.setTitle("SERVER NOTIFICATION: User left");
             } else {
                 logEmbed.setTitle("SERVER NOTIFICATION: User kicked | Case: " + getCaseNumberSerializable(event.getGuild().getIdLong()));
-                logEmbed.addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.getGuild().getMember(moderator)), true);
+                logEmbed.addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getGuild().getMember(moderator)), true);
                 if (reason != null) {
                     logEmbed.addField("Reason", reason, false);
                 }
@@ -433,7 +433,7 @@ public class GuildLogger extends ListenerAdapter {
                     .setTitle("SERVER NOTIFICATION: User banned | Case: " + getCaseNumberSerializable(event.getGuild().getIdLong()))
                     .addField("User", event.getUser().getName(), true);
             if (moderator != null) {
-                logEmbed.addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.getGuild().getMember(moderator)), true);
+                logEmbed.addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getGuild().getMember(moderator)), true);
                 if (reason != null) {
                     logEmbed.addField("Reason", reason, false);
                 }
@@ -484,7 +484,7 @@ public class GuildLogger extends ListenerAdapter {
                     .setTitle("SERVER NOTIFICATION: User unbanned", null)
                     .addField("User", event.getUser().getName(), true);
             if (moderator != null) {
-                logEmbed.addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.getGuild().getMember(moderator)), true);
+                logEmbed.addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getGuild().getMember(moderator)), true);
             }
             logger.log(logEmbed, event.getUser(), event.getGuild(), null);
         }, 1, TimeUnit.SECONDS);
@@ -529,7 +529,7 @@ public class GuildLogger extends ListenerAdapter {
                 logEmbed.setTitle("User has changed nickname");
             } else {
                 logEmbed.setTitle("Moderator has changed nickname")
-                        .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.getGuild().getMember(moderator)), false);
+                        .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getGuild().getMember(moderator)), false);
             }
             logger.log(logEmbed, event.getMember().getUser(), event.getGuild(), null);
         }, 1, TimeUnit.SECONDS);

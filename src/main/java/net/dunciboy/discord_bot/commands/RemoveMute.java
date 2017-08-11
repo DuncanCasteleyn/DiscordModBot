@@ -88,8 +88,8 @@ public class RemoveMute extends CommandModule {
                     EmbedBuilder logEmbed = new EmbedBuilder()
                             .setColor(Color.GREEN)
                             .setTitle("User's mute was removed", null)
-                            .addField("User", JDALibHelper.getEffectiveNameAndUsername(toRemoveMute), true)
-                            .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.getMember()), true)
+                            .addField("User", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(toRemoveMute), true)
+                            .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true)
                             .addField("Reason", reason, false);
 
                     runBots.getLogToChannel().log(logEmbed, toRemoveMute.getUser(), event.getGuild(), null);
@@ -98,8 +98,8 @@ public class RemoveMute extends CommandModule {
                 }
                 MessageEmbed muteRemoveNotification = new EmbedBuilder()
                         .setColor(Color.green)
-                        .setAuthor(JDALibHelper.getEffectiveNameAndUsername(event.getMember()), null, event.getAuthor().getEffectiveAvatarUrl())
-                        .setTitle(event.getGuild().getName() + ": Your mute has been removed by " + JDALibHelper.getEffectiveNameAndUsername(event.getMember()), null)
+                        .setAuthor(JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), null, event.getAuthor().getEffectiveAvatarUrl())
+                        .setTitle(event.getGuild().getName() + ": Your mute has been removed by " + JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), null)
                         .addField("Reason", reason, false)
                         .build();
 
