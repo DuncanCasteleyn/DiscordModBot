@@ -303,7 +303,7 @@ public class GuildLogger extends ListenerAdapter {
             logWriter = Files.newBufferedWriter(bulkDeleteLog, Charset.forName("UTF-8"), StandardOpenOption.WRITE);
         } catch (IOException e) {
             if (bulkDeleteLog != null) {
-                IOCleanup(bulkDeleteLog.toFile(), e);
+                ioCleanup(bulkDeleteLog.toFile(), e);
             } else {
                 LOG.log(e);
             }
@@ -315,6 +315,7 @@ public class GuildLogger extends ListenerAdapter {
         } catch (IOException e) {
             LOG.log(e);
         }
+        final Boolean[] messageLogged = {false};
         event.getMessageIds().forEach(id -> {
             Message message = history.getMessage(Long.parseUnsignedLong(id));
             if (message != null) {
@@ -323,6 +324,7 @@ public class GuildLogger extends ListenerAdapter {
                     String attachmentString = history.getAttachmentsString(Long.parseUnsignedLong(id));
                     if (attachmentString != null) {
                         logWriter.append("Attachment(s):\n").append(attachmentString).append("\n");
+                        messageLogged[0] = true;
                     } else {
                         logWriter.append("\n");
                     }
@@ -333,15 +335,21 @@ public class GuildLogger extends ListenerAdapter {
         });
         try {
             logWriter.close();
-            logBulkDelete(event, logEmbed, bulkDeleteLog);
+            if(messageLogged[0]) {
+                logBulkDelete(event, logEmbed, bulkDeleteLog);
+            } else {
+                ioCleanup(bulkDeleteLog.toFile(), null);
+            }
         } catch (IOException e) {
-            IOCleanup(bulkDeleteLog.toFile(), e);
+            ioCleanup(bulkDeleteLog.toFile(), e);
             logBulkDelete(event, logEmbed);
         }
     }
 
-    private void IOCleanup(File file, IOException e) {
-        LOG.log(e);
+    private void ioCleanup(File file, IOException e) {
+        if(e != null) {
+            LOG.log(e);
+        }
         if (file.exists() && !file.delete()) {
             file.deleteOnExit();
         }
