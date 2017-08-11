@@ -50,22 +50,16 @@ object JDALibHelper {
      * @param messages Messages to deleted. The list you give will be emptied for you.
      */
     fun limitLessBulkDelete(channel: TextChannel, messages: ArrayList<Message>) {
-        var messages1 = messages
-        run {
-            val tempList = ArrayList(messages1)
-            messages1.clear()
-            messages1 = tempList
-        }
-        if (messages1.size in 2..100) {
-            channel.deleteMessages(messages1).queue()
-        } else if (messages1.size < 2) {
-            for (message in messages1) {
+        if (messages.size in 2..100) {
+            channel.deleteMessages(messages).queue()
+        } else if (messages.size < 2) {
+            for (message in messages) {
                 message.delete().queue()
             }
         } else {
             var messagesStack = ArrayList<Message>()
-            while (messages1.size > 0) {
-                messagesStack.add(messages1.removeAt(0))
+            while (messages.size > 0) {
+                messagesStack.add(messages.removeAt(0))
                 if (messagesStack.size == 100) {
                     channel.deleteMessages(messagesStack).queue()
                     messagesStack = ArrayList<Message>()
@@ -79,5 +73,6 @@ object JDALibHelper {
                 }
             }
         }
+        messages.clear()
     }
 }
