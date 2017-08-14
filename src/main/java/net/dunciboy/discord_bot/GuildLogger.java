@@ -490,7 +490,7 @@ public class GuildLogger extends ListenerAdapter {
 
             EmbedBuilder logEmbed = new EmbedBuilder()
                     .setColor(Color.GREEN)
-                    .setTitle("SERVER NOTIFICATION: User unbanned", null)
+                    .setTitle("SERVER NOTIFICATION: User ban revoked", null)
                     .addField("User", event.getUser().getName(), true);
             if (moderator != null) {
                 logEmbed.addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getGuild().getMember(moderator)), true);
