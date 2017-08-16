@@ -76,3 +76,6 @@ src_old/
 
 #Gradle cache files
 .gradle/
+
+# compiled stuff
+bin/

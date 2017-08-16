@@ -117,7 +117,7 @@ public class LogToChannel {
                     }
                     if (embeds != null) {
                         for (MessageEmbed embed : embeds) {
-                            logTo.sendMessage(new MessageBuilder().setEmbed(embed).append("The embedded message below was deleted with the previous deleted message").build()).queue();
+                            logTo.sendMessage(new MessageBuilder().setEmbed(embed).append("The embed below was deleted with the previous message").build()).queue();
                         }
                     }
                 } catch (PermissionException e) {
