@@ -115,7 +115,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
             return
         }
         event.jda.getTextChannelById(gateTextChannel).sendMessage("Welcome " + event.member.asMention + ", this server requires you to read the " + event.guild.getTextChannelById(rulesTextChannel).asMention + " and answer a question regarding those before you gain full access.\n\n" +
-                "If you have read the rules and are ready to answer the question type ``!" + super.aliases[1] + "`` and follow the instructions from the bot.\n\n" +
+                "If you have read the rules and are ready to answer the question, type ``!" + super.aliases[1] + "`` and follow the instructions from the bot.\n\n" +
                 "Please read the pinned message for more information.").queue({ message -> message.delete().queueAfter(5, TimeUnit.MINUTES) })
     }
 
@@ -139,7 +139,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                 }
                 synchronized(needManualApproval) {
                     if (event.author.idLong in needManualApproval) {
-                        event.channel.sendMessage("You have already tried answering a question, a moderator needs to manually review you, please state that you have read the rules, agree with them and need manual approval.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                        event.channel.sendMessage("You have already tried answering a question. A moderator now needs to manually review you; please state that you have read and agree to the rules, and also need manual approval.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                         return
                     }
                 }
@@ -176,7 +176,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
     private fun failedQuestion(member: Member, question: String, answer: String) {
         val guild = member.guild
         val textChannel = guild.getTextChannelById(gateTextChannel)
-        textChannel.sendMessage(member.asMention + " Sorry it appears the answer you gave was not correct, please wait while a mod manually checks your answer or asks another question.\n\n" +
+        textChannel.sendMessage(member.asMention + " Sorry, it appears the answer provided is incorrect. Please wait while a moderator manually checks your answer, or asks another question.\n\n" +
                 "A moderator can use ``!" + super.aliases[2] + " " + member.user.idLong + "``").queue {
             synchronized(informUserMessageIds) {
                 informUserMessageIds.put(member.user.idLong, it.idLong)
@@ -231,7 +231,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
      */
     private inner class QuestionSequence internal constructor(user: User, channel: MessageChannel, private val question: Question) : Sequence(user, channel, informUser = false) {
         init {
-            super.channel.sendMessage(user.asMention + " please answer the following question:\n" + question.question).queue { super.addMessageToCleaner(it) }
+            super.channel.sendMessage(user.asMention + " Please answer the following question:\n" + question.question).queue { super.addMessageToCleaner(it) }
         }
 
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
@@ -256,7 +256,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
 
         init {
             channel.sendMessage(user.asMention + " Welcome to the member gate configuration sequence.\n\n" +
-                    "Please state what action you like to perform:\n" +
+                    "Select an action to perform:\n" +
                     "add a question\n" +
                     "remove a question").queue { super.addMessageToCleaner(it) }
         }
@@ -360,7 +360,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                     }
                 } else {
                     super.destroy()
-                    throw IllegalArgumentException("The user you tried to review is not or no longer in the manual review list.")
+                    throw IllegalArgumentException("The user you tried to review is not currently in the manual review list.")
                 }
             }
         }
@@ -368,7 +368,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
             synchronized(needManualApproval) {
                 if (userId !in needManualApproval) {
-                    throw IllegalStateException("The user is no longer in the queue, another moderator might have reviewed it already.")
+                    throw IllegalStateException("The user is no longer in the queue; another moderator may have reviewed it already.")
                 }
                 val messageContent: String = event.message.content.toLowerCase()
                 when (messageContent) {
@@ -378,7 +378,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                             super.channel.sendMessage("The user has been approved.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                             accept(member)
                         } else {
-                            super.channel.sendMessage("The user already left, no further action is needed.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                            super.channel.sendMessage("The user has left; no further action is needed.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                         }
                         needManualApproval.remove(userId)
                         synchronized(informUserMessageIds) {
@@ -392,9 +392,9 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                     "no" -> {
                         val member: Member? = event.guild.getMemberById(userId)
                         if (member != null) {
-                            super.channel.sendMessage("Please give " + member.user.asMention + "  a new question in the chat, that can be manually checked by you or by another moderator.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                            super.channel.sendMessage("Please give " + member.user.asMention + "  a new question in the chat that can be manually reviewed by you or by another moderator.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                         } else {
-                            super.channel.sendMessage("The user already left, no further actions is needed unless the user joins again.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                            super.channel.sendMessage("The user already left; no further action is needed.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                         }
                         needManualApproval.replace(userId, null)
                         synchronized(informUserMessageIds) {

@@ -43,7 +43,7 @@ abstract class CommandModule @JvmOverloads protected constructor(internal val al
 
     init {
         if (aliases.isEmpty()) {
-            throw IllegalArgumentException("aliases needs to contain at least one alias.")
+            throw IllegalArgumentException("aliases must contain at least one alias.")
         }
     }
 
@@ -74,13 +74,13 @@ abstract class CommandModule @JvmOverloads protected constructor(internal val al
                     LOG.info("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " completed executing " + event.message.content + " command from user " + event.author.toString())
                 } catch (pe: PermissionException) {
                     LOG.warn("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " failed executing " + event.message.content + " command from user " + event.author.toString())
-                    val exceptionMessage = MessageBuilder().append("Cannot complete action due to a permission issue, see the message below for details.").appendCodeBlock(pe.javaClass.simpleName + ": " + pe.message, "text").build()
+                    val exceptionMessage = MessageBuilder().append("Cannot complete action due to a permission issue; see the message below for details.").appendCodeBlock(pe.javaClass.simpleName + ": " + pe.message, "text").build()
                     event.channel.sendMessage(exceptionMessage).queue { it.delete().queueAfter(5, TimeUnit.MINUTES) }
 
                 } catch (t: Throwable) {
                     LOG.fatal("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " failed executing " + event.message.content + " command from user " + event.author.toString())
                     LOG.log(t)
-                    val exceptionMessage = MessageBuilder().append("Cannot complete action due to an error, see the message below for details.").appendCodeBlock(t.javaClass.simpleName + ": " + t.message, "text").build()
+                    val exceptionMessage = MessageBuilder().append("Cannot complete action due to an error; see the message below for details.").appendCodeBlock(t.javaClass.simpleName + ": " + t.message, "text").build()
                     event.channel.sendMessage(exceptionMessage).queue { it.delete().queueAfter(5, TimeUnit.MINUTES) }
                 }
 
