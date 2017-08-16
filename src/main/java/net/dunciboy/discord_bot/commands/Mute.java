@@ -88,7 +88,7 @@ public class Mute extends CommandModule {
             event.getGuild().getController().addRolesToMember(toMute, event.getGuild().getRoleById("221678882342830090")).reason(reason).queue(aVoid -> {
                 RunBots runBots = RunBots.Companion.getRunBot(event.getJDA());
                 if (runBots != null) {
-                    Serializable serializableCaseResult = GuildLogger.getCaseNumberSerializable(event.getGuild().getIdLong());
+                    Serializable serializableCaseResult = GuildLogger.Companion.getCaseNumberSerializable(event.getGuild().getIdLong());
                     EmbedBuilder logEmbed = new EmbedBuilder()
                             .setColor(Color.YELLOW)
                             .setTitle("User was muted | Case: " + serializableCaseResult)

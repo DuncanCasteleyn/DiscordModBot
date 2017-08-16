@@ -126,7 +126,7 @@ public class Ban extends CommandModule {
         if (runBots != null) {
             EmbedBuilder logEmbed = new EmbedBuilder()
                     .setColor(Color.RED)
-                    .setTitle("User was banned | Case: " + GuildLogger.getCaseNumberSerializable(event.getGuild().getIdLong()))
+                    .setTitle("User was banned | Case: " + GuildLogger.Companion.getCaseNumberSerializable(event.getGuild().getIdLong()))
                     .addField("User", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(toBan), true)
                     .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true)
                     .addField("Reason", reason, false);

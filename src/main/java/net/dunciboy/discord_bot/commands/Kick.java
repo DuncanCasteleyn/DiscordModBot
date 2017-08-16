@@ -111,7 +111,7 @@ public class Kick extends CommandModule {
         if (runBots != null) {
             EmbedBuilder logEmbed = new EmbedBuilder()
                     .setColor(Color.RED)
-                    .setTitle("User was kicked | Case: " + GuildLogger.getCaseNumberSerializable(event.getGuild().getIdLong()))
+                    .setTitle("User was kicked | Case: " + GuildLogger.Companion.getCaseNumberSerializable(event.getGuild().getIdLong()))
                     .addField("User", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(toKick), true)
                     .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true)
                     .addField("Reason", reason, false);
