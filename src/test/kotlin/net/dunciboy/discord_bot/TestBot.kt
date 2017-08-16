@@ -34,7 +34,8 @@ class TestBot private constructor(bot: JDA, logToChannel: LogToChannel, logger: 
         private val LOG = SimpleLog.getLog(TestBot::class.java.simpleName)
 
 
-        @JvmStatic fun main(args: Array<String>) {
+        @JvmStatic
+        fun main(args: Array<String>) {
             try {
                 GoogleSearch.setup("AIzaSyBqWVPae9PsYBDkxDIEcfQbjoMcAkLpy0Y")
 

@@ -335,7 +335,7 @@ public class GuildLogger extends ListenerAdapter {
         });
         try {
             logWriter.close();
-            if(messageLogged[0]) {
+            if (messageLogged[0]) {
                 logBulkDelete(event, logEmbed, bulkDeleteLog);
             } else {
                 logBulkDelete(event, logEmbed);
@@ -348,7 +348,7 @@ public class GuildLogger extends ListenerAdapter {
     }
 
     private void ioCleanup(File file, IOException e) {
-        if(e != null) {
+        if (e != null) {
             LOG.log(e);
         }
         if (file.exists() && !file.delete()) {

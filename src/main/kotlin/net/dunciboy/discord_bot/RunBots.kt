@@ -49,7 +49,8 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: LogToCha
             return bots!!.firstOrNull { it.bot === jda }
         }
 
-        @JvmStatic fun main(args: Array<String>) {
+        @JvmStatic
+        fun main(args: Array<String>) {
             try {
                 val configFileContent: StringBuilder = StringBuilder()
                 Files.readAllLines(configFile).map { configFileContent.append(it) }

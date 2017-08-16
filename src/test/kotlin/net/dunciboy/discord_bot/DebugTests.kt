@@ -39,7 +39,8 @@ class DebugTests internal constructor(bot: JDA, logToChannel: LogToChannel, logg
 
     companion object {
 
-        @JvmStatic fun main(args: Array<String>) {
+        @JvmStatic
+        fun main(args: Array<String>) {
             try {
                 JDABuilder(AccountType.BOT)
                         .setCorePoolSize(RunBots.Companion.BOT_THREAD_POOL_SIZE)

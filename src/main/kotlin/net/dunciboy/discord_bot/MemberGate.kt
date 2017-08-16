@@ -47,7 +47,7 @@ import kotlin.collections.ArrayList
  * <p>
  * Welcomes users when the join, get accepted and makes them answer questions before they get accepted.
  */
-open class MemberGate internal constructor(private val guildId: Long, private val memberRole: Long, val rulesTextChannel: Long, private val gateTextChannel: Long, private val welcomeTextChannel: Long, private val welcomeMessages: Array<WelcomeMessage>) : CommandModule(ALIASES, null, null) {
+open class MemberGate internal constructor(private val guildId: Long, private val memberRole: Long, private val rulesTextChannel: Long, private val gateTextChannel: Long, private val welcomeTextChannel: Long, private val welcomeMessages: Array<WelcomeMessage>) : CommandModule(ALIASES, null, null) {
     companion object {
         private val ALIASES: Array<String> = arrayOf("gateConfig", "join", "review")
         private val FILE_PATH: Path = Paths.get("MemberGate.json")
@@ -62,7 +62,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
         var tempQuestions: ArrayList<Question>
         try {
             val stringBuilder = StringBuilder()
-            Files.newBufferedReader(FILE_PATH).lines().forEachOrdered { stringBuilder.append(it) }
+            Files.newBufferedReader(FILE_PATH).lines().map { stringBuilder.append(it) }
             val jsonObject = JSONObject(stringBuilder.toString())
             tempQuestions = ArrayList()
             jsonObject.getJSONArray("questions").forEach {
@@ -85,7 +85,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
         } catch (ioE: IOException) {
             tempQuestions = ArrayList()
             LOG.log(ioE)
-        } catch(jE: JSONException) {
+        } catch (jE: JSONException) {
             tempQuestions = ArrayList()
             LOG.log(jE)
         }
@@ -134,7 +134,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                 }
             }
             super.aliases[1].toLowerCase() -> {
-                if (event.jda.getGuildById(guildId).getMember(event.author).roles.any({ it.idLong == memberRole })) {
+                if (event.jda.getGuildById(guildId).getMember(event.author).roles.any { it.idLong == memberRole }) {
                     return
                 }
                 synchronized(needManualApproval) {
