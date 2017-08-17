@@ -30,24 +30,22 @@ import net.dv8tion.jda.core.utils.SimpleLog
 class TestBot private constructor(bot: JDA, logToChannel: LogToChannel, logger: GuildLogger) : RunBots(bot, logToChannel, logger) {
     companion object {
 
-        private const val DEV_TOKEN = "MjM1NTI5MjMyNDI2NTk4NDAx.C5TDfw.8MhLiD6CQmNbc4SkN1KeyxumOcM"
         private val LOG = SimpleLog.getLog(TestBot::class.java.simpleName)
 
 
         @JvmStatic
         fun main(args: Array<String>) {
             try {
-                GoogleSearch.setup("AIzaSyBqWVPae9PsYBDkxDIEcfQbjoMcAkLpy0Y")
+                val configObject = loadConfig()
 
                 val devLogToChannel = LogToChannel()
                 val devSettings = Settings()
-                //StabbingGameHandler devStabbingGameHandler = new StabbingGameHandler();
                 val devGuildLogger = GuildLogger(devLogToChannel, devSettings)
 
                 val devJDABuilder = JDABuilder(AccountType.BOT)
                         .setBulkDeleteSplittingEnabled(false)
                         .setCorePoolSize(RunBots.Companion.BOT_THREAD_POOL_SIZE)
-                        .setToken(DEV_TOKEN)
+                        .setToken(configObject.getString("Dev"))
                         .addEventListener(devGuildLogger, Help(*RunBots.Companion.generalCommands), QuitBot())
                 for (generalCommand in RunBots.Companion.generalCommands) {
                     devJDABuilder.addEventListener(generalCommand)
