@@ -62,7 +62,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
         var tempQuestions: ArrayList<Question>
         try {
             val stringBuilder = StringBuilder()
-            Files.newBufferedReader(FILE_PATH).lines().map { stringBuilder.append(it) }
+            Files.readAllLines(FILE_PATH).map { stringBuilder.append(it) }
             val jsonObject = JSONObject(stringBuilder.toString())
             tempQuestions = ArrayList()
             jsonObject.getJSONArray("questions").forEach {
