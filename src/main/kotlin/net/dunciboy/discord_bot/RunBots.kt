@@ -37,7 +37,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: LogToCha
     companion object {
 
         internal val generalCommands: Array<CommandModule>
-            get() = arrayOf(Ban(), BanUserById(), ChannelIds(), Info(), Kick(), Ping(), PurgeChannel(), RoleIds(), SlowMode(), UserInfo(), Warn(), Eval())
+            get() = arrayOf(Ban(), BanUserById(), ChannelIds(), Info(), Kick(), Ping(), PurgeChannel(), RoleIds(), SlowMode(), UserInfo(), Warn(), Eval(), ReactionVote())
 
         private val configFile = Paths.get("Config.json")
         internal val BOT_THREAD_POOL_SIZE = 5
@@ -52,10 +52,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: LogToCha
         @JvmStatic
         fun main(args: Array<String>) {
             try {
-                val configFileContent: StringBuilder = StringBuilder()
-                Files.readAllLines(configFile).map { configFileContent.append(it) }
-
-                val configObject: JSONObject = JSONObject(configFileContent.toString())
+                val configObject = loadConfig()
 
                 GoogleSearch.setup(configObject.getString("GoogleApi"))
 
@@ -116,6 +113,12 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: LogToCha
                 LOG.log(e)
             }
 
+        }
+
+        fun loadConfig(): JSONObject {
+            val configFileContent = StringBuilder()
+            Files.readAllLines(configFile).map { configFileContent.append(it) }
+            return JSONObject(configFileContent.toString())
         }
     }
 }
