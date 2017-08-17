@@ -60,10 +60,10 @@ abstract class Sequence @JvmOverloads protected constructor(val user: User, val 
         cleaner = sequenceKillerExecutor.schedule({ this.destroy() }, 5, TimeUnit.MINUTES)
         if (informUser) {
             try {
-                val sequenceInformMessage: Message = channel.sendMessage(user.asMention + " you are now in a sequence, this means the bot will ignore all commands from you because you first need to complete the sequence.\n" +
+                val sequenceInformMessage: Message = channel.sendMessage(user.asMention + " You are now in a sequence. The bot will ignore all further commands as you first need to complete the sequence.\n" +
                         "To complete the sequence answer the questions or tasks give by the bot in " + (if (channel is TextChannel) channel.asMention else "Private chat") + " \n" +
                         "Any message you send in this channel will be used as input.\n" +
-                        "\nA sequence automatically expires after not receiving a message for 5 minutes in this channel.\n" +
+                        "\nA sequence automatically expires after not receiving a message for 5 minutes within this channel.\n" +
                         "You can also kill a sequence by sending \"STOP\"").complete()
                 addMessageToCleaner(sequenceInformMessage)
             } catch (e: Exception) {
@@ -88,7 +88,7 @@ abstract class Sequence @JvmOverloads protected constructor(val user: User, val 
         } catch (t: Throwable) {
             LOG.log(t)
             destroy()
-            val errorMessage: Message = MessageBuilder().append(user.asMention + " an error occurred during the sequence and has been terminated, see the message bellow for information.")
+            val errorMessage: Message = MessageBuilder().append(user.asMention + " The sequence has been terminated due to an error; see the message below for more information.")
                     .appendCodeBlock(t.javaClass.simpleName + ": " + t.message, "text")
                     .build()
             channel.sendMessage(errorMessage).queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }

@@ -54,14 +54,14 @@ class AttachmentProxyCreator {
                         if (subMessage != null) {
                             subMessage.getAttachments().forEach(attachment -> stringBuilder.append("[").append(attachment.getFileName()).append("](").append(attachment.getUrl()).append(")\n"));
                         } else {
-                            stringBuilder.append("The message contained an attachment bigger then 8 mb and could not be uploaded again or failed to create a proxy.");
+                            stringBuilder.append("The message either contained an attachment larger then 8MB and could not be uploaded again, or failed to create a proxy.");
                         }
                     } else {
                         subMessage = null;
                     }
                 } while (subMessage != null);
             } else {
-                stringBuilder.append("The message contained an attachment bigger then 8 mb and could not be uploaded again or failed to create a proxy.");
+                stringBuilder.append("The message either contained an attachment larger then 8MB and could not be uploaded again, or failed to create a proxy.");
             }
             return stringBuilder.toString();
         } else {
@@ -118,14 +118,14 @@ class AttachmentProxyCreator {
                         }
                     } else {
                         addToCache(event.getMessage().getIdLong(), null);
-                        LOG.warn("Something went wrong when deleting the temp file or during the download.");
+                        LOG.warn("Something went wrong with either the download or removing the temp file.");
                     }
                 } catch (Exception e) {
                     LOG.log(e);
                     addToCache(event.getMessage().getIdLong(), null);
                 }
             } else {
-                LOG.warn("The file was bigger then 8 mb.");
+                LOG.warn("The file was larger than 8MB.");
                 addToCache(event.getMessage().getIdLong(), null);
             }
         });

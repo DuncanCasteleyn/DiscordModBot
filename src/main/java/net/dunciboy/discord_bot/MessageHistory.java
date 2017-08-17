@@ -182,7 +182,7 @@ public class MessageHistory extends ListenerAdapter implements QuitBot.BeforeBot
         if (messages.size() > 0) {
             return messages.get(messages.firstKey()).getJDA();
         } else {
-            throw new EmptyCacheException("The cache hasn't saved any messages yet or became empty. Wait till a new message is cached.");
+            throw new EmptyCacheException("The cache has either not saved any messages yet, or is empty. Please wait util a new message is cached.");
         }
     }
 

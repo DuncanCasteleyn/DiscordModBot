@@ -57,7 +57,7 @@ class Eval : CommandModule(ALIASES, DESCRIPTION, ARGUMENTATION, false) {
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         if (event.author.idLong != 159419654148718593L) {
-            event.textChannel.sendMessage("Sorry, this command is bot owner only!").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+            event.textChannel.sendMessage("Sorry, this command is for the bot owner only!").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
             return
         }
 
