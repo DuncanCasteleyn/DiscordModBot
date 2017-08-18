@@ -44,11 +44,11 @@ internal class ExecutorServiceEventManager : InterfacedEventManager() {
     }
 
     /**
-     * sends a event to be handled to the executor and let it be handled bee the super class
+     * Executes the handle function of the super class using the ExecutorService.
      *
-     * @see InterfacedEventManager
+     * @see InterfacedEventManager.handle
      */
     override fun handle(event: Event) {
-        executor.submit({ super.handle(event) })
+        executor.submit { super.handle(event) }
     }
 }
