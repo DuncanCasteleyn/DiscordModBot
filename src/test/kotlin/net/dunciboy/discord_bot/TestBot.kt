@@ -18,7 +18,6 @@ package net.dunciboy.discord_bot
 
 import net.dunciboy.discord_bot.commands.Help
 import net.dunciboy.discord_bot.commands.QuitBot
-import net.dunciboy.discord_bot.utils.GoogleSearch
 import net.dv8tion.jda.core.AccountType
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.JDABuilder
