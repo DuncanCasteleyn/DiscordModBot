@@ -1,17 +1,26 @@
 /*
- * Copyright 2017 Duncan C.
+ * MIT License
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Copyright (c) 2017 Duncan Casteleyn
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
  */
 
 package net.dunciboy.discord_bot.sequence
@@ -60,10 +69,10 @@ abstract class Sequence @JvmOverloads protected constructor(val user: User, val 
         cleaner = sequenceKillerExecutor.schedule({ this.destroy() }, 5, TimeUnit.MINUTES)
         if (informUser) {
             try {
-                val sequenceInformMessage: Message = channel.sendMessage(user.asMention + " you are now in a sequence, this means the bot will ignore all commands from you because you first need to complete the sequence.\n" +
+                val sequenceInformMessage: Message = channel.sendMessage(user.asMention + " You are now in a sequence. The bot will ignore all further commands as you first need to complete the sequence.\n" +
                         "To complete the sequence answer the questions or tasks give by the bot in " + (if (channel is TextChannel) channel.asMention else "Private chat") + " \n" +
                         "Any message you send in this channel will be used as input.\n" +
-                        "\nA sequence automatically expires after not receiving a message for 5 minutes in this channel.\n" +
+                        "\nA sequence automatically expires after not receiving a message for 5 minutes within this channel.\n" +
                         "You can also kill a sequence by sending \"STOP\"").complete()
                 addMessageToCleaner(sequenceInformMessage)
             } catch (e: Exception) {
@@ -88,7 +97,7 @@ abstract class Sequence @JvmOverloads protected constructor(val user: User, val 
         } catch (t: Throwable) {
             LOG.log(t)
             destroy()
-            val errorMessage: Message = MessageBuilder().append(user.asMention + " an error occurred during the sequence and has been terminated, see the message bellow for information.")
+            val errorMessage: Message = MessageBuilder().append(user.asMention + " The sequence has been terminated due to an error; see the message below for more information.")
                     .appendCodeBlock(t.javaClass.simpleName + ": " + t.message, "text")
                     .build()
             channel.sendMessage(errorMessage).queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }

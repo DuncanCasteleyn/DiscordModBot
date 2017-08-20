@@ -23,57 +23,29 @@
  *
  */
 
-buildscript {
-    ext.kotlin_version = '1.1.4-2'
-    repositories {
-        mavenCentral()
+package net.dunciboy.discord_bot.commands
+
+import net.dv8tion.jda.core.entities.Guild
+import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+
+class ReactionVote : CommandModule(ALIASES, DESCRIPTION, ARGUMENTATION) {
+
+    companion object {
+        private val ALIASES = arrayOf("ReactionVote", "Vote")
+        private const val DESCRIPTION = "Will put reactions to vote yes or no something on a message"
+        private const val ARGUMENTATION = "message id"
+        private const val EMOTE_SOURCE = 160450060436504578L
     }
-    dependencies {
-        classpath 'org.junit.platform:junit-platform-gradle-plugin:1.0.0-M4'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-    }
-}
 
-plugins {
-    id 'java'
-    id 'application'
-    id 'com.github.johnrengelman.shadow' version '1.2.4'
-}
+    override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+        if (arguments == null) {
+            throw IllegalArgumentException("Argument can't be null.")
+        }
 
-apply plugin: 'org.junit.platform.gradle.plugin'
-apply plugin: 'kotlin'
-
-mainClassName = 'net.dunciboy.discord_bot.RunBots'
-
-version '1.1.0_22'
-
-sourceCompatibility = 1.8
-
-repositories {
-    jcenter()
-}
-
-dependencies {
-    testCompile("org.junit.jupiter:junit-jupiter-api:5.0.0-M4")
-    testRuntime("org.junit.jupiter:junit-jupiter-engine:5.0.0-M4")
-    compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
-    compile "net.dv8tion:JDA:3.2.0_243"
-    compile 'org.apache.commons:commons-lang3:3.5'
-}
-
-tasks.withType(JavaCompile) {
-    options.compilerArgs << "-Xlint:deprecation"
-}
-
-compileJava.options.encoding = "UTF-8"
-
-compileKotlin {
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
-}
-compileTestKotlin {
-    kotlinOptions {
-        jvmTarget = "1.8"
+        event.textChannel.getMessageById(arguments).queue {
+            val emoteSource: Guild = event.jda.getGuildById(EMOTE_SOURCE)
+            it.addReaction(emoteSource.getEmotesByName("voteYes", false)[0]).queue()
+            it.addReaction(emoteSource.getEmotesByName("voteNo", false)[0]).queue()
+        }
     }
 }

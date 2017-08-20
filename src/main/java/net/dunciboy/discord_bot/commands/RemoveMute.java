@@ -1,17 +1,26 @@
 /*
- * Copyright 2017 Duncan C.
+ * MIT License
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Copyright (c) 2017 Duncan Casteleyn
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
  */
 
 package net.dunciboy.discord_bot.commands;
@@ -88,8 +97,8 @@ public class RemoveMute extends CommandModule {
                     EmbedBuilder logEmbed = new EmbedBuilder()
                             .setColor(Color.GREEN)
                             .setTitle("User's mute was removed", null)
-                            .addField("User", JDALibHelper.getEffectiveNameAndUsername(toRemoveMute), true)
-                            .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.getMember()), true)
+                            .addField("User", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(toRemoveMute), true)
+                            .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true)
                             .addField("Reason", reason, false);
 
                     runBots.getLogToChannel().log(logEmbed, toRemoveMute.getUser(), event.getGuild(), null);
@@ -98,8 +107,8 @@ public class RemoveMute extends CommandModule {
                 }
                 MessageEmbed muteRemoveNotification = new EmbedBuilder()
                         .setColor(Color.green)
-                        .setAuthor(JDALibHelper.getEffectiveNameAndUsername(event.getMember()), null, event.getAuthor().getEffectiveAvatarUrl())
-                        .setTitle(event.getGuild().getName() + ": Your mute has been removed by " + JDALibHelper.getEffectiveNameAndUsername(event.getMember()), null)
+                        .setAuthor(JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), null, event.getAuthor().getEffectiveAvatarUrl())
+                        .setTitle(event.getGuild().getName() + ": Your mute has been removed by " + JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), null)
                         .addField("Reason", reason, false)
                         .build();
 

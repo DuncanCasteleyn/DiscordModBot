@@ -1,23 +1,31 @@
 /*
-* Copyright 2017 Duncan C.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * MIT License
+ *
+ * Copyright (c) 2017 Duncan Casteleyn
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ */
 package net.dunciboy.discord_bot
 
 import net.dv8tion.jda.core.events.Event
 import net.dv8tion.jda.core.hooks.InterfacedEventManager
-import net.dv8tion.jda.core.utils.SimpleLog
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -30,9 +38,6 @@ import java.util.concurrent.Executors
  * @since 1.1.0
  */
 internal class ExecutorServiceEventManager : InterfacedEventManager() {
-    companion object {
-        private val LOG: SimpleLog = SimpleLog.getLog(ExecutorServiceEventManager::class.java.simpleName)
-    }
 
     private val executor: ExecutorService
 
@@ -48,11 +53,11 @@ internal class ExecutorServiceEventManager : InterfacedEventManager() {
     }
 
     /**
-     * sends a event to be handled to the executor and let it be handled bee the super class
+     * Executes the handle function of the super class using the ExecutorService.
      *
-     * @see InterfacedEventManager
+     * @see InterfacedEventManager.handle
      */
     override fun handle(event: Event) {
-        executor.submit({ super.handle(event) })
+        executor.submit { super.handle(event) }
     }
 }

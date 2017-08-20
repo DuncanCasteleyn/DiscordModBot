@@ -1,17 +1,26 @@
 /*
- * Copyright 2017 Duncan C.
+ * MIT License
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Copyright (c) 2017 Duncan Casteleyn
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
  */
 
 package net.dunciboy.discord_bot;
@@ -54,14 +63,14 @@ class AttachmentProxyCreator {
                         if (subMessage != null) {
                             subMessage.getAttachments().forEach(attachment -> stringBuilder.append("[").append(attachment.getFileName()).append("](").append(attachment.getUrl()).append(")\n"));
                         } else {
-                            stringBuilder.append("The message contained an attachment bigger then 8 mb and could not be uploaded again or failed to create a proxy.");
+                            stringBuilder.append("The message either contained an attachment larger then 8MB and could not be uploaded again, or failed to create a proxy.");
                         }
                     } else {
                         subMessage = null;
                     }
                 } while (subMessage != null);
             } else {
-                stringBuilder.append("The message contained an attachment bigger then 8 mb and could not be uploaded again or failed to create a proxy.");
+                stringBuilder.append("The message either contained an attachment larger then 8MB and could not be uploaded again, or failed to create a proxy.");
             }
             return stringBuilder.toString();
         } else {
@@ -118,14 +127,14 @@ class AttachmentProxyCreator {
                         }
                     } else {
                         addToCache(event.getMessage().getIdLong(), null);
-                        LOG.warn("Something went wrong when deleting the temp file or during the download.");
+                        LOG.warn("Something went wrong with either the download or removing the temp file.");
                     }
                 } catch (Exception e) {
                     LOG.log(e);
                     addToCache(event.getMessage().getIdLong(), null);
                 }
             } else {
-                LOG.warn("The file was bigger then 8 mb.");
+                LOG.warn("The file was larger than 8MB.");
                 addToCache(event.getMessage().getIdLong(), null);
             }
         });
@@ -133,7 +142,7 @@ class AttachmentProxyCreator {
 
     synchronized void cleanCache() {
         if (attachmentCache.size() > 0) {
-            JDALibHelper.limitLessBulkDelete(attachmentCache.get(attachmentCache.firstKey()).getJDA().getTextChannelById(CACHE_CHANNEL), new ArrayList<>(attachmentCache.values()));
+            JDALibHelper.INSTANCE.limitLessBulkDelete(attachmentCache.get(attachmentCache.firstKey()).getJDA().getTextChannelById(CACHE_CHANNEL), new ArrayList<>(attachmentCache.values()));
         }
     }
 }

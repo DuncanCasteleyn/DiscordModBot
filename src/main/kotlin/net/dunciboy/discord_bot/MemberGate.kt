@@ -1,17 +1,26 @@
 /*
- * Copyright 2017 Duncan C.
+ * MIT License
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Copyright (c) 2017 Duncan Casteleyn
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
  */
 
 package net.dunciboy.discord_bot
@@ -21,10 +30,7 @@ import net.dunciboy.discord_bot.sequence.Sequence
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
-import net.dv8tion.jda.core.entities.Member
-import net.dv8tion.jda.core.entities.Message
-import net.dv8tion.jda.core.entities.MessageChannel
-import net.dv8tion.jda.core.entities.User
+import net.dv8tion.jda.core.entities.*
 import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent
 import net.dv8tion.jda.core.events.guild.member.GuildMemberRoleAddEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
@@ -50,7 +56,7 @@ import kotlin.collections.ArrayList
  * <p>
  * Welcomes users when the join, get accepted and makes them answer questions before they get accepted.
  */
-open class MemberGate internal constructor(private val guildId: Long, private val memberRole: Long, private val gateTextChannel: Long, private val welcomeTextChannel: Long, private val welcomeMessages: Array<WelcomeMessage>) : CommandModule(ALIASES, null, null) {
+open class MemberGate internal constructor(private val guildId: Long, private val memberRole: Long, private val rulesTextChannel: Long, private val gateTextChannel: Long, private val welcomeTextChannel: Long, private val welcomeMessages: Array<WelcomeMessage>) : CommandModule(ALIASES, null, null) {
     companion object {
         private val ALIASES: Array<String> = arrayOf("gateConfig", "join", "review")
         private val FILE_PATH: Path = Paths.get("MemberGate.json")
@@ -58,13 +64,14 @@ open class MemberGate internal constructor(private val guildId: Long, private va
     }
 
     internal val questions: ArrayList<Question>
-    private val needManualApproval: LinkedMap<Long, String> = LinkedMap()
+    private val needManualApproval: LinkedMap<Long, String?> = LinkedMap()
+    private val informUserMessageIds: HashMap<Long, Long> = HashMap()
 
     init {
         var tempQuestions: ArrayList<Question>
         try {
             val stringBuilder = StringBuilder()
-            Files.newBufferedReader(FILE_PATH).lines().forEachOrdered { stringBuilder.append(it) }
+            Files.readAllLines(FILE_PATH).map { stringBuilder.append(it) }
             val jsonObject = JSONObject(stringBuilder.toString())
             tempQuestions = ArrayList()
             jsonObject.getJSONArray("questions").forEach {
@@ -87,7 +94,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
         } catch (ioE: IOException) {
             tempQuestions = ArrayList()
             LOG.log(ioE)
-        } catch(jE: JSONException) {
+        } catch (jE: JSONException) {
             tempQuestions = ArrayList()
             LOG.log(jE)
         }
@@ -116,8 +123,8 @@ open class MemberGate internal constructor(private val guildId: Long, private va
         if (event.guild.idLong != guildId) {
             return
         }
-        event.jda.getTextChannelById(gateTextChannel).sendMessage("Welcome " + event.member.asMention + ", this server requires you to read the " + event.guild.publicChannel.asMention + " and answer a question regarding those before you gain full access.\n\n" +
-                "If you have read the rules and are ready to answer the question type ``!" + super.aliases[1] + "`` and follow the instructions from the bot.\n\n" +
+        event.jda.getTextChannelById(gateTextChannel).sendMessage("Welcome " + event.member.asMention + ", this server requires you to read the " + event.guild.getTextChannelById(rulesTextChannel).asMention + " and answer a question regarding those before you gain full access.\n\n" +
+                "If you have read the rules and are ready to answer the question, type ``!" + super.aliases[1] + "`` and follow the instructions from the bot.\n\n" +
                 "Please read the pinned message for more information.").queue({ message -> message.delete().queueAfter(5, TimeUnit.MINUTES) })
     }
 
@@ -136,12 +143,12 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                 }
             }
             super.aliases[1].toLowerCase() -> {
-                if (event.jda.getGuildById(guildId).getMember(event.author).roles.any({ it.idLong == memberRole })) {
+                if (event.jda.getGuildById(guildId).getMember(event.author).roles.any { it.idLong == memberRole }) {
                     return
                 }
                 synchronized(needManualApproval) {
                     if (event.author.idLong in needManualApproval) {
-                        event.channel.sendMessage("You have already tried answering a question, a moderator needs to manually review you, please state that you have read the rules, agree with them and need manual approval.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                        event.channel.sendMessage("You have already tried answering a question. A moderator now needs to manually review you. Please state that you have read and agree to the rules, and also need manual approval.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                         return
                     }
                 }
@@ -161,6 +168,15 @@ open class MemberGate internal constructor(private val guildId: Long, private va
     private fun accept(member: Member) {
         val guild = member.guild
         guild.controller.addRolesToMember(member, guild.getRoleById(memberRole)).queue()
+
+        val gateTextChannel: TextChannel = guild.getTextChannelById(this.gateTextChannel)
+        val userMessages: ArrayList<Message> = ArrayList()
+        gateTextChannel.iterableHistory.map {
+            if (it.author == member.user) {
+                userMessages.add(it)
+            }
+        }
+        JDALibHelper.limitLessBulkDelete(gateTextChannel, userMessages)
     }
 
     /**
@@ -169,11 +185,22 @@ open class MemberGate internal constructor(private val guildId: Long, private va
     private fun failedQuestion(member: Member, question: String, answer: String) {
         val guild = member.guild
         val textChannel = guild.getTextChannelById(gateTextChannel)
-        textChannel.sendMessage(member.asMention + " Sorry it appears the answer you gave was not correct, the mods will now manually check your answer and ask further questions if required.\n\n" +
-                "A moderator can use ``!" + super.aliases[2] + " " + member.user.idLong + "``").queue()
+        textChannel.sendMessage(member.asMention + " Sorry, it appears the answer provided is incorrect. Please wait while a moderator manually checks your answer, or asks another question.\n\n" +
+                "A moderator can use ``!" + super.aliases[2] + " " + member.user.idLong + "``").queue {
+            synchronized(informUserMessageIds) {
+                informUserMessageIds.put(member.user.idLong, it.idLong)
+            }
+        }
         synchronized(needManualApproval) {
             while (needManualApproval.size >= 50) {
-                needManualApproval.remove(needManualApproval.firstKey())
+                val userId = needManualApproval.firstKey()
+                needManualApproval.remove(userId)
+                synchronized(informUserMessageIds) {
+                    val messageToRemove = informUserMessageIds.remove(userId)
+                    if (messageToRemove != null) {
+                        member.jda.getTextChannelById(gateTextChannel).getMessageById(messageToRemove).queue { it.delete().queue() }
+                    }
+                }
             }
             needManualApproval.put(member.user.idLong, question + "\n" + answer)
         }
@@ -213,7 +240,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
      */
     private inner class QuestionSequence internal constructor(user: User, channel: MessageChannel, private val question: Question) : Sequence(user, channel, informUser = false) {
         init {
-            super.channel.sendMessage(user.asMention + " please answer the following question:\n" + question.question).queue { super.addMessageToCleaner(it) }
+            super.channel.sendMessage(user.asMention + " Please answer the following question:\n" + question.question).queue { super.addMessageToCleaner(it) }
         }
 
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
@@ -238,7 +265,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
 
         init {
             channel.sendMessage(user.asMention + " Welcome to the member gate configuration sequence.\n\n" +
-                    "Please state what action you like to perform:\n" +
+                    "Select an action to perform:\n" +
                     "add a question\n" +
                     "remove a question").queue { super.addMessageToCleaner(it) }
         }
@@ -342,7 +369,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                     }
                 } else {
                     super.destroy()
-                    throw IllegalArgumentException("The user you tried to review is not or no longer in the manual review list.")
+                    throw IllegalArgumentException("The user you tried to review is not currently in the manual review list.")
                 }
             }
         }
@@ -350,19 +377,41 @@ open class MemberGate internal constructor(private val guildId: Long, private va
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
             synchronized(needManualApproval) {
                 if (userId !in needManualApproval) {
-                    throw IllegalStateException("The user is no longer in the queue, another moderator might have reviewed it already.")
+                    throw IllegalStateException("The user is no longer in the queue; another moderator may have reviewed it already.")
                 }
                 val messageContent: String = event.message.content.toLowerCase()
                 when (messageContent) {
                     "yes" -> {
-                        super.channel.sendMessage("The user has been approved.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
-                        accept(event.guild.getMemberById(userId))
+                        val member: Member? = event.guild.getMemberById(userId)
+                        if (member != null) {
+                            super.channel.sendMessage("The user has been approved.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                            accept(member)
+                        } else {
+                            super.channel.sendMessage("The user has left; no further action is needed.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                        }
                         needManualApproval.remove(userId)
+                        synchronized(informUserMessageIds) {
+                            val messageToRemove = informUserMessageIds.remove(userId)
+                            if (messageToRemove != null) {
+                                event.jda.getTextChannelById(gateTextChannel).getMessageById(messageToRemove).queue { it.delete().queue() }
+                            }
+                        }
                         destroy()
                     }
                     "no" -> {
-                        super.channel.sendMessage("Please give the user a new question in the chat, that can be manually checked by you or by another moderator.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                        val member: Member? = event.guild.getMemberById(userId)
+                        if (member != null) {
+                            super.channel.sendMessage("Please give " + member.user.asMention + "  a new question in the chat that can be manually reviewed by you or by another moderator.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                        } else {
+                            super.channel.sendMessage("The user already left; no further action is needed.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                        }
                         needManualApproval.replace(userId, null)
+                        synchronized(informUserMessageIds) {
+                            val messageToRemove = informUserMessageIds.remove(userId)
+                            if (messageToRemove != null) {
+                                event.jda.getTextChannelById(gateTextChannel).getMessageById(messageToRemove).queue { it.delete().queue() }
+                            }
+                        }
                         destroy()
                     }
                     else -> {
