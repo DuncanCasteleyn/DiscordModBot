@@ -61,6 +61,10 @@ dependencies {
     compile 'org.apache.commons:commons-lang3:3.5'
 }
 
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.1'
+}
+
 tasks.withType(JavaCompile) {
     options.compilerArgs << "-Xlint:deprecation"
 }
