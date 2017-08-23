@@ -103,7 +103,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
 
     override fun onGuildMemberRoleAdd(event: GuildMemberRoleAddEvent) {
         val guild = event.guild
-        if (guild.idLong != guildId) {
+        if (guild.idLong != guildId || event.user.isBot) {
             return
         }
         if (guild.getRoleById(memberRole) in event.roles) {
@@ -120,7 +120,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
     }
 
     override fun onGuildMemberJoin(event: GuildMemberJoinEvent) {
-        if (event.guild.idLong != guildId) {
+        if (event.guild.idLong != guildId || event.user.isBot) {
             return
         }
         event.jda.getTextChannelById(gateTextChannel).sendMessage("Welcome " + event.member.asMention + ", this server requires you to read the " + event.guild.getTextChannelById(rulesTextChannel).asMention + " and answer a question regarding those before you gain full access.\n\n" +
@@ -136,6 +136,10 @@ open class MemberGate internal constructor(private val guildId: Long, private va
      * @param arguments The arguments that where entered after the command alias
      */
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+        if(event.author.isBot) {
+            return
+        }
+
         when (command.toLowerCase()) {
             super.aliases[0].toLowerCase() -> {
                 if (event.jda.getGuildById(guildId).getMember(event.author).hasPermission(Permission.MANAGE_ROLES)) {
