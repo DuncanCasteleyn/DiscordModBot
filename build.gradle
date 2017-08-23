@@ -57,7 +57,7 @@ dependencies {
     testCompile("org.junit.jupiter:junit-jupiter-api:5.0.0-RC2")
     testRuntime("org.junit.jupiter:junit-jupiter-engine:5.0.0-RC2")
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
-    compile "net.dv8tion:JDA:3.2.0_243"
+    compile "net.dv8tion:JDA:3.2.0_248"
     compile 'org.apache.commons:commons-lang3:3.5'
 }
 
