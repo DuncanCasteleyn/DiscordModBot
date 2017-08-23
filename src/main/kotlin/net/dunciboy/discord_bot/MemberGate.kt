@@ -103,20 +103,27 @@ open class MemberGate internal constructor(private val guildId: Long, private va
 
     override fun onGuildMemberRoleAdd(event: GuildMemberRoleAddEvent) {
         val guild = event.guild
-        if (guild.idLong != guildId || event.user.isBot) {
+        if (guild.idLong != guildId || event.user.isBot || guild.getRoleById(memberRole) !in event.roles) {
             return
         }
-        if (guild.getRoleById(memberRole) in event.roles) {
-            val welcomeMessage = welcomeMessages[Random().nextInt(welcomeMessages.size)].getWelcomeMessage(event.user)
-            guild.getTextChannelById(welcomeTextChannel).sendMessage(welcomeMessage).queue {
-                val embed = EmbedBuilder(it.embeds[0]).setImage(null).build()
-                val message: Message = MessageBuilder().append(it.rawContent).setEmbed(embed).build()
-                it.editMessage(message).queueAfter(1, TimeUnit.MINUTES)
-            }
-            synchronized(needManualApproval) {
-                needManualApproval.remove(event.user.idLong)
+
+        val welcomeMessage = welcomeMessages[Random().nextInt(welcomeMessages.size)].getWelcomeMessage(event.user)
+        guild.getTextChannelById(welcomeTextChannel).sendMessage(welcomeMessage).queue {
+            val embed = EmbedBuilder(it.embeds[0]).setImage(null).build()
+            val message: Message = MessageBuilder().append(it.rawContent).setEmbed(embed).build()
+            it.editMessage(message).queueAfter(1, TimeUnit.MINUTES)
+        }
+        synchronized(needManualApproval) {
+            needManualApproval.remove(event.user.idLong)
+        }
+        val gateTextChannel: TextChannel = guild.getTextChannelById(this.gateTextChannel)
+        val userMessages: ArrayList<Message> = ArrayList()
+        gateTextChannel.iterableHistory.map {
+            if (it.author == event.user) {
+                userMessages.add(it)
             }
         }
+        JDALibHelper.limitLessBulkDelete(gateTextChannel, userMessages)
     }
 
     override fun onGuildMemberJoin(event: GuildMemberJoinEvent) {
@@ -136,7 +143,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
      * @param arguments The arguments that where entered after the command alias
      */
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-        if(event.author.isBot) {
+        if (event.author.isBot) {
             return
         }
 
@@ -172,15 +179,6 @@ open class MemberGate internal constructor(private val guildId: Long, private va
     private fun accept(member: Member) {
         val guild = member.guild
         guild.controller.addRolesToMember(member, guild.getRoleById(memberRole)).queue()
-
-        val gateTextChannel: TextChannel = guild.getTextChannelById(this.gateTextChannel)
-        val userMessages: ArrayList<Message> = ArrayList()
-        gateTextChannel.iterableHistory.map {
-            if (it.author == member.user) {
-                userMessages.add(it)
-            }
-        }
-        JDALibHelper.limitLessBulkDelete(gateTextChannel, userMessages)
     }
 
     /**
