@@ -76,7 +76,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
             tempQuestions = ArrayList()
             jsonObject.getJSONArray("questions").forEach {
                 if (it is JSONObject) {
-                    val question: Question = Question(it.getString("question"))
+                    val question = Question(it.getString("question"))
                     it.getJSONArray("keywordsList").forEach {
                         if (it is JSONArray) {
                             val stringArray: ArrayList<String> = ArrayList()
@@ -210,7 +210,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
      * Saves all the questions and keywords to a JSON file.
      */
     internal fun saveQuestions() {
-        val jsonObject: JSONObject = JSONObject()
+        val jsonObject = JSONObject()
         val questionsJsonList: ArrayList<JSONObject> = ArrayList()
         questions.forEach(Consumer { questionsJsonList.add(it.toJsonObject()) })
         jsonObject.put("questions", questionsJsonList)
@@ -291,7 +291,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                         }
                         "remove a question" -> {
                             sequenceNumber = 2
-                            val questionListMessage: MessageBuilder = MessageBuilder()
+                            val questionListMessage = MessageBuilder()
                             for (i in 0 until questions.size) {
                                 questionListMessage.append(i.toString()).append(". ").append(questions[i].question).append('\n')
                             }
@@ -305,7 +305,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                     if (inputQuestionList.size < 2) {
                         super.channel.sendMessage("Syntax mismatch.").queue { super.addMessageToCleaner(it) }
                     }
-                    val question: Question = Question(inputQuestionList[0])
+                    val question = Question(inputQuestionList[0])
                     for (i in 1 until inputQuestionList.size) {
                         question.addKeywords(ArrayList(inputQuestionList[i].split(',')))
                     }
@@ -344,7 +344,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
         }
 
         internal fun toJsonObject(): JSONObject {
-            val jsonObject: JSONObject = JSONObject()
+            val jsonObject = JSONObject()
             jsonObject.put("question", question)
             jsonObject.put("keywordsList", keywordList)
             return jsonObject
