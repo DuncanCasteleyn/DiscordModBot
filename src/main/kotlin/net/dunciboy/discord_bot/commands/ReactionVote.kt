@@ -26,9 +26,10 @@
 package net.dunciboy.discord_bot.commands
 
 import net.dv8tion.jda.core.entities.Guild
+import net.dv8tion.jda.core.entities.Message
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 
-class ReactionVote : CommandModule(ALIASES, DESCRIPTION, ARGUMENTATION) {
+class ReactionVote : CommandModule(ALIASES, DESCRIPTION, ARGUMENTATION, cleanCommandMessage = false) {
 
     companion object {
         private val ALIASES = arrayOf("ReactionVote", "Vote")
@@ -38,14 +39,20 @@ class ReactionVote : CommandModule(ALIASES, DESCRIPTION, ARGUMENTATION) {
     }
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+        val emoteSource: Guild = event.jda.getGuildById(EMOTE_SOURCE)
         if (arguments == null) {
-            throw IllegalArgumentException("Argument can't be null.")
-        }
-
-        event.textChannel.getMessageById(arguments).queue {
             val emoteSource: Guild = event.jda.getGuildById(EMOTE_SOURCE)
-            it.addReaction(emoteSource.getEmotesByName("voteYes", false)[0]).queue()
-            it.addReaction(emoteSource.getEmotesByName("voteNo", false)[0]).queue()
+            addVoteReactions(event.message, emoteSource)
+        } else {
+            event.textChannel.getMessageById(arguments).queue {
+                addVoteReactions(it, emoteSource)
+            }
+            event.message.delete().queue()
         }
+    }
+
+    private fun addVoteReactions(it: Message, emoteSource: Guild) {
+        it.addReaction(emoteSource.getEmotesByName("voteYes", false)[0]).queue()
+        it.addReaction(emoteSource.getEmotesByName("voteNo", false)[0]).queue()
     }
 }
