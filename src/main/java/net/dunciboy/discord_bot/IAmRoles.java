@@ -37,8 +37,9 @@ import java.util.ArrayList;
  * <p>
  * Allows to dynamically configure roles that can be used with the iam command.
  * <p>
- * todo add methods to set class and boolean to decide if they can obtain mutiple roles in this object or just one.
  */
+//todo Add methods to set class and boolean to decide if they can obtain multiple roles in this object or just one.
+//todo Replace DataStorageParser, move data and remove deprecation suppression
 public class IAmRoles extends ListenerAdapter implements DataStorageParser.StorageAutoSavable {
     //private static final SimpleLog LOG = SimpleLog.getLog(IAmRoles.class.getSimpleName());
 
