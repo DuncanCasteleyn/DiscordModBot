@@ -40,15 +40,22 @@ class ReactionVote : CommandModule(ALIASES, DESCRIPTION, ARGUMENTATION, cleanCom
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         val emoteSource: Guild = event.jda.getGuildById(EMOTE_SOURCE)
-        if (arguments == null) {
-            val emoteSource: Guild = event.jda.getGuildById(EMOTE_SOURCE)
-            addVoteReactions(event.message, emoteSource)
-        } else {
-            event.textChannel.getMessageById(arguments).queue {
+        try {
+            val messageId = arguments!!.toLong()
+            event.textChannel.getMessageById(messageId).queue {
                 addVoteReactions(it, emoteSource)
             }
             event.message.delete().queue()
+        } catch (nfe: NumberFormatException) {
+            useReceivedMessage(event)
+        } catch(npe: NullPointerException) {
+            useReceivedMessage(event)
         }
+    }
+
+    private fun useReceivedMessage(event: MessageReceivedEvent) {
+        val emoteSource: Guild = event.jda.getGuildById(EMOTE_SOURCE)
+        addVoteReactions(event.message, emoteSource)
     }
 
     private fun addVoteReactions(it: Message, emoteSource: Guild) {
