@@ -76,7 +76,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
             tempQuestions = ArrayList()
             jsonObject.getJSONArray("questions").forEach {
                 if (it is JSONObject) {
-                    val question: Question = Question(it.getString("question"))
+                    val question = Question(it.getString("question"))
                     it.getJSONArray("keywordsList").forEach {
                         if (it is JSONArray) {
                             val stringArray: ArrayList<String> = ArrayList()
@@ -103,24 +103,31 @@ open class MemberGate internal constructor(private val guildId: Long, private va
 
     override fun onGuildMemberRoleAdd(event: GuildMemberRoleAddEvent) {
         val guild = event.guild
-        if (guild.idLong != guildId) {
+        if (guild.idLong != guildId || event.user.isBot || guild.getRoleById(memberRole) !in event.roles) {
             return
         }
-        if (guild.getRoleById(memberRole) in event.roles) {
-            val welcomeMessage = welcomeMessages[Random().nextInt(welcomeMessages.size)].getWelcomeMessage(event.user)
-            guild.getTextChannelById(welcomeTextChannel).sendMessage(welcomeMessage).queue {
-                val embed = EmbedBuilder(it.embeds[0]).setImage(null).build()
-                val message: Message = MessageBuilder().append(it.rawContent).setEmbed(embed).build()
-                it.editMessage(message).queueAfter(1, TimeUnit.MINUTES)
-            }
-            synchronized(needManualApproval) {
-                needManualApproval.remove(event.user.idLong)
+
+        val welcomeMessage = welcomeMessages[Random().nextInt(welcomeMessages.size)].getWelcomeMessage(event.user)
+        guild.getTextChannelById(welcomeTextChannel).sendMessage(welcomeMessage).queue {
+            val embed = EmbedBuilder(it.embeds[0]).setImage(null).build()
+            val message: Message = MessageBuilder().append(it.rawContent).setEmbed(embed).build()
+            it.editMessage(message).queueAfter(1, TimeUnit.MINUTES)
+        }
+        synchronized(needManualApproval) {
+            needManualApproval.remove(event.user.idLong)
+        }
+        val gateTextChannel: TextChannel = guild.getTextChannelById(this.gateTextChannel)
+        val userMessages: ArrayList<Message> = ArrayList()
+        gateTextChannel.iterableHistory.map {
+            if (it.author == event.user) {
+                userMessages.add(it)
             }
         }
+        JDALibHelper.limitLessBulkDelete(gateTextChannel, userMessages)
     }
 
     override fun onGuildMemberJoin(event: GuildMemberJoinEvent) {
-        if (event.guild.idLong != guildId) {
+        if (event.guild.idLong != guildId || event.user.isBot) {
             return
         }
         event.jda.getTextChannelById(gateTextChannel).sendMessage("Welcome " + event.member.asMention + ", this server requires you to read the " + event.guild.getTextChannelById(rulesTextChannel).asMention + " and answer a question regarding those before you gain full access.\n\n" +
@@ -136,6 +143,10 @@ open class MemberGate internal constructor(private val guildId: Long, private va
      * @param arguments The arguments that where entered after the command alias
      */
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+        if (event.author.isBot) {
+            return
+        }
+
         when (command.toLowerCase()) {
             super.aliases[0].toLowerCase() -> {
                 if (event.jda.getGuildById(guildId).getMember(event.author).hasPermission(Permission.MANAGE_ROLES)) {
@@ -168,15 +179,6 @@ open class MemberGate internal constructor(private val guildId: Long, private va
     private fun accept(member: Member) {
         val guild = member.guild
         guild.controller.addRolesToMember(member, guild.getRoleById(memberRole)).queue()
-
-        val gateTextChannel: TextChannel = guild.getTextChannelById(this.gateTextChannel)
-        val userMessages: ArrayList<Message> = ArrayList()
-        gateTextChannel.iterableHistory.map {
-            if (it.author == member.user) {
-                userMessages.add(it)
-            }
-        }
-        JDALibHelper.limitLessBulkDelete(gateTextChannel, userMessages)
     }
 
     /**
@@ -210,7 +212,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
      * Saves all the questions and keywords to a JSON file.
      */
     internal fun saveQuestions() {
-        val jsonObject: JSONObject = JSONObject()
+        val jsonObject = JSONObject()
         val questionsJsonList: ArrayList<JSONObject> = ArrayList()
         questions.forEach(Consumer { questionsJsonList.add(it.toJsonObject()) })
         jsonObject.put("questions", questionsJsonList)
@@ -291,7 +293,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                         }
                         "remove a question" -> {
                             sequenceNumber = 2
-                            val questionListMessage: MessageBuilder = MessageBuilder()
+                            val questionListMessage = MessageBuilder()
                             for (i in 0 until questions.size) {
                                 questionListMessage.append(i.toString()).append(". ").append(questions[i].question).append('\n')
                             }
@@ -305,7 +307,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                     if (inputQuestionList.size < 2) {
                         super.channel.sendMessage("Syntax mismatch.").queue { super.addMessageToCleaner(it) }
                     }
-                    val question: Question = Question(inputQuestionList[0])
+                    val question = Question(inputQuestionList[0])
                     for (i in 1 until inputQuestionList.size) {
                         question.addKeywords(ArrayList(inputQuestionList[i].split(',')))
                     }
@@ -344,7 +346,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
         }
 
         internal fun toJsonObject(): JSONObject {
-            val jsonObject: JSONObject = JSONObject()
+            val jsonObject = JSONObject()
             jsonObject.put("question", question)
             jsonObject.put("keywordsList", keywordList)
             return jsonObject

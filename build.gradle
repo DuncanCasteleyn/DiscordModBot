@@ -29,7 +29,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'org.junit.platform:junit-platform-gradle-plugin:1.0.0-M4'
+        classpath 'org.junit.platform:junit-platform-gradle-plugin:1.0.0-RC2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
@@ -45,7 +45,7 @@ apply plugin: 'kotlin'
 
 mainClassName = 'net.dunciboy.discord_bot.RunBots'
 
-version '1.1.0_22'
+version '1.1.0_24'
 
 sourceCompatibility = 1.8
 
@@ -54,11 +54,15 @@ repositories {
 }
 
 dependencies {
-    testCompile("org.junit.jupiter:junit-jupiter-api:5.0.0-M4")
-    testRuntime("org.junit.jupiter:junit-jupiter-engine:5.0.0-M4")
+    testCompile("org.junit.jupiter:junit-jupiter-api:5.0.0-RC2")
+    testRuntime("org.junit.jupiter:junit-jupiter-engine:5.0.0-RC2")
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
-    compile "net.dv8tion:JDA:3.2.0_243"
+    compile "net.dv8tion:JDA:3.2.0_249"
     compile 'org.apache.commons:commons-lang3:3.5'
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.1'
 }
 
 tasks.withType(JavaCompile) {

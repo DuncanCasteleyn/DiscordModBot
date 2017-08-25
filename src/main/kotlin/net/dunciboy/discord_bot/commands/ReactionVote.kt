@@ -26,9 +26,10 @@
 package net.dunciboy.discord_bot.commands
 
 import net.dv8tion.jda.core.entities.Guild
+import net.dv8tion.jda.core.entities.Message
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 
-class ReactionVote : CommandModule(ALIASES, DESCRIPTION, ARGUMENTATION) {
+class ReactionVote : CommandModule(ALIASES, DESCRIPTION, ARGUMENTATION, cleanCommandMessage = false) {
 
     companion object {
         private val ALIASES = arrayOf("ReactionVote", "Vote")
@@ -38,14 +39,27 @@ class ReactionVote : CommandModule(ALIASES, DESCRIPTION, ARGUMENTATION) {
     }
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-        if (arguments == null) {
-            throw IllegalArgumentException("Argument can't be null.")
+        val emoteSource: Guild = event.jda.getGuildById(EMOTE_SOURCE)
+        try {
+            val messageId = arguments!!.toLong()
+            event.textChannel.getMessageById(messageId).queue {
+                addVoteReactions(it, emoteSource)
+            }
+            event.message.delete().queue()
+        } catch (nfe: NumberFormatException) {
+            useReceivedMessage(event)
+        } catch(npe: NullPointerException) {
+            useReceivedMessage(event)
         }
+    }
 
-        event.textChannel.getMessageById(arguments).queue {
-            val emoteSource: Guild = event.jda.getGuildById(EMOTE_SOURCE)
-            it.addReaction(emoteSource.getEmotesByName("voteYes", false)[0]).queue()
-            it.addReaction(emoteSource.getEmotesByName("voteNo", false)[0]).queue()
-        }
+    private fun useReceivedMessage(event: MessageReceivedEvent) {
+        val emoteSource: Guild = event.jda.getGuildById(EMOTE_SOURCE)
+        addVoteReactions(event.message, emoteSource)
+    }
+
+    private fun addVoteReactions(it: Message, emoteSource: Guild) {
+        it.addReaction(emoteSource.getEmotesByName("voteYes", false)[0]).queue()
+        it.addReaction(emoteSource.getEmotesByName("voteNo", false)[0]).queue()
     }
 }
