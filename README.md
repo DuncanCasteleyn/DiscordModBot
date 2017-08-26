@@ -1,4 +1,4 @@
-# JDADiscordBot
+# DiscordModBot
 A Discord bot that helps with managing a Discord server/guild.
 
 The current purpose of this project is to provide services to the Fairy tail guild and Re: zero guild.
