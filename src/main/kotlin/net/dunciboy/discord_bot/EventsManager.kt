@@ -36,10 +36,12 @@ import net.dv8tion.jda.core.hooks.ListenerAdapter
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.OffsetDateTime
+import java.time.format.DateTimeParseException
 import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
 
+@Suppress("unused") // still under development. <- todo remove when done.
 class EventsManager : ListenerAdapter() {
     private lateinit var events: HashMap<Long, ArrayList<Event>>
 
@@ -52,22 +54,15 @@ class EventsManager : ListenerAdapter() {
     }
 
     override fun onReady(event: ReadyEvent) {
-        val guildIds: ArrayList<Long> = ArrayList()
-        event.jda.guilds.map { guildIds.add(it.idLong) }
-        TODO("Not implemented. Need to Init HashMap by retrieving all guild ids and then retrieve existing events from a JSON file, then filter expired events if needed and remove empty HashMap values")
+        TODO("Not implemented. Need to Init HashMap by retrieve existing events from a JSON file, then filter expired events if needed and remove empty HashMap values")
     }
 
     fun writeEventsToFile() {
         TODO("Write files not implemented")
     }
 
-    class Event(val eventName: String, eventDateTime: OffsetDateTime) {
-        var eventDateTime: OffsetDateTime = eventDateTime
-            private set
-
-        fun setDateTime(dateTimeString: String) {
-            eventDateTime = OffsetDateTime.parse(dateTimeString)
-        }
+    class Event(val eventName: String) {
+        lateinit var eventDateTime: OffsetDateTime
     }
 
     inner class EventManagerCommand : CommandModule(EVENT_MANAGER_ALIASES, null, EVENT_MANAGER_DESCRIPTION) {
@@ -81,7 +76,10 @@ class EventsManager : ListenerAdapter() {
         }
     }
 
-    inner class EventMangerSequence(user: User, channel: MessageChannel, cleanAfterSequence: Boolean = true, informUser: Boolean = true, private var sequenceNumber: Int = 0) : Sequence(user, channel, cleanAfterSequence, informUser) {
+    inner class EventMangerSequence(user: User, channel: MessageChannel, cleanAfterSequence: Boolean = true, informUser: Boolean = true) : Sequence(user, channel, cleanAfterSequence, informUser) {
+        private var sequenceNumber: Int = 0
+        private lateinit var eventName: String
+
         init {
             channel.sendMessage(user.asMention + " Would you like to add or remove an event? Please answer with \"add\" or \"remove\".")
         }
@@ -92,15 +90,33 @@ class EventsManager : ListenerAdapter() {
                     when (event.message.rawContent) {
                         "add" -> {
                             sequenceNumber = 1
-                            TODO("Logic to read times not implemented yet.")
+                            event.channel.sendMessage("Please enter the event name.").queue { super.addMessageToCleaner(it) }
                         }
                         "remove" -> {
-                            sequenceNumber = 2
                             TODO("Logic to modify events not implemented yet.")
                         }
                         else -> {
                             super.channel.sendMessage("Wrong answer. Please answer with \"add\" or \"remove\"").queue { super.addMessageToCleaner(it) }
                         }
+                    }
+                }
+                1 -> {
+                    sequenceNumber = 2
+                    eventName = event.message.content
+                    event.channel.sendMessage("Please enter the date and time of the event.")
+                }
+                2 -> {
+                    val scheduledEvent = Event(eventName)
+                    try {
+                        scheduledEvent.eventDateTime = OffsetDateTime.parse(event.message.content)
+                    } catch (exception: DateTimeParseException) {
+                        event.channel.sendMessage(exception.javaClass.simpleName + ": " + exception.message)
+                        return
+                    }
+                    try {
+                        events[event.guild.idLong]!!.add(scheduledEvent)
+                    } catch (npe: NullPointerException) {
+                        throw UnsupportedOperationException("This guild has not been configured to use the event manager.")
                     }
                 }
             }
