@@ -47,14 +47,13 @@ class ReactionVote : CommandModule(ALIASES, DESCRIPTION, ARGUMENTATION, cleanCom
             }
             event.message.delete().queue()
         } catch (nfe: NumberFormatException) {
-            useReceivedMessage(event)
+            useReceivedMessage(event, emoteSource)
         } catch(npe: NullPointerException) {
-            useReceivedMessage(event)
+            useReceivedMessage(event, emoteSource)
         }
     }
 
-    private fun useReceivedMessage(event: MessageReceivedEvent) {
-        val emoteSource: Guild = event.jda.getGuildById(EMOTE_SOURCE)
+    private fun useReceivedMessage(event: MessageReceivedEvent, emoteSource: Guild) {
         addVoteReactions(event.message, emoteSource)
     }
 
