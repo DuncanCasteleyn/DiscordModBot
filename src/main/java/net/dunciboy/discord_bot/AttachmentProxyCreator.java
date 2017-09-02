@@ -27,11 +27,16 @@ package net.dunciboy.discord_bot;
 
 import net.dv8tion.jda.core.MessageBuilder;
 import net.dv8tion.jda.core.entities.Message;
+import net.dv8tion.jda.core.entities.impl.JDAImpl;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
+import net.dv8tion.jda.core.requests.Requester;
 import net.dv8tion.jda.core.utils.SimpleLog;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.apache.commons.collections4.map.LinkedMap;
 
-import java.io.File;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 
 /**
@@ -101,37 +106,50 @@ class AttachmentProxyCreator {
         }
     }
 
+    /**
+     * @deprecated Replaced with proxyMessageAttachment
+     */
+    @Deprecated
     void storeMessageAttachments(GuildMessageReceivedEvent event) {
+        proxyMessageAttachments(event);
+    }
+
+    void proxyMessageAttachments(GuildMessageReceivedEvent event) {
         if (event.getAuthor().isBot()) {
             return;
         }
 
         event.getMessage().getAttachments().forEach(attachment -> {
             if (attachment.getSize() < 8 << 20) {  //8MB
+                InputStream in = null;
                 try {
-                    File file = File.createTempFile(String.valueOf(System.nanoTime()), attachment.getFileName());
+                    Request request = new Request.Builder().addHeader("user-agent", Requester.USER_AGENT).url(attachment.getUrl()).build();
+                    Response response = ((JDAImpl) event.getJDA()).getRequester().getHttpClient().newCall(request).execute();
+                    //noinspection ConstantConditions
+                    in = response.body().byteStream();
+                    ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 
-                    if (file.delete() && attachment.download(file)) {
-                        try {
-                            event.getJDA().getTextChannelById(CACHE_CHANNEL).sendFile(file, attachment.getFileName(), new MessageBuilder().append(event.getMessage().getId()).build()).queue(message -> {
-                                addToCache(event.getMessage().getIdLong(), message);
-                                if (file.exists() && !file.delete()) {
-                                    file.deleteOnExit();
-                                }
-                            });
-                        } catch (Exception e) {
-                            LOG.log(e);
-                            if (file.exists() && !file.delete()) {
-                                file.deleteOnExit();
-                            }
-                        }
-                    } else {
-                        addToCache(event.getMessage().getIdLong(), null);
-                        LOG.warn("Something went wrong with either the download or removing the temp file.");
+
+                    int nRead;
+                    byte[] data = new byte[8192];
+
+                    while ((nRead = in.read(data, 0, data.length)) != -1) {
+                        buffer.write(data, 0, nRead);
                     }
+
+                    buffer.flush();
+
+                    event.getJDA().getTextChannelById(CACHE_CHANNEL).sendFile(buffer.toByteArray(), attachment.getFileName(), new MessageBuilder().append(event.getMessage().getId()).build()).queue(message -> addToCache(event.getMessage().getIdLong(), message));
                 } catch (Exception e) {
                     LOG.log(e);
                     addToCache(event.getMessage().getIdLong(), null);
+                } finally {
+                    if (in != null) {
+                        try {
+                            in.close();
+                        } catch (Exception ignored) {
+                        }
+                    }
                 }
             } else {
                 LOG.warn("The file was larger than 8MB.");
