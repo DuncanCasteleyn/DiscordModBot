@@ -263,7 +263,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
      * This sequence allows to configure questions.
      */
     private inner class ConfigureSequence internal constructor(user: User, channel: MessageChannel) : Sequence(user, channel) {
-        private var sequenceNumber: Int = 0
+        private var sequenceNumber: Byte = 0
 
         init {
             channel.sendMessage(user.asMention + " Welcome to the member gate configuration sequence.\n\n" +
@@ -278,7 +278,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
             }
             val messageContent: String = event.message.content.toLowerCase()
             when (sequenceNumber) {
-                0 -> {
+                (0).toByte() -> {
                     when (messageContent) {
                         "add a question" -> {
                             sequenceNumber = 1
@@ -302,7 +302,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                         }
                     }
                 }
-                1 -> {
+                (1).toByte() -> {
                     val inputQuestionList: List<String> = messageContent.toLowerCase().split('\n')
                     if (inputQuestionList.size < 2) {
                         super.channel.sendMessage("Syntax mismatch.").queue { super.addMessageToCleaner(it) }
@@ -316,7 +316,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                     super.destroy()
                     super.channel.sendMessage(super.user.asMention + " Question and keywords added.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                 }
-                2 -> {
+                (2).toByte() -> {
                     val number: Int = event.message.content.toInt()
                     val removedQuestion: Question = questions.removeAt(number)
                     saveQuestions()
