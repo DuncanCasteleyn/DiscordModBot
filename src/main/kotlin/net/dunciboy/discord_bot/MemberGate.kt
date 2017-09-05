@@ -290,7 +290,9 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                         }
                         "no" -> {
                             destroy()
-                            event.guild.controller.kick(event.member, "Doesn't agree with the rules.").queue()
+                            val reason = "Doesn't agree with the rules."
+                            event.guild.controller.kick(event.member, reason).queue()
+                            RunBots.getRunBot(event.jda)?.logger?.logKick(event.member, event.guild, event.guild.getMember(event.jda.selfUser), reason)
                         }
                         else -> {
                             super.channel.sendMessage(user.asMention + " Invalid response! Answer with \"yes\" or \"no\"!").queue { super.addMessageToCleaner(it) }

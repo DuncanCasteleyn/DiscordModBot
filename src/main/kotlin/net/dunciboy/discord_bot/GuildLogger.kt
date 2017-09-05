@@ -30,6 +30,8 @@ import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.audit.ActionType
 import net.dv8tion.jda.core.audit.AuditLogEntry
 import net.dv8tion.jda.core.audit.AuditLogOption
+import net.dv8tion.jda.core.entities.Guild
+import net.dv8tion.jda.core.entities.Member
 import net.dv8tion.jda.core.entities.User
 import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.guild.GuildBanEvent
@@ -86,8 +88,8 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
         this.lastCheckedMessageDeleteEntries = HashMap()
     }
 
-    override fun onReady(event: ReadyEvent?) {
-        logger.initChannelList(event!!.jda)
+    override fun onReady(event: ReadyEvent) {
+        logger.initChannelList(event.jda)
         logger.logChannels.forEach { textChannel ->
             textChannel.guild.auditLogs.type(ActionType.MESSAGE_DELETE).limit(1).cache(false).queue { auditLogEntries ->
                 val auditLogEntry = auditLogEntries[0]
@@ -96,12 +98,12 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
         }
     }
 
-    override fun onGuildMessageUpdate(event: GuildMessageUpdateEvent?) {
+    override fun onGuildMessageUpdate(event: GuildMessageUpdateEvent) {
         if (!settings.isLogMessageUpdate) {
             return
         }
 
-        val guild = event!!.guild
+        val guild = event.guild
         val channel = event.channel
         if (settings.isExceptedFromLogging(channel.idLong)) {
             return
@@ -144,11 +146,11 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
      *
      * @param event The event that trigger this method
      */
-    override fun onGuildMessageDelete(event: GuildMessageDeleteEvent?) {
+    override fun onGuildMessageDelete(event: GuildMessageDeleteEvent) {
         if (!settings.isLogMessageDelete) {
             return
         }
-        val guild = event!!.guild
+        val guild = event.guild
         val channel = event.channel
         if (settings.isExceptedFromLogging(channel.idLong)) {
             return
@@ -234,11 +236,11 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
         }
     }
 
-    override fun onMessageBulkDelete(event: MessageBulkDeleteEvent?) {
+    override fun onMessageBulkDelete(event: MessageBulkDeleteEvent) {
         if (!settings.isLogMessageDelete) {
             return
         }
-        val channel = event!!.channel
+        val channel = event.channel
         if (settings.isExceptedFromLogging(channel.idLong)) {
             return
         }
@@ -332,7 +334,7 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
         guildLoggerExecutor.execute { logger.log(logEmbed, null, event.guild, null, file) }
     }
 
-    override fun onGuildMemberLeave(event: GuildMemberLeaveEvent?) {
+    override fun onGuildMemberLeave(event: GuildMemberLeaveEvent) {
         if (!settings.isLogMemberRemove) {
             return
         }
@@ -342,7 +344,7 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
             var reason: String? = null
             run {
                 var i = 0
-                for (logEntry in event!!.guild.auditLogs.type(ActionType.KICK).cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
+                for (logEntry in event.guild.auditLogs.type(ActionType.KICK).cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
                     if (logEntry.targetIdLong == event.member.user.idLong) {
                         moderator = logEntry.user
                         reason = logEntry.reason
@@ -355,28 +357,39 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
                 }
             }
 
-            if (moderator != null && moderator === event!!.jda.selfUser) {
+            if (moderator != null && moderator === event.jda.selfUser) {
                 return@schedule  //Bot is kicking no need to log, if needed it will be placed in the module that is issuing the kick.
             }
 
-            val logEmbed = EmbedBuilder()
-                    .setColor(Color.RED)
-                    .addField("User", JDALibHelper.getEffectiveNameAndUsername(event!!.member), true)
+
             if (moderator == null) {
-                logEmbed.setTitle("SERVER NOTIFICATION: User left")
+                val logEmbed = EmbedBuilder()
+                        .setColor(Color.RED)
+                        .addField("User", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
+                        .setTitle("SERVER NOTIFICATION: User left")
+                logger.log(logEmbed, event.member.user, event.guild, null)
             } else {
-                logEmbed.setTitle("SERVER NOTIFICATION: User kicked | Case: " + getCaseNumberSerializable(event.guild.idLong))
-                logEmbed.addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.guild.getMember(moderator)), true)
-                if (reason != null) {
-                    logEmbed.addField("Reason", reason, false)
-                }
+                logKick(event.member, event.guild, event.guild.getMember(moderator), reason)
             }
-            logger.log(logEmbed, event.member.user, event.guild, null)
         }, 1, TimeUnit.SECONDS)
 
     }
 
-    override fun onGuildBan(event: GuildBanEvent?) {
+    fun logKick(member: Member, guild: Guild, moderator: Member?, reason: String?) {
+        guildLoggerExecutor.execute {
+            val logEmbed = EmbedBuilder()
+                    .setColor(Color.RED)
+                    .addField("User", JDALibHelper.getEffectiveNameAndUsername(member), true)
+                    .setTitle("SERVER NOTIFICATION: User kicked | Case: " + getCaseNumberSerializable(guild.idLong))
+                    .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(moderator), true)
+            if (reason != null) {
+                logEmbed.addField("Reason", reason, false)
+            }
+            logger.log(logEmbed, member.user, guild, null)
+        }
+    }
+
+    override fun onGuildBan(event: GuildBanEvent) {
         if (!settings.isLogMemberBan) {
             return
         }
@@ -386,7 +399,7 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
             var reason: String? = null
             run {
                 var i = 0
-                for (logEntry in event!!.guild.auditLogs.type(ActionType.BAN).cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
+                for (logEntry in event.guild.auditLogs.type(ActionType.BAN).cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
                     if (logEntry.targetIdLong == event.user.idLong) {
                         moderator = logEntry.user
                         reason = logEntry.reason
@@ -399,13 +412,13 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
                 }
             }
 
-            if (moderator != null && moderator === event!!.jda.selfUser) {
+            if (moderator != null && moderator === event.jda.selfUser) {
                 return@schedule  //Bot is banning no need to log, if needed it will be placed in the module that is issuing the ban.
             }
 
             val logEmbed = EmbedBuilder()
                     .setColor(Color.RED)
-                    .setTitle("SERVER NOTIFICATION: User banned | Case: " + getCaseNumberSerializable(event!!.guild.idLong))
+                    .setTitle("SERVER NOTIFICATION: User banned | Case: " + getCaseNumberSerializable(event.guild.idLong))
                     .addField("User", event.user.name, true)
             if (moderator != null) {
                 logEmbed.addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.guild.getMember(moderator)), true)
@@ -417,7 +430,7 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
         }, 1, TimeUnit.SECONDS)
     }
 
-    override fun onGuildMemberJoin(event: GuildMemberJoinEvent?) {
+    override fun onGuildMemberJoin(event: GuildMemberJoinEvent) {
         if (!settings.isLogMemberAdd) {
             return
         }
@@ -425,13 +438,13 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
         val logEmbed = EmbedBuilder()
                 .setColor(Color.GREEN)
                 .setTitle("SERVER NOTIFICATION: User joined", null)
-                .addField("User", event!!.member.user.name, false)
+                .addField("User", event.member.user.name, false)
                 .addField("Account created", event.member.user.creationTime.format(DATE_TIME_FORMATTER), false)
         guildLoggerExecutor.execute { logger.log(logEmbed, event.member.user, event.guild, null) }
     }
 
 
-    override fun onGuildUnban(event: GuildUnbanEvent?) {
+    override fun onGuildUnban(event: GuildUnbanEvent) {
         if (!settings.isLogMemberRemoveBan) {
             return
         }
@@ -440,7 +453,7 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
             var moderator: User? = null
             run {
                 var i = 0
-                for (logEntry in event!!.guild.auditLogs.type(ActionType.UNBAN).cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
+                for (logEntry in event.guild.auditLogs.type(ActionType.UNBAN).cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
                     if (logEntry.targetIdLong == event.user.idLong) {
                         moderator = logEntry.user
                         break
@@ -455,7 +468,7 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
             val logEmbed = EmbedBuilder()
                     .setColor(Color.GREEN)
                     .setTitle("SERVER NOTIFICATION: User ban revoked", null)
-                    .addField("User", event!!.user.name, true)
+                    .addField("User", event.user.name, true)
             if (moderator != null) {
                 logEmbed.addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.guild.getMember(moderator)), true)
             }
@@ -463,8 +476,8 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
         }, 1, TimeUnit.SECONDS)
     }
 
-    override fun onUserNameUpdate(event: UserNameUpdateEvent?) {
-        for (guild in logger.userOnGuilds(event!!.user)) {
+    override fun onUserNameUpdate(event: UserNameUpdateEvent) {
+        for (guild in logger.userOnGuilds(event.user)) {
             val logEmbed = EmbedBuilder()
                     .setColor(LIGHT_BLUE)
                     .setTitle("User has changed username")
@@ -474,12 +487,12 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
         }
     }
 
-    override fun onGuildMemberNickChange(event: GuildMemberNickChangeEvent?) {
+    override fun onGuildMemberNickChange(event: GuildMemberNickChangeEvent) {
         guildLoggerExecutor.schedule({
             var moderator: User? = null
             run {
                 var i = 0
-                for (logEntry in event!!.guild.auditLogs.type(ActionType.MEMBER_UPDATE).cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
+                for (logEntry in event.guild.auditLogs.type(ActionType.MEMBER_UPDATE).cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
                     if (logEntry.targetIdLong == event.member.user.idLong) {
                         moderator = logEntry.user
                         break
@@ -493,7 +506,7 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
 
             val logEmbed = EmbedBuilder()
                     .setColor(LIGHT_BLUE)
-                    .addField("User", event!!.member.user.name, false)
+                    .addField("User", event.member.user.name, false)
                     .addField("Old nickname", if (event.prevNick != null) event.prevNick else "None", true)
                     .addField("New nickname", if (event.newNick != null) event.newNick else "None", true)
             if (moderator == null || moderator === event.member.user) {
