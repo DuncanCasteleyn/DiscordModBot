@@ -67,6 +67,9 @@ open class MemberGate internal constructor(private val guildId: Long, private va
     private val needManualApproval: LinkedMap<Long, String?> = LinkedMap()
     private val informUserMessageIds: HashMap<Long, Long> = HashMap()
 
+    /**
+     * Loads up the existing questions
+     */
     init {
         var tempQuestions: ArrayList<Question>
         try {
@@ -101,6 +104,9 @@ open class MemberGate internal constructor(private val guildId: Long, private va
         questions = tempQuestions
     }
 
+    /**
+     * Check if a user was added to the approved role.
+     */
     override fun onGuildMemberRoleAdd(event: GuildMemberRoleAddEvent) {
         val guild = event.guild
         if (guild.idLong != guildId || event.user.isBot || guild.getRoleById(memberRole) !in event.roles) {
@@ -119,13 +125,16 @@ open class MemberGate internal constructor(private val guildId: Long, private va
         val gateTextChannel: TextChannel = guild.getTextChannelById(this.gateTextChannel)
         val userMessages: ArrayList<Message> = ArrayList()
         gateTextChannel.iterableHistory.map {
-            if (it.author == event.user) {
+            if (it.author == event.user || it.mentionedUsers.contains(event.user)) {
                 userMessages.add(it)
             }
         }
         JDALibHelper.limitLessBulkDelete(gateTextChannel, userMessages)
     }
 
+    /**
+     * Welcomes a new member that joins and informs them about the member gate system.
+     */
     override fun onGuildMemberJoin(event: GuildMemberJoinEvent) {
         if (event.guild.idLong != guildId || event.user.isBot) {
             return
@@ -241,20 +250,62 @@ open class MemberGate internal constructor(private val guildId: Long, private va
      * This sequence questions a user.
      */
     private inner class QuestionSequence internal constructor(user: User, channel: MessageChannel, private val question: Question) : Sequence(user, channel, informUser = false) {
+        private var sequenceNumber: Byte = 0
+
+        /**
+         * Asks first question.
+         */
         init {
-            super.channel.sendMessage(user.asMention + " Please answer the following question:\n" + question.question).queue { super.addMessageToCleaner(it) }
+            super.channel.sendMessage(user.asMention + " Have you read the rules? answer with \"yes\" or \"no\"").queue { super.addMessageToCleaner(it) }
         }
 
+        /**
+         * Logic to check answers
+         */
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
             if (super.user != event.author || super.channel != event.channel) {
                 return
             }
-            destroy()
-            val member = event.jda.getGuildById(guildId).getMemberById(user.idLong)
-            if (question.checkAnswer(event)) {
-                accept(member)
-            } else {
-                failedQuestion(member = member, question = question.question, answer = event.message.content)
+            when (sequenceNumber) {
+                (0).toByte() -> {
+                    when (event.message.rawContent.toLowerCase()) {
+                        "yes" -> {
+                            super.channel.sendMessage(user.asMention + " Do you accept the rules? Answer with \"yes\" or \"no\"").queue { super.addMessageToCleaner(it) }
+                            sequenceNumber = 1
+                        }
+                        "no" -> {
+                            destroy()
+                            super.channel.sendMessage(user.asMention + " Please read the rules and pinned message, before using this command.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                        }
+                        else -> {
+                            super.channel.sendMessage(user.asMention + " Invalid response! Answer with \"yes\" or \"no\"!").queue { super.addMessageToCleaner(it) }
+                        }
+                    }
+                }
+                (1).toByte() -> {
+                    when (event.message.rawContent.toLowerCase()) {
+                        "yes" -> {
+                            super.channel.sendMessage(user.asMention + " Please answer the following question:\n" + question.question).queue { super.addMessageToCleaner(it) }
+                            sequenceNumber = 2
+                        }
+                        "no" -> {
+                            destroy()
+                            event.guild.controller.kick(event.member, "Doesn't agree with the rules.").queue()
+                        }
+                        else -> {
+                            super.channel.sendMessage(user.asMention + " Invalid response! Answer with \"yes\" or \"no\"!").queue { super.addMessageToCleaner(it) }
+                        }
+                    }
+                }
+                else -> {
+                    destroy()
+                    val member = event.jda.getGuildById(guildId).getMemberById(user.idLong)
+                    if (question.checkAnswer(event)) {
+                        accept(member)
+                    } else {
+                        failedQuestion(member = member, question = question.question, answer = event.message.content)
+                    }
+                }
             }
         }
     }
@@ -265,6 +316,9 @@ open class MemberGate internal constructor(private val guildId: Long, private va
     private inner class ConfigureSequence internal constructor(user: User, channel: MessageChannel) : Sequence(user, channel) {
         private var sequenceNumber: Byte = 0
 
+        /**
+         * Asks first question
+         */
         init {
             channel.sendMessage(user.asMention + " Welcome to the member gate configuration sequence.\n\n" +
                     "Select an action to perform:\n" +
@@ -272,6 +326,9 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                     "remove a question").queue { super.addMessageToCleaner(it) }
         }
 
+        /**
+         * Logic to handle configuration questions.
+         */
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
             if (super.user != user || super.channel != channel) {
                 return
@@ -316,7 +373,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                     super.destroy()
                     super.channel.sendMessage(super.user.asMention + " Question and keywords added.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                 }
-                (2).toByte() -> {
+                else -> {
                     val number: Int = event.message.content.toInt()
                     val removedQuestion: Question = questions.removeAt(number)
                     saveQuestions()
@@ -341,10 +398,16 @@ open class MemberGate internal constructor(private val guildId: Long, private va
             return keywordList.all { it.any { it.toLowerCase() in event.message.content.toLowerCase() } }
         }
 
+        /**
+         * Adds more keywords to a question.
+         */
         internal fun addKeywords(keywords: ArrayList<String>) {
             keywordList.add(keywords)
         }
 
+        /**
+         * Converts this object into a JSONObject.
+         */
         internal fun toJsonObject(): JSONObject {
             val jsonObject = JSONObject()
             jsonObject.put("question", question)
@@ -354,10 +417,13 @@ open class MemberGate internal constructor(private val guildId: Long, private va
     }
 
     /**
-     * Allows answers to be manually review if keyword checking fails.
+     * Allows answers to be manually reviewed, if keyword checking fails.
      */
     private inner class ReviewSequence internal constructor(user: User, channel: MessageChannel, private val userId: Long) : Sequence(user, channel) {
 
+        /**
+         * Asks the first question and checks if the user is in the review list.
+         */
         init {
             synchronized(needManualApproval) {
                 if (userId in needManualApproval) {
@@ -376,6 +442,9 @@ open class MemberGate internal constructor(private val guildId: Long, private va
             }
         }
 
+        /**
+         * Review logic to approve members.
+         */
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
             synchronized(needManualApproval) {
                 if (userId !in needManualApproval) {
