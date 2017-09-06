@@ -157,12 +157,12 @@ open class MemberGate internal constructor(private val guildId: Long, private va
         }
 
         when (command.toLowerCase()) {
-            aliases[0].toLowerCase() -> {
+            super.aliases[0].toLowerCase() -> {
                 if (event.jda.getGuildById(guildId).getMember(event.author).hasPermission(Permission.MANAGE_ROLES)) {
                     event.jda.addEventListener(ConfigureSequence(event.author, event.channel))
                 }
             }
-            aliases[1].toLowerCase() -> {
+            super.aliases[1].toLowerCase() -> {
                 if (event.jda.getGuildById(guildId).getMember(event.author).roles.any { it.idLong == memberRole }) {
                     return
                 }
@@ -174,7 +174,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                 }
                 event.jda.addEventListener(QuestionSequence(event.author, event.channel, questions[Random().nextInt(questions.size)]))
             }
-            aliases[2].toLowerCase() -> {
+            super.aliases[2].toLowerCase() -> {
                 if (event.jda.getGuildById(guildId).getMember(event.author).hasPermission(Permission.MANAGE_ROLES)) {
                     event.jda.addEventListener(ReviewSequence(event.author, event.channel, arguments!!.toLong()))
                 }
