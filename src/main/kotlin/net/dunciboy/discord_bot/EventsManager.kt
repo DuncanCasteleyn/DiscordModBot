@@ -150,15 +150,15 @@ class EventsManager : ListenerAdapter() {
     inner class EventsList : CommandModule(EVENTS_LIST_ALIASES, null, EVENTS_LIST_DESCRIPTION) {
 
         override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-            val messageBuilder = MessageBuilder()
             try {
+                val messageBuilder = MessageBuilder()
                 val events = events[event.guild.idLong]
                 events!!.filter { it.eventDateTime.isBefore(OffsetDateTime.now()) }.forEach { events.remove(it) }
                 events.map { messageBuilder.append(it.toString()).append('\n') }
+                messageBuilder.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { event.channel.sendMessage(it).queue() }
             } catch (npe: NullPointerException) {
                 throw UnsupportedOperationException("This guild has not been configured to use the event manager.", npe)
             }
-            messageBuilder.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { event.channel.sendMessage(it).queue() }
         }
     }
 }
