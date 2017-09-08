@@ -133,7 +133,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
         val gateTextChannel: TextChannel = guild.getTextChannelById(this.gateTextChannel)
         val userMessages: ArrayList<Message> = ArrayList()
         gateTextChannel.iterableHistory.map {
-            if (it.author == user || it.mentionedUsers.contains(user)) {
+            if (it.author == user || it.rawContent.contains(user.id)) {
                 userMessages.add(it)
             }
         }
