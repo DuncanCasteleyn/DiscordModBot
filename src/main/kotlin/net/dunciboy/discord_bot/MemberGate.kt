@@ -32,6 +32,7 @@ import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.*
 import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent
+import net.dv8tion.jda.core.events.guild.member.GuildMemberLeaveEvent
 import net.dv8tion.jda.core.events.guild.member.GuildMemberRoleAddEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.utils.SimpleLog
@@ -122,10 +123,17 @@ open class MemberGate internal constructor(private val guildId: Long, private va
         synchronized(needManualApproval) {
             needManualApproval.remove(event.user.idLong)
         }
+        cleanMessagesFromUser(guild, event.user)
+    }
+
+    /**
+     * Cleans the messages from the users and messages containing mentions to the users from the member gate channel.
+     */
+    private fun cleanMessagesFromUser(guild: Guild, user: User) {
         val gateTextChannel: TextChannel = guild.getTextChannelById(this.gateTextChannel)
         val userMessages: ArrayList<Message> = ArrayList()
         gateTextChannel.iterableHistory.map {
-            if (it.author == event.user || it.mentionedUsers.contains(event.user)) {
+            if (it.author == user || it.mentionedUsers.contains(user)) {
                 userMessages.add(it)
             }
         }
@@ -142,6 +150,29 @@ open class MemberGate internal constructor(private val guildId: Long, private va
         event.jda.getTextChannelById(gateTextChannel).sendMessage("Welcome " + event.member.asMention + ", this server requires you to read the " + event.guild.getTextChannelById(rulesTextChannel).asMention + " and answer a question regarding those before you gain full access.\n\n" +
                 "If you have read the rules and are ready to answer the question, type ``!" + super.aliases[1] + "`` and follow the instructions from the bot.\n\n" +
                 "Please read the pinned message for more information.").queue({ message -> message.delete().queueAfter(5, TimeUnit.MINUTES) })
+    }
+
+    /**
+     * Automatically handles unapproved users that leave the server.
+     */
+    override fun onGuildMemberLeave(event: GuildMemberLeaveEvent) {
+        if (event.member.roles.contains(event.guild.getRoleById(memberRole))) {
+            return
+        }
+        val userId = event.user.idLong
+        synchronized(needManualApproval) {
+            if (needManualApproval.containsKey(userId)) {
+                needManualApproval.replace(userId, null)
+            }
+        }
+        synchronized(informUserMessageIds) {
+            val messageToRemove = informUserMessageIds.remove(userId)
+            if (messageToRemove != null) {
+                event.jda.getTextChannelById(gateTextChannel).getMessageById(messageToRemove).queue { it.delete().queue() }
+            }
+        }
+        cleanMessagesFromUser(event.guild, event.user)
+
     }
 
     /**
