@@ -105,7 +105,7 @@ open class EventsManager : ListenerAdapter() {
         }
     }
 
-    class Event(var eventName: String) {
+    class Event(val eventName: String) {
         lateinit var eventDateTime: OffsetDateTime
     }
 
@@ -154,7 +154,16 @@ open class EventsManager : ListenerAdapter() {
                 }
                 1.toByte() -> {
                     sequenceNumber = 2
-                    eventName = event.message.content
+                    try {
+                        events[event.guild.idLong]!!.forEach {
+                            if (it.eventName == event.message.rawContent) {
+                                throw IllegalArgumentException("An event with this name already exists, please try again and chose another name.")
+                            }
+                        }
+                    } catch (npe: NullPointerException) {
+                        throw UnsupportedOperationException("This guild has not been configured to use the event manager.", npe)
+                    }
+                    eventName = event.message.rawContent
                     event.channel.sendMessage("Please enter the date and time of the event.")
                 }
                 2.toByte() -> {
@@ -168,11 +177,7 @@ open class EventsManager : ListenerAdapter() {
                         event.channel.sendMessage(exception.javaClass.simpleName + ": " + exception.message)
                         return
                     }
-                    try {
-                        events[event.guild.idLong]!!.add(scheduledEvent)
-                    } catch (npe: NullPointerException) {
-                        throw UnsupportedOperationException("This guild has not been configured to use the event manager.", npe)
-                    }
+                    events[event.guild.idLong]?.add(scheduledEvent)
                 }
                 3.toByte() -> {
                     val matches = events[event.guild.idLong]?.filter { it.eventName == event.message.rawContent }
