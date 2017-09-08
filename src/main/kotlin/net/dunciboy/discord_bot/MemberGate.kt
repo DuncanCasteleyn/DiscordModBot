@@ -298,7 +298,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                 return
             }
             when (sequenceNumber) {
-                (0).toByte() -> {
+                0.toByte() -> {
                     when (event.message.rawContent.toLowerCase()) {
                         "yes" -> {
                             super.channel.sendMessage(user.asMention + " Do you accept the rules? Answer with \"yes\" or \"no\"").queue { super.addMessageToCleaner(it) }
@@ -313,7 +313,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                         }
                     }
                 }
-                (1).toByte() -> {
+                1.toByte() -> {
                     when (event.message.rawContent.toLowerCase()) {
                         "yes" -> {
                             super.channel.sendMessage(user.asMention + " Please answer the following question:\n" + question.question).queue { super.addMessageToCleaner(it) }
@@ -368,7 +368,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
             }
             val messageContent: String = event.message.content.toLowerCase()
             when (sequenceNumber) {
-                (0).toByte() -> {
+                0.toByte() -> {
                     when (messageContent) {
                         "add a question" -> {
                             sequenceNumber = 1
@@ -392,7 +392,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                         }
                     }
                 }
-                (1).toByte() -> {
+                1.toByte() -> {
                     val inputQuestionList: List<String> = messageContent.toLowerCase().split('\n')
                     if (inputQuestionList.size < 2) {
                         super.channel.sendMessage("Syntax mismatch.").queue { super.addMessageToCleaner(it) }
