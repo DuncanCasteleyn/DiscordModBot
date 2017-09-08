@@ -6,7 +6,6 @@
 .project
 .metadata
 bin/
-tmp/
 *.tmp
 *.bak
 *.swp
@@ -68,14 +67,12 @@ build/
 *.tlb
 *.tli
 *.tlh
-*.tmp
 *.tmp_proj
 *.log
 *.vspscc
 *.vssscc
 .builds
 *.pidb
-*.log
 *.scc
 
 # Visual C++ cache files
@@ -229,8 +226,6 @@ Temporary Items
 ## Linux
 #############
 
-*~
-
 # temporary files which can be created if a process still has a handle open of a deleted file
 .fuse_hidden*
 
@@ -246,12 +241,6 @@ Temporary Items
 #################
 ## Java
 #################
-
-# Compiled class file
-*.class
-
-# Log file
-*.log
 
 # BlueJ files
 *.ctxt
@@ -314,8 +303,6 @@ fabric.properties
 #################
 
 .gradle
-/build/
-
 # Ignore Gradle GUI config
 gradle-app.setting
 

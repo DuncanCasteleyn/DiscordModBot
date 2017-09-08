@@ -48,7 +48,7 @@ class ReactionVote : CommandModule(ALIASES, DESCRIPTION, ARGUMENTATION, cleanCom
             event.message.delete().queue()
         } catch (nfe: NumberFormatException) {
             useReceivedMessage(event, emoteSource)
-        } catch(npe: NullPointerException) {
+        } catch (npe: NullPointerException) {
             useReceivedMessage(event, emoteSource)
         }
     }

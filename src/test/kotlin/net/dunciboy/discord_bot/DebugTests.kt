@@ -31,7 +31,6 @@ import net.dv8tion.jda.core.JDABuilder
 import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.exceptions.RateLimitedException
 import net.dv8tion.jda.core.hooks.ListenerAdapter
-
 import javax.security.auth.login.LoginException
 
 /**
@@ -51,20 +50,22 @@ class DebugTests internal constructor(bot: JDA, logToChannel: LogToChannel, logg
         @JvmStatic
         fun main(args: Array<String>) {
             try {
+                val configObject = loadConfig()
+
                 JDABuilder(AccountType.BOT)
-                        .setCorePoolSize(RunBots.Companion.BOT_THREAD_POOL_SIZE)
-                        .setToken("MjM1NTI5MjMyNDI2NTk4NDAx.C5TDfw.8MhLiD6CQmNbc4SkN1KeyxumOcM")
+                        .setCorePoolSize(RunBots.BOT_THREAD_POOL_SIZE)
+                        .setToken(configObject.getString("ReZero"))
                         .setBulkDeleteSplittingEnabled(false)
                         .addEventListener(object : ListenerAdapter() {
-                            override fun onReady(event: ReadyEvent?) {
-                                event!!.jda.getGuildById(160450060436504578L).controller.ban("12345", 1, "For science").queue()
+                            override fun onReady(event: ReadyEvent) {
+                                //do something
                             }
                         })
                         .buildAsync()
             } catch (e: LoginException) {
-                RunBots.Companion.LOG.log(e)
+                RunBots.LOG.log(e)
             } catch (e: RateLimitedException) {
-                RunBots.Companion.LOG.log(e)
+                RunBots.LOG.log(e)
             }
 
         }

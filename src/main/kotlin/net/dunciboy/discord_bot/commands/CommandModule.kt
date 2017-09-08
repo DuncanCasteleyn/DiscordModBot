@@ -72,10 +72,10 @@ abstract class CommandModule @JvmOverloads protected constructor(internal val al
             val argumentsArray = messageContent.split(" ")//.dropLastWhile { it.isEmpty() }.toTypedArray()
             val command = argumentsArray[0].substring(1)
             val arguments: String?
-            if (event.message.content.length - 1 >= command.length + 2) {
-                arguments = messageContent.substring(command.length + 2)
+            arguments = if (event.message.content.length - 1 >= command.length + 2) {
+                messageContent.substring(command.length + 2)
             } else {
-                arguments = null
+                null
             }
             if (Arrays.stream(aliases).anyMatch { s -> s.equals(command, ignoreCase = true) }) {
                 try {

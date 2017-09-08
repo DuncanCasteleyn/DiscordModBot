@@ -67,7 +67,7 @@ public class RoleIds extends CommandModule {
                 event.getGuild().getRoles().forEach((Role role) -> result.append(role.toString()).append("\n"));
             }
             event.getAuthor().openPrivateChannel().queue(privateChannel -> {
-                Queue<Message> messages = new MessageBuilder().appendCodeBlock(result.toString(), "text").buildAll(MessageBuilder.SplitPolicy.NEWLINE);
+                Queue<Message> messages = new MessageBuilder().append(result.toString()).buildAll(MessageBuilder.SplitPolicy.NEWLINE);
                 messages.forEach(message -> privateChannel.sendMessage(message).queue());
             });
         }

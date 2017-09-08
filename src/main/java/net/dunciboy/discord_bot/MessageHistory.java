@@ -105,7 +105,7 @@ public class MessageHistory extends ListenerAdapter implements QuitBot.BeforeBot
         }
         messages.put(message.getIdLong(), message);
         if (message.getAttachments().size() > 0) {
-            attachmentProxyCreator.storeMessageAttachments(event);
+            attachmentProxyCreator.proxyMessageAttachments(event);
         }
     }
 

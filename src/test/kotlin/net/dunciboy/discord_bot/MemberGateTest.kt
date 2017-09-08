@@ -39,12 +39,12 @@ class MemberGateTest : MemberGate(175856762677624832L, 319590906523156481L, 1758
 
     @Test
     fun AddQuestionTest() {
-        val messageContent: String = "Testing?\nYes,we,might\nyolo"
+        val messageContent = "Testing?\nYes,we,might\nyolo"
         val inputQuestionList: List<String> = messageContent.split('\n')
         if (inputQuestionList.size < 2) {
             throw IllegalArgumentException("Syntax mismatch!")
         }
-        val question: Question = Question(inputQuestionList[0])
+        val question = Question(inputQuestionList[0])
         for (i in 1 until inputQuestionList.size) {
             question.addKeywords(ArrayList(inputQuestionList[i].split(',')))
         }

@@ -54,7 +54,7 @@ class TestBot private constructor(bot: JDA, logToChannel: LogToChannel, logger: 
                         .setBulkDeleteSplittingEnabled(false)
                         .setCorePoolSize(RunBots.Companion.BOT_THREAD_POOL_SIZE)
                         .setToken(configObject.getString("Dev"))
-                        .addEventListener(devGuildLogger, Help(*RunBots.Companion.generalCommands), QuitBot())
+                        .addEventListener(devGuildLogger, Help(*RunBots.generalCommands), QuitBot())
                 for (generalCommand in RunBots.Companion.generalCommands) {
                     devJDABuilder.addEventListener(generalCommand)
                 }
