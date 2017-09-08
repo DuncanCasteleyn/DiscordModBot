@@ -27,19 +27,21 @@ package net.dunciboy.discord_bot
 
 import net.dunciboy.discord_bot.commands.CommandModule
 import net.dunciboy.discord_bot.sequence.Sequence
+import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.MessageChannel
 import net.dv8tion.jda.core.entities.User
 import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.hooks.ListenerAdapter
+import org.json.JSONObject
+import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.OffsetDateTime
 import java.time.format.DateTimeParseException
 import java.util.*
 import java.util.concurrent.TimeUnit
-import kotlin.collections.ArrayList
 
 @Suppress("unused") // still under development. <- todo remove when done.
 class EventsManager : ListenerAdapter() {
@@ -58,7 +60,9 @@ class EventsManager : ListenerAdapter() {
     }
 
     fun writeEventsToFile() {
-        TODO("Write files not implemented")
+        val json = JSONObject()
+        events.map { json.put(it.key.toString(), it.value) }
+        Files.write(FILE_PATH, Collections.singletonList(json.toString()))
     }
 
     class Event(val eventName: String) {
@@ -77,7 +81,7 @@ class EventsManager : ListenerAdapter() {
     }
 
     inner class EventMangerSequence(user: User, channel: MessageChannel, cleanAfterSequence: Boolean = true, informUser: Boolean = true) : Sequence(user, channel, cleanAfterSequence, informUser) {
-        private var sequenceNumber: Int = 0
+        private var sequenceNumber: Byte = 0
         private lateinit var eventName: String
 
         init {
@@ -86,29 +90,40 @@ class EventsManager : ListenerAdapter() {
 
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
             when (sequenceNumber) {
-                0 -> {
+                0.toByte() -> {
                     when (event.message.rawContent) {
                         "add" -> {
                             sequenceNumber = 1
                             event.channel.sendMessage("Please enter the event name.").queue { super.addMessageToCleaner(it) }
                         }
                         "remove" -> {
-                            TODO("Logic to modify events not implemented yet.")
+                            val messageBuilder = MessageBuilder()
+                            try {
+                                events[event.guild.idLong]!!.map { messageBuilder.append(it.eventName).append('\t').append(it.eventDateTime.toString()).append('\n') }
+                            } catch (npe: NullPointerException) {
+                                throw UnsupportedOperationException("This guild has not been configured to use the event manager.", npe)
+                            }
+                            messageBuilder.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { super.channel.sendMessage(it).queue() }
+                            super.channel.sendMessage("Enter the event name you want to remove.")
+                            sequenceNumber = 3
                         }
                         else -> {
                             super.channel.sendMessage("Wrong answer. Please answer with \"add\" or \"remove\"").queue { super.addMessageToCleaner(it) }
                         }
                     }
                 }
-                1 -> {
+                1.toByte() -> {
                     sequenceNumber = 2
                     eventName = event.message.content
                     event.channel.sendMessage("Please enter the date and time of the event.")
                 }
-                2 -> {
+                2.toByte() -> {
                     val scheduledEvent = Event(eventName)
                     try {
                         scheduledEvent.eventDateTime = OffsetDateTime.parse(event.message.content)
+                        writeEventsToFile()
+                        destroy()
+                        super.channel.sendMessage("Event successfully added").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                     } catch (exception: DateTimeParseException) {
                         event.channel.sendMessage(exception.javaClass.simpleName + ": " + exception.message)
                         return
@@ -116,7 +131,15 @@ class EventsManager : ListenerAdapter() {
                     try {
                         events[event.guild.idLong]!!.add(scheduledEvent)
                     } catch (npe: NullPointerException) {
-                        throw UnsupportedOperationException("This guild has not been configured to use the event manager.")
+                        throw UnsupportedOperationException("This guild has not been configured to use the event manager.", npe)
+                    }
+                }
+                3.toByte() -> {
+                    val matches = events[event.guild.idLong]?.filter { it.eventName == event.message.rawContent }
+                    if (matches == null) {
+                        super.channel.sendMessage("Could not find any events with that name.").queue()
+                    } else {
+                        matches.forEach { events[event.guild.idLong]?.remove(it) }
                     }
                 }
             }
@@ -126,7 +149,15 @@ class EventsManager : ListenerAdapter() {
     inner class EventsList : CommandModule(EVENTS_LIST_ALIASES, null, EVENTS_LIST_DESCRIPTION) {
 
         override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-            TODO("Printing of events is not implemented yet.")
+            val messageBuilder = MessageBuilder()
+            try {
+                events[event.guild.idLong]!!.map { messageBuilder.append(it.toString()).append('\n') }
+
+                //todo filter existing events that have expired
+            } catch (npe: NullPointerException) {
+                throw UnsupportedOperationException("This guild has not been configured to use the event manager.", npe)
+            }
+            messageBuilder.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { event.channel.sendMessage(it).queue() }
         }
     }
 }
