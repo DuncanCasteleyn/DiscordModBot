@@ -138,6 +138,7 @@ class EventsManager : ListenerAdapter() {
                     val matches = events[event.guild.idLong]?.filter { it.eventName == event.message.rawContent }
                     if (matches == null) {
                         super.channel.sendMessage("Could not find any events with that name.").queue()
+                        super.destroy()
                     } else {
                         matches.forEach { events[event.guild.idLong]?.remove(it) }
                     }
@@ -151,9 +152,9 @@ class EventsManager : ListenerAdapter() {
         override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
             val messageBuilder = MessageBuilder()
             try {
-                events[event.guild.idLong]!!.map { messageBuilder.append(it.toString()).append('\n') }
-
-                //todo filter existing events that have expired
+                val events = events[event.guild.idLong]
+                events!!.filter { it.eventDateTime.isBefore(OffsetDateTime.now()) }.forEach { events.remove(it) }
+                events.map { messageBuilder.append(it.toString()).append('\n') }
             } catch (npe: NullPointerException) {
                 throw UnsupportedOperationException("This guild has not been configured to use the event manager.", npe)
             }
