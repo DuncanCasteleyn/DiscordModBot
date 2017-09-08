@@ -34,29 +34,33 @@ import net.dv8tion.jda.core.entities.User
 import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.hooks.ListenerAdapter
+import net.dv8tion.jda.core.utils.SimpleLog
 import org.json.JSONObject
 import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.OffsetDateTime
 import java.time.format.DateTimeParseException
 import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 @Suppress("unused") // still under development. <- todo remove when done.
-class EventsManager : ListenerAdapter() {
-    private lateinit var events: HashMap<Long, ArrayList<Event>>
+open class EventsManager : ListenerAdapter() {
+    lateinit var events: HashMap<Long, ArrayList<Event>>
 
     companion object {
         const private val EVENTS_LIST_DESCRIPTION = "Shows a list with currently planned events"
-        const private val EVENT_MANAGER_DESCRIPTION: String = "Allows you to manage events."
-        private val EVENTS_LIST_ALIASES: Array<String> = arrayOf("EventsList")
-        private val EVENT_MANAGER_ALIASES: Array<String> = arrayOf("EventManager", "ManageEvents")
-        private val FILE_PATH: Path = Paths.get("Events.json")
+        const private val EVENT_MANAGER_DESCRIPTION = "Allows you to manage events."
+        private val EVENTS_LIST_ALIASES = arrayOf("EventsList")
+        private val EVENT_MANAGER_ALIASES = arrayOf("EventManager", "ManageEvents")
+        private val FILE_PATH = Paths.get("Events.json")
+        private val LOG = SimpleLog.getLog(EventsManager::class.java.simpleName)
     }
 
     override fun onReady(event: ReadyEvent) {
-        TODO("Not implemented. Need to Init HashMap by retrieve existing events from a JSON file, then filter expired events if needed and remove empty HashMap values")
+        readEventsFromFile()
+        cleanExpiredEvents()
     }
 
     fun writeEventsToFile() {
@@ -65,7 +69,43 @@ class EventsManager : ListenerAdapter() {
         Files.write(FILE_PATH, Collections.singletonList(json.toString()))
     }
 
-    class Event(val eventName: String) {
+    fun readEventsFromFile() {
+        val stringBuilder = StringBuilder()
+        Files.readAllLines(FILE_PATH).map { stringBuilder.append(it) }
+        val json = JSONObject(stringBuilder.toString())
+        events = HashMap()
+        json.toMap().forEach {
+            val value = it.value
+            val arrayList = ArrayList<Event>()
+            try {
+                if (value is ArrayList<*>) {
+                    value.forEach {
+                        if (it is HashMap<*, *>) {
+                            val event = Event(it["eventName"] as String)
+                            event.eventDateTime = OffsetDateTime.parse(it["eventDateTime"] as String)
+                            arrayList.add(event)
+                        } else {
+                            throw IllegalStateException("Unexpected type " + it.javaClass.typeName + " after mapping JSON.")
+                        }
+                    }
+                } else {
+                    throw IllegalStateException("Unexpected type " + it.javaClass.typeName + " after mapping JSON.")
+                }
+            } catch (ise: IllegalStateException) {
+                LOG.log(ise)
+            }
+            events.put(it.key.toLong(), arrayList)
+        }
+    }
+
+    fun cleanExpiredEvents() {
+        events.forEach {
+            val arrayList = it.value
+            arrayList.filter { it.eventDateTime.isBefore(OffsetDateTime.now()) }.forEach { arrayList.remove(it) }
+        }
+    }
+
+    class Event(var eventName: String) {
         lateinit var eventDateTime: OffsetDateTime
     }
 
@@ -153,8 +193,8 @@ class EventsManager : ListenerAdapter() {
             try {
                 val messageBuilder = MessageBuilder()
                 val events = events[event.guild.idLong]
-                events!!.filter { it.eventDateTime.isBefore(OffsetDateTime.now()) }.forEach { events.remove(it) }
-                events.map { messageBuilder.append(it.toString()).append('\n') }
+                cleanExpiredEvents()
+                events!!.map { messageBuilder.append(it.toString()).append('\n') }
                 messageBuilder.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { event.channel.sendMessage(it).queue() }
             } catch (npe: NullPointerException) {
                 throw UnsupportedOperationException("This guild has not been configured to use the event manager.", npe)
