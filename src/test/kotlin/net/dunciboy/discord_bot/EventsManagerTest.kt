@@ -32,6 +32,13 @@ import java.time.OffsetDateTime
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EventsManagerTest : EventsManager() {
 
+    /**
+     * Required for TestInstance to work as junit test checks if all fields are initialized.
+     */
+    init {
+        events = HashMap()
+    }
+
     @BeforeAll
     @Test
     fun testWrite() {
