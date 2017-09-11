@@ -33,7 +33,6 @@ import net.dv8tion.jda.core.entities.MessageChannel
 import net.dv8tion.jda.core.entities.User
 import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
-import net.dv8tion.jda.core.hooks.ListenerAdapter
 import net.dv8tion.jda.core.utils.SimpleLog
 import org.json.JSONObject
 import java.nio.file.Files
@@ -45,8 +44,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
-@Suppress("unused") // still under development. <- todo remove when done.
-open class EventsManager : ListenerAdapter() {
+open class EventsManager : CommandModule(EVENTS_LIST_ALIASES, null, EVENTS_LIST_DESCRIPTION) {
     lateinit var events: HashMap<Long, ArrayList<Event>>
 
     companion object {
@@ -61,6 +59,19 @@ open class EventsManager : ListenerAdapter() {
     override fun onReady(event: ReadyEvent) {
         readEventsFromFile()
         cleanExpiredEvents()
+        event.jda.addEventListener(EventManagerCommand())
+    }
+
+    override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+        try {
+            val messageBuilder = MessageBuilder()
+            val events = events[event.guild.idLong]
+            cleanExpiredEvents()
+            events!!.map { messageBuilder.append(it.toString()).append('\n') }
+            messageBuilder.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { event.channel.sendMessage(it).queue() }
+        } catch (npe: NullPointerException) {
+            throw UnsupportedOperationException("This guild has not been configured to use the event manager.", npe)
+        }
     }
 
     fun writeEventsToFile() {
@@ -188,21 +199,6 @@ open class EventsManager : ListenerAdapter() {
                         matches.forEach { events[event.guild.idLong]?.remove(it) }
                     }
                 }
-            }
-        }
-    }
-
-    inner class EventsList : CommandModule(EVENTS_LIST_ALIASES, null, EVENTS_LIST_DESCRIPTION) {
-
-        override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-            try {
-                val messageBuilder = MessageBuilder()
-                val events = events[event.guild.idLong]
-                cleanExpiredEvents()
-                events!!.map { messageBuilder.append(it.toString()).append('\n') }
-                messageBuilder.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { event.channel.sendMessage(it).queue() }
-            } catch (npe: NullPointerException) {
-                throw UnsupportedOperationException("This guild has not been configured to use the event manager.", npe)
             }
         }
     }

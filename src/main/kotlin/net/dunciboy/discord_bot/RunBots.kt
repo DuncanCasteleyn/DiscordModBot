@@ -76,7 +76,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: LogToCha
                         .setEventManager(ExecutorServiceEventManager())
                         .setToken(configObject.getString("FairyTail"))
                         .setBulkDeleteSplittingEnabled(false)
-                        .addEventListener(fairyTailGuildLogger, Help(*generalCommands), fairyTailQuitBot)
+                        .addEventListener(fairyTailGuildLogger, Help(*generalCommands), fairyTailQuitBot, fairyTailSettings)
                 for (generalCommand in generalCommands) {
                     fairyTailJDABuilder.addEventListener(generalCommand)
                 }
@@ -95,7 +95,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: LogToCha
                         .setToken(configObject.getString("ReZero"))
                         .setEventManager(ExecutorServiceEventManager())
                         .setBulkDeleteSplittingEnabled(false)
-                        .addEventListener(reZeroGuildLogger, CreateRoleCommandsOnReady(helpCommand, reZeroQuitBot), helpCommand, reZeroQuitBot, memberGate, Mute(), RemoveMute())
+                        .addEventListener(reZeroGuildLogger, CreateRoleCommandsOnReady(helpCommand, reZeroQuitBot), helpCommand, reZeroQuitBot, memberGate, Mute(), RemoveMute(), reZeroSettings)
                 for (generalCommand in generalCommands) {
                     reZeroJDABuilder.addEventListener(generalCommand)
                 }
