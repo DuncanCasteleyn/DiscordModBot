@@ -38,6 +38,8 @@ import org.json.JSONObject
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.OffsetDateTime
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -54,6 +56,8 @@ open class EventsManager : CommandModule(EVENTS_LIST_ALIASES, null, EVENTS_LIST_
         private val EVENT_MANAGER_ALIASES = arrayOf("EventManager", "ManageEvents")
         private val FILE_PATH = Paths.get("Events.json")
         private val LOG = SimpleLog.getLog(EventsManager::class.java.simpleName)
+        private val DATE_TIME_FORMATTER_PARSER = DateTimeFormatter.ofPattern("dd-M-yyyy HH:mm X")
+        private val DATE_TIME_FORMATTER_LIST = DateTimeFormatter.ofPattern("dd-M-yyyy HH:mm")
     }
 
     override fun onReady(event: ReadyEvent) {
@@ -67,6 +71,7 @@ open class EventsManager : CommandModule(EVENTS_LIST_ALIASES, null, EVENTS_LIST_
             val messageBuilder = MessageBuilder()
             val events = events[event.guild.idLong]
             cleanExpiredEvents()
+            messageBuilder.append("Current UTC time is ").append(OffsetDateTime.now().atZoneSameInstant(ZoneOffset.UTC).format(DATE_TIME_FORMATTER_LIST)).append("\n\nEvents list (all times are UTC):\n")
             events!!.map { messageBuilder.append(it.toString()).append('\n') }
             messageBuilder.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { event.channel.sendMessage(it).queue() }
         } catch (npe: NullPointerException) {
@@ -118,6 +123,13 @@ open class EventsManager : CommandModule(EVENTS_LIST_ALIASES, null, EVENTS_LIST_
 
     class Event(val eventName: String) {
         lateinit var eventDateTime: OffsetDateTime
+
+        override fun toString(): String {
+            val dateTimeFormatted = eventDateTime.format(DATE_TIME_FORMATTER_LIST)
+            return "$eventName\t\t$dateTimeFormatted"
+        }
+
+
     }
 
     inner class EventManagerCommand : CommandModule(EVENT_MANAGER_ALIASES, null, EVENT_MANAGER_DESCRIPTION) {
@@ -136,7 +148,7 @@ open class EventsManager : CommandModule(EVENTS_LIST_ALIASES, null, EVENTS_LIST_
         private lateinit var eventName: String
 
         init {
-            channel.sendMessage(user.asMention + " Would you like to add or remove an event? Please answer with \"add\" or \"remove\".")
+            channel.sendMessage(user.asMention + " Would you like to add or remove an event? Please answer with \"add\" or \"remove\".").queue { addMessageToCleaner(it) }
         }
 
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
@@ -175,25 +187,24 @@ open class EventsManager : CommandModule(EVENTS_LIST_ALIASES, null, EVENTS_LIST_
                         throw UnsupportedOperationException("This guild has not been configured to use the event manager.", npe)
                     }
                     eventName = event.message.rawContent
-                    event.channel.sendMessage("Please enter the date and time of the event.")
+                    event.channel.sendMessage("Please enter the date and time of the event.").queue { addMessageToCleaner(it) }
                 }
                 2.toByte() -> {
                     val scheduledEvent = Event(eventName)
                     try {
-                        scheduledEvent.eventDateTime = OffsetDateTime.parse(event.message.content)
+                        scheduledEvent.eventDateTime = OffsetDateTime.parse(event.message.content, DATE_TIME_FORMATTER_PARSER).atZoneSameInstant(ZoneOffset.UTC).toOffsetDateTime()
+                        events[event.guild.idLong]!!.add(scheduledEvent)
                         writeEventsToFile()
                         destroy()
                         super.channel.sendMessage("Event successfully added").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                     } catch (exception: DateTimeParseException) {
-                        event.channel.sendMessage(exception.javaClass.simpleName + ": " + exception.message)
-                        return
+                        event.channel.sendMessage(exception.javaClass.simpleName + ": " + exception.message).queue { addMessageToCleaner(it) }
                     }
-                    events[event.guild.idLong]?.add(scheduledEvent)
                 }
                 3.toByte() -> {
                     val matches = events[event.guild.idLong]?.filter { it.eventName == event.message.rawContent }
                     if (matches == null) {
-                        super.channel.sendMessage("Could not find any events with that name.").queue()
+                        super.channel.sendMessage("Could not find any events with that name.").queue { addMessageToCleaner(it) }
                         super.destroy()
                     } else {
                         matches.forEach { events[event.guild.idLong]?.remove(it) }

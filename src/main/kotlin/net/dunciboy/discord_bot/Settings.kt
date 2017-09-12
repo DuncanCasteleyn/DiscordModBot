@@ -69,12 +69,18 @@ internal class Settings(var isLogMessageDelete: Boolean = true, var isLogMessage
     }
 
     inner class SettingsSequence(user: User, channel: MessageChannel) : Sequence(user, channel) {
-        private val eventManger: EventsManager = super.channel.jda.registeredListeners.filter { it is EventsManager }[0] as EventsManager
+        private val eventManger: EventsManager
         private var sequenceNumber = 0.toByte()
 
         init {
-            super.channel.sendMessage("What would you like to do? Respond with the number of the action you'd like to perform." +
-                    "0. Add or remove this guild from the event manager")
+            try {
+                eventManger = super.channel.jda.registeredListeners.filter { it is EventsManager }[0] as EventsManager
+            } catch (e: IndexOutOfBoundsException) {
+                destroy()
+                throw UnsupportedOperationException("This bot does not have an event manager", e)
+            }
+            super.channel.sendMessage("What would you like to do? Respond with the number of the action you'd like to perform.\n\n" +
+                    "0. Add or remove this guild from the event manager").queue { super.addMessageToCleaner(it) }
         }
 
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
@@ -89,7 +95,7 @@ internal class Settings(var isLogMessageDelete: Boolean = true, var isLogMessage
                             } else {
                                 arrayOf("not", "add")
                             }
-                            super.channel.sendMessageFormat("The guild is currently %0 in the list to use the event manager, do you want to %1 it? Respond with \"yes\" or \"no\".", response[0], response[1]).queue()
+                            super.channel.sendMessageFormat("The guild is currently %s in the list to use the event manager, do you want to %s it? Respond with \"yes\" or \"no\".", response[0], response[1]).queue { addMessageToCleaner(it) }
                             sequenceNumber = 1
                         }
                     }
