@@ -46,7 +46,9 @@ import java.util.List;
  *
  * @author Duncan
  * @version 2.0
+ * @since 1.0
  */
+//todo add to settings class
 public class LogToChannel {
 
     private static final SimpleLog LOG = SimpleLog.getLog(LogToChannel.class.getSimpleName());

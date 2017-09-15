@@ -269,7 +269,6 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
                 }
             } catch (ignored: MessageHistory.EmptyCacheException) {
             }
-
         }
 
         if (history == null) {
@@ -284,16 +283,12 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
             val message = history?.getMessage(java.lang.Long.parseUnsignedLong(id))
             if (message != null) {
                 messageLogged = true
-                try {
-                    logWriter.append(message.author.toString()).append(":\n").append(message.content).append("\n\n")
-                    val attachmentString = history?.getAttachmentsString(java.lang.Long.parseUnsignedLong(id))
-                    if (attachmentString != null) {
-                        logWriter.append("Attachment(s):\n").append(attachmentString).append("\n")
-                    } else {
-                        logWriter.append("\n")
-                    }
-                } catch (e: IOException) {
-                    LOG.log(e)
+                logWriter.append(message.author.toString()).append(":\n").append(message.content).append("\n\n")
+                val attachmentString = history?.getAttachmentsString(java.lang.Long.parseUnsignedLong(id))
+                if (attachmentString != null) {
+                    logWriter.append("Attachment(s):\n").append(attachmentString).append("\n")
+                } else {
+                    logWriter.append("\n")
                 }
             }
         }
