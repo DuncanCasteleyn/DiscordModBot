@@ -46,14 +46,8 @@ import net.dv8tion.jda.core.events.user.UserNameUpdateEvent
 import net.dv8tion.jda.core.hooks.ListenerAdapter
 import net.dv8tion.jda.core.utils.SimpleLog
 import java.awt.Color
-import java.io.BufferedWriter
-import java.io.File
 import java.io.IOException
 import java.io.Serializable
-import java.nio.charset.Charset
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.StandardOpenOption
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
@@ -75,6 +69,23 @@ import java.util.concurrent.TimeUnit
  * @since 1.0
  */
 class GuildLogger internal constructor(private val logger: LogToChannel, private val settings: Settings) : ListenerAdapter() {
+
+    companion object {
+        private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd-M-yyyy hh:mm a O")
+        private val LOG = SimpleLog.getLog(GuildLogger::class.java.simpleName)
+        private val LIGHT_BLUE = Color(52, 152, 219)
+        private val LOG_ENTRY_CHECK_LIMIT = 5
+
+        fun getCaseNumberSerializable(guildId: Long): Serializable {
+            val caseNumber: Long = try {
+                CaseSystem(guildId).newCaseNumber
+            } catch (e: IOException) {
+                -1
+            }
+
+            return if (caseNumber != -1L) caseNumber else "IOException - failed retrieving number"
+        }
+    }
 
     private val guildLoggerExecutor: ScheduledExecutorService
     private val lastCheckedMessageDeleteEntries: HashMap<Long, AuditLogEntry>
@@ -258,7 +269,6 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
                 }
             } catch (ignored: MessageHistory.EmptyCacheException) {
             }
-
         }
 
         if (history == null) {
@@ -266,72 +276,33 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
             return
         }
 
-        var bulkDeleteLog: Path? = null
-        val logWriter: BufferedWriter
-        try {
-            bulkDeleteLog = Files.createTempFile(event.channel.name + " " + OffsetDateTime.now().format(DATE_TIME_FORMATTER), ".log")
-            logWriter = Files.newBufferedWriter(bulkDeleteLog!!, Charset.forName("UTF-8"), StandardOpenOption.WRITE)
-        } catch (e: IOException) {
-            if (bulkDeleteLog != null) {
-                ioCleanup(bulkDeleteLog.toFile(), e)
-            } else {
-                LOG.log(e)
-            }
-            logBulkDelete(event, logEmbed)
-            return
-        }
-
-        try {
-            logWriter.append(event.channel.toString()).append("\n")
-        } catch (e: IOException) {
-            LOG.log(e)
-        }
+        val logWriter = StringBuilder(event.channel.toString()).append("\n")
 
         var messageLogged = false
         event.messageIds.forEach { id ->
             val message = history?.getMessage(java.lang.Long.parseUnsignedLong(id))
             if (message != null) {
                 messageLogged = true
-                try {
-                    logWriter.append(message.author.toString()).append(":\n").append(message.content).append("\n")
-                    val attachmentString = history?.getAttachmentsString(java.lang.Long.parseUnsignedLong(id))
-                    if (attachmentString != null) {
-                        logWriter.append("Attachment(s):\n").append(attachmentString).append("\n")
-                    } else {
-                        logWriter.append("\n")
-                    }
-                } catch (e: IOException) {
-                    LOG.log(e)
+                logWriter.append(message.author.toString()).append(":\n").append(message.content).append("\n\n")
+                val attachmentString = history?.getAttachmentsString(java.lang.Long.parseUnsignedLong(id))
+                if (attachmentString != null) {
+                    logWriter.append("Attachment(s):\n").append(attachmentString).append("\n")
+                } else {
+                    logWriter.append("\n")
                 }
-
             }
         }
-        try {
-            logWriter.close()
-            if (messageLogged) {
-                logBulkDelete(event, logEmbed, bulkDeleteLog)
-            } else {
-                logBulkDelete(event, logEmbed)
-                ioCleanup(bulkDeleteLog.toFile(), null)
-            }
-        } catch (e: IOException) {
-            ioCleanup(bulkDeleteLog.toFile(), e)
+        if (messageLogged) {
+            logWriter.append("Logged on ").append(OffsetDateTime.now().toString())
+            logBulkDelete(event, logEmbed, logWriter.toString().toByteArray())
+        } else {
             logBulkDelete(event, logEmbed)
         }
 
     }
 
-    private fun ioCleanup(file: File, e: IOException?) {
-        if (e != null) {
-            LOG.log(e)
-        }
-        if (file.exists() && !file.delete()) {
-            file.deleteOnExit()
-        }
-    }
-
-    private fun logBulkDelete(event: MessageBulkDeleteEvent, logEmbed: EmbedBuilder, file: Path? = null) {
-        guildLoggerExecutor.execute { logger.log(logEmbed, null, event.guild, null, file) }
+    private fun logBulkDelete(event: MessageBulkDeleteEvent, logEmbed: EmbedBuilder, bytes: ByteArray? = null) {
+        guildLoggerExecutor.execute { logger.log(logEmbed, null, event.guild, null, bytes) }
     }
 
     override fun onGuildMemberLeave(event: GuildMemberLeaveEvent) {
@@ -517,24 +488,5 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
             }
             logger.log(logEmbed, event.member.user, event.guild, null)
         }, 1, TimeUnit.SECONDS)
-    }
-
-    companion object {
-
-        //private static final String SEPARATOR = "\n------------------------------------------------------------";
-        private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd-M-yyyy hh:mm a O")
-        private val LOG = SimpleLog.getLog(GuildLogger::class.java.simpleName)
-        private val LIGHT_BLUE = Color(52, 152, 219)
-        private val LOG_ENTRY_CHECK_LIMIT = 5
-
-        fun getCaseNumberSerializable(guildId: Long): Serializable {
-            val caseNumber: Long = try {
-                CaseSystem(guildId).newCaseNumber
-            } catch (e: IOException) {
-                -1
-            }
-
-            return if (caseNumber != -1L) caseNumber else "IOException - failed retrieving number"
-        }
     }
 }

@@ -35,8 +35,6 @@ import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.exceptions.PermissionException;
 import net.dv8tion.jda.core.utils.SimpleLog;
 
-import java.io.File;
-import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -48,7 +46,9 @@ import java.util.List;
  *
  * @author Duncan
  * @version 2.0
+ * @since 1.0
  */
+//todo add to settings class
 public class LogToChannel {
 
     private static final SimpleLog LOG = SimpleLog.getLog(LogToChannel.class.getSimpleName());
@@ -102,7 +102,7 @@ public class LogToChannel {
      * @param logEmbed An embed to be used as log message a time stamp will be added to the footer and
      * @param guild    The guild where the message needs to be logged to
      */
-    public void log(EmbedBuilder logEmbed, User associatedUser, Guild guild, List<MessageEmbed> embeds, Path file) {
+    public void log(EmbedBuilder logEmbed, User associatedUser, Guild guild, List<MessageEmbed> embeds, byte[] bytes) {
         for (TextChannel logTo : logChannels) {
             if (logTo.getGuild().equals(guild)) {
                 try {
@@ -110,19 +110,10 @@ public class LogToChannel {
                     if (associatedUser != null) {
                         logEmbed = logEmbed.setFooter(associatedUser.getId(), associatedUser.getEffectiveAvatarUrl());
                     }
-                    if (file == null) {
+                    if (bytes == null) {
                         logTo.sendMessage(logEmbed.build()).queue();
                     } else {
-                        File fileToSend = file.toFile();
-                        logTo.sendFile(fileToSend, new MessageBuilder().setEmbed(logEmbed.build()).build()).queue(message -> {
-                            if (fileToSend.exists() && !fileToSend.delete()) {
-                                fileToSend.deleteOnExit();
-                            }
-                        }, throwable -> {
-                            if (fileToSend.exists() && !fileToSend.delete()) {
-                                fileToSend.deleteOnExit();
-                            }
-                        });
+                        logTo.sendFile(bytes, "chat.log", new MessageBuilder().setEmbed(logEmbed.build()).build()).queue();
                     }
                     if (embeds != null) {
                         for (MessageEmbed embed : embeds) {
