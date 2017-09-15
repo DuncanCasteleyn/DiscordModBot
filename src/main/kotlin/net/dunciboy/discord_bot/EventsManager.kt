@@ -56,8 +56,8 @@ open class EventsManager : CommandModule(EVENTS_LIST_ALIASES, null, EVENTS_LIST_
         private val EVENT_MANAGER_ALIASES = arrayOf("EventManager", "ManageEvents")
         private val FILE_PATH = Paths.get("Events.json")
         private val LOG = SimpleLog.getLog(EventsManager::class.java.simpleName)
-        private val DATE_TIME_FORMATTER_PARSER = DateTimeFormatter.ofPattern("dd-M-yyyy HH:mm X")
-        private val DATE_TIME_FORMATTER_LIST = DateTimeFormatter.ofPattern("dd-M-yyyy HH:mm")
+        private val DATE_TIME_FORMATTER_PARSER = DateTimeFormatter.ofPattern("dd-M-yyyy HH:mm X", Locale.ENGLISH)
+        private val DATE_TIME_FORMATTER_LIST = DateTimeFormatter.ofPattern("E dd-MM-yyyy HH:mm", Locale.ENGLISH)
     }
 
     override fun onReady(event: ReadyEvent) {
@@ -71,8 +71,8 @@ open class EventsManager : CommandModule(EVENTS_LIST_ALIASES, null, EVENTS_LIST_
             val messageBuilder = MessageBuilder()
             val events = events[event.guild.idLong]
             cleanExpiredEvents()
-            messageBuilder.append("Current UTC time is ").append(OffsetDateTime.now().atZoneSameInstant(ZoneOffset.UTC).format(DATE_TIME_FORMATTER_LIST)).append("\n\nEvents list (all times are UTC):\n")
-            events!!.map { messageBuilder.append(it.toString()).append('\n') }
+            messageBuilder.append("Current UTC time is ").append(OffsetDateTime.now().atZoneSameInstant(ZoneOffset.UTC).format(DATE_TIME_FORMATTER_LIST)).append("\n\nEvents list (all times are UTC):\n\n")
+            events!!.map { messageBuilder.append("``").append(it.toString()).append("``\n") }
             messageBuilder.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { event.channel.sendMessage(it).queue() }
         } catch (npe: NullPointerException) {
             throw UnsupportedOperationException("This guild has not been configured to use the event manager.", npe)
@@ -126,7 +126,7 @@ open class EventsManager : CommandModule(EVENTS_LIST_ALIASES, null, EVENTS_LIST_
 
         override fun toString(): String {
             val dateTimeFormatted = eventDateTime.format(DATE_TIME_FORMATTER_LIST)
-            return "$eventName\t\t$dateTimeFormatted"
+            return String.format("%-45s%s", eventName, dateTimeFormatted)
         }
 
 
@@ -162,12 +162,12 @@ open class EventsManager : CommandModule(EVENTS_LIST_ALIASES, null, EVENTS_LIST_
                         "remove" -> {
                             val messageBuilder = MessageBuilder()
                             try {
-                                events[event.guild.idLong]!!.map { messageBuilder.append(it.eventName).append('\t').append(it.eventDateTime.toString()).append('\n') }
+                                events[event.guild.idLong]!!.map { messageBuilder.append("``").append(it.toString()).append("``\n") }
                             } catch (npe: NullPointerException) {
                                 throw UnsupportedOperationException("This guild has not been configured to use the event manager.", npe)
                             }
                             messageBuilder.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { super.channel.sendMessage(it).queue() }
-                            super.channel.sendMessage("Enter the event name you want to remove.")
+                            super.channel.sendMessage("Enter the event name you want to remove.").queue { addMessageToCleaner(it) }
                             sequenceNumber = 3
                         }
                         else -> {
@@ -187,7 +187,7 @@ open class EventsManager : CommandModule(EVENTS_LIST_ALIASES, null, EVENTS_LIST_
                         throw UnsupportedOperationException("This guild has not been configured to use the event manager.", npe)
                     }
                     eventName = event.message.rawContent
-                    event.channel.sendMessage("Please enter the date and time of the event.").queue { addMessageToCleaner(it) }
+                    event.channel.sendMessage("Please enter the date and time of the event. Example: \"12-08-2018 12:00 +02\"").queue { addMessageToCleaner(it) }
                 }
                 2.toByte() -> {
                     val scheduledEvent = Event(eventName)
@@ -202,12 +202,15 @@ open class EventsManager : CommandModule(EVENTS_LIST_ALIASES, null, EVENTS_LIST_
                     }
                 }
                 3.toByte() -> {
-                    val matches = events[event.guild.idLong]?.filter { it.eventName == event.message.rawContent }
-                    if (matches == null) {
-                        super.channel.sendMessage("Could not find any events with that name.").queue { addMessageToCleaner(it) }
-                        super.destroy()
+                    val searchTerm = event.message.rawContent
+                    val matches = events[event.guild.idLong]!!.filter { it.eventName == searchTerm }
+                    if (matches.isEmpty()) {
+                        super.channel.sendMessage("Could not find any events with that name.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                     } else {
-                        matches.forEach { events[event.guild.idLong]?.remove(it) }
+                        matches.forEach { events[event.guild.idLong]!!.remove(it) }
+                        writeEventsToFile()
+                        super.channel.sendMessage("Event with name \"$searchTerm\" has been deleted").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                        super.destroy()
                     }
                 }
             }
