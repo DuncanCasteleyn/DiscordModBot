@@ -29,7 +29,11 @@ import net.dunciboy.discord_bot.commands.CommandModule
 import net.dunciboy.discord_bot.sequence.Sequence
 import net.dv8tion.jda.core.entities.MessageChannel
 import net.dv8tion.jda.core.entities.User
+import net.dv8tion.jda.core.events.ReadyEvent
+import net.dv8tion.jda.core.events.guild.GuildJoinEvent
+import net.dv8tion.jda.core.events.guild.GuildLeaveEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 /**
@@ -40,15 +44,7 @@ import java.util.concurrent.TimeUnit
  */
 
 //todo remove hard coded code.
-internal class Settings(var isLogMessageDelete: Boolean = true, var isLogMessageUpdate: Boolean = true, var isLogMemberRemove: Boolean = true, var isLogMemberBan: Boolean = true, var isLogMemberAdd: Boolean = true, var isLogMemberRemoveBan: Boolean = true) : CommandModule(ALIAS, null, DESCRIPTION) {
-
-    private val exceptedFromLogging = ArrayList<Long>()
-
-    init {
-        exceptedFromLogging.add(231422572011585536L)
-        exceptedFromLogging.add(205415791238184969L)
-        exceptedFromLogging.add(204047108318298112L)
-    }
+internal class Settings: CommandModule(ALIAS, null, DESCRIPTION) {
 
     companion object {
         private val ALIAS = arrayOf("settings")
@@ -56,8 +52,39 @@ internal class Settings(var isLogMessageDelete: Boolean = true, var isLogMessage
         private const val OWNER_ID = 159419654148718593L
     }
 
+    private val exceptedFromLogging = ArrayList<Long>()
+    private val guildSettings = ArrayList<GuildSettings>()
+
+    init {
+        exceptedFromLogging.add(231422572011585536L)
+        exceptedFromLogging.add(205415791238184969L)
+        exceptedFromLogging.add(204047108318298112L)
+    }
+
     fun isExceptedFromLogging(channelId: Long): Boolean {
         return exceptedFromLogging.contains(channelId)
+    }
+
+    fun getGuildSettings(): List<GuildSettings> {
+        return Collections.unmodifiableList(guildSettings)
+    }
+
+    override fun onReady(event: ReadyEvent) {
+        event.jda.guilds.forEach {
+            val settings = GuildSettings(it.idLong)
+            guildSettings.add(settings)
+            if(it.idLong == 175856762677624832L) {
+                settings.isLogMessageUpdate = false
+            }
+        }
+    }
+
+    override fun onGuildJoin(event: GuildJoinEvent) {
+        guildSettings.add(GuildSettings(event.guild.idLong))
+    }
+
+    override fun onGuildLeave(event: GuildLeaveEvent) {
+        guildSettings.removeIf { it.guildId == event.guild.idLong }
     }
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
@@ -121,4 +148,6 @@ internal class Settings(var isLogMessageDelete: Boolean = true, var isLogMessage
             }
         }
     }
+
+    inner class GuildSettings @JvmOverloads constructor(val guildId: Long, var isLogMessageDelete: Boolean = true, var isLogMessageUpdate: Boolean = true, var isLogMemberRemove: Boolean = true, var isLogMemberBan: Boolean = true, var isLogMemberAdd: Boolean = true, var isLogMemberRemoveBan: Boolean = true)
 }

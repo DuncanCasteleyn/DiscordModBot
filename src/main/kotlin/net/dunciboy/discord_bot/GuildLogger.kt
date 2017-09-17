@@ -110,7 +110,7 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
     }
 
     override fun onGuildMessageUpdate(event: GuildMessageUpdateEvent) {
-        if (!settings.isLogMessageUpdate) {
+        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].isLogMessageUpdate) {
             return
         }
 
@@ -158,7 +158,7 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
      * @param event The event that trigger this method
      */
     override fun onGuildMessageDelete(event: GuildMessageDeleteEvent) {
-        if (!settings.isLogMessageDelete) {
+        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].isLogMessageDelete) {
             return
         }
         val guild = event.guild
@@ -248,7 +248,7 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
     }
 
     override fun onMessageBulkDelete(event: MessageBulkDeleteEvent) {
-        if (!settings.isLogMessageDelete) {
+        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].isLogMessageDelete) {
             return
         }
         val channel = event.channel
@@ -306,7 +306,7 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
     }
 
     override fun onGuildMemberLeave(event: GuildMemberLeaveEvent) {
-        if (!settings.isLogMemberRemove) {
+        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].isLogMemberRemove) {
             return
         }
 
@@ -361,7 +361,7 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
     }
 
     override fun onGuildBan(event: GuildBanEvent) {
-        if (!settings.isLogMemberBan) {
+        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].isLogMemberBan) {
             return
         }
 
@@ -402,7 +402,7 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
     }
 
     override fun onGuildMemberJoin(event: GuildMemberJoinEvent) {
-        if (!settings.isLogMemberAdd) {
+        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].isLogMemberAdd) {
             return
         }
 
@@ -416,7 +416,7 @@ class GuildLogger internal constructor(private val logger: LogToChannel, private
 
 
     override fun onGuildUnban(event: GuildUnbanEvent) {
-        if (!settings.isLogMemberRemoveBan) {
+        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].isLogMemberRemoveBan) {
             return
         }
 
