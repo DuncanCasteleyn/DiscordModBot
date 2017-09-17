@@ -36,6 +36,7 @@ import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.utils.SimpleLog
 import org.json.JSONObject
 import java.nio.file.Files
+import java.nio.file.NoSuchFileException
 import java.nio.file.Paths
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
@@ -86,31 +87,35 @@ open class EventsManager : CommandModule(EVENTS_LIST_ALIASES, null, EVENTS_LIST_
     }
 
     fun readEventsFromFile() {
-        val stringBuilder = StringBuilder()
-        Files.readAllLines(FILE_PATH).map { stringBuilder.append(it) }
-        val json = JSONObject(stringBuilder.toString())
-        events = HashMap()
-        json.toMap().forEach {
-            val value = it.value
-            val arrayList = ArrayList<Event>()
-            try {
-                if (value is ArrayList<*>) {
-                    value.forEach {
-                        if (it is HashMap<*, *>) {
-                            val event = Event(it["eventName"] as String)
-                            event.eventDateTime = OffsetDateTime.parse(it["eventDateTime"] as String)
-                            arrayList.add(event)
-                        } else {
-                            throw IllegalStateException("Unexpected type " + it.javaClass.typeName + " after mapping JSON.")
+        try {
+            val stringBuilder = StringBuilder()
+            Files.readAllLines(FILE_PATH).map { stringBuilder.append(it) }
+            val json = JSONObject(stringBuilder.toString())
+            events = HashMap()
+            json.toMap().forEach {
+                val value = it.value
+                val arrayList = ArrayList<Event>()
+                try {
+                    if (value is ArrayList<*>) {
+                        value.forEach {
+                            if (it is HashMap<*, *>) {
+                                val event = Event(it["eventName"] as String)
+                                event.eventDateTime = OffsetDateTime.parse(it["eventDateTime"] as String)
+                                arrayList.add(event)
+                            } else {
+                                throw IllegalStateException("Unexpected type " + it.javaClass.typeName + " after mapping JSON.")
+                            }
                         }
+                    } else {
+                        throw IllegalStateException("Unexpected type " + it.javaClass.typeName + " after mapping JSON.")
                     }
-                } else {
-                    throw IllegalStateException("Unexpected type " + it.javaClass.typeName + " after mapping JSON.")
+                } catch (ise: IllegalStateException) {
+                    LOG.log(ise)
                 }
-            } catch (ise: IllegalStateException) {
-                LOG.log(ise)
+                events.put(it.key.toLong(), arrayList)
             }
-            events.put(it.key.toLong(), arrayList)
+        } catch (e: NoSuchFileException) {
+            events = HashMap()
         }
     }
 

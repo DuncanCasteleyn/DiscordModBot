@@ -44,7 +44,7 @@ import java.util.concurrent.TimeUnit
  */
 
 //todo remove hard coded code.
-internal class Settings: CommandModule(ALIAS, null, DESCRIPTION) {
+internal class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
 
     companion object {
         private val ALIAS = arrayOf("settings")
@@ -73,7 +73,7 @@ internal class Settings: CommandModule(ALIAS, null, DESCRIPTION) {
         event.jda.guilds.forEach {
             val settings = GuildSettings(it.idLong)
             guildSettings.add(settings)
-            if(it.idLong == 175856762677624832L) {
+            if (it.idLong == 175856762677624832L) {
                 settings.isLogMessageUpdate = false
             }
         }
