@@ -122,7 +122,7 @@ open class EventsManager : CommandModule(EVENTS_LIST_ALIASES, null, EVENTS_LIST_
     fun cleanExpiredEvents() {
         events.forEach {
             val arrayList = it.value
-            arrayList.filter { it.eventDateTime.isBefore(OffsetDateTime.now()) }.forEach { arrayList.remove(it) }
+            arrayList.removeIf { it.eventDateTime.isBefore(OffsetDateTime.now()) }
         }
     }
 
