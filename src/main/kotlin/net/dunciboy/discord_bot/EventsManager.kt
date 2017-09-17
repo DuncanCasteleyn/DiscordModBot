@@ -74,7 +74,7 @@ open class EventsManager : CommandModule(EVENTS_LIST_ALIASES, null, EVENTS_LIST_
             cleanExpiredEvents()
             messageBuilder.append("Current UTC time is ").append(OffsetDateTime.now().atZoneSameInstant(ZoneOffset.UTC).format(DATE_TIME_FORMATTER_LIST)).append("\n\nEvents list (all times are UTC):\n\n")
             events!!.map { messageBuilder.append("``").append(it.toString()).append("``\n") }
-            messageBuilder.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { event.channel.sendMessage(it).queue() }
+            messageBuilder.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { event.channel.sendMessage(it).queue { it.delete().queueAfter(2, TimeUnit.MINUTES) } }
         } catch (npe: NullPointerException) {
             throw UnsupportedOperationException("This guild has not been configured to use the event manager.", npe)
         }
@@ -131,7 +131,7 @@ open class EventsManager : CommandModule(EVENTS_LIST_ALIASES, null, EVENTS_LIST_
 
         override fun toString(): String {
             val dateTimeFormatted = eventDateTime.format(DATE_TIME_FORMATTER_LIST)
-            return String.format("%-45s%s", eventName, dateTimeFormatted)
+            return String.format("%-25s%s", eventName, dateTimeFormatted)
         }
 
 
