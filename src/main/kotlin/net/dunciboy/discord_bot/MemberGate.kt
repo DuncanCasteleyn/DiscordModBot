@@ -199,7 +199,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                 }
                 synchronized(needManualApproval) {
                     if (event.author.idLong in needManualApproval) {
-                        event.channel.sendMessage("You have already tried answering a question. A moderator now needs to manually review you. Please state that you have read and agree to the rules, and also need manual approval.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                        event.channel.sendMessage("You have already tried answering a question. A moderator now needs to manually review you. Please state that you have read and agree to the rules and need manual approval.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                         return
                     }
                 }
