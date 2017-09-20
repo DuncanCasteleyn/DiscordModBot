@@ -47,10 +47,10 @@ import java.util.concurrent.TimeUnit
  */
 
 //todo remove hard coded code.
-internal class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
+internal open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
 
     companion object {
-        private val FILE_PATH = Paths.get("GuildSettings")
+        private val FILE_PATH = Paths.get("GuildSettings.json")
         private val ALIAS = arrayOf("settings")
         private const val DESCRIPTION = "Allows settings to be adjusted"
         private const val OWNER_ID = 159419654148718593L
@@ -70,6 +70,14 @@ internal class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
         jsonObject.put("guildSettings", guildSettings)
         jsonObject.put("exceptedFromLogging", exceptedFromLogging)
         Files.write(FILE_PATH, Collections.singletonList(jsonObject.toString()))
+    }
+
+    fun loadGuildSettingFromFile() {
+        val stringBuilder = StringBuilder()
+        Files.readAllLines(FILE_PATH).map { stringBuilder.append(it) }
+        val jsonObject = JSONObject(stringBuilder.toString())
+        jsonObject["guildSettings"].to(guildSettings)
+        jsonObject["exceptedFromLogging"].to(exceptedFromLogging)
     }
 
     fun isExceptedFromLogging(channelId: Long): Boolean {
