@@ -33,6 +33,9 @@ import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.guild.GuildJoinEvent
 import net.dv8tion.jda.core.events.guild.GuildLeaveEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import org.json.JSONObject
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -47,6 +50,7 @@ import java.util.concurrent.TimeUnit
 internal class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
 
     companion object {
+        private val FILE_PATH = Paths.get("GuildSettings")
         private val ALIAS = arrayOf("settings")
         private const val DESCRIPTION = "Allows settings to be adjusted"
         private const val OWNER_ID = 159419654148718593L
@@ -59,6 +63,13 @@ internal class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
         exceptedFromLogging.add(231422572011585536L)
         exceptedFromLogging.add(205415791238184969L)
         exceptedFromLogging.add(204047108318298112L)
+    }
+
+    fun writeGuildSettingToFile() {
+        val jsonObject = JSONObject()
+        jsonObject.put("guildSettings", guildSettings)
+        jsonObject.put("exceptedFromLogging", exceptedFromLogging)
+        Files.write(FILE_PATH, Collections.singletonList(jsonObject.toString()))
     }
 
     fun isExceptedFromLogging(channelId: Long): Boolean {
