@@ -466,7 +466,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                         channel.sendMessage(message).queue { super.addMessageToCleaner(it) }
                     } else {
                         super.destroy()
-                        throw IllegalArgumentException("The user you tried to review is still in the list, but another moderator already declared the question wrong.")
+                        throw IllegalArgumentException("The user you tried to review is still in the list, but another moderator already declared the question wrong or the user rejoined.")
                     }
                 } else {
                     super.destroy()
