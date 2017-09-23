@@ -40,7 +40,7 @@ import javax.script.ScriptEngineManager
 class Eval : CommandModule(ALIASES, DESCRIPTION, ARGUMENTATION, false) {
     companion object {
         private val ALIASES = arrayOf("Eval")
-        private const val DESCRIPTION = "Allow you to evalute something using the JDA library"
+        private const val DESCRIPTION = "Allows you to evaluate code using the JDA library"
         private const val ARGUMENTATION = "<Javascript or Java code>\n" +
                 "    Example: `!eval return \"5 + 5 is: \" + (5 + 5);\n" +
                 "    This will print: 5 + 5 is: 10"

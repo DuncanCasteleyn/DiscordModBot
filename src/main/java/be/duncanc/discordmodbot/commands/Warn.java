@@ -34,6 +34,7 @@ import net.dv8tion.jda.core.Permission;
 import net.dv8tion.jda.core.entities.*;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.core.exceptions.PermissionException;
+import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import java.io.Serializable;
@@ -47,7 +48,7 @@ public class Warn extends CommandModule {
 
     private static final String[] ALIASES = {"Warn"};
     private static final String ARGUMENTATION_SYNTAX = "[User mention] [Reason~]";
-    private static final String DESCRIPTION = "Warns as user by sending the person mentioned a message and logging the warning in the log channel.";
+    private static final String DESCRIPTION = "Warns as user by sending the user mentioned a message and logs the warning to the log channel.";
 
     /**
      * Constructor for abstract class
@@ -64,7 +65,7 @@ public class Warn extends CommandModule {
      * @param arguments The arguments that where entered after the command alias
      */
     @Override
-    public void commandExec(MessageReceivedEvent event, String command, String arguments) {
+    public void commandExec(@NotNull MessageReceivedEvent event, @NotNull String command, String arguments) {
         event.getAuthor().openPrivateChannel().queue(
                 privateChannel -> commandExec(event, arguments, privateChannel),
                 throwable -> commandExec(event, arguments, (PrivateChannel) null)
@@ -78,7 +79,7 @@ public class Warn extends CommandModule {
             }
         } else if (!(event.getMember().hasPermission(Permission.KICK_MEMBERS) || event.getMember().hasPermission(Permission.BAN_MEMBERS))) {
             if (privateChannel != null) {
-                privateChannel.sendMessage(event.getAuthor().getAsMention() + " you need kick/ban members permissions to warn users.");
+                privateChannel.sendMessage(event.getAuthor().getAsMention() + " you need kick/ban members permissions to warn users.").queue();
             }
         } else if (event.getMessage().getMentionedUsers().size() < 1) {
             if (privateChannel != null) {

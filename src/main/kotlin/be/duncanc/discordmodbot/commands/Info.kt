@@ -50,12 +50,6 @@ class Info : CommandModule(ALIASES, null, DESCRIPTION) {
 
     /**
      * Sends information about the bot to the user.
-
-     * @param event     A MessageReceivedEvent that came with the command
-     * *
-     * @param command   The command alias that was used to trigger this commandExec
-     * *
-     * @param arguments The arguments that where entered after the command alias
      */
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.author.openPrivateChannel().queue { it.sendMessage(INFO_MESSAGE).queue() }

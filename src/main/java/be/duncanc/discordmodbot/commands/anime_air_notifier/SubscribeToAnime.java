@@ -29,6 +29,7 @@ import be.duncanc.discordmodbot.AnimeAirNotifier;
 import be.duncanc.discordmodbot.commands.CommandModule;
 import net.dv8tion.jda.core.entities.ChannelType;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.TimeUnit;
 
@@ -41,22 +42,12 @@ class SubscribeToAnime extends CommandModule {
     private static final String ARGUMENTATION_SYNTAX = "[Anime id]";
     private static final String DESCRIPTION = "This command can be used to subscribe to anime air notifications. use !AnimeList to see a list of anime ids.";
 
-    /**
-     * Constructor for class
-     */
     SubscribeToAnime() {
         super(ALIASES, ARGUMENTATION_SYNTAX, DESCRIPTION);
     }
 
-    /**
-     * Do something with the event, command and arguments.
-     *
-     * @param event     A MessageReceivedEvent that came with the command
-     * @param command   The command alias that was used to trigger this commandExec
-     * @param arguments The arguments that where entered after the command alias
-     */
     @Override
-    public void commandExec(MessageReceivedEvent event, String command, String arguments) {
+    public void commandExec(@NotNull MessageReceivedEvent event, @NotNull String command, String arguments) {
         if (!event.isFromType(ChannelType.PRIVATE)) {
             event.getChannel().sendMessage("This command only works in DM.").queue(message -> message.delete().completeAfter(1, TimeUnit.MINUTES));
             return;

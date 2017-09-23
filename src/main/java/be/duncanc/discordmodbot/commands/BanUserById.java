@@ -36,6 +36,7 @@ import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.PrivateChannel;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
+import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import java.util.concurrent.TimeUnit;
@@ -58,7 +59,7 @@ public class BanUserById extends Ban {
     }
 
     @Override
-    void commandExec(MessageReceivedEvent event, String arguments, PrivateChannel privateChannel) {
+    void commandExec(@NotNull MessageReceivedEvent event, String arguments, PrivateChannel privateChannel) {
         if (!event.isFromType(ChannelType.TEXT)) {
             if (privateChannel != null) {
                 event.getChannel().sendMessage("This command only works in a guild.").queue(message -> message.delete().queueAfter(1, TimeUnit.MINUTES));

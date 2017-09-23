@@ -32,6 +32,7 @@ import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.MessageEmbed;
 import net.dv8tion.jda.core.entities.PrivateChannel;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.format.DateTimeFormatter;
 
@@ -58,7 +59,7 @@ public class UserInfo extends CommandModule {
      * @param arguments The arguments that where entered after the command alias
      */
     @Override
-    public void commandExec(MessageReceivedEvent event, String command, String arguments) {
+    public void commandExec(@NotNull MessageReceivedEvent event, @NotNull String command, String arguments) {
         if (event.isFromType(ChannelType.TEXT)) {
             PrivateChannel privateChannel;
             privateChannel = event.getAuthor().openPrivateChannel().complete();

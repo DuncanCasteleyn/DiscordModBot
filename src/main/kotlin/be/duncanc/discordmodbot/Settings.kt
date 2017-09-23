@@ -52,7 +52,7 @@ internal open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
     companion object {
         private val FILE_PATH = Paths.get("GuildSettings.json")
         private val ALIAS = arrayOf("settings")
-        private const val DESCRIPTION = "Allows settings to be adjusted"
+        private const val DESCRIPTION = "Adjust server settings."
         private const val OWNER_ID = 159419654148718593L
     }
 

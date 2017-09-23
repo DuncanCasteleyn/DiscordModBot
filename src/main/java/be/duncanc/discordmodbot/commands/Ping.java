@@ -26,6 +26,7 @@
 package be.duncanc.discordmodbot.commands;
 
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Created by Duncan on 11/02/2017.
@@ -40,15 +41,8 @@ public class Ping extends CommandModule {
         super(ALIASES, null, DESCRIPTION);
     }
 
-    /**
-     * Do something with the event, command and arguments.
-     *
-     * @param event     A MessageReceivedEvent that came with the command
-     * @param command   Not used here
-     * @param arguments Not used here
-     */
     @Override
-    public void commandExec(MessageReceivedEvent event, String command, String arguments) {
+    public void commandExec(@NotNull MessageReceivedEvent event, @NotNull String command, String arguments) {
         long millisBeforeRequest = System.currentTimeMillis();
         event.getChannel().sendMessage("pong!\nIt took Discord " + event.getJDA().getPing() + " milliseconds to respond to our last heartbeat.").queue(message -> message.editMessage(message.getRawContent() + "\nIt took Discord " + (System.currentTimeMillis() - millisBeforeRequest) + " milliseconds to process this message.").queue());
     }

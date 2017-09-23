@@ -48,13 +48,6 @@ class IAmRolesCommand extends CommandModule {
         this.roleCommands = roleCommands;
     }
 
-    /**
-     * Do something with the event, command and arguments.
-     *
-     * @param event     A MessageReceivedEvent that came with the command
-     * @param command   The command alias that was used to trigger this commandExec
-     * @param arguments The arguments that where entered after the command alias
-     */
     @Override
     public void commandExec(@NotNull MessageReceivedEvent event, @NotNull String command, String arguments) {
         String[] args = arguments.split(" ");

@@ -52,7 +52,7 @@ open class EventsManager : CommandModule(be.duncanc.discordmodbot.EventsManager.
     lateinit var events: HashMap<Long, ArrayList<be.duncanc.discordmodbot.EventsManager.Event>>
 
     companion object {
-        const private val EVENTS_LIST_DESCRIPTION = "Shows a list with currently planned events"
+        const private val EVENTS_LIST_DESCRIPTION = "Shows a list with currently planned events."
         const private val EVENT_MANAGER_DESCRIPTION = "Allows you to manage events."
         private val EVENTS_LIST_ALIASES = arrayOf("EventsList")
         private val EVENT_MANAGER_ALIASES = arrayOf("EventManager", "ManageEvents")

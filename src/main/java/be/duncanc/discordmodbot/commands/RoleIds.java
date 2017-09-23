@@ -31,6 +31,7 @@ import net.dv8tion.jda.core.entities.ChannelType;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.Role;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
@@ -48,15 +49,8 @@ public class RoleIds extends CommandModule {
         super(ALIASES, null, DESCRIPTION);
     }
 
-    /**
-     * Do something with the event, command and arguments.
-     *
-     * @param event     A MessageReceivedEvent that came with the command
-     * @param command   The command alias that was used to trigger this commandExec
-     * @param arguments The arguments that where entered after the command alias
-     */
     @Override
-    public void commandExec(MessageReceivedEvent event, String command, String arguments) {
+    public void commandExec(@NotNull MessageReceivedEvent event, @NotNull String command, String arguments) {
         if (!event.isFromType(ChannelType.TEXT)) {
             event.getChannel().sendMessage("This command only works in a guild.").queue(message -> message.delete().queueAfter(1, TimeUnit.MINUTES));
         } else if (!event.getMember().hasPermission(Permission.MANAGE_ROLES)) {

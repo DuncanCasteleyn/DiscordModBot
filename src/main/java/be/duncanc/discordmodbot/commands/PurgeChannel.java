@@ -35,6 +35,7 @@ import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
+import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import java.time.OffsetDateTime;
@@ -52,22 +53,12 @@ public class PurgeChannel extends CommandModule {
     private static final String ARGUMENTATION_SYNTAX = "[Amount of messages] (Mention user(s) to filter on)";
     private static final String DESCRIPTION = "Cleans the amount of messages given as argument. If (a) user(s) are/is mentioned at the end of this command only their/his messages will be deleted. (Messages older than 2 weeks are ignored due to api issues.)";
 
-    /**
-     * Constructor for abstract class
-     */
     public PurgeChannel() {
         super(ALIASES, ARGUMENTATION_SYNTAX, DESCRIPTION, false);
     }
 
-    /**
-     * Do something with the event, command and arguments.
-     *
-     * @param event     A MessageReceivedEvent that came with the command
-     * @param command   The command alias that was used to trigger this commandExec
-     * @param arguments The arguments that where entered after the command alias
-     */
     @Override
-    public void commandExec(MessageReceivedEvent event, String command, String arguments) {
+    public void commandExec(@NotNull MessageReceivedEvent event, @NotNull String command, String arguments) {
         try {
             event.getMessage().delete().complete();
         } catch (Exception ignored) {

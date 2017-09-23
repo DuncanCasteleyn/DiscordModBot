@@ -32,6 +32,7 @@ import net.dv8tion.jda.core.MessageBuilder;
 import net.dv8tion.jda.core.Permission;
 import net.dv8tion.jda.core.entities.*;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
+import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 
@@ -43,7 +44,7 @@ import java.awt.*;
 public class RemoveMute extends CommandModule {
     private static final String[] ALIASES = new String[]{"Unmute", "RemoveMute"};
     private static final String ARGUMENTATION_SYNTAX = "[User mention] [Reason~]";
-    private static final String DESCRIPTION = "This command allows you to remove the mute from a user and log it to the log channel.";
+    private static final String DESCRIPTION = "This command will remove a mute from a user and log it to the log channel.";
 
     /**
      * Constructor for abstract class
@@ -60,7 +61,7 @@ public class RemoveMute extends CommandModule {
      * @param arguments The arguments that where entered after the command alias
      */
     @Override
-    public void commandExec(MessageReceivedEvent event, String command, String arguments) {
+    public void commandExec(@NotNull MessageReceivedEvent event, @NotNull String command, String arguments) {
         event.getAuthor().openPrivateChannel().queue(
                 privateChannel -> commandExec(event, arguments, privateChannel),
                 throwable -> commandExec(event, arguments, (PrivateChannel) null)
@@ -74,7 +75,7 @@ public class RemoveMute extends CommandModule {
             }
         } else if (!event.getMember().hasPermission(Permission.MANAGE_ROLES)) {
             if (privateChannel != null) {
-                privateChannel.sendMessage(event.getAuthor().getAsMention() + " you need manage roles permission to remove a mute!");
+                privateChannel.sendMessage(event.getAuthor().getAsMention() + " you need manage roles permission to remove a mute!").queue();
             }
         } else if (event.getMessage().getMentionedUsers().size() < 1) {
             if (privateChannel != null) {

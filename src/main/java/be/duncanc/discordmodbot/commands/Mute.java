@@ -34,6 +34,7 @@ import net.dv8tion.jda.core.Permission;
 import net.dv8tion.jda.core.entities.*;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.core.exceptions.PermissionException;
+import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import java.io.Serializable;
@@ -48,22 +49,12 @@ public class Mute extends CommandModule {
     private static final String ARGUMENTATION_SYNTAX = "[User mention] [Reason~]";
     private static final String DESCRIPTION = "This command will put a user in the muted group and log the mute to the log channel.";
 
-    /**
-     * Constructor for abstract class
-     */
     public Mute() {
         super(ALIASES, ARGUMENTATION_SYNTAX, DESCRIPTION);
     }
 
-    /**
-     * Do something with the event, command and arguments.
-     *
-     * @param event     A MessageReceivedEvent that came with the command
-     * @param command   The command alias that was used to trigger this commandExec
-     * @param arguments The arguments that where entered after the command alias
-     */
     @Override
-    public void commandExec(MessageReceivedEvent event, String command, String arguments) {
+    public void commandExec(@NotNull MessageReceivedEvent event, @NotNull String command, String arguments) {
         event.getAuthor().openPrivateChannel().queue(
                 privateChannel -> commandExec(event, arguments, privateChannel),
                 throwable -> commandExec(event, arguments, (PrivateChannel) null)
@@ -77,7 +68,7 @@ public class Mute extends CommandModule {
             }
         } else if (!event.getMember().hasPermission(Permission.MANAGE_ROLES)) {
             if (privateChannel != null) {
-                privateChannel.sendMessage(event.getAuthor().getAsMention() + " you need manage roles permission to mute!");
+                privateChannel.sendMessage(event.getAuthor().getAsMention() + " you need manage roles permission to mute!").queue();
             }
         } else if (event.getMessage().getMentionedUsers().size() < 1) {
             if (privateChannel != null) {

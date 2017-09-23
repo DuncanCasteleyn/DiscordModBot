@@ -41,20 +41,10 @@ class GetSubscriptionList extends CommandModule {
     private static final String[] ALIASES = new String[]{"GetSubscriptionList", "GetSubscriptions", "GSL"};
     private static final String DESCRIPTION = "Get the list of your current subscribed anime.";
 
-    /**
-     * Constructor for class
-     */
     GetSubscriptionList() {
         super(ALIASES, null, DESCRIPTION);
     }
 
-    /**
-     * Do something with the event, command and arguments.
-     *
-     * @param event     A MessageReceivedEvent that came with the command
-     * @param command   The command alias that was used to trigger this commandExec
-     * @param arguments The arguments that where entered after the command alias
-     */
     @Override
     public void commandExec(MessageReceivedEvent event, String command, String arguments) {
         if (!event.isFromType(ChannelType.PRIVATE)) {

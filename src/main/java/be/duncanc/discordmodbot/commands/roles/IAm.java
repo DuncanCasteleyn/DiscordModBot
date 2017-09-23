@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
  */
 class IAm extends CommandModule {
     private static final String[] ALIASES = new String[]{"iam"};
-    private static final String DESCRIPTION = "Command can be used to self assign a role.";
+    private static final String DESCRIPTION = "Can be used to self assign a role.";
 
     private final RoleCommands roleCommands;
 

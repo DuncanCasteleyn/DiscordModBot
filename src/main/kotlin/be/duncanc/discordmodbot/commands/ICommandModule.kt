@@ -35,8 +35,6 @@ import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 interface ICommandModule {
 
     /**
-     * Do something with the event, command and arguments.
-     *
      * @param event     A MessageReceivedEvent that came with the command
      * @param command   The command alias that was used to trigger this commandExec
      * @param arguments The arguments that where entered after the command alias

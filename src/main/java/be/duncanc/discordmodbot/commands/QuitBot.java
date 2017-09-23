@@ -26,6 +26,7 @@
 package be.duncanc.discordmodbot.commands;
 
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.event.Level;
 
 import java.util.ArrayList;
@@ -47,15 +48,8 @@ public class QuitBot extends CommandModule {
         callBeforeBotQuit = new ArrayList<>();
     }
 
-    /**
-     * Do something with the event, command and arguments.
-     *
-     * @param event     A MessageReceivedEvent that came with the command
-     * @param command   The command alias that was used to trigger this commandExec
-     * @param arguments The arguments that where entered after the command alias
-     */
     @Override
-    public void commandExec(MessageReceivedEvent event, String command, String arguments) {
+    public void commandExec(@NotNull MessageReceivedEvent event, @NotNull String command, String arguments) {
         if (event.getAuthor().getIdLong() == 159419654148718593L) {
             callBeforeBotQuit.forEach(beforeBotQuit -> {
                 try {

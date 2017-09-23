@@ -38,6 +38,7 @@ import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.core.hooks.ListenerAdapter;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.event.Level;
 
 import java.awt.*;
@@ -53,7 +54,7 @@ import java.util.concurrent.*;
 public class SlowMode extends CommandModule {
     private static final String[] ALIASES = new String[]{"SlowMode"};
     private static final String ARGUMENTATION_SYNTAX = "[Threshold message limit] [Threshold reset time] [Mute time when threshold hit]";
-    private static final String DESCRIPTION = "This command will prevent spamming in channels by temporary revoking permissions on users that spam in a channel";
+    private static final String DESCRIPTION = "This command will prevent spamming in channels by temporary revoking permissions on users that spam in a channel.";
 
     private ArrayList<SlowModeOnChannel> slowedChannels;
 
@@ -62,15 +63,8 @@ public class SlowMode extends CommandModule {
         slowedChannels = new ArrayList<>();
     }
 
-    /**
-     * Do something with the event, command and arguments.
-     *
-     * @param event     A MessageReceivedEvent that came with the command
-     * @param command   The command alias that was used to trigger this commandExec
-     * @param arguments The arguments that where entered after the command alias
-     */
     @Override
-    public void commandExec(MessageReceivedEvent event, String command, String arguments) {
+    public void commandExec(@NotNull MessageReceivedEvent event, @NotNull String command, String arguments) {
         String[] args;
         if (arguments != null) {
             args = arguments.split(" ");
@@ -81,7 +75,7 @@ public class SlowMode extends CommandModule {
             event.getAuthor().openPrivateChannel().queue(privateChannel -> privateChannel.sendMessage("This command only works in a guild.").queue());
         } else if (!event.getMember().hasPermission(event.getTextChannel(), Permission.MESSAGE_MANAGE)) {
             final String noPermissionMessage = event.getAuthor().getAsMention() + " You need manage messages in this channel to toggle SlowMode!";
-            event.getAuthor().openPrivateChannel().queue(privateChannel -> privateChannel.sendMessage(noPermissionMessage));
+            event.getAuthor().openPrivateChannel().queue(privateChannel -> privateChannel.sendMessage(noPermissionMessage).queue());
         } else {
             if (event.getGuild().getMember(event.getJDA().getSelfUser()).getPermissions().contains(Permission.MANAGE_PERMISSIONS)) {
                 RunBots runBots = RunBots.Companion.getRunBot(event.getJDA());
