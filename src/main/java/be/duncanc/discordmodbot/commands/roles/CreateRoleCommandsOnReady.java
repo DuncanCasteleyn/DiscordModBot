@@ -64,7 +64,7 @@ public final class CreateRoleCommandsOnReady extends ListenerAdapter {
             for (CommandModule roleCommand : roleCommands) {
                 event.getJDA().addEventListener(roleCommand);
             }
-            help.addCommands(roleCommands);
+            help.loadCommands(event.getJDA());
         }
         event.getJDA().removeEventListener(this); //cleanup
     }

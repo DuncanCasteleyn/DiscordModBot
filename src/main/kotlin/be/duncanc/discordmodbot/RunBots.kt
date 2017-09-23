@@ -26,6 +26,7 @@
 package be.duncanc.discordmodbot
 
 import be.duncanc.discordmodbot.commands.*
+import be.duncanc.discordmodbot.commands.roles.CreateRoleCommandsOnReady
 import net.dv8tion.jda.core.AccountType
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.JDABuilder
@@ -45,7 +46,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: be.dunca
     companion object {
 
         internal val generalCommands: Array<CommandModule>
-            get() = arrayOf(be.duncanc.discordmodbot.commands.Ban(), be.duncanc.discordmodbot.commands.BanUserById(), be.duncanc.discordmodbot.commands.ChannelIds(), Info(), be.duncanc.discordmodbot.commands.Kick(), be.duncanc.discordmodbot.commands.Ping(), be.duncanc.discordmodbot.commands.PurgeChannel(), be.duncanc.discordmodbot.commands.RoleIds(), be.duncanc.discordmodbot.commands.SlowMode(), be.duncanc.discordmodbot.commands.UserInfo(), be.duncanc.discordmodbot.commands.Warn(), Eval(), ReactionVote())
+            get() = arrayOf(Ban(), BanUserById(), ChannelIds(), Info(), Kick(), Ping(), PurgeChannel(), RoleIds(), SlowMode(), UserInfo(), Warn(), Eval(), ReactionVote())
 
         private val configFile = Paths.get("Config.json")
         internal val BOT_THREAD_POOL_SIZE = 5
@@ -93,7 +94,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: be.dunca
                         .setToken(configObject.getString("ReZero"))
                         .setEventManager(be.duncanc.discordmodbot.ExecutorServiceEventManager())
                         .setBulkDeleteSplittingEnabled(false)
-                        .addEventListener(reZeroGuildLogger, be.duncanc.discordmodbot.commands.roles.CreateRoleCommandsOnReady(helpCommand, reZeroQuitBot), helpCommand, reZeroQuitBot, memberGate, be.duncanc.discordmodbot.commands.Mute(), be.duncanc.discordmodbot.commands.RemoveMute(), reZeroSettings, be.duncanc.discordmodbot.EventsManager())
+                        .addEventListener(reZeroGuildLogger, CreateRoleCommandsOnReady(helpCommand, reZeroQuitBot), helpCommand, reZeroQuitBot, memberGate, Mute(), RemoveMute(), reZeroSettings, EventsManager())
                 for (generalCommand in generalCommands) {
                     reZeroJDABuilder.addEventListener(generalCommand)
                 }

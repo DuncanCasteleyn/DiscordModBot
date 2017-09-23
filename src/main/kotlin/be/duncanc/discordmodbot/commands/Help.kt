@@ -26,38 +26,49 @@
 package be.duncanc.discordmodbot.commands
 
 import net.dv8tion.jda.core.EmbedBuilder
+import net.dv8tion.jda.core.JDA
+import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 /**
  * Will create a help command containing information about commands.
  *
  * @since 1.0.0
  */
-class Help private constructor() : CommandModule(ALIASES, null, DESCRIPTION) {
+class Help constructor() : CommandModule(ALIASES, null, DESCRIPTION) {
 
     private val helpEmbed: EmbedBuilder = EmbedBuilder().setTitle("Help")
 
+    @Suppress("UNUSED_PARAMETER")
+    @Deprecated("No longer supported, use default constructor instead.", ReplaceWith("Help()"))
+    constructor(vararg commandModules: CommandModule) : this()
 
-    constructor(vararg commandModules: CommandModule) : this() {
-        addCommands(*commandModules)
+    @Suppress("UNUSED_PARAMETER")
+    @Deprecated("No longer supported.", ReplaceWith("loadCommands(jda)"))
+    fun addCommands(vararg commandModules: CommandModule) {
+        throw UnsupportedOperationException("No longer supported.")
+        //Arrays.stream(commandModules).forEach { commandModule -> helpEmbed.addField(Arrays.toString(commandModule.aliases).replace("[", "").replace("]", "").replace(",", ", ") + if (commandModule.argumentationSyntax != null) " " + commandModule.argumentationSyntax else "", commandModule.description, false) }
     }
 
-    fun addCommands(vararg commandModules: CommandModule) {
-        Arrays.stream(commandModules).forEach { commandModule -> helpEmbed.addField(Arrays.toString(commandModule.aliases).replace("[", "").replace("]", "").replace(",", ", ") + if (commandModule.argumentationSyntax != null) " " + commandModule.argumentationSyntax else "", commandModule.description, false) }
+    fun loadCommands(jda: JDA) {
+        helpEmbed.clearFields()
+        jda.registeredListeners.filter { it is CommandModule }.forEach {
+            it as CommandModule
+            helpEmbed.addField(Arrays.toString(it.aliases).replace("[", "").replace("]", "").replace(",", ", ") + if (it.argumentationSyntax != null) " " + it.argumentationSyntax else "", it.description, false)
+        }
+    }
+
+    override fun onReady(event: ReadyEvent) {
+        loadCommands(event.jda)
     }
 
     /**
-     * Do something with the event, command and arguments.
-
-     * @param event     A MessageReceivedEvent that came with the command
-     * *
-     * @param command   The command alias that was used to trigger this commandExec
-     * *
-     * @param arguments The arguments that where entered after the command alias
+     * Sends an embed to the users containing help for the commands
      */
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-        event.author.openPrivateChannel().queue { privateChannel -> privateChannel.sendMessage(helpEmbed.build()).queue() }
+        event.channel.sendMessage(helpEmbed.build()).queue { it.delete().queueAfter(2, TimeUnit.MINUTES) }
     }
 
     companion object {
