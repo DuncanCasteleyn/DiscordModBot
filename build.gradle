@@ -55,6 +55,7 @@ repositories {
 
 dependencies {
     testCompile("org.junit.jupiter:junit-jupiter-api:5.0.0")
+    testCompile group: 'org.slf4j', name: 'slf4j-nop', version: '1.7.21'
     testRuntime("org.junit.jupiter:junit-jupiter-engine:5.0.0")
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
     compile "net.dv8tion:JDA:3.3.1_276"
