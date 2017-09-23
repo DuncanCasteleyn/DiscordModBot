@@ -56,7 +56,7 @@ class Help constructor() : CommandModule(ALIASES, null, DESCRIPTION) {
         helpEmbed.clearFields()
         jda.registeredListeners.filter { it is CommandModule }.forEach {
             it as CommandModule
-            helpEmbed.addField(Arrays.toString(it.aliases).replace("[", "").replace("]", "").replace(",", ", ") + if (it.argumentationSyntax != null) " " + it.argumentationSyntax else "", it.description, false)
+            helpEmbed.addField(Arrays.toString(it.aliases).replace("[", "").replace("]", "").replace(",", ", ") + if (it.argumentationSyntax != null) " " + it.argumentationSyntax else "", it.description ?: "No description available.", false)
         }
     }
 
