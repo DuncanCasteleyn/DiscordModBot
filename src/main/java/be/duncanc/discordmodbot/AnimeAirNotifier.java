@@ -28,6 +28,7 @@ package be.duncanc.discordmodbot;
 import net.dv8tion.jda.core.utils.SimpleLog;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.slf4j.event.Level;
 
 import java.io.IOException;
 import java.nio.channels.ClosedByInterruptException;
@@ -56,7 +57,7 @@ public class AnimeAirNotifier {
         try {
             input = Files.readAllLines(file);
         } catch (IOException e) {
-            LOG.log(e);
+            LOG.log(Level.ERROR, e);
         }
         JSONObject jsonObject;
         if (input != null) {
@@ -116,7 +117,7 @@ public class AnimeAirNotifier {
                     Files.write(file, lines, Charset.forName("UTF-8"));
                 } catch (ClosedByInterruptException ignored) {
                 } catch (Exception e) {
-                    LOG.log(e);
+                    LOG.log(Level.ERROR, e);
                 }
             }
         }

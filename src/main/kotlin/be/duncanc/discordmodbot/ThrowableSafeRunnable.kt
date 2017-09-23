@@ -26,6 +26,7 @@
 package be.duncanc.discordmodbot
 
 import net.dv8tion.jda.core.utils.SimpleLog
+import org.slf4j.event.Level
 
 /**
  * This object wraps a runnable making it possible to easily create a runnable that catches a `Throwable` and logs it.
@@ -48,7 +49,7 @@ class ThrowableSafeRunnable constructor(private val runnable: Runnable, private 
         try {
             runnable.run()
         } catch (t: Throwable) {
-            logger.log(t)
+            logger.log(Level.ERROR, t)
         }
     }
 }

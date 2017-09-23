@@ -40,6 +40,7 @@ import org.apache.commons.collections4.map.LinkedMap
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
+import org.slf4j.event.Level
 import java.awt.Color
 import java.io.IOException
 import java.nio.charset.Charset
@@ -97,10 +98,10 @@ open class MemberGate internal constructor(private val guildId: Long, private va
             }
         } catch (ioE: IOException) {
             tempQuestions = ArrayList()
-            LOG.log(ioE)
+            LOG.log(Level.ERROR, ioE)
         } catch (jE: JSONException) {
             tempQuestions = ArrayList()
-            LOG.log(jE)
+            LOG.log(Level.ERROR, jE)
         }
         questions = tempQuestions
     }

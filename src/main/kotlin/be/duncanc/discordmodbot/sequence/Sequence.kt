@@ -35,6 +35,7 @@ import net.dv8tion.jda.core.events.guild.member.GuildMemberLeaveEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.hooks.ListenerAdapter
 import net.dv8tion.jda.core.utils.SimpleLog
+import org.slf4j.event.Level
 import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -76,7 +77,7 @@ abstract class Sequence @JvmOverloads protected constructor(val user: User, val 
                         "You can also kill a sequence by sending \"STOP\"").complete()
                 addMessageToCleaner(sequenceInformMessage)
             } catch (e: Exception) {
-                LOG.log(e)
+                LOG.log(Level.TRACE, e)
             }
         }
     }
@@ -95,7 +96,7 @@ abstract class Sequence @JvmOverloads protected constructor(val user: User, val 
         try {
             onMessageReceivedDuringSequence(event)
         } catch (t: Throwable) {
-            LOG.log(t)
+            LOG.log(Level.TRACE, t)
             destroy()
             val errorMessage: Message = MessageBuilder().append(user.asMention + " The sequence has been terminated due to an error; see the message below for more information.")
                     .appendCodeBlock(t.javaClass.simpleName + ": " + t.message, "text")

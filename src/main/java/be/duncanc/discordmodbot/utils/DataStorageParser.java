@@ -28,6 +28,7 @@ package be.duncanc.discordmodbot.utils;
 import net.dv8tion.jda.core.utils.SimpleLog;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.slf4j.event.Level;
 
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.charset.Charset;
@@ -65,7 +66,7 @@ public final class DataStorageParser {
         } catch (JSONException | NoSuchFileException e) {
             notFinalJSONObject = new JSONObject();
         } catch (Exception e) {
-            LOG.log(e);
+            LOG.log(Level.ERROR, e);
             throw new InstantiationError(e.getMessage());
         }
         jsonObject = notFinalJSONObject;
@@ -112,7 +113,7 @@ public final class DataStorageParser {
                     Files.write(file, lines, Charset.forName("UTF-8"));
                 } catch (ClosedByInterruptException ignored) {
                 } catch (Exception e) {
-                    LOG.log(e);
+                    LOG.log(Level.ERROR, e);
                 }
             }
         };

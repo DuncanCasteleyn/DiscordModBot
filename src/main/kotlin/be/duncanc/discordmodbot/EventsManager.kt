@@ -35,6 +35,7 @@ import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.utils.SimpleLog
 import org.json.JSONObject
+import org.slf4j.event.Level
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
 import java.nio.file.Paths
@@ -110,7 +111,7 @@ open class EventsManager : CommandModule(be.duncanc.discordmodbot.EventsManager.
                         throw IllegalStateException("Unexpected type " + it.javaClass.typeName + " after mapping JSON.")
                     }
                 } catch (ise: IllegalStateException) {
-                    be.duncanc.discordmodbot.EventsManager.Companion.LOG.log(ise)
+                    EventsManager.Companion.LOG.log(Level.ERROR, ise)
                 }
                 events.put(it.key.toLong(), arrayList)
             }

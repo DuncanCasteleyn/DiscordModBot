@@ -26,8 +26,8 @@
 package be.duncanc.discordmodbot.commands.roles;
 
 import be.duncanc.discordmodbot.IAmRoles;
-import be.duncanc.discordmodbot.commands.QuitBot;
 import be.duncanc.discordmodbot.commands.CommandModule;
+import be.duncanc.discordmodbot.commands.QuitBot;
 
 /**
  * Created by Duncan on 23/02/2017.

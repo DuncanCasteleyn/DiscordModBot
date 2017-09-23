@@ -28,6 +28,7 @@ package be.duncanc.discordmodbot;
 import net.dv8tion.jda.core.utils.SimpleLog;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.slf4j.event.Level;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -94,7 +95,7 @@ public class CaseSystem {
             try {
                 Files.write(fileStorage, Collections.singletonList(jsonObject.toString()), Charset.defaultCharset());
             } catch (IOException e) {
-                LOG.log(e);
+                LOG.log(Level.ERROR, e);
                 lastUsedNumber--;
                 throw e;
             }
@@ -116,7 +117,7 @@ public class CaseSystem {
                 try {
                     Files.write(fileStorage, Collections.singletonList(jsonObject.toString()), Charset.defaultCharset());
                 } catch (IOException e) {
-                    LOG.log(e);
+                    LOG.log(Level.ERROR, e);
                 }
             }
         }

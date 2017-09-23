@@ -20,6 +20,7 @@ import net.dv8tion.jda.core.utils.SimpleLog;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.slf4j.event.Level;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -95,7 +96,7 @@ public class GoogleSearch {
             }
             return results;
         } catch (IOException e) {
-            LOG.log(e);
+            LOG.log(Level.ERROR, e);
             return null;
         }
     }

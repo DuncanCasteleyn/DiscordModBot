@@ -17,6 +17,7 @@
 package be.duncanc.discordmodbot.utils;
 
 import net.dv8tion.jda.core.utils.SimpleLog;
+import org.slf4j.event.Level;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -51,7 +52,7 @@ public class WebPageDownloader {
                 webpageText += line;
             }
         } catch (IOException ioe) {
-            LOG.log(ioe);
+            LOG.log(Level.ERROR, ioe);
             return null;
         } finally {
             try {

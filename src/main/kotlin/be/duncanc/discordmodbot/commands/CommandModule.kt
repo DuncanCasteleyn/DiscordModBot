@@ -32,6 +32,7 @@ import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.exceptions.PermissionException
 import net.dv8tion.jda.core.hooks.ListenerAdapter
 import net.dv8tion.jda.core.utils.SimpleLog
+import org.slf4j.event.Level
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -88,7 +89,7 @@ abstract class CommandModule @JvmOverloads protected constructor(internal val al
 
                 } catch (t: Throwable) {
                     LOG.fatal("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " failed executing " + event.message.content + " command from user " + event.author.toString())
-                    LOG.log(t)
+                    LOG.log(Level.TRACE, t)
                     val exceptionMessage = MessageBuilder().append("Cannot complete action due to an error; see the message below for details.").appendCodeBlock(t.javaClass.simpleName + ": " + t.message, "text").build()
                     event.channel.sendMessage(exceptionMessage).queue { it.delete().queueAfter(5, TimeUnit.MINUTES) }
                 }

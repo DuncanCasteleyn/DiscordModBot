@@ -30,6 +30,7 @@ import net.dv8tion.jda.core.AccountType
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.JDABuilder
 import net.dv8tion.jda.core.utils.SimpleLog
+import org.slf4j.event.Level
 
 /**
  * This main class starts the bot
@@ -64,7 +65,7 @@ class TestBot private constructor(bot: JDA, logToChannel: be.duncanc.discordmodb
 
                 be.duncanc.discordmodbot.MessageHistory.registerMessageHistory(devJDA)
             } catch (e: Exception) {
-                LOG.log(e)
+                LOG.log(Level.ERROR, e)
             }
         }
     }

@@ -31,6 +31,7 @@ import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.JDABuilder
 import net.dv8tion.jda.core.utils.SimpleLog
 import org.json.JSONObject
+import org.slf4j.event.Level
 import java.nio.file.Files
 import java.nio.file.Paths
 
@@ -73,15 +74,15 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: be.dunca
                         .setEventManager(be.duncanc.discordmodbot.ExecutorServiceEventManager())
                         .setToken(configObject.getString("FairyTail"))
                         .setBulkDeleteSplittingEnabled(false)
-                        .addEventListener(fairyTailGuildLogger, Help(*generalCommands), fairyTailQuitBot, fairyTailSettings)
+                        .addEventListener(fairyTailGuildLogger, Help(), fairyTailQuitBot, fairyTailSettings)
                 for (generalCommand in generalCommands) {
                     fairyTailJDABuilder.addEventListener(generalCommand)
                 }
 
-                val reZeroLogToChannel = be.duncanc.discordmodbot.LogToChannel()
+                val reZeroLogToChannel = LogToChannel()
                 val reZeroSettings = Settings()
                 val reZeroGuildLogger = GuildLogger(reZeroLogToChannel, reZeroSettings)
-                val helpCommand = Help(*generalCommands)
+                val helpCommand = Help()
                 val reZeroQuitBot = be.duncanc.discordmodbot.commands.QuitBot()
 
                 //todo Make configurable with Settings.
@@ -116,7 +117,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: be.dunca
                     be.duncanc.discordmodbot.MessageHistory.registerMessageHistory(bot.bot)
                 }
             } catch (e: Exception) {
-                LOG.log(e)
+                LOG.log(Level.ERROR, e)
             }
 
         }

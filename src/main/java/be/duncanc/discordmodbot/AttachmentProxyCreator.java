@@ -34,6 +34,7 @@ import net.dv8tion.jda.core.utils.SimpleLog;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.apache.commons.collections4.map.LinkedMap;
+import org.slf4j.event.Level;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -141,7 +142,7 @@ class AttachmentProxyCreator {
 
                     event.getJDA().getTextChannelById(CACHE_CHANNEL).sendFile(buffer.toByteArray(), attachment.getFileName(), new MessageBuilder().append(event.getMessage().getId()).build()).queue(message -> addToCache(event.getMessage().getIdLong(), message));
                 } catch (Exception e) {
-                    LOG.log(e);
+                    LOG.log(Level.TRACE, e);
                     addToCache(event.getMessage().getIdLong(), null);
                 } finally {
                     if (in != null) {
