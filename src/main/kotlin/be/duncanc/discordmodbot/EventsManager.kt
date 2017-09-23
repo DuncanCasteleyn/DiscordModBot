@@ -26,6 +26,7 @@
 package be.duncanc.discordmodbot
 
 import be.duncanc.discordmodbot.commands.CommandModule
+import be.duncanc.discordmodbot.commands.Help
 import be.duncanc.discordmodbot.sequence.Sequence
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
@@ -63,9 +64,10 @@ open class EventsManager : CommandModule(be.duncanc.discordmodbot.EventsManager.
     }
 
     override fun onReady(event: ReadyEvent) {
+        event.jda.addEventListener(EventManagerCommand())
+        (event.jda.registeredListeners.first { it is Help } as Help).loadCommands(event.jda)
         readEventsFromFile()
         cleanExpiredEvents()
-        event.jda.addEventListener(EventManagerCommand())
     }
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
