@@ -24,7 +24,7 @@
  */
 
 buildscript {
-    ext.kotlin_version = '1.1.50'
+    ext.kotlin_version = '1.1.51'
     repositories {
         mavenCentral()
     }
@@ -45,7 +45,7 @@ apply plugin: 'kotlin'
 
 mainClassName = 'be.duncanc.discordmodbot.RunBots'
 
-version '1.1.0_32'
+version '1.1.0_33'
 
 sourceCompatibility = 1.8
 
@@ -55,11 +55,11 @@ repositories {
 
 dependencies {
     testCompile("org.junit.jupiter:junit-jupiter-api:5.0.0")
-    testCompile group: 'org.slf4j', name: 'slf4j-nop', version: '1.7.21'
     testRuntime("org.junit.jupiter:junit-jupiter-engine:5.0.0")
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
-    compile "net.dv8tion:JDA:3.3.1_276"
+    compile "net.dv8tion:JDA:3.3.1_284"
     compile 'org.apache.commons:commons-lang3:3.5'
+    compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.21'
 }
 
 task wrapper(type: Wrapper) {

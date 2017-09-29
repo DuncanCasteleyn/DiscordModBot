@@ -33,8 +33,11 @@ import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.guild.GuildJoinEvent
 import net.dv8tion.jda.core.events.guild.GuildLeaveEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import net.dv8tion.jda.core.utils.SimpleLog
 import org.json.JSONObject
+import org.slf4j.event.Level
 import java.nio.file.Files
+import java.nio.file.NoSuchFileException
 import java.nio.file.Paths
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -46,7 +49,7 @@ import java.util.concurrent.TimeUnit
  * @since 1.0.0
  */
 
-//todo remove hard coded code.
+//todo Add GuildSettings to sequence
 internal open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
 
     companion object {
@@ -54,56 +57,80 @@ internal open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
         private val ALIAS = arrayOf("settings")
         private const val DESCRIPTION = "Adjust server settings."
         private const val OWNER_ID = 159419654148718593L
-    }
+        private val exceptedFromLogging = ArrayList<Long>()
+        private val guildSettings = ArrayList<GuildSettings>()
 
-    private val exceptedFromLogging = ArrayList<Long>()
-    private val guildSettings = ArrayList<GuildSettings>()
+        init {
+            loadGuildSettingFromFile()
+        }
+
+        private fun writeGuildSettingToFile() {
+            synchronized(this) {
+                val jsonObject = JSONObject()
+                jsonObject.put("guildSettings", guildSettings)
+                jsonObject.put("exceptedFromLogging", exceptedFromLogging)
+                Files.write(FILE_PATH, Collections.singletonList(jsonObject.toString()))
+            }
+        }
+
+        private fun loadGuildSettingFromFile() {
+            synchronized(this) {
+                val stringBuilder = StringBuilder()
+                Files.readAllLines(FILE_PATH).map { stringBuilder.append(it) }
+                val jsonObject = JSONObject(stringBuilder.toString())
+                jsonObject.getJSONArray("guildSettings").forEach {
+                    it as JSONObject
+                    guildSettings.add(GuildSettings(it.getLong("guildId"), it.getBoolean("logMessageDelete"), it.getBoolean("logMessageUpdate"), it.getBoolean("logMemberRemove"), it.getBoolean("logMemberBan"), it.getBoolean("logMemberAdd"), it.getBoolean("logMemberRemoveBan")))
+                }
+                jsonObject.getJSONArray("exceptedFromLogging").forEach {
+                    exceptedFromLogging.add(it.toString().toLong())
+                }
+            }
+        }
+    }
 
     init {
-        exceptedFromLogging.add(231422572011585536L)
-        exceptedFromLogging.add(205415791238184969L)
-        exceptedFromLogging.add(204047108318298112L)
-    }
-
-    fun writeGuildSettingToFile() {
-        val jsonObject = JSONObject()
-        jsonObject.put("guildSettings", guildSettings)
-        jsonObject.put("exceptedFromLogging", exceptedFromLogging)
-        Files.write(FILE_PATH, Collections.singletonList(jsonObject.toString()))
-    }
-
-    fun loadGuildSettingFromFile() {
-        val stringBuilder = StringBuilder()
-        Files.readAllLines(FILE_PATH).map { stringBuilder.append(it) }
-        val jsonObject = JSONObject(stringBuilder.toString())
-        jsonObject["guildSettings"].to(guildSettings)
-        jsonObject["exceptedFromLogging"].to(exceptedFromLogging)
+        try {
+            loadGuildSettingFromFile()
+        } catch (e: NoSuchFileException) {
+            SimpleLog.getLog(CommandModule::class.java.simpleName).log(Level.WARN, e)
+        }
     }
 
     fun isExceptedFromLogging(channelId: Long): Boolean {
-        return exceptedFromLogging.contains(channelId)
+        synchronized(Companion) {
+            return exceptedFromLogging.contains(channelId)
+        }
     }
 
     fun getGuildSettings(): List<GuildSettings> {
-        return Collections.unmodifiableList(guildSettings)
+        synchronized(Companion) {
+            return Collections.unmodifiableList(guildSettings)
+        }
     }
 
     override fun onReady(event: ReadyEvent) {
-        event.jda.guilds.forEach {
-            val settings = GuildSettings(it.idLong)
-            guildSettings.add(settings)
-            if (it.idLong == 175856762677624832L) {
-                settings.isLogMessageUpdate = false
+        synchronized(Companion) {
+            event.jda.guilds.forEach {
+                val settings = GuildSettings(it.idLong)
+                guildSettings.add(settings)
+                if (it.idLong == 175856762677624832L) {
+                    settings.isLogMessageUpdate = false
+                }
             }
         }
     }
 
     override fun onGuildJoin(event: GuildJoinEvent) {
-        guildSettings.add(GuildSettings(event.guild.idLong))
+        synchronized(Companion) {
+            guildSettings.add(GuildSettings(event.guild.idLong))
+        }
     }
 
     override fun onGuildLeave(event: GuildLeaveEvent) {
-        guildSettings.removeIf { it.guildId == event.guild.idLong }
+        synchronized(Companion) {
+            guildSettings.removeIf { it.guildId == event.guild.idLong }
+        }
     }
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
@@ -168,5 +195,36 @@ internal open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
         }
     }
 
-    inner class GuildSettings @JvmOverloads constructor(val guildId: Long, var isLogMessageDelete: Boolean = true, var isLogMessageUpdate: Boolean = true, var isLogMemberRemove: Boolean = true, var isLogMemberBan: Boolean = true, var isLogMemberAdd: Boolean = true, var isLogMemberRemoveBan: Boolean = true)
+    class GuildSettings @JvmOverloads constructor(val guildId: Long, isLogMessageDelete: Boolean = true, isLogMessageUpdate: Boolean = true, isLogMemberRemove: Boolean = true, isLogMemberBan: Boolean = true, isLogMemberAdd: Boolean = true, isLogMemberRemoveBan: Boolean = true) {
+        var isLogMemberRemoveBan = isLogMemberRemoveBan
+            set(value) {
+                field = value
+                writeGuildSettingToFile()
+            }
+        var isLogMemberAdd = isLogMemberAdd
+            set(value) {
+                field = value
+                writeGuildSettingToFile()
+            }
+        var isLogMemberBan = isLogMemberBan
+            set(value) {
+                field = value
+                writeGuildSettingToFile()
+            }
+        var isLogMemberRemove = isLogMemberRemove
+            set(value) {
+                field = value
+                writeGuildSettingToFile()
+            }
+        var isLogMessageUpdate = isLogMessageUpdate
+            set(value) {
+                field = value
+                writeGuildSettingToFile()
+            }
+        var isLogMessageDelete = isLogMessageDelete
+            set(value) {
+                field = value
+                writeGuildSettingToFile()
+            }
+    }
 }
