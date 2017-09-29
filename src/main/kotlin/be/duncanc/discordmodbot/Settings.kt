@@ -67,8 +67,9 @@ internal open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
         private fun writeGuildSettingToFile() {
             synchronized(this) {
                 val jsonObject = JSONObject()
-                jsonObject.put("guildSettings", guildSettings)
-                jsonObject.put("exceptedFromLogging", exceptedFromLogging)
+                val companionFields = Companion::class.java.declaredFields
+                jsonObject.put(companionFields[4].name, guildSettings)
+                jsonObject.put(companionFields[5].name, exceptedFromLogging)
                 Files.write(FILE_PATH, Collections.singletonList(jsonObject.toString()))
             }
         }
@@ -80,7 +81,8 @@ internal open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
                 val jsonObject = JSONObject(stringBuilder.toString())
                 jsonObject.getJSONArray("guildSettings").forEach {
                     it as JSONObject
-                    guildSettings.add(GuildSettings(it.getLong("guildId"), it.getBoolean("logMessageDelete"), it.getBoolean("logMessageUpdate"), it.getBoolean("logMemberRemove"), it.getBoolean("logMemberBan"), it.getBoolean("logMemberAdd"), it.getBoolean("logMemberRemoveBan")))
+                    val guildSettingFields = GuildSettings::class.java.declaredFields
+                    guildSettings.add(GuildSettings(it.getLong(guildSettingFields[0].name), it.getBoolean(guildSettingFields[1].name), it.getBoolean(guildSettingFields[2].name), it.getBoolean(guildSettingFields[3].name), it.getBoolean(guildSettingFields[4].name), it.getBoolean(guildSettingFields[5].name), it.getBoolean(guildSettingFields[6].name)))
                 }
                 jsonObject.getJSONArray("exceptedFromLogging").forEach {
                     exceptedFromLogging.add(it.toString().toLong())
