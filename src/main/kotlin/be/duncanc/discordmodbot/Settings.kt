@@ -51,7 +51,7 @@ import java.util.concurrent.TimeUnit
  */
 
 //todo Add GuildSettings to sequence
- open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
+open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
 
     companion object {
         private val FILE_PATH = Paths.get("GuildSettings.json")
@@ -225,22 +225,7 @@ import java.util.concurrent.TimeUnit
     }
 
     class GuildSettings @JvmOverloads constructor(val guildId: Long, logMessageDelete: Boolean = true, logMessageUpdate: Boolean = true, logMemberRemove: Boolean = true, logMemberBan: Boolean = true, logMemberAdd: Boolean = true, logMemberRemoveBan: Boolean = true) {
-        var logMemberRemoveBan = logMemberRemoveBan
-            set(value) {
-                field = value
-                writeGuildSettingToFile()
-            }
-        var logMemberAdd = logMemberAdd
-            set(value) {
-                field = value
-                writeGuildSettingToFile()
-            }
-        var logMemberBan = logMemberBan
-           set(value) {
-               field = value
-               writeGuildSettingToFile()
-           }
-        var logMemberRemove = logMemberRemove
+        var logMessageDelete = logMessageDelete
             set(value) {
                 field = value
                 writeGuildSettingToFile()
@@ -250,7 +235,22 @@ import java.util.concurrent.TimeUnit
                 field = value
                 writeGuildSettingToFile()
             }
-        var logMessageDelete = logMessageDelete
+        var logMemberRemove = logMemberRemove
+            set(value) {
+                field = value
+                writeGuildSettingToFile()
+            }
+        var logMemberBan = logMemberBan
+            set(value) {
+                field = value
+                writeGuildSettingToFile()
+            }
+        var logMemberAdd = logMemberAdd
+            set(value) {
+                field = value
+                writeGuildSettingToFile()
+            }
+        var logMemberRemoveBan = logMemberRemoveBan
             set(value) {
                 field = value
                 writeGuildSettingToFile()

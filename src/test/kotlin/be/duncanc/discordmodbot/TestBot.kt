@@ -30,10 +30,7 @@ import net.dv8tion.jda.core.AccountType
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.JDABuilder
 import net.dv8tion.jda.core.utils.SimpleLog
-import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
-import org.slf4j.impl.SimpleLogger
-import org.slf4j.impl.SimpleLoggerFactory
 
 /**
  * This main class starts the bot
