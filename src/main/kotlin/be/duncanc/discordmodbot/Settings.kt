@@ -27,6 +27,7 @@ package be.duncanc.discordmodbot
 
 import be.duncanc.discordmodbot.commands.CommandModule
 import be.duncanc.discordmodbot.sequence.Sequence
+import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.entities.MessageChannel
 import net.dv8tion.jda.core.entities.User
 import net.dv8tion.jda.core.events.ReadyEvent
@@ -146,6 +147,7 @@ internal open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
     inner class SettingsSequence(user: User, channel: MessageChannel) : Sequence(user, channel) {
         private val eventManger: be.duncanc.discordmodbot.EventsManager
         private var sequenceNumber = 0.toByte()
+        private var booleanToChange = 0
 
         init {
             try {
@@ -154,8 +156,9 @@ internal open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
                 destroy()
                 throw UnsupportedOperationException("This bot does not have an event manager", e)
             }
-            super.channel.sendMessage("What would you like to do? Respond with the number of the action you'd like to perform.\n\n" +
-                    "0. Add or remove this guild from the event manager").queue { super.addMessageToCleaner(it) }
+            super.channel.sendMessage("What would you like to do? Respond with the number of the action you'd like to perform?\n\n" +
+                    "0. Add or remove this guild from the event manager\n" +
+                    "1. Modify log settings").queue { super.addMessageToCleaner(it) }
         }
 
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
@@ -172,6 +175,15 @@ internal open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
                             }
                             super.channel.sendMessageFormat("The guild is currently %s in the list to use the event manager, do you want to %s it? Respond with \"yes\" or \"no\".", response[0], response[1]).queue { addMessageToCleaner(it) }
                             sequenceNumber = 1
+                        }
+                        1.toByte() -> {
+                            val settingFields = GuildSettings::class.java.declaredFields.map { it.name }
+                            val messageBuilder = MessageBuilder()
+                            for(i in 0 until settingFields.size) {
+                                messageBuilder.append(i).append(". ").append(settingFields[i])
+                            }
+                            channel.sendMessage(messageBuilder.build()).queue { addMessageToCleaner(it) }
+                            sequenceNumber = 2
                         }
                     }
                 }
@@ -192,6 +204,16 @@ internal open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
                             super.destroy()
                         }
                     }
+                }
+                2.toByte() -> {
+                    booleanToChange = event.message.rawContent.toInt()
+                    sequenceNumber = 3
+                    channel.sendMessage("Please what should the boolean value be? True or False?").queue { addMessageToCleaner(it) }
+                }
+                3.toByte() -> {
+                    GuildSettings::class.java.declaredFields[booleanToChange].setBoolean(guildSettings.filter { it.guildId == event.guild.idLong }[0], event.message.rawContent.toBoolean())
+                    channel.sendMessage("Successfully change value.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                    destroy()
                 }
             }
         }
