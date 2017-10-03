@@ -34,7 +34,7 @@ import java.net.URL;
  * For the original see: https://github.com/DV8FromTheWorld/Yui/blob/master/src/main/java/net/dv8tion/discord/util/Downloader.java
  */
 public class WebPageDownloader {
-    private static final SimpleLog LOG = SimpleLog.getLog(WebPageDownloader.class.getSimpleName());
+    private static final SimpleLog LOG = SimpleLog.getLog(WebPageDownloader.class);
 
     public static String webPage(String urlText) {
         String webpageText = "";

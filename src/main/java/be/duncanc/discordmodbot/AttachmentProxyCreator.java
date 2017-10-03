@@ -48,7 +48,7 @@ import java.util.ArrayList;
 class AttachmentProxyCreator {
     private static final long CACHE_CHANNEL = 310006048595509248L;
     private static final int CACHE_SIZE = 500;
-    private static final SimpleLog LOG = SimpleLog.getLog(AttachmentProxyCreator.class.getSimpleName());
+    private static final SimpleLog LOG = SimpleLog.getLog(AttachmentProxyCreator.class);
 
     private final LinkedMap<Long, Message> attachmentCache;
 
@@ -142,7 +142,7 @@ class AttachmentProxyCreator {
 
                     event.getJDA().getTextChannelById(CACHE_CHANNEL).sendFile(buffer.toByteArray(), attachment.getFileName(), new MessageBuilder().append(event.getMessage().getId()).build()).queue(message -> addToCache(event.getMessage().getIdLong(), message));
                 } catch (Exception e) {
-                    LOG.log(Level.TRACE, e);
+                    LOG.log(Level.INFO, e);
                     addToCache(event.getMessage().getIdLong(), null);
                 } finally {
                     if (in != null) {

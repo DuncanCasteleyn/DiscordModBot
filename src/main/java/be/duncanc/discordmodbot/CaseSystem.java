@@ -44,7 +44,7 @@ import java.util.Collections;
  * Created by Duncan on 7/06/2017.
  */
 public class CaseSystem {
-    private static final SimpleLog LOG = SimpleLog.getLog(CaseSystem.class.getSimpleName());
+    private static final SimpleLog LOG = SimpleLog.getLog(CaseSystem.class);
     private static final Path fileStorage = Paths.get("CaseSystem.json");
 
     private final long guildId;

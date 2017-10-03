@@ -51,7 +51,7 @@ import java.util.List;
 //todo add to settings class
 public class LogToChannel {
 
-    private static final SimpleLog LOG = SimpleLog.getLog(LogToChannel.class.getSimpleName());
+    private static final SimpleLog LOG = SimpleLog.getLog(LogToChannel.class);
     private final List<TextChannel> logChannels;
 
     /**

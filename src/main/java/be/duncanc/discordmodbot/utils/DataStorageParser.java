@@ -48,7 +48,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Deprecated
 public final class DataStorageParser {
-    private static final SimpleLog LOG = SimpleLog.getLog(DataStorageParser.class.getSimpleName());
+    private static final SimpleLog LOG = SimpleLog.getLog(DataStorageParser.class);
     private static final Runnable autoSaver;
     private static final Runnable jsonWriter;
     private static final Path file = Paths.get("DiscordBot.json");

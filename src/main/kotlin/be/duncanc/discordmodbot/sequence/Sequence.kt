@@ -49,7 +49,7 @@ import java.util.concurrent.TimeUnit
  */
 abstract class Sequence @JvmOverloads protected constructor(val user: User, val channel: MessageChannel, cleanAfterSequence: Boolean = true, informUser: Boolean = true) : ListenerAdapter(), ISequence {
     companion object {
-        private val LOG = SimpleLog.getLog(Sequence::class.java.simpleName)
+        private val LOG = SimpleLog.getLog(Sequence::class.java)
     }
 
     private val cleanAfterSequence: ArrayList<Message>?
@@ -77,7 +77,7 @@ abstract class Sequence @JvmOverloads protected constructor(val user: User, val 
                         "You can also kill a sequence by sending \"STOP\"").complete()
                 addMessageToCleaner(sequenceInformMessage)
             } catch (e: Exception) {
-                LOG.log(Level.TRACE, e)
+                LOG.log(Level.INFO, e)
             }
         }
     }
@@ -96,7 +96,7 @@ abstract class Sequence @JvmOverloads protected constructor(val user: User, val 
         try {
             onMessageReceivedDuringSequence(event)
         } catch (t: Throwable) {
-            LOG.log(Level.TRACE, t)
+            LOG.log(Level.INFO, t)
             destroy()
             val errorMessage: Message = MessageBuilder().append(user.asMention + " The sequence has been terminated due to an error; see the message below for more information.")
                     .appendCodeBlock(t.javaClass.simpleName + ": " + t.message, "text")
@@ -121,7 +121,7 @@ abstract class Sequence @JvmOverloads protected constructor(val user: User, val 
     /**
      * Let the garbage collector destroy this object.
      */
-    @SuppressWarnings("unused")
+    @Suppress("unused")
     @Throws(Throwable::class)
     protected open fun finalize() {
         destroy()

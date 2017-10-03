@@ -30,7 +30,10 @@ import net.dv8tion.jda.core.AccountType
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.JDABuilder
 import net.dv8tion.jda.core.utils.SimpleLog
+import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
+import org.slf4j.impl.SimpleLogger
+import org.slf4j.impl.SimpleLoggerFactory
 
 /**
  * This main class starts the bot
@@ -38,11 +41,12 @@ import org.slf4j.event.Level
 class TestBot private constructor(bot: JDA, logToChannel: be.duncanc.discordmodbot.LogToChannel, logger: GuildLogger) : RunBots(bot, logToChannel, logger) {
     companion object {
 
-        private val LOG = SimpleLog.getLog(TestBot::class.java.simpleName)
+        private val LOG = SimpleLog.getLog(TestBot::class.java)
 
 
         @JvmStatic
         fun main(args: Array<String>) {
+
             try {
                 val configObject = loadConfig()
 

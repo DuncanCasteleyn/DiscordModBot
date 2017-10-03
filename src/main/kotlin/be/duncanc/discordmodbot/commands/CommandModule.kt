@@ -48,7 +48,7 @@ import java.util.concurrent.TimeUnit
 abstract class CommandModule @JvmOverloads protected constructor(internal val aliases: Array<String>, internal val argumentationSyntax: String?, internal val description: String?, private val cleanCommandMessage: Boolean = true) : ListenerAdapter(), ICommandModule {
     companion object {
         const val COMMAND_SIGN: Char = '!'
-        protected val LOG: SimpleLog = SimpleLog.getLog(CommandModule::class.java.simpleName)
+        protected val LOG: SimpleLog = SimpleLog.getLog(CommandModule::class.java)
     }
 
     init {
@@ -89,7 +89,7 @@ abstract class CommandModule @JvmOverloads protected constructor(internal val al
 
                 } catch (t: Throwable) {
                     LOG.fatal("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " failed executing " + event.message.content + " command from user " + event.author.toString())
-                    LOG.log(Level.TRACE, t)
+                    LOG.log(Level.INFO, t)
                     val exceptionMessage = MessageBuilder().append("Cannot complete action due to an error; see the message below for details.").appendCodeBlock(t.javaClass.simpleName + ": " + t.message, "text").build()
                     event.channel.sendMessage(exceptionMessage).queue { it.delete().queueAfter(5, TimeUnit.MINUTES) }
                 }

@@ -47,7 +47,7 @@ import java.util.stream.Stream;
  * This class will notify users about airing anime.
  */
 public class AnimeAirNotifier {
-    private static final SimpleLog LOG = SimpleLog.getLog(AnimeAirNotifier.class.getSimpleName());
+    private static final SimpleLog LOG = SimpleLog.getLog(AnimeAirNotifier.class);
     private static final Path file = Paths.get("AnimeAirNotifier.json");
     private static final HashMap<Integer, AnimeAirInfo> animeAirInfoMap;
     private static final HashMap<Long, ArrayList<Subscription>> subscriptions;

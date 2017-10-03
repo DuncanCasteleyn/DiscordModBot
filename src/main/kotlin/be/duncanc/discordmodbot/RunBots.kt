@@ -50,7 +50,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: be.dunca
 
         private val configFile = Paths.get("Config.json")
         internal val BOT_THREAD_POOL_SIZE = 5
-        internal val LOG = SimpleLog.getLog(RunBots::class.java.simpleName)
+        internal val LOG = SimpleLog.getLog(RunBots::class.java)
         var bots: Array<RunBots>? = null
             internal set
 

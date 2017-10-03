@@ -58,7 +58,7 @@ open class EventsManager : CommandModule(be.duncanc.discordmodbot.EventsManager.
         private val EVENTS_LIST_ALIASES = arrayOf("EventsList")
         private val EVENT_MANAGER_ALIASES = arrayOf("EventManager", "ManageEvents")
         private val FILE_PATH = Paths.get("Events.json")
-        private val LOG = SimpleLog.getLog(be.duncanc.discordmodbot.EventsManager::class.java.simpleName)
+        private val LOG = SimpleLog.getLog(be.duncanc.discordmodbot.EventsManager::class.java)
         private val DATE_TIME_FORMATTER_PARSER = DateTimeFormatter.ofPattern("d-M-yyyy H:mm X", Locale.ENGLISH)
         private val DATE_TIME_FORMATTER_LIST = DateTimeFormatter.ofPattern("E dd-MM-yyyy HH:mm", Locale.ENGLISH)
     }

@@ -72,7 +72,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
 
     companion object {
         private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd-M-yyyy hh:mm a O")
-        private val LOG = SimpleLog.getLog(GuildLogger::class.java.simpleName)
+        private val LOG = SimpleLog.getLog(GuildLogger::class.java)
         private val LIGHT_BLUE = Color(52, 152, 219)
         private val LOG_ENTRY_CHECK_LIMIT = 5
 
@@ -110,7 +110,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
     }
 
     override fun onGuildMessageUpdate(event: GuildMessageUpdateEvent) {
-        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].isLogMessageUpdate) {
+        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMessageUpdate) {
             return
         }
 
@@ -158,7 +158,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
      * @param event The event that trigger this method
      */
     override fun onGuildMessageDelete(event: GuildMessageDeleteEvent) {
-        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].isLogMessageDelete) {
+        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMessageDelete) {
             return
         }
         val guild = event.guild
@@ -248,7 +248,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
     }
 
     override fun onMessageBulkDelete(event: MessageBulkDeleteEvent) {
-        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].isLogMessageDelete) {
+        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMessageDelete) {
             return
         }
         val channel = event.channel
@@ -306,7 +306,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
     }
 
     override fun onGuildMemberLeave(event: GuildMemberLeaveEvent) {
-        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].isLogMemberRemove) {
+        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMemberRemove) {
             return
         }
 
@@ -361,7 +361,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
     }
 
     override fun onGuildBan(event: GuildBanEvent) {
-        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].isLogMemberBan) {
+        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMemberBan) {
             return
         }
 
@@ -402,7 +402,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
     }
 
     override fun onGuildMemberJoin(event: GuildMemberJoinEvent) {
-        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].isLogMemberAdd) {
+        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMemberAdd) {
             return
         }
 
@@ -416,7 +416,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
 
 
     override fun onGuildUnban(event: GuildUnbanEvent) {
-        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].isLogMemberRemoveBan) {
+        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMemberRemoveBan) {
             return
         }
 

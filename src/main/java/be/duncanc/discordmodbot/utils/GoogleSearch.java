@@ -45,7 +45,7 @@ import java.util.Random;
  */
 public class GoogleSearch {
     private static final String GOOGLE_URL = "https://www.googleapis.com/customsearch/v1?cx=%s&key=%s&num=%d&q=%s";
-    private static final SimpleLog LOG = SimpleLog.getLog(GoogleSearch.class.getSimpleName());
+    private static final SimpleLog LOG = SimpleLog.getLog(GoogleSearch.class);
     private static String GOOGLE_API_KEY = null;
     private static LocalDateTime dayStartTime = null;
     private static int currentGoogleUsage = 0;

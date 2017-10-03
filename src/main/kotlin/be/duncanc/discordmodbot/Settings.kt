@@ -51,7 +51,7 @@ import java.util.concurrent.TimeUnit
  */
 
 //todo Add GuildSettings to sequence
-internal open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
+ open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
 
     companion object {
         private val FILE_PATH = Paths.get("GuildSettings.json")
@@ -68,25 +68,29 @@ internal open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
         private fun writeGuildSettingToFile() {
             synchronized(this) {
                 val jsonObject = JSONObject()
-                val companionFields = Companion::class.java.declaredFields
-                jsonObject.put(companionFields[4].name, guildSettings)
-                jsonObject.put(companionFields[5].name, exceptedFromLogging)
+                val companionFields = Settings::class.java.declaredFields
+                jsonObject.put(companionFields[4].name, exceptedFromLogging)
+                jsonObject.put(companionFields[5].name, guildSettings)
                 Files.write(FILE_PATH, Collections.singletonList(jsonObject.toString()))
             }
         }
 
         private fun loadGuildSettingFromFile() {
             synchronized(this) {
-                val stringBuilder = StringBuilder()
-                Files.readAllLines(FILE_PATH).map { stringBuilder.append(it) }
-                val jsonObject = JSONObject(stringBuilder.toString())
-                jsonObject.getJSONArray("guildSettings").forEach {
-                    it as JSONObject
-                    val guildSettingFields = GuildSettings::class.java.declaredFields
-                    guildSettings.add(GuildSettings(it.getLong(guildSettingFields[0].name), it.getBoolean(guildSettingFields[1].name), it.getBoolean(guildSettingFields[2].name), it.getBoolean(guildSettingFields[3].name), it.getBoolean(guildSettingFields[4].name), it.getBoolean(guildSettingFields[5].name), it.getBoolean(guildSettingFields[6].name)))
-                }
-                jsonObject.getJSONArray("exceptedFromLogging").forEach {
-                    exceptedFromLogging.add(it.toString().toLong())
+                try {
+                    val stringBuilder = StringBuilder()
+                    Files.readAllLines(FILE_PATH).map { stringBuilder.append(it) }
+                    val jsonObject = JSONObject(stringBuilder.toString())
+                    jsonObject.getJSONArray("guildSettings").forEach {
+                        it as JSONObject
+                        val guildSettingFields = GuildSettings::class.java.declaredFields
+                        guildSettings.add(GuildSettings(it.getLong(guildSettingFields[guildSettingFields.size - 1].name), it.getBoolean(guildSettingFields[0].name), it.getBoolean(guildSettingFields[1].name), it.getBoolean(guildSettingFields[2].name), it.getBoolean(guildSettingFields[3].name), it.getBoolean(guildSettingFields[4].name), it.getBoolean(guildSettingFields[5].name)))
+                    }
+                    jsonObject.getJSONArray("exceptedFromLogging").forEach {
+                        exceptedFromLogging.add(it.toString().toLong())
+                    }
+                } catch (ignored: NoSuchFileException) {
+
                 }
             }
         }
@@ -96,7 +100,7 @@ internal open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
         try {
             loadGuildSettingFromFile()
         } catch (e: NoSuchFileException) {
-            SimpleLog.getLog(CommandModule::class.java.simpleName).log(Level.WARN, e)
+            SimpleLog.getLog(CommandModule::class.java).log(Level.WARN, e)
         }
     }
 
@@ -118,7 +122,7 @@ internal open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
                 val settings = GuildSettings(it.idLong)
                 guildSettings.add(settings)
                 if (it.idLong == 175856762677624832L) {
-                    settings.isLogMessageUpdate = false
+                    settings.logMessageUpdate = false
                 }
             }
         }
@@ -145,9 +149,8 @@ internal open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
     }
 
     inner class SettingsSequence(user: User, channel: MessageChannel) : Sequence(user, channel) {
-        private val eventManger: be.duncanc.discordmodbot.EventsManager
+        private val eventManger: EventsManager
         private var sequenceNumber = 0.toByte()
-        private var booleanToChange = 0
 
         init {
             try {
@@ -177,10 +180,15 @@ internal open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
                             sequenceNumber = 1
                         }
                         1.toByte() -> {
-                            val settingFields = GuildSettings::class.java.declaredFields.map { it.name }
-                            val messageBuilder = MessageBuilder()
-                            for(i in 0 until settingFields.size) {
-                                messageBuilder.append(i).append(". ").append(settingFields[i])
+                            val settingFields = GuildSettings::class.java.declaredFields.filter { it.type == Boolean::class.java }.map { it.name }
+                            val messageBuilder = MessageBuilder().append("Enter the number of the boolean you'd like to invert.\nIf you don't want to invert anything type \"STOP\" (case sensitive).\n\n")
+                            for (i in 0 until settingFields.size) {
+                                messageBuilder.append(i)
+                                        .append(". ")
+                                        .append(settingFields[i])
+                                        .append(" = ")
+                                        .append(GuildSettings::class.java.getMethod("get" + settingFields[i].capitalize()).invoke(guildSettings.filter { it.guildId == event.guild.idLong }[0]))
+                                        .append('\n')
                             }
                             channel.sendMessage(messageBuilder.build()).queue { addMessageToCleaner(it) }
                             sequenceNumber = 2
@@ -206,46 +214,43 @@ internal open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
                     }
                 }
                 2.toByte() -> {
-                    booleanToChange = event.message.rawContent.toInt()
-                    sequenceNumber = 3
-                    channel.sendMessage("Please what should the boolean value be? True or False?").queue { addMessageToCleaner(it) }
-                }
-                3.toByte() -> {
-                    GuildSettings::class.java.declaredFields[booleanToChange].setBoolean(guildSettings.filter { it.guildId == event.guild.idLong }[0], event.message.rawContent.toBoolean())
-                    channel.sendMessage("Successfully change value.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                    val settingField = GuildSettings::class.java.declaredFields.filter { it.type == Boolean::class.java }[event.message.rawContent.toInt()].name.capitalize()
+                    GuildSettings::class.java.getMethod("set" + settingField, Boolean::class.java)
+                            .invoke(guildSettings.filter { it.guildId == event.guild.idLong }[0], !(GuildSettings::class.java.getMethod("get" + settingField).invoke(guildSettings.filter { it.guildId == event.guild.idLong }[0]) as Boolean))
+                    channel.sendMessage("Successfully inverted " + settingField.decapitalize() + ".").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                     destroy()
                 }
             }
         }
     }
 
-    class GuildSettings @JvmOverloads constructor(val guildId: Long, isLogMessageDelete: Boolean = true, isLogMessageUpdate: Boolean = true, isLogMemberRemove: Boolean = true, isLogMemberBan: Boolean = true, isLogMemberAdd: Boolean = true, isLogMemberRemoveBan: Boolean = true) {
-        var isLogMemberRemoveBan = isLogMemberRemoveBan
+    class GuildSettings @JvmOverloads constructor(val guildId: Long, logMessageDelete: Boolean = true, logMessageUpdate: Boolean = true, logMemberRemove: Boolean = true, logMemberBan: Boolean = true, logMemberAdd: Boolean = true, logMemberRemoveBan: Boolean = true) {
+        var logMemberRemoveBan = logMemberRemoveBan
             set(value) {
                 field = value
                 writeGuildSettingToFile()
             }
-        var isLogMemberAdd = isLogMemberAdd
+        var logMemberAdd = logMemberAdd
             set(value) {
                 field = value
                 writeGuildSettingToFile()
             }
-        var isLogMemberBan = isLogMemberBan
+        var logMemberBan = logMemberBan
+           set(value) {
+               field = value
+               writeGuildSettingToFile()
+           }
+        var logMemberRemove = logMemberRemove
             set(value) {
                 field = value
                 writeGuildSettingToFile()
             }
-        var isLogMemberRemove = isLogMemberRemove
+        var logMessageUpdate = logMessageUpdate
             set(value) {
                 field = value
                 writeGuildSettingToFile()
             }
-        var isLogMessageUpdate = isLogMessageUpdate
-            set(value) {
-                field = value
-                writeGuildSettingToFile()
-            }
-        var isLogMessageDelete = isLogMessageDelete
+        var logMessageDelete = logMessageDelete
             set(value) {
                 field = value
                 writeGuildSettingToFile()

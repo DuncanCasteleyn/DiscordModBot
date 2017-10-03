@@ -62,7 +62,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
     companion object {
         private val ALIASES: Array<String> = arrayOf("gateConfig", "join", "review")
         private val FILE_PATH: Path = Paths.get("MemberGate.json")
-        private val LOG: SimpleLog = SimpleLog.getLog(MemberGate::class.java.simpleName)
+        private val LOG: SimpleLog = SimpleLog.getLog(MemberGate::class.java)
     }
 
     internal val questions: ArrayList<Question>
