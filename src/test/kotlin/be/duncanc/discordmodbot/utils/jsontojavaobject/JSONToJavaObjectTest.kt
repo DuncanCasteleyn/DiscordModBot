@@ -12,9 +12,9 @@ object JSONToJavaObjectTest {
     @Test
     fun testGoodClass() {
         val testClazz = GoodClass(true, "hi")
-        val json = JSONToJavaObject.toJson(testClazz)
-        val something = JSONToJavaObject.toJavaObject(json, GoodClass::class.java)
-        something as GoodClass
+        val testClazz2 = ClassContainingOtherClass(testClazz)
+        val json = JSONToJavaObject.toJson(testClazz2)
+        val something = JSONToJavaObject.toJavaObject(json, testClazz2::class.java)
         System.out.println(something)
     }
 
@@ -28,7 +28,6 @@ object JSONToJavaObjectTest {
         json.put("bool", true)
         json.put("string", "hi")
         val something = JSONToJavaObject.toJavaObject(json, GoodClass2::class.java)
-        something as GoodClass2
         System.out.println(something)
         assertThrows(IllegalArgumentException::class.java) {
             JSONToJavaObject.toJson(something)
@@ -44,7 +43,6 @@ object JSONToJavaObjectTest {
         val json = JSONToJavaObject.toJson(testClazz)
         assertThrows(IllegalArgumentException::class.java) {
             val something = JSONToJavaObject.toJavaObject(json, GoodClass3::class.java)
-            something as GoodClass3
             System.out.println(something)
         }
     }
@@ -58,7 +56,6 @@ object JSONToJavaObjectTest {
             val testClazz = BadClass(true, "hi")
             val json = JSONToJavaObject.toJson(testClazz)
             val something = JSONToJavaObject.toJavaObject(json, BadClass::class.java)
-            something as BadClass
             System.out.println(something)
         }
         assertThrows(IllegalArgumentException::class.java) {
@@ -66,7 +63,6 @@ object JSONToJavaObjectTest {
             json.put("bool", true)
             json.put("string", "hi")
             val something = JSONToJavaObject.toJavaObject(json, BadClass::class.java)
-            something as BadClass
             System.out.println(something)
         }
     }
@@ -88,6 +84,12 @@ object JSONToJavaObjectTest {
             @JSONKey("string") get
         val boolean = boolean
             @JSONKey("bool") get
+    }
+
+    @Suppress("unused")
+    class ClassContainingOtherClass(@JSONKey("otherClass") someClass: GoodClass) {
+        val someClass = someClass
+            @JSONKey("otherClass") get
     }
 
     @Suppress("unused")
