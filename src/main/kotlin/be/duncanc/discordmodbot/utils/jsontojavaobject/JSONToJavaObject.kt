@@ -14,7 +14,7 @@ object JSONToJavaObject {
     /**
      * Converts a java Object to a JSONObject.
      *
-     * @param javaObject a java Object that has at least one getter or field with a JSONKey annotation
+     * @param javaObject a Java Object that has at least one public getter or field with a JSONKey annotation
      * @see JSONKey
      */
     fun toJson(javaObject: Any): JSONObject {
@@ -34,10 +34,10 @@ object JSONToJavaObject {
     }
 
     /**
-     * Converts a JSONObject to a java Object using the JSONKey annotation
+     * Converts a JSONObject to a Java Object using the JSONKey annotation
      *
-     * @param json a JSONObject that needs to be converted to a java Object.
-     * @param clazz a class that the json needs to be converted to that has at least 1 constructor with all parameters annotated with JSONKey
+     * @param json a JSONObject that needs to be converted to a Java Object.
+     * @param clazz a class that the JSONObject needs to be converted to that has at least 1 constructor with all parameters annotated with JSONKey
      * @see JSONKey
      */
     fun toJavaObject(json: JSONObject, clazz: Class<*>): Any {

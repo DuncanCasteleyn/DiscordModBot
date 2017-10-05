@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 object JSONToJavaObjectTest {
 
     /**
-     * Test class that can be converted to java, but also converted back to JSON.
+     * Test class that can be converted to Java Object, but also converted back to JSON.
      */
     @Test
     fun testGoodClass() {
@@ -20,7 +20,7 @@ object JSONToJavaObjectTest {
 
 
     /**
-     * Test class that only is used to convert to java object never to JSON
+     * Test class that only is used to convert to Java Object never to JSON
      */
     @Test
     fun testGoodClass2() {
@@ -36,7 +36,7 @@ object JSONToJavaObjectTest {
     }
 
     /**
-     * Test class that only is used to convert to JSON never to a JavaObject
+     * Test class that only is used to convert to JSON never to a Java Object
      */
     @Test
     fun testGoodClass3() {
