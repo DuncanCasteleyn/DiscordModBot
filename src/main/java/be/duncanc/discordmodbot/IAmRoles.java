@@ -25,10 +25,10 @@
 
 package be.duncanc.discordmodbot;
 
-import be.duncanc.discordmodbot.utils.DataStorageParser;
 import net.dv8tion.jda.core.entities.Role;
 import net.dv8tion.jda.core.events.role.RoleDeleteEvent;
 import net.dv8tion.jda.core.hooks.ListenerAdapter;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.ArrayList;
 
@@ -40,51 +40,53 @@ import java.util.ArrayList;
  */
 //todo Add methods to set class and boolean to decide if they can obtain multiple roles in this object or just one.
 //todo Replace DataStorageParser, move data and remove deprecation suppression
-public class IAmRoles extends ListenerAdapter implements DataStorageParser.StorageAutoSavable {
+public class IAmRoles extends ListenerAdapter{
     //private static final SimpleLog LOG = SimpleLog.getLog(IAmRoles.class.getSimpleName());
 
-    private final String objectId;
-    private ArrayList<String> roleIds;
+    private final long guildId;
+    private ArrayList<Long> roleIds;
 
     /**
      * Constructor, needs an unique id for storage that stays the same so the object can reload it's data after reboot.
      * If you have multiple objects with the same id and and different roleIds corruption will occur after the next reboot!
      *
-     * @param objectId an unique id for this object.
+     * @param guildId an unique id for this object.
      */
-    public IAmRoles(String objectId) {
-        this.objectId = objectId;
-        this.roleIds = loadData();
+    public IAmRoles(long guildId) {
+        this.guildId = guildId;
+        //todo
+        throw new NotImplementedException();
     }
 
     synchronized private ArrayList<String> loadData() {
-        return new ArrayList<>(DataStorageParser.readListFromJson("IAmRoles_" + objectId, "Roles"));
+        //todo
+        throw new NotImplementedException();
     }
 
     /**
      * This method is to be used to save all the data that needs to be stored by the DataStorageParser auto saver
      */
-    @Override
     synchronized public void saveAllData() {
-        DataStorageParser.writeToJson("IAmRoles_" + objectId, "Roles", new ArrayList<>(roleIds));
+        //todo change
+        throw new NotImplementedException();
     }
 
     public synchronized void roleAdd(Role role) {
-        if (!roleIds.contains(role.getId())) {
-            roleIds.add(role.getId());
+        if (!roleIds.contains(role.getIdLong())) {
+            roleIds.add(role.getIdLong());
         }
     }
 
-    public synchronized boolean roleDel(String roleId) {
+    public synchronized boolean roleDel(long roleId) {
         return roleIds.remove(roleId);
     }
 
     public synchronized boolean isListed(Role role) {
-        return roleIds.contains(role.getId());
+        return roleIds.contains(role.getIdLong());
     }
 
     @Override
     public void onRoleDelete(RoleDeleteEvent event) {
-        roleDel(event.getRole().getId());
+        roleDel(event.getRole().getIdLong());
     }
 }

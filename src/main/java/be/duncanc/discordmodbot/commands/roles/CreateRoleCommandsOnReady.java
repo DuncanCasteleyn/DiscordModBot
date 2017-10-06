@@ -29,7 +29,6 @@ import be.duncanc.discordmodbot.IAmRoles;
 import be.duncanc.discordmodbot.commands.CommandModule;
 import be.duncanc.discordmodbot.commands.Help;
 import be.duncanc.discordmodbot.commands.QuitBot;
-import be.duncanc.discordmodbot.utils.DataStorageParser;
 import net.dv8tion.jda.core.events.ReadyEvent;
 import net.dv8tion.jda.core.hooks.ListenerAdapter;
 
@@ -54,7 +53,6 @@ public final class CreateRoleCommandsOnReady extends ListenerAdapter {
                     new IAmRoles("175856762677624832_WaifuRoles"),
                     new IAmRoles("175856762677624832_OtherRoles")
             };
-            DataStorageParser.addToAutoSave(iAmRoles);
             //event.getJDA().addEventListener(roleRanking);
             CommandModule[] roleCommands = RoleCommands.createCommands(iAmRoles, quitBot);
 
