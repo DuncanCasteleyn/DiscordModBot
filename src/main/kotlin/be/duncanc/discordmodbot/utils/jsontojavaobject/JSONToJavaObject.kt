@@ -8,7 +8,7 @@ import org.json.JSONObject
 import java.lang.reflect.Constructor
 
 /**
- * This object provides the possibility to convert object from JSON to Java Objects using the JSONKey annotation.
+ * This object provides the possibility to convert object from JSON to Java Objects using JSONKey annotations.
  *
  * @property NO_JSON_CONVERT_REQUIRED Types that don't need to be converted to a JSONObject.
  * @property CONVERT_TO_JAVA_NOT_SUPPORTED Types that cannot be converted automatically to a Java Object because we can't retrieve the expected type to go inside it and most the times list are created in the class itself and not by a constructor.
@@ -21,7 +21,7 @@ object JSONToJavaObject {
     private val CONVERT_TO_JAVA_NOT_SUPPORTED = arrayOf(java.util.Map::class.java, java.util.List::class.java)
 
     /**
-     * Converts a java Object to a JSONObject.
+     * Converts a java Object to a JSONObject using JSONKey annotations.
      *
      * @param javaObject a Java Object that has at least one public getter or field with a JSONKey annotation
      * @param jsonObject JSONObject to put the data of the Java Object in.
@@ -69,7 +69,7 @@ object JSONToJavaObject {
     }
 
     /**
-     * Converts a JSONObject to a Java Object using the JSONKey annotation
+     * Converts a JSONObject to a Java Object using the JSONKey annotations.
      *
      * @param json a JSONObject that needs to be converted to a Java Object.
      * @param clazz a class that the JSONObject needs to be converted to that has at least 1 constructor with all parameters annotated with JSONKey
@@ -118,12 +118,33 @@ object JSONToJavaObject {
         return longestConstructor.newInstance(*params) as T
     }
 
+    /**
+     * Converts a jsonArray to a typed list using JSONKey annotations.
+     *
+     * @param jsonArray JSONArray that needs to be converted to a typed list.
+     * @param clazz a class that the JSONArray needs to be converted to that has at least 1 constructor with all parameters annotated with JSONKey.
+     * @param E List type to create.
+     * @return a typed List with the given E param as type.
+     * @see JSONKey
+     */
     fun <E> toTypedList(jsonArray: JSONArray, clazz: Class<E>): List<E> {
         val list = ArrayList<E>()
         jsonArray.forEach { list.add((toJavaObject(it as JSONObject, clazz))) }
         return list
     }
 
+    /**
+     * Converts a jsonArray to a typed list using JSONKey annotations.
+     *
+     * @param jsonObject JSONObject that needs to be converted to a typed list
+     * @param valueClazz a class that the value of each key needs to be converted to that has at least 1 constructor with all parameters annotated with JSONKey
+     * @param keyClazz a class that can be converted using keyConverter.
+     * @param K Key type that will be used for the Map.
+     * @param V Value type that will be used for the Map.
+     * @return a typed Map with the given K param as key type and the given V param as value type.
+     * @see JSONKey
+     * @see keyConverter
+     */
     fun <K, V> toTypedMap(jsonObject: JSONObject, keyClazz: Class<K>, valueClazz: Class<V>): Map<K, V> {
         val map = HashMap<K, V>()
         jsonObject.keys().forEach { map.put(keyConverter(it, keyClazz), toJavaObject(jsonObject[it] as JSONObject, valueClazz)) }
@@ -133,6 +154,7 @@ object JSONToJavaObject {
     private fun <K> keyConverter(input: String, clazz: Class<K>): K {
         return when {
             clazz.isAssignableFrom(String::class.java) -> input as K
+            clazz.isAssignableFrom(Long::class.java) -> java.lang.Long.valueOf(input) as K
             clazz.isAssignableFrom(Int::class.java) -> java.lang.Integer.valueOf(input) as K
             clazz.isAssignableFrom(Boolean::class.java) -> java.lang.Boolean.valueOf(input) as K
             clazz.isAssignableFrom(Double::class.java) -> java.lang.Double.valueOf(input) as K
