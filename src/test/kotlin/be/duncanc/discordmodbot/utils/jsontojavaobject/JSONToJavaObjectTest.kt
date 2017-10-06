@@ -75,9 +75,9 @@ object JSONToJavaObjectTest {
         (testClazz.list).add(testClazz2)
         (testClazz.list).add(testClazz2)
         (testClazz.list).add(testClazz2)
-        (testClazz.map).put("test" ,testClazz2)
-        testClazz.map.put("test2" ,testClazz2)
-        (testClazz.map).put("test3" ,testClazz2)
+        (testClazz.map).put("test", testClazz2)
+        testClazz.map.put("test2", testClazz2)
+        (testClazz.map).put("test3", testClazz2)
         val json = JSONToJavaObject.toJson(testClazz)
         JSONToJavaObject.toJavaObject(json, GoodWithMapAndHashMap::class.java)
     }
@@ -117,11 +117,14 @@ object JSONToJavaObjectTest {
     @Suppress("unused")
     class GoodWithMapAndHashMap constructor(list: ArrayList<GoodClass> = ArrayList(), map: HashMap<String, GoodClass> = HashMap()) {
 
-        constructor(@JSONKey("list") jsonList:JSONArray, @JSONKey("map") jsonMap:JSONObject) : this() {
+        constructor(@JSONKey("list") jsonList: JSONArray, @JSONKey("map") jsonMap: JSONObject) : this() {
             println(jsonList.toString())
             println(jsonMap.toString())
-            jsonList.forEach { list.add(JSONToJavaObject.toJavaObject(it as JSONObject, GoodClass::class.java)) }
-            jsonMap.keys().forEach { map.put(it, JSONToJavaObject.toJavaObject(jsonMap[it] as JSONObject, GoodClass::class.java)) }
+            //jsonList.forEach { list.add(JSONToJavaObject.toJavaObject(it as JSONObject, GoodClass::class.java)) }
+            //jsonMap.keys().forEach { map.put(it, JSONToJavaObject.toJavaObject(jsonMap[it] as JSONObject, GoodClass::class.java)) }
+            list.addAll(JSONToJavaObject.toTypedList(jsonList, GoodClass::class.java))
+            map.putAll(JSONToJavaObject.toTypedMap(jsonMap, String::class.java, GoodClass::class.java))
+            JSONToJavaObject.toTypedMap(jsonMap, String::class.java, GoodClass::class.java)
         }
 
         val list = list

@@ -6,7 +6,6 @@ import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import java.lang.reflect.Constructor
-import java.lang.reflect.ParameterizedType
 
 /**
  * This object provides the possibility to convert object from JSON to Java Objects using the JSONKey annotation.
@@ -15,7 +14,7 @@ import java.lang.reflect.ParameterizedType
  * @property CONVERT_TO_JAVA_NOT_SUPPORTED Types that cannot be converted automatically to a Java Object because we can't retrieve the expected type to go inside it and most the times list are created in the class itself and not by a constructor.
  * @see JSONKey
  */
-@Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
+@Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN", "UNCHECKED_CAST")
 object JSONToJavaObject {
 
     private val NO_JSON_CONVERT_REQUIRED = arrayOf(java.lang.Boolean::class.java, java.lang.Number::class.java, java.lang.Character::class.java, java.lang.String::class.java)
@@ -56,7 +55,7 @@ object JSONToJavaObject {
                 }
                 jsonObject.put(key, jsonArray)
             }
-            value is java.util.Map<*,*> -> {
+            value is java.util.Map<*, *> -> {
                 val hashMapJSON = JSONObject()
                 value.forEach { mapKey, mapValue ->
                     hashMapJSON.put(mapKey.toString(), toJson(mapValue))
@@ -107,7 +106,7 @@ object JSONToJavaObject {
                     val expectedType = constructorParams[i].type as Class<*>
                     if (expectedType in CONVERT_TO_JAVA_NOT_SUPPORTED) {
                         throw UnsupportedOperationException("Lists and Maps need to be manually converted back due to Type Erasure.")
-                    } else if(expectedType !in arrayOf(JSONArray::class.java, JSONObject::class.java )) {
+                    } else if (expectedType !in arrayOf(JSONArray::class.java, JSONObject::class.java)) {
                         params[i] = toJavaObject(params[i] as JSONObject, expectedType)
                     }
                 }
@@ -116,7 +115,28 @@ object JSONToJavaObject {
             throw IllegalArgumentException("The provided json is missing a " + JSONKey::class.java.simpleName + ": " + jsonException.message, jsonException)
         }
 
-        @Suppress("UNCHECKED_CAST")
         return longestConstructor.newInstance(*params) as T
+    }
+
+    fun <E> toTypedList(jsonArray: JSONArray, clazz: Class<E>): List<E> {
+        val list = ArrayList<E>()
+        jsonArray.forEach { list.add((toJavaObject(it as JSONObject, clazz))) }
+        return list
+    }
+
+    fun <K, V> toTypedMap(jsonObject: JSONObject, keyClazz: Class<K>, valueClazz: Class<V>): Map<K, V> {
+        val map = HashMap<K, V>()
+        jsonObject.keys().forEach { map.put(keyConverter(it, keyClazz), toJavaObject(jsonObject[it] as JSONObject, valueClazz)) }
+        return map
+    }
+
+    private fun <K> keyConverter(input: String, clazz: Class<K>): K {
+        return when {
+            clazz.isAssignableFrom(String::class.java) -> input as K
+            clazz.isAssignableFrom(Int::class.java) -> java.lang.Integer.valueOf(input) as K
+            clazz.isAssignableFrom(Boolean::class.java) -> java.lang.Boolean.valueOf(input) as K
+            clazz.isAssignableFrom(Double::class.java) -> java.lang.Double.valueOf(input) as K
+            else -> throw IllegalArgumentException("Bad type.")
+        }
     }
 }
