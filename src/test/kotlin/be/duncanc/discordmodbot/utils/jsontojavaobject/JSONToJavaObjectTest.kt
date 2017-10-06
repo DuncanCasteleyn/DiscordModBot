@@ -1,5 +1,6 @@
 package be.duncanc.discordmodbot.utils.jsontojavaobject
 
+import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
@@ -67,12 +68,30 @@ object JSONToJavaObjectTest {
         }
     }
 
+    @Test
+    fun testListAndHasMap() {
+        val testClazz = GoodWithMapAndHashMap()
+        val testClazz2 = GoodClass(true, "yolo")
+        (testClazz.list).add(testClazz2)
+        (testClazz.list).add(testClazz2)
+        (testClazz.list).add(testClazz2)
+        (testClazz.map).put("test" ,testClazz2)
+        testClazz.map.put("test2" ,testClazz2)
+        (testClazz.map).put("test3" ,testClazz2)
+        val json = JSONToJavaObject.toJson(testClazz)
+        JSONToJavaObject.toJavaObject(json, GoodWithMapAndHashMap::class.java)
+    }
+
     @Suppress("unused")
     class GoodClass(@JSONKey("bool") boolean: Boolean, @JSONKey("string") string: String) {
         val string = string
             @JSONKey("string") get
         val boolean = boolean
             @JSONKey("bool") get
+
+        override fun toString(): String {
+            return "GoodClass($boolean $string)"
+        }
     }
 
     @Suppress("unused")
@@ -94,4 +113,20 @@ object JSONToJavaObjectTest {
 
     @Suppress("unused")
     class BadClass(@JSONKey("bool") val boolean: Boolean, val string: String)
+
+    @Suppress("unused")
+    class GoodWithMapAndHashMap constructor(list: ArrayList<GoodClass> = ArrayList(), map: HashMap<String, GoodClass> = HashMap()) {
+
+        constructor(@JSONKey("list") jsonList:JSONArray, @JSONKey("map") jsonMap:JSONObject) : this() {
+            println(jsonList.toString())
+            println(jsonMap.toString())
+            jsonList.forEach { list.add(JSONToJavaObject.toJavaObject(it as JSONObject, GoodClass::class.java)) }
+            jsonMap.keys().forEach { map.put(it, JSONToJavaObject.toJavaObject(jsonMap[it] as JSONObject, GoodClass::class.java)) }
+        }
+
+        val list = list
+            @JSONKey("list") get
+        val map = map
+            @JSONKey("map") get
+    }
 }

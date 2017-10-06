@@ -1,22 +1,25 @@
 package be.duncanc.discordmodbot.utils.jsontojavaobject
 
-import be.duncanc.discordmodbot.utils.jsontojavaobject.JSONToJavaObject.NOT_SUPPORTED_FOR_CONVERT
+import be.duncanc.discordmodbot.utils.jsontojavaobject.JSONToJavaObject.CONVERT_TO_JAVA_NOT_SUPPORTED
 import be.duncanc.discordmodbot.utils.jsontojavaobject.JSONToJavaObject.NO_JSON_CONVERT_REQUIRED
+import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import java.lang.reflect.Constructor
+import java.lang.reflect.ParameterizedType
 
 /**
  * This object provides the possibility to convert object from JSON to Java Objects using the JSONKey annotation.
  *
  * @property NO_JSON_CONVERT_REQUIRED Types that don't need to be converted to a JSONObject.
- * @property NOT_SUPPORTED_FOR_CONVERT Types that cannot be converted automatically to a Java Object because we can't retrieve the expected type to go inside it and most the times list are created in the class itself and not by a constructor.
+ * @property CONVERT_TO_JAVA_NOT_SUPPORTED Types that cannot be converted automatically to a Java Object because we can't retrieve the expected type to go inside it and most the times list are created in the class itself and not by a constructor.
  * @see JSONKey
  */
+@Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
 object JSONToJavaObject {
 
     private val NO_JSON_CONVERT_REQUIRED = arrayOf(java.lang.Boolean::class.java, java.lang.Number::class.java, java.lang.Character::class.java, java.lang.String::class.java)
-    private val NOT_SUPPORTED_FOR_CONVERT = arrayOf(java.util.Map::class.java, java.util.List::class.java)
+    private val CONVERT_TO_JAVA_NOT_SUPPORTED = arrayOf(java.util.Map::class.java, java.util.List::class.java)
 
     /**
      * Converts a java Object to a JSONObject.
@@ -46,8 +49,19 @@ object JSONToJavaObject {
             value::class.java in NO_JSON_CONVERT_REQUIRED -> {
                 jsonObject.put(key, value)
             }
-            value::class.java in NOT_SUPPORTED_FOR_CONVERT -> {
-                TODO("List and Map support not added yet")
+            value is java.util.List<*> -> {
+                val jsonArray = JSONArray()
+                value.forEach {
+                    jsonArray.put(toJson(it))
+                }
+                jsonObject.put(key, jsonArray)
+            }
+            value is java.util.Map<*,*> -> {
+                val hashMapJSON = JSONObject()
+                value.forEach { mapKey, mapValue ->
+                    hashMapJSON.put(mapKey.toString(), toJson(mapValue))
+                }
+                jsonObject.put(key, hashMapJSON)
             }
             else -> {
                 jsonObject.put(key, toJson(value))
@@ -90,10 +104,10 @@ object JSONToJavaObject {
             for (i in 0 until longestConstructor.parameterCount) {
                 params[i] = json[(constructorParams[i].getAnnotation(JSONKey::class.java).jsonKey)]
                 if (params[i]!!::class.java !in NO_JSON_CONVERT_REQUIRED) {
-                    val expectedType = constructorParams[i].type
-                    if (expectedType in NOT_SUPPORTED_FOR_CONVERT) {
-                        TODO("List and Map support not added yet")
-                    } else {
+                    val expectedType = constructorParams[i].type as Class<*>
+                    if (expectedType in CONVERT_TO_JAVA_NOT_SUPPORTED) {
+                        throw UnsupportedOperationException("Lists and Maps need to be manually converted back due to Type Erasure.")
+                    } else if(expectedType !in arrayOf(JSONArray::class.java, JSONObject::class.java )) {
                         params[i] = toJavaObject(params[i] as JSONObject, expectedType)
                     }
                 }
@@ -102,9 +116,7 @@ object JSONToJavaObject {
             throw IllegalArgumentException("The provided json is missing a " + JSONKey::class.java.simpleName + ": " + jsonException.message, jsonException)
         }
 
-        val newInstance = longestConstructor.newInstance(*params)
-
         @Suppress("UNCHECKED_CAST")
-        return newInstance as T
+        return longestConstructor.newInstance(*params) as T
     }
 }
