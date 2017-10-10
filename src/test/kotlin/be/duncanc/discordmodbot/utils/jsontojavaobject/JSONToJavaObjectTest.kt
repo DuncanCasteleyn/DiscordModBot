@@ -75,9 +75,9 @@ object JSONToJavaObjectTest {
         (testClazz.list).add(testClazz2)
         (testClazz.list).add(testClazz2)
         (testClazz.list).add(testClazz2)
-        (testClazz.map).put("test" ,testClazz2)
-        testClazz.map.put("test2" ,testClazz2)
-        (testClazz.map).put("test3" ,testClazz2)
+        (testClazz.map).put("test", testClazz2)
+        testClazz.map.put("test2", testClazz2)
+        (testClazz.map).put("test3", testClazz2)
         val json = JSONToJavaObject.toJson(testClazz)
         JSONToJavaObject.toJavaObject(json, GoodWithMapAndHashMap::class.java)
     }
@@ -117,12 +117,27 @@ object JSONToJavaObjectTest {
     @Suppress("unused")
     class GoodWithMapAndHashMap constructor(list: ArrayList<GoodClass> = ArrayList(), map: HashMap<String, GoodClass> = HashMap()) {
 
-        constructor(@JSONKey("list") jsonList:JSONArray, @JSONKey("map") jsonMap:JSONObject) : this() {
+        @Suppress("UNUSED_PARAMETER")
+        constructor(@JSONKey("list") jsonList: JSONArray, @JSONKey("map") jsonMap: JSONObject, @JSONKey("map") thisConsturctorDoesntWork: JSONObject) : this() {
+            println(GoodWithMapAndHashMap::class.java.simpleName + ": Fake constructor was called.")
+            throw Exception("Testing.")
+        }
+
+        constructor(@JSONKey("list") jsonList: JSONArray, @JSONKey("map") jsonMap: JSONObject) : this() {
+            println(GoodWithMapAndHashMap::class.java.simpleName + ": Good constructor was called.")
             println(jsonList.toString())
             println(jsonMap.toString())
-            jsonList.forEach { list.add(JSONToJavaObject.toJavaObject(it as JSONObject, GoodClass::class.java)) }
-            jsonMap.keys().forEach { map.put(it, JSONToJavaObject.toJavaObject(jsonMap[it] as JSONObject, GoodClass::class.java)) }
+            //jsonList.forEach { list.add(JSONToJavaObject.toJavaObject(it as JSONObject, GoodClass::class.java)) }
+            //jsonMap.keys().forEach { map.put(it, JSONToJavaObject.toJavaObject(jsonMap[it] as JSONObject, GoodClass::class.java)) }
+            list.addAll(JSONToJavaObject.toTypedList(jsonList, GoodClass::class.java))
+            map.putAll(JSONToJavaObject.toTypedMap(jsonMap, String::class.java, GoodClass::class.java))
+            JSONToJavaObject.toTypedMap(jsonMap, String::class.java, GoodClass::class.java)
         }
+
+        @Suppress("UNUSED_PARAMETER")
+        constructor(@JSONKey("list") jsonList: JSONArray, @JSONKey("doesntexist") jsonMap: Any) : this()
+
+
 
         val list = list
             @JSONKey("list") get

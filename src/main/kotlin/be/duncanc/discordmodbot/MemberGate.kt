@@ -116,11 +116,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
         }
 
         val welcomeMessage = welcomeMessages[Random().nextInt(welcomeMessages.size)].getWelcomeMessage(event.user)
-        guild.getTextChannelById(welcomeTextChannel).sendMessage(welcomeMessage).queue {
-            val embed = EmbedBuilder(it.embeds[0]).setImage(null).build()
-            val message: Message = MessageBuilder().append(it.rawContent).setEmbed(embed).build()
-            it.editMessage(message).queueAfter(1, TimeUnit.MINUTES)
-        }
+        guild.getTextChannelById(welcomeTextChannel).sendMessage(welcomeMessage).queue()
         synchronized(needManualApproval) {
             needManualApproval.remove(event.user.idLong)
         }
