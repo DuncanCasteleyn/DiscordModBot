@@ -117,7 +117,14 @@ object JSONToJavaObjectTest {
     @Suppress("unused")
     class GoodWithMapAndHashMap constructor(list: ArrayList<GoodClass> = ArrayList(), map: HashMap<String, GoodClass> = HashMap()) {
 
+        @Suppress("UNUSED_PARAMETER")
+        constructor(@JSONKey("list") jsonList: JSONArray, @JSONKey("map") jsonMap: JSONObject, @JSONKey("map") thisConsturctorDoesntWork: JSONObject) : this() {
+            println(GoodWithMapAndHashMap::class.java.simpleName + ": Fake constructor was called.")
+            throw Exception("Testing.")
+        }
+
         constructor(@JSONKey("list") jsonList: JSONArray, @JSONKey("map") jsonMap: JSONObject) : this() {
+            println(GoodWithMapAndHashMap::class.java.simpleName + ": Good constructor was called.")
             println(jsonList.toString())
             println(jsonMap.toString())
             //jsonList.forEach { list.add(JSONToJavaObject.toJavaObject(it as JSONObject, GoodClass::class.java)) }
@@ -126,6 +133,11 @@ object JSONToJavaObjectTest {
             map.putAll(JSONToJavaObject.toTypedMap(jsonMap, String::class.java, GoodClass::class.java))
             JSONToJavaObject.toTypedMap(jsonMap, String::class.java, GoodClass::class.java)
         }
+
+        @Suppress("UNUSED_PARAMETER")
+        constructor(@JSONKey("list") jsonList: JSONArray, @JSONKey("doesntexist") jsonMap: Any) : this()
+
+
 
         val list = list
             @JSONKey("list") get

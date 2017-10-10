@@ -26,6 +26,7 @@ package be.duncanc.discordmodbot.utils.jsontojavaobject
 
 import be.duncanc.discordmodbot.utils.jsontojavaobject.JSONToJavaObject.CONVERT_TO_JAVA_NOT_SUPPORTED
 import be.duncanc.discordmodbot.utils.jsontojavaobject.JSONToJavaObject.NO_JSON_CONVERT_REQUIRED
+import net.dv8tion.jda.core.utils.SimpleLog
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -41,6 +42,7 @@ import java.lang.reflect.Constructor
 @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN", "UNCHECKED_CAST")
 object JSONToJavaObject {
 
+    private val LOG = SimpleLog.getLog(JSONToJavaObject.javaClass)
     private val NO_JSON_CONVERT_REQUIRED = arrayOf(java.lang.Boolean::class.java, java.lang.Number::class.java, java.lang.Character::class.java, java.lang.String::class.java)
     private val CONVERT_TO_JAVA_NOT_SUPPORTED = arrayOf(java.util.Map::class.java, java.util.List::class.java)
 
@@ -100,26 +102,43 @@ object JSONToJavaObject {
      * @see JSONKey
      */
     fun <T> toJavaObject(json: JSONObject, clazz: Class<T>): T {
-        val fullyAnnotatedConstructors = clazz.constructors.filter { it.parameters.all { it.getAnnotation(JSONKey::class.java) != null } }
+        val fullyAnnotatedConstructors = ArrayList<Constructor<*>>(clazz.constructors.filter { it.parameters.all { it.getAnnotation(JSONKey::class.java) != null } })
 
         if (fullyAnnotatedConstructors.isEmpty()) {
             throw IllegalArgumentException("The provided class doesn't have any constructors that are fully annotated with " + JSONKey::class.java.simpleName)
         }
 
-        var amountOfParameters = 0
-        var longestConstructor: Constructor<*>? = null
+        var lastThrow: Throwable? = null
 
-        for (annotatedConstructor in fullyAnnotatedConstructors) {
-            if (annotatedConstructor.parameterCount > amountOfParameters) {
-                amountOfParameters = annotatedConstructor.parameterCount
-                longestConstructor = annotatedConstructor
+        while(fullyAnnotatedConstructors.isNotEmpty()) {
+            var amountOfParameters = 0
+            var longestConstructor: Constructor<*>? = null
+
+            for (annotatedConstructor in fullyAnnotatedConstructors) {
+                if (annotatedConstructor.parameterCount > amountOfParameters) {
+                    amountOfParameters = annotatedConstructor.parameterCount
+                    longestConstructor = annotatedConstructor
+                }
+            }
+
+            fullyAnnotatedConstructors.remove(longestConstructor)
+
+            if (longestConstructor == null) {
+                throw IllegalStateException("Could not retrieve the longest constructor of the class")
+            }
+
+            try {
+                return createInstance(longestConstructor, json)
+            } catch (throwable:Throwable) {
+                lastThrow = throwable
+                LOG.debug(throwable)
             }
         }
 
-        if (longestConstructor == null) {
-            throw IllegalStateException("Could not retrieve the longest constructor of the class")
-        }
+        throw IllegalStateException("All the constructors that are fully annotated throw an exception.", lastThrow)
+    }
 
+    private fun <T> createInstance(longestConstructor: Constructor<*>, json: JSONObject): T {
         val params = arrayOfNulls<Any?>(longestConstructor.parameterCount)
         val constructorParams = longestConstructor.parameters
         try {
