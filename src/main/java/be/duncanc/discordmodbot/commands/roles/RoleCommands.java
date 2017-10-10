@@ -27,43 +27,30 @@ package be.duncanc.discordmodbot.commands.roles;
 
 import be.duncanc.discordmodbot.IAmRoles;
 import be.duncanc.discordmodbot.commands.CommandModule;
-import be.duncanc.discordmodbot.commands.QuitBot;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.ArrayList;
 
 /**
  * Created by Duncan on 23/02/2017.
  * <p>
  * Creates all commands in the roles package that are dependant on each other.
  */
-final class RoleCommands implements QuitBot.BeforeBotQuit {
-    private final IAmRoles[] iAmRoles;
+final class RoleCommands {
+    final ArrayList<IAmRoles> iAmRoles;
 
-    private RoleCommands(IAmRoles[] iAmRoles) {
-        this.iAmRoles = iAmRoles;
+    private RoleCommands() {
+        this.iAmRoles = new ArrayList<>();
     }
 
-    static CommandModule[] createCommands(IAmRoles[] iAmRoles, QuitBot quitBot) {
-        final RoleCommands roleCommands = new RoleCommands(iAmRoles);
-
-        quitBot.addCallBeforeQuit(roleCommands);
+    @NotNull
+    static CommandModule[] createCommands() {
+        final RoleCommands roleCommands = new RoleCommands();
 
         return new CommandModule[]{
                 new IAm(roleCommands),
                 new IAmNot(roleCommands),
                 new IAmRolesCommand(roleCommands)
         };
-    }
-
-    IAmRoles[] getIAmRoles() {
-        return iAmRoles;
-    }
-
-    /**
-     * Actions to perform before the quit command is finished with executing.
-     */
-    @Override
-    public void onAboutToQuit() {
-        for (IAmRoles iAmRole : iAmRoles) {
-            iAmRole.saveAllData();
-        }
     }
 }

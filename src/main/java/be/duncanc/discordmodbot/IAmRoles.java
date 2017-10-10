@@ -20,73 +20,46 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
  */
 
 package be.duncanc.discordmodbot;
 
-import net.dv8tion.jda.core.entities.Role;
-import net.dv8tion.jda.core.events.role.RoleDeleteEvent;
-import net.dv8tion.jda.core.hooks.ListenerAdapter;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+import be.duncanc.discordmodbot.utils.jsontojavaobject.JSONKey;
+import be.duncanc.discordmodbot.utils.jsontojavaobject.JSONToJavaObject;
+import org.json.JSONArray;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
-/**
- * Created by dunci on 30/01/2017.
- * <p>
- * Allows to dynamically configure roles that can be used with the iam command.
- * <p>
- */
-//todo Add methods to set class and boolean to decide if they can obtain multiple roles in this object or just one.
-//todo Replace DataStorageParser, move data and remove deprecation suppression
-public class IAmRoles extends ListenerAdapter{
-    //private static final SimpleLog LOG = SimpleLog.getLog(IAmRoles.class.getSimpleName());
+public class IAmRoles {
+    private long guildId;
+    private boolean canOnlyHaveOne;
+    private ArrayList<Long> roles;
 
-    private final long guildId;
-    private ArrayList<Long> roleIds;
-
-    /**
-     * Constructor, needs an unique id for storage that stays the same so the object can reload it's data after reboot.
-     * If you have multiple objects with the same id and and different roleIds corruption will occur after the next reboot!
-     *
-     * @param guildId an unique id for this object.
-     */
-    public IAmRoles(long guildId) {
+    public IAmRoles(long guildId, boolean canOnlyHaveOne) {
         this.guildId = guildId;
-        //todo
-        throw new NotImplementedException();
+        this.canOnlyHaveOne = canOnlyHaveOne;
     }
 
-    synchronized private ArrayList<String> loadData() {
-        //todo
-        throw new NotImplementedException();
+    public IAmRoles(@JSONKey(jsonKey = "guildId") long guildId, @JSONKey(jsonKey = "canOnlyHaveOne") boolean canOnlyHaveOne, @JSONKey(jsonKey = "roles") JSONArray roles) {
+        this.guildId = guildId;
+        this.canOnlyHaveOne = canOnlyHaveOne;
+        this.roles = new ArrayList<>(JSONToJavaObject.INSTANCE.toTypedList(roles, Long.class));
     }
 
-    /**
-     * This method is to be used to save all the data that needs to be stored by the DataStorageParser auto saver
-     */
-    synchronized public void saveAllData() {
-        //todo change
-        throw new NotImplementedException();
+    @JSONKey(jsonKey = "guildId")
+    public long getGuildId() {
+        return guildId;
     }
 
-    public synchronized void roleAdd(Role role) {
-        if (!roleIds.contains(role.getIdLong())) {
-            roleIds.add(role.getIdLong());
-        }
+    @JSONKey(jsonKey = "roles")
+    public List<Long> getRoles() {
+        return Collections.unmodifiableList(roles);
     }
 
-    public synchronized boolean roleDel(long roleId) {
-        return roleIds.remove(roleId);
-    }
-
-    public synchronized boolean isListed(Role role) {
-        return roleIds.contains(role.getIdLong());
-    }
-
-    @Override
-    public void onRoleDelete(RoleDeleteEvent event) {
-        roleDel(event.getRole().getIdLong());
+    @JSONKey(jsonKey = "canOnlyHaveOne")
+    public boolean isCanOnlyHaveOne() {
+        return canOnlyHaveOne;
     }
 }

@@ -26,9 +26,9 @@
 package be.duncanc.discordmodbot.commands.roles;
 
 import be.duncanc.discordmodbot.commands.CommandModule;
-import net.dv8tion.jda.core.Permission;
-import net.dv8tion.jda.core.entities.ChannelType;
-import net.dv8tion.jda.core.entities.PrivateChannel;
+import be.duncanc.discordmodbot.sequence.Sequence;
+import net.dv8tion.jda.core.entities.MessageChannel;
+import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.jetbrains.annotations.NotNull;
 
@@ -50,56 +50,19 @@ class IAmRolesCommand extends CommandModule {
 
     @Override
     public void commandExec(@NotNull MessageReceivedEvent event, @NotNull String command, String arguments) {
-        String[] args = arguments.split(" ");
-        PrivateChannel privateChannel = event.getAuthor().openPrivateChannel().complete();
-        if (roleCommands.getIAmRoles() != null && event.isFromType(ChannelType.TEXT) && args.length >= 3 && event.getMember().hasPermission(Permission.MANAGE_ROLES)) {
-            byte iAmRoleSelector;
-            switch (args[0]) {
-                case "waifus":
-                    iAmRoleSelector = 0;
-                    break;
-                case "others":
-                    iAmRoleSelector = 1;
-                    break;
-                default:
-                    iAmRoleSelector = -1;
-            }
-            if (iAmRoleSelector >= 0 && iAmRoleSelector < roleCommands.getIAmRoles().length) {
-                switch (args[1]) {
-                    case "add":
-                        if (event.getGuild().getRolesByName(arguments.substring(args[0].length() + args[1].length() + 2), true).size() == 1) {
-                            roleCommands.getIAmRoles()[iAmRoleSelector].roleAdd(event.getGuild().getRolesByName(arguments.substring(args[0].length() + args[1].length() + 2), true).get(0));
-                            privateChannel.sendMessage("The role has been added.").queue();
-                        } else if (event.getGuild().getRolesByName(arguments.substring(args[0].length() + args[1].length() + 2), true).size() > 1) {
-                            privateChannel.sendMessage("The role name you provided has multiple matches").queue();
-                        } else {
-                            privateChannel.sendMessage("No role found by that name").queue();
-                        }
-                        break;
-                    case "remove":
-                        if (event.getGuild().getRolesByName(arguments.substring(args[0].length() + args[1].length() + 2), true).size() == 1) {
-                            roleCommands.getIAmRoles()[iAmRoleSelector].roleDel(event.getGuild().getRolesByName(arguments.substring(args[0].length() + args[0].length() + 2), true).get(0).getId());
-                            privateChannel.sendMessage("The role has been removed.").queue();
-                        } else if (event.getGuild().getRolesByName(arguments.substring(args[0].length() + args[1].length() + 2), true).size() > 1) {
-                            privateChannel.sendMessage("The role name you provided has multiple matches").queue();
-                        } else {
-                            privateChannel.sendMessage("No role found by that name").queue();
-                        }
-                        break;
-                    /*case "help":
-                        privateChannel.sendMessage(I_AM_ROLES_HELP).queue();
-                        break;*/
-                    default:
-                        privateChannel.sendMessage("Unknown action").queue();
-                        break;
-                }
-            } else {
-                privateChannel.sendMessage("Unknown iam role category").queue();
-            }
-        } else if (!event.getMember().hasPermission(Permission.MANAGE_ROLES)) {
-            privateChannel.sendMessage("You need manage roles permission to use this command.").queue();
-        } else {
-            privateChannel.sendMessage("Invalid amount of arguments 3 are required at least.").queue();
+        event.getJDA().addEventListener(new IAmRolesSequence(event.getAuthor(), event.getChannel()));
+    }
+
+    public class IAmRolesSequence extends Sequence {
+
+
+        IAmRolesSequence(@NotNull User user, @NotNull MessageChannel channel) {
+            super(user, channel);
+        }
+
+        @Override
+        public void onMessageReceivedDuringSequence(@NotNull MessageReceivedEvent event) {
+            //todo write logic
         }
     }
 }

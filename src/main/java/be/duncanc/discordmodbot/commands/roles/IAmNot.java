@@ -26,13 +26,7 @@
 package be.duncanc.discordmodbot.commands.roles;
 
 import be.duncanc.discordmodbot.commands.CommandModule;
-import net.dv8tion.jda.core.entities.ChannelType;
-import net.dv8tion.jda.core.entities.Role;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
-
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * I am not command to allow users to remove roles from them self.
@@ -51,23 +45,24 @@ class IAmNot extends CommandModule {
 
     @Override
     public void commandExec(MessageReceivedEvent event, String command, String arguments) {
-        if (event.isFromType(ChannelType.TEXT)) {
-            if (event.getChannel().getIdLong() == 263725615675342849L && arguments != null && (event.getGuild().getRoles().stream().anyMatch(role -> roleCommands.getIAmRoles()[0].isListed(role) && role.getName().toLowerCase().contains(arguments.toLowerCase())) || event.getGuild().getRoles().stream().anyMatch(role -> roleCommands.getIAmRoles()[1].isListed(role) && role.getName().toLowerCase().contains(arguments.toLowerCase()))) /*|| Permissions.hasPermission(event.getMember(), 0)*/) {
+        //todo rewrite
+/*        if (event.isFromType(ChannelType.TEXT)) {
+            if (event.getChannel().getIdLong() == 263725615675342849L && arguments != null && (event.getGuild().getRoles().stream().anyMatch(role -> roleCommands.getIAmRoles()[0].isListed(role) && role.getName().toLowerCase().contains(arguments.toLowerCase())) || event.getGuild().getRoles().stream().anyMatch(role -> roleCommands.getIAmRoles()[1].isListed(role) && role.getName().toLowerCase().contains(arguments.toLowerCase()))) *//*|| Permissions.hasPermission(event.getMember(), 0)*//*) {
                 removeFromRole(event, arguments);
             } else {
                 event.getChannel().sendMessage(event.getAuthor().getAsMention() + " The role you have requested either does not exist, or you do not have permission to remove yourself from that role.").queue(message -> message.delete().queueAfter(1, TimeUnit.MINUTES));
             }
         } else {
             event.getChannel().sendMessage(event.getAuthor().getAsMention() + " This command only works in a text channel in a guild.").queue(message -> message.delete().queueAfter(1, TimeUnit.MINUTES));
-        }
+        }*/
     }
 
-    /**
+/*    *//*
      * removes a member from a role.
      *
      * @param event    the event where this was called from.
      * @param roleName The role name we are trying to search.
-     */
+     *//*
     private void removeFromRole(MessageReceivedEvent event, String roleName) {
         List<Role> roleList = event.getGuild().getRoles().stream().filter(role -> role.getName().toLowerCase().contains(roleName.toLowerCase())).collect(Collectors.toList());
         if (roleList.isEmpty()) {
@@ -84,5 +79,5 @@ class IAmNot extends CommandModule {
             roleList.forEach(role -> removedRoles.append(role.getName()).append("\n"));
             event.getChannel().sendMessage(removedRoles.toString()).queue();
         }
-    }
+    }*/
 }

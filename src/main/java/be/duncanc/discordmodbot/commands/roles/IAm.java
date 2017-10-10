@@ -26,13 +26,7 @@
 package be.duncanc.discordmodbot.commands.roles;
 
 import be.duncanc.discordmodbot.commands.CommandModule;
-import net.dv8tion.jda.core.entities.ChannelType;
-import net.dv8tion.jda.core.entities.Role;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
-
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * Iam command to assign yourself roles.
@@ -59,12 +53,13 @@ class IAm extends CommandModule {
      */
     @Override
     public void commandExec(MessageReceivedEvent event, String command, String arguments) {
-        if (event.isFromType(ChannelType.TEXT)) {
+        //todo rewrite
+        /*if (event.isFromType(ChannelType.TEXT)) {
             if (arguments != null) {
                             /*if (Permissions.hasPermission(event.getMember(), 0)) {
                                 if (addToRole(event, allArguments)) break;
                             } else */
-                if (event.getChannel().getIdLong() == 263725615675342849L && roleCommands.getIAmRoles() != null) {
+                /*if (event.getChannel().getIdLong() == 263725615675342849L && roleCommands.getIAmRoles() != null) {
                     if (event.getGuild().getRoles().stream().anyMatch(role -> roleCommands.getIAmRoles()[0].isListed(role) && role.getName().toLowerCase().contains(arguments.toLowerCase()))) {
                         if (event.getMember().getRoles().stream().noneMatch(r -> roleCommands.getIAmRoles()[0].isListed(r))) {
                             addToRole(event, arguments);
@@ -85,25 +80,25 @@ class IAm extends CommandModule {
             }
         } else {
             event.getChannel().sendMessage(event.getAuthor().getAsMention() + " This command only works in a text channel in a guild.").queue(message -> message.delete().queueAfter(1, TimeUnit.MINUTES));
-        }
+        }*/
     }
 
-    /**
+    /*
      * Adds a member to a role.
      *
      * @param event    the event where this was called from.
      * @param roleName The role name we are trying to search.
-     */
+     *//*
     private void addToRole(MessageReceivedEvent event, String roleName) {
         addToRole(event, roleName, null);
     }
 
-    /**
+    *//*
      * Adds a member to a role.
      *
      * @param event    the event where this was called from.
      * @param roleName The role name we are trying to search.
-     */
+     *//*
     private void addToRole(MessageReceivedEvent event, String roleName, List<Role> rolesToRemove) {
         List<Role> newRolesToAdd = event.getGuild().getRoles().stream().filter(role -> (roleCommands.getIAmRoles()[0].isListed(role) || roleCommands.getIAmRoles()[1].isListed(role)) && role.getName().toLowerCase().contains(roleName.toLowerCase())).collect(Collectors.toList());
         if (newRolesToAdd.isEmpty()) {
@@ -124,5 +119,5 @@ class IAm extends CommandModule {
             newRolesToAdd.forEach(role -> addedRoles.append(role.getName()).append("\n"));
             event.getChannel().sendMessage(addedRoles.toString()).queue();
         }
-    }
+    }*/
 }

@@ -25,8 +25,6 @@
 
 package be.duncanc.discordmodbot.commands.roles;
 
-import be.duncanc.discordmodbot.IAmRoles;
-import be.duncanc.discordmodbot.commands.CommandModule;
 import be.duncanc.discordmodbot.commands.Help;
 import be.duncanc.discordmodbot.commands.QuitBot;
 import net.dv8tion.jda.core.events.ReadyEvent;
@@ -49,12 +47,13 @@ public final class CreateRoleCommandsOnReady extends ListenerAdapter {
     @Override
     public void onReady(ReadyEvent event) {
         if (event.getJDA().getSelfUser().getId().equals("232853504404881418")) {
-            IAmRoles[] iAmRoles = new IAmRoles[]{
+            //todo rewrite
+            /*IAmRoles[] iAmRoles = new IAmRoles[]{
                     new IAmRoles("175856762677624832_WaifuRoles"),
                     new IAmRoles("175856762677624832_OtherRoles")
             };
             //event.getJDA().addEventListener(roleRanking);
-            CommandModule[] roleCommands = RoleCommands.createCommands(iAmRoles, quitBot);
+            CommandModule[] roleCommands = RoleCommands.createCommands();
 
             for (IAmRoles iAmRole : iAmRoles) {
                 event.getJDA().addEventListener(iAmRole);
@@ -63,6 +62,7 @@ public final class CreateRoleCommandsOnReady extends ListenerAdapter {
                 event.getJDA().addEventListener(roleCommand);
             }
             help.loadCommands(event.getJDA());
+            */
         }
         event.getJDA().removeEventListener(this); //cleanup
     }
