@@ -110,7 +110,7 @@ object JSONToJavaObject {
 
         var lastThrow: Throwable? = null
 
-        while(fullyAnnotatedConstructors.isNotEmpty()) {
+        while (fullyAnnotatedConstructors.isNotEmpty()) {
             var amountOfParameters = 0
             var longestConstructor: Constructor<*>? = null
 
@@ -129,7 +129,7 @@ object JSONToJavaObject {
 
             try {
                 return createInstance(longestConstructor, json)
-            } catch (throwable:Throwable) {
+            } catch (throwable: Throwable) {
                 lastThrow = throwable
                 LOG.debug(throwable)
             }

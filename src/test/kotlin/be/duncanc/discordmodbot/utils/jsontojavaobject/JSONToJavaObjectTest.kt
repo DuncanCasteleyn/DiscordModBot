@@ -138,7 +138,6 @@ object JSONToJavaObjectTest {
         constructor(@JSONKey("list") jsonList: JSONArray, @JSONKey("doesntexist") jsonMap: Any) : this()
 
 
-
         val list = list
             @JSONKey("list") get
         val map = map

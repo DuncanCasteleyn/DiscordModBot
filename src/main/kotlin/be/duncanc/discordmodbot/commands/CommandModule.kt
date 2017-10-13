@@ -45,7 +45,7 @@ import java.util.concurrent.TimeUnit
  * @property cleanCommandMessage Allows you to enable or disable cleaning up commands.
  * @since 1.0.0
  */
-abstract class CommandModule @JvmOverloads protected constructor(internal val aliases: Array<String>, internal val argumentationSyntax: String?, internal val description: String?, private val cleanCommandMessage: Boolean = true) : ListenerAdapter(), ICommandModule {
+abstract class CommandModule @JvmOverloads protected constructor(internal val aliases: Array<String>, internal val argumentationSyntax: String?, internal val description: String?, private val cleanCommandMessage: Boolean = true) : ListenerAdapter() {
     companion object {
         const val COMMAND_SIGN: Char = '!'
         protected val LOG: SimpleLog = SimpleLog.getLog(CommandModule::class.java)
@@ -58,9 +58,18 @@ abstract class CommandModule @JvmOverloads protected constructor(internal val al
     }
 
     /**
+     * When the command is triggered this function will be called
+     *
+     * @param event The {@code MessageReceivedEvent}
+     * @param command The command that was used.
+     * @param arguments The arguments that where provided with the command.
+     */
+    protected abstract fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?)
+
+    /**
      * When a message is received it will decide if the message is command that should be handled by the command executor.
 
-     * @param event A message event.
+     * @param event A {@code MessageReceivedEvent}.
      */
     override fun onMessageReceived(event: MessageReceivedEvent) {
         val messageContent = event.message.rawContent.trim().replace("\\s+".toRegex(), " ")
