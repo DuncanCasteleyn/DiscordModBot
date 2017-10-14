@@ -72,6 +72,10 @@ public class LogToChannel {
         if (jda.getSelfUser().getIdLong() == 235529232426598401L) {
             logChannels.add(jda.getTextChannelById(318070708125171712L));
         }
+
+        if(jda.getSelfUser().getIdLong() == 368811552960413696L) {
+            logChannels.add(jda.getTextChannelById(368820484139122688L));
+        }
     }
 
     public List<TextChannel> getLogChannels() {
