@@ -149,16 +149,14 @@ open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
     }
 
     inner class SettingsSequence(user: User, channel: MessageChannel) : Sequence(user, channel) {
-        private val eventManger: EventsManager
+        private val eventManger: EventsManager? = try {
+            super.channel.jda.registeredListeners.filter { it is be.duncanc.discordmodbot.EventsManager }[0] as be.duncanc.discordmodbot.EventsManager
+        } catch (e: IndexOutOfBoundsException) {
+            null
+        }
         private var sequenceNumber = 0.toByte()
 
         init {
-            try {
-                eventManger = super.channel.jda.registeredListeners.filter { it is be.duncanc.discordmodbot.EventsManager }[0] as be.duncanc.discordmodbot.EventsManager
-            } catch (e: IndexOutOfBoundsException) {
-                destroy()
-                throw UnsupportedOperationException("This bot does not have an event manager", e)
-            }
             super.channel.sendMessage("What would you like to do? Respond with the number of the action you'd like to perform?\n\n" +
                     "0. Add or remove this guild from the event manager\n" +
                     "1. Modify log settings").queue { super.addMessageToCleaner(it) }
@@ -171,12 +169,16 @@ open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
                 0.toByte() -> {
                     when (event.message.rawContent.toByte()) {
                         0.toByte() -> {
-                            val response: Array<String> = if (eventManger.events.containsKey(guildId)) {
-                                arrayOf("already", "remove")
+                            if(eventManger != null) {
+                                val response: Array<String> = if (eventManger.events.containsKey(guildId)) {
+                                    arrayOf("already", "remove")
+                                } else {
+                                    arrayOf("not", "add")
+                                }
+                                super.channel.sendMessageFormat("The guild is currently %s in the list to use the event manager, do you want to %s it? Respond with \"yes\" or \"no\".", response[0], response[1]).queue { addMessageToCleaner(it) }
                             } else {
-                                arrayOf("not", "add")
+                                throw UnsupportedOperationException("This bot does not have an event manager")
                             }
-                            super.channel.sendMessageFormat("The guild is currently %s in the list to use the event manager, do you want to %s it? Respond with \"yes\" or \"no\".", response[0], response[1]).queue { addMessageToCleaner(it) }
                             sequenceNumber = 1
                         }
                         1.toByte() -> {
@@ -198,7 +200,7 @@ open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
                 1.toByte() -> {
                     when (event.message.rawContent.toLowerCase()) {
                         "yes" -> {
-                            if (eventManger.events.containsKey(guildId)) {
+                            if (eventManger!!.events.containsKey(guildId)) {
                                 eventManger.events.remove(guildId)
                             } else {
                                 eventManger.events.put(guildId, ArrayList())
