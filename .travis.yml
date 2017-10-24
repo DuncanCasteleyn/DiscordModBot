@@ -2,5 +2,6 @@
   "language": "java",
   "group": "stable",
   "dist": "trusty",
-  "os": "linux"
+  "os": "linux",
+  "jdk": "oraclejdk9"
 }
