@@ -88,7 +88,7 @@ public class BanUserById extends Ban {
                     }
                     return;
                 }
-                event.getGuild().getController().ban(toBan, 1, reason).queue(aVoid -> {
+                event.getGuild().getController().ban(userId, 1, reason).queue(aVoid -> {
                     RunBots runBots = RunBots.Companion.getRunBot(event.getJDA());
                     if (runBots != null) {
                         EmbedBuilder logEmbed = new EmbedBuilder()

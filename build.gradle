@@ -40,7 +40,7 @@ buildscript {
 plugins {
     id 'java'
     id 'application'
-    id 'com.github.johnrengelman.shadow' version '1.2.4'
+    id 'com.github.johnrengelman.shadow' version '2.0.1'
 }
 
 apply plugin: 'org.junit.platform.gradle.plugin'
@@ -48,7 +48,7 @@ apply plugin: 'kotlin'
 
 mainClassName = 'be.duncanc.discordmodbot.RunBots'
 
-version '1.1.1_36'
+version '1.1.1_37'
 
 sourceCompatibility = 1.9
 
@@ -60,7 +60,7 @@ dependencies {
     testCompile("org.junit.jupiter:junit-jupiter-api:$junit_version")
     testRuntime("org.junit.jupiter:junit-jupiter-engine:$junit_version")
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
-    compile "net.dv8tion:JDA:3.3.1_291"
+    compile "net.dv8tion:JDA:3.3.1_299"
     compile 'org.apache.commons:commons-lang3:3.5'
     compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.21'
 }
