@@ -49,7 +49,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: be.dunca
             get() = arrayOf(Ban(), BanUserById(), ChannelIds(), Info(), Kick(), Ping(), PurgeChannel(), RoleIds(), SlowMode(), UserInfo(), Warn(), Eval(), ReactionVote(), NoMobile())
 
         private val configFile = Paths.get("Config.json")
-        internal val BOT_THREAD_POOL_SIZE = 5
+        internal val BOT_THREAD_POOL_SIZE = 3
         internal val LOG = SimpleLog.getLog(RunBots::class.java)
         var bots: Array<RunBots>? = null
             internal set
