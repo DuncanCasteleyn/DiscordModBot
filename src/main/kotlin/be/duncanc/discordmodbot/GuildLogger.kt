@@ -490,7 +490,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
         }, 1, TimeUnit.SECONDS)
     }
 
-    public enum class LogTypeAction {
+    enum class LogTypeAction {
         MODERATOR, USER
     }
 }
