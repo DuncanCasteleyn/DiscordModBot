@@ -98,7 +98,7 @@ public class BanUserById extends Ban {
                                 .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true)
                                 .addField("Reason", reason, false);
 
-                        runBots.getLogToChannel().log(logEmbed, toBan, event.getGuild(), null);
+                        runBots.getLogToChannel().log(logEmbed, toBan, event.getGuild(), null, GuildLogger.LogTypeAction.MODERATOR);
                     }
 
                     if (privateChannel == null) {

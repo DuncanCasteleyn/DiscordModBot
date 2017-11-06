@@ -53,28 +53,37 @@ public class LogToChannel {
 
     private static final SimpleLog LOG = SimpleLog.getLog(LogToChannel.class);
     private final List<TextChannel> logChannels;
+    private final List<TextChannel> userLogChannels;
 
     /**
      * Find the the logging channels.
      */
     LogToChannel() {
         logChannels = new ArrayList<>();
+        userLogChannels = new ArrayList<>();
     }
 
     void initChannelList(JDA jda) {
         if (jda.getSelfUser().getIdLong() == 232853504404881418L) {
             logChannels.add(jda.getTextChannelById(205415791238184969L));
+            userLogChannels.add(jda.getTextChannelById(375783695711207424L));
         }
         if (jda.getSelfUser().getIdLong() == 247032890024525825L) {
-            logChannels.add(jda.getTextChannelById(247081384110194688L));
+            TextChannel logChannel = jda.getTextChannelById(247081384110194688L);
+            logChannels.add(logChannel);
+            userLogChannels.add(logChannel);
         }
 
         if (jda.getSelfUser().getIdLong() == 235529232426598401L) {
-            logChannels.add(jda.getTextChannelById(318070708125171712L));
+            TextChannel logChannel = jda.getTextChannelById(318070708125171712L);
+            logChannels.add(logChannel);
+            userLogChannels.add(logChannel);
         }
 
         if(jda.getSelfUser().getIdLong() == 368811552960413696L) {
-            logChannels.add(jda.getTextChannelById(368820484139122688L));
+            TextChannel logChannel = jda.getTextChannelById(368820484139122688L);
+            logChannels.add(logChannel);
+            userLogChannels.add(logChannel);
         }
     }
 
@@ -106,8 +115,14 @@ public class LogToChannel {
      * @param logEmbed An embed to be used as log message a time stamp will be added to the footer and
      * @param guild    The guild where the message needs to be logged to
      */
-    public void log(EmbedBuilder logEmbed, User associatedUser, Guild guild, List<MessageEmbed> embeds, byte[] bytes) {
-        for (TextChannel logTo : logChannels) {
+    public void log(EmbedBuilder logEmbed, User associatedUser, Guild guild, List<MessageEmbed> embeds, GuildLogger.LogTypeAction actionType, byte[] bytes) {
+        List<TextChannel> targetChannel;
+        if(actionType == GuildLogger.LogTypeAction.MODERATOR) {
+            targetChannel = logChannels;
+        } else {
+            targetChannel = userLogChannels;
+        }
+        for (TextChannel logTo : targetChannel) {
             if (logTo.getGuild().equals(guild)) {
                 try {
                     logEmbed = logEmbed.setTimestamp(OffsetDateTime.now());
@@ -139,7 +154,7 @@ public class LogToChannel {
      * @param logEmbed An embed to be used as log message a time stamp will be added to the footer and
      * @param guild    The guild where the message needs to be logged to
      */
-    public void log(EmbedBuilder logEmbed, User associatedUser, Guild guild, List<MessageEmbed> embeds) {
-        log(logEmbed, associatedUser, guild, embeds, null);
+    public void log(EmbedBuilder logEmbed, User associatedUser, Guild guild, List<MessageEmbed> embeds, GuildLogger.LogTypeAction actionType) {
+        log(logEmbed, associatedUser, guild, embeds, actionType, null);
     }
 }

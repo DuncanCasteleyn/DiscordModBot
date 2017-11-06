@@ -33,6 +33,7 @@ import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageUpdateEvent;
 import net.dv8tion.jda.core.hooks.ListenerAdapter;
 import org.apache.commons.collections4.map.LinkedMap;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 
@@ -80,6 +81,7 @@ public class MessageHistory extends ListenerAdapter implements QuitBot.BeforeBot
      *
      * @return a list of existing MessageHistory objects.
      */
+    @NotNull
     public static ArrayList<MessageHistory> getInstanceList() {
         return new ArrayList<>(MESSAGE_HISTORY_INSTANCES);
     }

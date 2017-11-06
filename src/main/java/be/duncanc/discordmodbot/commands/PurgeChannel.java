@@ -25,6 +25,7 @@
 
 package be.duncanc.discordmodbot.commands;
 
+import be.duncanc.discordmodbot.GuildLogger;
 import be.duncanc.discordmodbot.JDALibHelper;
 import be.duncanc.discordmodbot.LogToChannel;
 import be.duncanc.discordmodbot.RunBots;
@@ -119,7 +120,7 @@ public class PurgeChannel extends CommandModule {
                         .addField("Channel", textChannel.getName(), true)
                         .addField("Filter", filterString.toString(), true);
 
-                runBots.getLogToChannel().log(logEmbed, event.getAuthor(), event.getGuild(), null);
+                runBots.getLogToChannel().log(logEmbed, event.getAuthor(), event.getGuild(), null, GuildLogger.LogTypeAction.MODERATOR);
 
                 //logger.log("Executed a message purge in #" + event.getTextChannel().getName(), "Message purge by " + JDALibHelper.getEffectiveNameAndUsername(event.getMember()), event.getGuild(), event.getAuthor().getId(), event.getAuthor().getEffectiveAvatarUrl());
             }
@@ -162,7 +163,7 @@ public class PurgeChannel extends CommandModule {
                         .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true)
                         .addField("Channel", textChannel.getName(), true);
 
-                runBots.getLogToChannel().log(logEmbed, event.getAuthor(), event.getGuild(), null);
+                runBots.getLogToChannel().log(logEmbed, event.getAuthor(), event.getGuild(), null, GuildLogger.LogTypeAction.MODERATOR);
 
                 //logger.log("Executed a message purge in #" + event.getTextChannel().getName(), "Message purge by " + JDALibHelper.getEffectiveNameAndUsername(event.getMember()), event.getGuild(), event.getAuthor().getId(), event.getAuthor().getEffectiveAvatarUrl());
             }

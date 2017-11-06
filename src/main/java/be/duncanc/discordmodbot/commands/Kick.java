@@ -116,7 +116,7 @@ public class Kick extends CommandModule {
                     .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true)
                     .addField("Reason", reason, false);
 
-            runBots.getLogToChannel().log(logEmbed, toKick.getUser(), event.getGuild(), null);
+            runBots.getLogToChannel().log(logEmbed, toKick.getUser(), event.getGuild(), null, GuildLogger.LogTypeAction.MODERATOR);
         }
     }
 

@@ -25,10 +25,7 @@
 
 package be.duncanc.discordmodbot.commands;
 
-import be.duncanc.discordmodbot.JDALibHelper;
-import be.duncanc.discordmodbot.LogToChannel;
-import be.duncanc.discordmodbot.RunBots;
-import be.duncanc.discordmodbot.ThrowableSafeRunnable;
+import be.duncanc.discordmodbot.*;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.Permission;
 import net.dv8tion.jda.core.entities.ChannelType;
@@ -97,7 +94,7 @@ public class SlowMode extends CommandModule {
                                     .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true)
                                     .addField("Channel", event.getTextChannel().getName(), true);
 
-                            runBots.getLogToChannel().log(logEmbed, event.getAuthor(), event.getGuild(), null);
+                            runBots.getLogToChannel().log(logEmbed, event.getAuthor(), event.getGuild(), null, GuildLogger.LogTypeAction.MODERATOR);
 
                             //logger.log("Slow mode on #" + event.getTextChannel().getName() + " disabled", "toggled by " + JDALibHelper.getEffectiveNameAndUsername(event.getMember()), event.getGuild(), event.getAuthor().getId(), event.getAuthor().getEffectiveAvatarUrl());
                         }
@@ -120,7 +117,7 @@ public class SlowMode extends CommandModule {
                                         .addField("Threshold time", args[1], true)
                                         .addField("Mute time", args[2], true);
 
-                                runBots.getLogToChannel().log(logEmbed, event.getAuthor(), event.getGuild(), null);
+                                runBots.getLogToChannel().log(logEmbed, event.getAuthor(), event.getGuild(), null, GuildLogger.LogTypeAction.MODERATOR);
                             }
                         } catch (NumberFormatException e) {
                             PrivateChannel privateChannel;
@@ -143,7 +140,7 @@ public class SlowMode extends CommandModule {
                                     .addField("Threshold time", String.valueOf(thresholdTime), true)
                                     .addField("Mute time", String.valueOf(muteTime), true);
 
-                            runBots.getLogToChannel().log(logEmbed, event.getAuthor(), event.getGuild(), null);
+                            runBots.getLogToChannel().log(logEmbed, event.getAuthor(), event.getGuild(), null, GuildLogger.LogTypeAction.MODERATOR);
                         }
                     }
                 }

@@ -106,7 +106,7 @@ public class Warn extends CommandModule {
                         .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true)
                         .addField("Reason", reason, false);
 
-                runBots.getLogToChannel().log(logEmbed, toWarn.getUser(), event.getGuild(), null);
+                runBots.getLogToChannel().log(logEmbed, toWarn.getUser(), event.getGuild(), null, GuildLogger.LogTypeAction.MODERATOR);
 
                 //runBots.getLogToChannel().log(JDALibHelper.getEffectiveNameAndUsername(event.getMember()) + " warned " + JDALibHelper.getEffectiveNameAndUsername(toWarn), "Reason: " + arguments, event.getGuild(), toWarn.getUser().getId(), toWarn.getUser().getEffectiveAvatarUrl(), true);
             }

@@ -25,6 +25,7 @@
 
 package be.duncanc.discordmodbot.commands;
 
+import be.duncanc.discordmodbot.GuildLogger;
 import be.duncanc.discordmodbot.JDALibHelper;
 import be.duncanc.discordmodbot.RunBots;
 import net.dv8tion.jda.core.EmbedBuilder;
@@ -102,7 +103,7 @@ public class RemoveMute extends CommandModule {
                             .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true)
                             .addField("Reason", reason, false);
 
-                    runBots.getLogToChannel().log(logEmbed, toRemoveMute.getUser(), event.getGuild(), null);
+                    runBots.getLogToChannel().log(logEmbed, toRemoveMute.getUser(), event.getGuild(), null, GuildLogger.LogTypeAction.MODERATOR);
 
                     //runBots.getLogToChannel().log(JDALibHelper.getEffectiveNameAndUsername(event.getMember()) + " removed mute on " + JDALibHelper.getEffectiveNameAndUsername(toRemoveMute), "Reason: " + arguments, event.getGuild(), toRemoveMute.getUser().getId(), toRemoveMute.getUser().getEffectiveAvatarUrl(), true);
                 }
