@@ -1,7 +1,9 @@
-{
-  "language": "java",
-  "group": "stable",
-  "dist": "trusty",
-  "os": "linux",
-  "jdk": "oraclejdk9"
-}
+language: java
+
+group: stable
+
+os:
+  - linux
+  - osx
+
+jdk: oraclejdk9
