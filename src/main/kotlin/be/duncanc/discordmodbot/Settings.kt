@@ -68,9 +68,8 @@ open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
         private fun writeGuildSettingToFile() {
             synchronized(this) {
                 val jsonObject = JSONObject()
-                val companionFields = Settings::class.java.declaredFields
-                jsonObject.put(companionFields[4].name, exceptedFromLogging)
-                jsonObject.put(companionFields[5].name, guildSettings)
+                jsonObject.put("exceptedFromLogging", exceptedFromLogging)
+                jsonObject.put("guildSettings", guildSettings)
                 Files.write(FILE_PATH, Collections.singletonList(jsonObject.toString()))
             }
         }
