@@ -272,7 +272,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
         }
 
         if (history == null) {
-            logBulkDelete(event, logEmbed)
+            //logBulkDelete(event, logEmbed)
             return
         }
 
@@ -295,13 +295,13 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
         if (messageLogged) {
             logWriter.append("Logged on ").append(OffsetDateTime.now().toString())
             logBulkDelete(event, logEmbed, logWriter.toString().toByteArray())
-        } else {
+        } /*else {
             logBulkDelete(event, logEmbed)
-        }
+        }*/
 
     }
 
-    private fun logBulkDelete(event: MessageBulkDeleteEvent, logEmbed: EmbedBuilder, bytes: ByteArray? = null) {
+    private fun logBulkDelete(event: MessageBulkDeleteEvent, logEmbed: EmbedBuilder, bytes: ByteArray) {
         guildLoggerExecutor.execute { logger.log(logEmbed, null, event.guild, null, LogTypeAction.MODERATOR, bytes) }
     }
 
