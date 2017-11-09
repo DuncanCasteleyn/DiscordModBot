@@ -68,9 +68,8 @@ open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
         private fun writeGuildSettingToFile() {
             synchronized(this) {
                 val jsonObject = JSONObject()
-                val companionFields = Settings::class.java.declaredFields
-                jsonObject.put(companionFields[4].name, exceptedFromLogging)
-                jsonObject.put(companionFields[5].name, guildSettings)
+                jsonObject.put("exceptedFromLogging", exceptedFromLogging)
+                jsonObject.put("guildSettings", guildSettings)
                 Files.write(FILE_PATH, Collections.singletonList(jsonObject.toString()))
             }
         }
@@ -83,8 +82,7 @@ open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
                     val jsonObject = JSONObject(stringBuilder.toString())
                     jsonObject.getJSONArray("guildSettings").forEach {
                         it as JSONObject
-                        val guildSettingFields = GuildSettings::class.java.declaredFields
-                        guildSettings.add(GuildSettings(it.getLong(guildSettingFields[guildSettingFields.size - 1].name), it.getBoolean(guildSettingFields[0].name), it.getBoolean(guildSettingFields[1].name), it.getBoolean(guildSettingFields[2].name), it.getBoolean(guildSettingFields[3].name), it.getBoolean(guildSettingFields[4].name), it.getBoolean(guildSettingFields[5].name)))
+                        guildSettings.add(GuildSettings(it.getLong("guildId"), it.getBoolean("logMessageDelete"), it.getBoolean("logMessageUpdate"), it.getBoolean("logMemberRemove"), it.getBoolean("logMemberBan"), it.getBoolean("logMemberAdd"), it.getBoolean("logMemberRemoveBan")))
                     }
                     jsonObject.getJSONArray("exceptedFromLogging").forEach {
                         exceptedFromLogging.add(it.toString().toLong())
@@ -149,16 +147,14 @@ open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
     }
 
     inner class SettingsSequence(user: User, channel: MessageChannel) : Sequence(user, channel) {
-        private val eventManger: EventsManager
+        private val eventManger: EventsManager? = try {
+            super.channel.jda.registeredListeners.filter { it is be.duncanc.discordmodbot.EventsManager }[0] as be.duncanc.discordmodbot.EventsManager
+        } catch (e: IndexOutOfBoundsException) {
+            null
+        }
         private var sequenceNumber = 0.toByte()
 
         init {
-            try {
-                eventManger = super.channel.jda.registeredListeners.filter { it is be.duncanc.discordmodbot.EventsManager }[0] as be.duncanc.discordmodbot.EventsManager
-            } catch (e: IndexOutOfBoundsException) {
-                destroy()
-                throw UnsupportedOperationException("This bot does not have an event manager", e)
-            }
             super.channel.sendMessage("What would you like to do? Respond with the number of the action you'd like to perform?\n\n" +
                     "0. Add or remove this guild from the event manager\n" +
                     "1. Modify log settings").queue { super.addMessageToCleaner(it) }
@@ -171,12 +167,16 @@ open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
                 0.toByte() -> {
                     when (event.message.rawContent.toByte()) {
                         0.toByte() -> {
-                            val response: Array<String> = if (eventManger.events.containsKey(guildId)) {
-                                arrayOf("already", "remove")
+                            if(eventManger != null) {
+                                val response: Array<String> = if (eventManger.events.containsKey(guildId)) {
+                                    arrayOf("already", "remove")
+                                } else {
+                                    arrayOf("not", "add")
+                                }
+                                super.channel.sendMessageFormat("The guild is currently %s in the list to use the event manager, do you want to %s it? Respond with \"yes\" or \"no\".", response[0], response[1]).queue { addMessageToCleaner(it) }
                             } else {
-                                arrayOf("not", "add")
+                                throw UnsupportedOperationException("This bot does not have an event manager")
                             }
-                            super.channel.sendMessageFormat("The guild is currently %s in the list to use the event manager, do you want to %s it? Respond with \"yes\" or \"no\".", response[0], response[1]).queue { addMessageToCleaner(it) }
                             sequenceNumber = 1
                         }
                         1.toByte() -> {
@@ -198,7 +198,7 @@ open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
                 1.toByte() -> {
                     when (event.message.rawContent.toLowerCase()) {
                         "yes" -> {
-                            if (eventManger.events.containsKey(guildId)) {
+                            if (eventManger!!.events.containsKey(guildId)) {
                                 eventManger.events.remove(guildId)
                             } else {
                                 eventManger.events.put(guildId, ArrayList())
@@ -217,6 +217,7 @@ open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
                     val settingField = GuildSettings::class.java.declaredFields.filter { it.type == Boolean::class.java }[event.message.rawContent.toInt()].name.capitalize()
                     GuildSettings::class.java.getMethod("set" + settingField, Boolean::class.java)
                             .invoke(guildSettings.filter { it.guildId == event.guild.idLong }[0], !(GuildSettings::class.java.getMethod("get" + settingField).invoke(guildSettings.filter { it.guildId == event.guild.idLong }[0]) as Boolean))
+                    writeGuildSettingToFile()
                     channel.sendMessage("Successfully inverted " + settingField.decapitalize() + ".").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                     destroy()
                 }
@@ -224,36 +225,5 @@ open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
         }
     }
 
-    class GuildSettings @JvmOverloads constructor(val guildId: Long, logMessageDelete: Boolean = true, logMessageUpdate: Boolean = true, logMemberRemove: Boolean = true, logMemberBan: Boolean = true, logMemberAdd: Boolean = true, logMemberRemoveBan: Boolean = true) {
-        var logMessageDelete = logMessageDelete
-            set(value) {
-                field = value
-                writeGuildSettingToFile()
-            }
-        var logMessageUpdate = logMessageUpdate
-            set(value) {
-                field = value
-                writeGuildSettingToFile()
-            }
-        var logMemberRemove = logMemberRemove
-            set(value) {
-                field = value
-                writeGuildSettingToFile()
-            }
-        var logMemberBan = logMemberBan
-            set(value) {
-                field = value
-                writeGuildSettingToFile()
-            }
-        var logMemberAdd = logMemberAdd
-            set(value) {
-                field = value
-                writeGuildSettingToFile()
-            }
-        var logMemberRemoveBan = logMemberRemoveBan
-            set(value) {
-                field = value
-                writeGuildSettingToFile()
-            }
-    }
+    class GuildSettings @JvmOverloads constructor(val guildId: Long, var logMessageDelete: Boolean = true, var logMessageUpdate: Boolean = true, var logMemberRemove: Boolean = true, var logMemberBan: Boolean = true, var logMemberAdd: Boolean = true, var logMemberRemoveBan: Boolean = true)
 }

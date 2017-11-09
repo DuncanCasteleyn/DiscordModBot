@@ -33,6 +33,7 @@ import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageUpdateEvent;
 import net.dv8tion.jda.core.hooks.ListenerAdapter;
 import org.apache.commons.collections4.map.LinkedMap;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 
@@ -46,7 +47,7 @@ import java.util.ArrayList;
 public class MessageHistory extends ListenerAdapter implements QuitBot.BeforeBotQuit {
 
     private static final int HISTORY_SIZE = 1000;
-    private static final ArrayList<MessageHistory> messageHistoryInstances = new ArrayList<>();
+    private static final ArrayList<MessageHistory> MESSAGE_HISTORY_INSTANCES = new ArrayList<>();
 
     private final LinkedMap<Long, Message> messages;
     private final AttachmentProxyCreator attachmentProxyCreator;
@@ -60,7 +61,7 @@ public class MessageHistory extends ListenerAdapter implements QuitBot.BeforeBot
         messages = new LinkedMap<>();
         attachmentProxyCreator = new AttachmentProxyCreator();
         deleted = false;
-        messageHistoryInstances.add(this);
+        MESSAGE_HISTORY_INSTANCES.add(this);
     }
 
     /**
@@ -80,8 +81,9 @@ public class MessageHistory extends ListenerAdapter implements QuitBot.BeforeBot
      *
      * @return a list of existing MessageHistory objects.
      */
+    @NotNull
     public static ArrayList<MessageHistory> getInstanceList() {
-        return new ArrayList<>(messageHistoryInstances);
+        return new ArrayList<>(MESSAGE_HISTORY_INSTANCES);
     }
 
     /**
@@ -180,7 +182,7 @@ public class MessageHistory extends ListenerAdapter implements QuitBot.BeforeBot
         }
 
         deleted = true;
-        messageHistoryInstances.remove(this);
+        MESSAGE_HISTORY_INSTANCES.remove(this);
     }
 
     JDA getInstance() throws EmptyCacheException {

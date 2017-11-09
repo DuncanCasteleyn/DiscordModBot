@@ -47,7 +47,7 @@ import java.util.concurrent.TimeUnit
  *
  * @since 1.1.0
  */
-abstract class Sequence @JvmOverloads protected constructor(val user: User, val channel: MessageChannel, cleanAfterSequence: Boolean = true, informUser: Boolean = true) : ListenerAdapter(), ISequence {
+abstract class Sequence @JvmOverloads protected constructor(val user: User, val channel: MessageChannel, cleanAfterSequence: Boolean = true, informUser: Boolean = true) : ListenerAdapter() {
     companion object {
         private val LOG = SimpleLog.getLog(Sequence::class.java)
     }
@@ -82,6 +82,16 @@ abstract class Sequence @JvmOverloads protected constructor(val user: User, val 
         }
     }
 
+    /**
+     * Will be called after the necessary operations are performed to keep the sequence alive.
+     */
+    protected abstract fun onMessageReceivedDuringSequence(event: MessageReceivedEvent)
+
+    /**
+     * Will perform the required actions while in a sequence and then send it to the {@code onMessageReceivedDuringSequence(event)}.
+     *
+     * When {@code onMessageReceivedDuringSequence(event)} throws an exception it catches it, send the exception name and message and terminate the sequence.
+     */
     override fun onMessageReceived(event: MessageReceivedEvent) {
         if (cleaner.isDone || sequenceKillerExecutor.isShutdown || event.channel != channel || event.author != user) {
             return

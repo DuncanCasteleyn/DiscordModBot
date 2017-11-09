@@ -96,7 +96,7 @@ public class Mute extends CommandModule {
                             .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true)
                             .addField("Reason", reason, false);
 
-                    runBots.getLogToChannel().log(logEmbed, toMute.getUser(), event.getGuild(), null);
+                    runBots.getLogToChannel().log(logEmbed, toMute.getUser(), event.getGuild(), null, GuildLogger.LogTypeAction.MODERATOR);
                 }
                 EmbedBuilder userMuteWarning = new EmbedBuilder()
                         .setColor(Color.YELLOW)

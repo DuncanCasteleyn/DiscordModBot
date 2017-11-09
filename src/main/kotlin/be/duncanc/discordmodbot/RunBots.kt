@@ -46,10 +46,10 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: be.dunca
     companion object {
 
         internal val generalCommands: Array<CommandModule>
-            get() = arrayOf(Ban(), BanUserById(), ChannelIds(), Info(), Kick(), Ping(), PurgeChannel(), RoleIds(), SlowMode(), UserInfo(), Warn(), Eval(), ReactionVote())
+            get() = arrayOf(Ban(), BanUserById(), ChannelIds(), Info(), Kick(), Ping(), PurgeChannel(), RoleIds(), SlowMode(), UserInfo(), Warn(), Eval(), ReactionVote(), NoMobile())
 
         private val configFile = Paths.get("Config.json")
-        internal val BOT_THREAD_POOL_SIZE = 5
+        internal val BOT_THREAD_POOL_SIZE = 3
         internal val LOG = SimpleLog.getLog(RunBots::class.java)
         var bots: Array<RunBots>? = null
             internal set
@@ -65,6 +65,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: be.dunca
 
                 be.duncanc.discordmodbot.utils.GoogleSearch.setup(configObject.getString("GoogleApi"))
 
+                //Fairy tail bot
                 val fairyTailLogToChannel = be.duncanc.discordmodbot.LogToChannel()
                 val fairyTailSettings = Settings()
                 val fairyTailGuildLogger = GuildLogger(fairyTailLogToChannel, fairyTailSettings)
@@ -75,11 +76,10 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: be.dunca
                         .setEventManager(be.duncanc.discordmodbot.ExecutorServiceEventManager())
                         .setToken(configObject.getString("FairyTail"))
                         .setBulkDeleteSplittingEnabled(false)
-                        .addEventListener(fairyTailGuildLogger, Help(), fairyTailQuitBot, fairyTailSettings)
-                for (generalCommand in generalCommands) {
-                    fairyTailJDABuilder.addEventListener(generalCommand)
-                }
+                        .addEventListener(fairyTailGuildLogger, Help(), fairyTailQuitBot, fairyTailSettings, *generalCommands)
 
+
+                //Re:Zero bot
                 val reZeroLogToChannel = LogToChannel()
                 val reZeroSettings = Settings()
                 val reZeroGuildLogger = GuildLogger(reZeroLogToChannel, reZeroSettings)
@@ -94,10 +94,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: be.dunca
                         .setToken(configObject.getString("ReZero"))
                         .setEventManager(be.duncanc.discordmodbot.ExecutorServiceEventManager())
                         .setBulkDeleteSplittingEnabled(false)
-                        .addEventListener(reZeroGuildLogger, CreateRoleCommandsOnReady(helpCommand, reZeroQuitBot), helpCommand, reZeroQuitBot, memberGate, Mute(), RemoveMute(), reZeroSettings, EventsManager())
-                for (generalCommand in generalCommands) {
-                    reZeroJDABuilder.addEventListener(generalCommand)
-                }
+                        .addEventListener(reZeroGuildLogger, CreateRoleCommandsOnReady(helpCommand, reZeroQuitBot), helpCommand, reZeroQuitBot, memberGate, Mute(), RemoveMute(), reZeroSettings, EventsManager(), *generalCommands)
 
                 //TEMP EVENT BOT STARTS HERE
                 /*val qAndA = QAndA(
@@ -111,8 +108,21 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: be.dunca
                         .buildAsync()*/
                 //TEMP EVENT BOT ENDS HERE
 
+                //black clover bot
+                val blackCloverLogToChannel = be.duncanc.discordmodbot.LogToChannel()
+                val blackCloverSettings = Settings()
+                val blackCloverLogger = GuildLogger(blackCloverLogToChannel, blackCloverSettings)
+                val blackCloverQuitBot = QuitBot()
 
-                bots = arrayOf(RunBots(fairyTailJDABuilder.buildAsync(), fairyTailLogToChannel, fairyTailGuildLogger), RunBots(reZeroJDABuilder.buildAsync(), reZeroLogToChannel, reZeroGuildLogger))
+                val blackCloverBuilder = JDABuilder(AccountType.BOT)
+                        .setCorePoolSize(BOT_THREAD_POOL_SIZE)
+                        .setEventManager(ExecutorServiceEventManager())
+                        .setToken(configObject.getString("BlackClover"))
+                        .setBulkDeleteSplittingEnabled(false)
+                        .addEventListener(blackCloverLogger, Help(), blackCloverQuitBot, blackCloverSettings, *generalCommands)
+
+
+                bots = arrayOf(RunBots(fairyTailJDABuilder.buildAsync(), fairyTailLogToChannel, fairyTailGuildLogger), RunBots(reZeroJDABuilder.buildAsync(), reZeroLogToChannel, reZeroGuildLogger), RunBots(blackCloverBuilder.buildAsync(), blackCloverLogToChannel, blackCloverLogger))
 
                 for (bot in bots!!) {
                     be.duncanc.discordmodbot.MessageHistory.registerMessageHistory(bot.bot)

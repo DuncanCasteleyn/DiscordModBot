@@ -147,7 +147,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
                     .setDescription("Old message was:\n" + oldMessage.content)
                     .setColor(LIGHT_BLUE)
                     .addField("Author", name, true)
-            guildLoggerExecutor.execute { logger.log(logEmbed, oldMessage.author, guild, oldMessage.embeds) }
+            guildLoggerExecutor.execute { logger.log(logEmbed, oldMessage.author, guild, oldMessage.embeds, LogTypeAction.USER) }
         }
     }
 
@@ -242,7 +242,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
                 } else {
                     logEmbed.setColor(LIGHT_BLUE)
                 }
-                logger.log(logEmbed, oldMessage.author, guild, oldMessage.embeds)
+                logger.log(logEmbed, oldMessage.author, guild, oldMessage.embeds, if (moderator == null) LogTypeAction.USER else LogTypeAction.MODERATOR)
             }, 1, TimeUnit.SECONDS)
         }
     }
@@ -272,7 +272,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
         }
 
         if (history == null) {
-            logBulkDelete(event, logEmbed)
+            //logBulkDelete(event, logEmbed)
             return
         }
 
@@ -295,14 +295,14 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
         if (messageLogged) {
             logWriter.append("Logged on ").append(OffsetDateTime.now().toString())
             logBulkDelete(event, logEmbed, logWriter.toString().toByteArray())
-        } else {
+        } /*else {
             logBulkDelete(event, logEmbed)
-        }
+        }*/
 
     }
 
-    private fun logBulkDelete(event: MessageBulkDeleteEvent, logEmbed: EmbedBuilder, bytes: ByteArray? = null) {
-        guildLoggerExecutor.execute { logger.log(logEmbed, null, event.guild, null, bytes) }
+    private fun logBulkDelete(event: MessageBulkDeleteEvent, logEmbed: EmbedBuilder, bytes: ByteArray) {
+        guildLoggerExecutor.execute { logger.log(logEmbed, null, event.guild, null, LogTypeAction.MODERATOR, bytes) }
     }
 
     override fun onGuildMemberLeave(event: GuildMemberLeaveEvent) {
@@ -328,7 +328,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
                 }
             }
 
-            if (moderator != null && moderator === event.jda.selfUser) {
+            if (moderator != null && moderator == event.jda.selfUser) {
                 return@schedule  //Bot is kicking no need to log, if needed it will be placed in the module that is issuing the kick.
             }
 
@@ -338,7 +338,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
                         .setColor(Color.RED)
                         .addField("User", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
                         .setTitle("SERVER NOTIFICATION: User left")
-                logger.log(logEmbed, event.member.user, event.guild, null)
+                logger.log(logEmbed, event.member.user, event.guild, null, if (moderator == null) LogTypeAction.USER else LogTypeAction.MODERATOR)
             } else {
                 logKick(event.member, event.guild, event.guild.getMember(moderator), reason)
             }
@@ -356,7 +356,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
             if (reason != null) {
                 logEmbed.addField("Reason", reason, false)
             }
-            logger.log(logEmbed, member.user, guild, null)
+            logger.log(logEmbed, member.user, guild, null, LogTypeAction.MODERATOR)
         }
     }
 
@@ -383,7 +383,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
                 }
             }
 
-            if (moderator != null && moderator === event.jda.selfUser) {
+            if (moderator != null && moderator == event.jda.selfUser) {
                 return@schedule  //Bot is banning no need to log, if needed it will be placed in the module that is issuing the ban.
             }
 
@@ -397,7 +397,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
                     logEmbed.addField("Reason", reason, false)
                 }
             }
-            logger.log(logEmbed, event.user, event.guild, null)
+            logger.log(logEmbed, event.user, event.guild, null, LogTypeAction.MODERATOR)
         }, 1, TimeUnit.SECONDS)
     }
 
@@ -411,7 +411,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
                 .setTitle("SERVER NOTIFICATION: User joined", null)
                 .addField("User", event.member.user.name, false)
                 .addField("Account created", event.member.user.creationTime.format(DATE_TIME_FORMATTER), false)
-        guildLoggerExecutor.execute { logger.log(logEmbed, event.member.user, event.guild, null) }
+        guildLoggerExecutor.execute { logger.log(logEmbed, event.member.user, event.guild, null, LogTypeAction.USER) }
     }
 
 
@@ -443,7 +443,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
             if (moderator != null) {
                 logEmbed.addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.guild.getMember(moderator)), true)
             }
-            logger.log(logEmbed, event.user, event.guild, null)
+            logger.log(logEmbed, event.user, event.guild, null, LogTypeAction.MODERATOR)
         }, 1, TimeUnit.SECONDS)
     }
 
@@ -454,7 +454,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
                     .setTitle("User has changed username")
                     .addField("Old username & discriminator", event.oldName + "#" + event.oldDiscriminator, false)
                     .addField("New username & discriminator", event.user.name + "#" + event.user.discriminator, false)
-            guildLoggerExecutor.execute { logger.log(logEmbed, event.user, guild, null) }
+            guildLoggerExecutor.execute { logger.log(logEmbed, event.user, guild, null, LogTypeAction.USER) }
         }
     }
 
@@ -480,13 +480,17 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
                     .addField("User", event.member.user.name, false)
                     .addField("Old nickname", if (event.prevNick != null) event.prevNick else "None", true)
                     .addField("New nickname", if (event.newNick != null) event.newNick else "None", true)
-            if (moderator == null || moderator === event.member.user) {
+            if (moderator == null || moderator == event.member.user) {
                 logEmbed.setTitle("User has changed nickname")
             } else {
                 logEmbed.setTitle("Moderator has changed nickname")
                         .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.guild.getMember(moderator)), false)
             }
-            logger.log(logEmbed, event.member.user, event.guild, null)
+            logger.log(logEmbed, event.member.user, event.guild, null, if (moderator == null ||  moderator == event.member.user) LogTypeAction.USER else LogTypeAction.MODERATOR)
         }, 1, TimeUnit.SECONDS)
+    }
+
+    enum class LogTypeAction {
+        MODERATOR, USER
     }
 }

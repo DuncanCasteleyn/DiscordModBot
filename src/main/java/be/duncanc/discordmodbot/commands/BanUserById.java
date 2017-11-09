@@ -88,7 +88,7 @@ public class BanUserById extends Ban {
                     }
                     return;
                 }
-                event.getGuild().getController().ban(toBan, 1, reason).queue(aVoid -> {
+                event.getGuild().getController().ban(userId, 1, reason).queue(aVoid -> {
                     RunBots runBots = RunBots.Companion.getRunBot(event.getJDA());
                     if (runBots != null) {
                         EmbedBuilder logEmbed = new EmbedBuilder()
@@ -98,7 +98,7 @@ public class BanUserById extends Ban {
                                 .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true)
                                 .addField("Reason", reason, false);
 
-                        runBots.getLogToChannel().log(logEmbed, toBan, event.getGuild(), null);
+                        runBots.getLogToChannel().log(logEmbed, toBan, event.getGuild(), null, GuildLogger.LogTypeAction.MODERATOR);
                     }
 
                     if (privateChannel == null) {

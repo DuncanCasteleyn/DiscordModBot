@@ -134,7 +134,7 @@ public class Ban extends CommandModule {
                     .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true)
                     .addField("Reason", reason, false);
 
-            runBots.getLogToChannel().log(logEmbed, toBan.getUser(), event.getGuild(), null);
+            runBots.getLogToChannel().log(logEmbed, toBan.getUser(), event.getGuild(), null, GuildLogger.LogTypeAction.MODERATOR);
         }
     }
 
