@@ -26,7 +26,6 @@
 package be.duncanc.discordmodbot
 
 import be.duncanc.discordmodbot.commands.*
-import be.duncanc.discordmodbot.commands.roles.CreateRoleCommandsOnReady
 import net.dv8tion.jda.core.AccountType
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.JDABuilder
@@ -94,7 +93,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: be.dunca
                         .setToken(configObject.getString("ReZero"))
                         .setEventManager(be.duncanc.discordmodbot.ExecutorServiceEventManager())
                         .setBulkDeleteSplittingEnabled(false)
-                        .addEventListener(reZeroGuildLogger, CreateRoleCommandsOnReady(helpCommand, reZeroQuitBot), helpCommand, reZeroQuitBot, memberGate, Mute(), RemoveMute(), reZeroSettings, EventsManager(), *generalCommands)
+                        .addEventListener(reZeroGuildLogger, helpCommand, reZeroQuitBot, memberGate, Mute(), RemoveMute(), reZeroSettings, EventsManager(), *generalCommands)
 
                 //TEMP EVENT BOT STARTS HERE
                 /*val qAndA = QAndA(

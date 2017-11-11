@@ -181,27 +181,14 @@ object JSONToJavaObject {
      *
      * @param jsonObject JSONObject that needs to be converted to a typed list
      * @param valueClazz a class that the value of each key needs to be converted to that has at least 1 constructor with all parameters annotated with JSONKey
-     * @param keyClazz a class that can be converted using keyConverter.
-     * @param K Key type that will be used for the Map.
      * @param V Value type that will be used for the Map.
      * @return a typed Map with the given K param as key type and the given V param as value type.
      * @see JSONKey
      * @see keyConverter
      */
-    fun <K, V> toTypedMap(jsonObject: JSONObject, keyClazz: Class<K>, valueClazz: Class<V>): Map<K, V> {
-        val map = HashMap<K, V>()
-        jsonObject.keys().forEach { map.put(keyConverter(it, keyClazz), toJavaObject(jsonObject[it] as JSONObject, valueClazz)) }
+    fun <V> toTypedMap(jsonObject: JSONObject, valueClazz: Class<V>): Map<String, V> {
+        val map = HashMap<String, V>()
+        jsonObject.keys().forEach { map.put(it.toString(), toJavaObject(jsonObject[it] as JSONObject, valueClazz)) }
         return map
-    }
-
-    private fun <K> keyConverter(input: String, clazz: Class<K>): K {
-        return when {
-            clazz.isAssignableFrom(String::class.java) -> input as K
-            clazz.isAssignableFrom(Long::class.java) -> java.lang.Long.valueOf(input) as K
-            clazz.isAssignableFrom(Int::class.java) -> java.lang.Integer.valueOf(input) as K
-            clazz.isAssignableFrom(Boolean::class.java) -> java.lang.Boolean.valueOf(input) as K
-            clazz.isAssignableFrom(Double::class.java) -> java.lang.Double.valueOf(input) as K
-            else -> throw IllegalArgumentException("Bad type.")
-        }
     }
 }

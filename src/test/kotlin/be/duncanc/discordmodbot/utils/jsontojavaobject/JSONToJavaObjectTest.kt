@@ -130,8 +130,8 @@ object JSONToJavaObjectTest {
             //jsonList.forEach { list.add(JSONToJavaObject.toJavaObject(it as JSONObject, GoodClass::class.java)) }
             //jsonMap.keys().forEach { map.put(it, JSONToJavaObject.toJavaObject(jsonMap[it] as JSONObject, GoodClass::class.java)) }
             list.addAll(JSONToJavaObject.toTypedList(jsonList, GoodClass::class.java))
-            map.putAll(JSONToJavaObject.toTypedMap(jsonMap, String::class.java, GoodClass::class.java))
-            JSONToJavaObject.toTypedMap(jsonMap, String::class.java, GoodClass::class.java)
+            map.putAll(JSONToJavaObject.toTypedMap(jsonMap, GoodClass::class.java))
+            JSONToJavaObject.toTypedMap(jsonMap, GoodClass::class.java)
         }
 
         @Suppress("UNUSED_PARAMETER")

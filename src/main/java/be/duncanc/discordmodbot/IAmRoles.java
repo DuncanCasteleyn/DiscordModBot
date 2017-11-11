@@ -28,15 +28,20 @@ import be.duncanc.discordmodbot.commands.CommandModule;
 import be.duncanc.discordmodbot.sequence.Sequence;
 import be.duncanc.discordmodbot.utils.jsontojavaobject.JSONKey;
 import be.duncanc.discordmodbot.utils.jsontojavaobject.JSONToJavaObject;
+import com.sun.xml.internal.bind.v2.TODO;
 import net.dv8tion.jda.core.entities.MessageChannel;
+import net.dv8tion.jda.core.entities.Role;
 import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 
+import javax.print.DocFlavor;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class IAmRoles extends CommandModule  {
     private static final String[] ALIASES = new String[]{"IAmRoles"};
@@ -48,7 +53,20 @@ public class IAmRoles extends CommandModule  {
 
     public IAmRoles() {
         super(ALIASES, null, DESCRIPTION);
+        iAmRoles = new HashMap<>();
     }
+
+    public IAmRoles(HashMap<String, JSONArray> iAmRoles) {
+        super(ALIASES, null, DESCRIPTION);
+        throw new UnsupportedOperationException("Not yet implemented");
+        /*this.iAmRoles = new HashMap<>();
+        iAmRoles.forEach((s, ) -> {
+            //this.iAmRoles.put(Long.parseLong(s), );
+            //todo
+        });*/
+    }
+
+    private HashMap<Long, ArrayList<IAmRolesCategory>> iAmRoles;
 
     @Override
     public void commandExec(@NotNull MessageReceivedEvent event, @NotNull String command, String arguments) {
@@ -57,37 +75,81 @@ public class IAmRoles extends CommandModule  {
 
     public class IAmRolesSequence extends Sequence {
 
+        private byte sequenceNumber;
 
         IAmRolesSequence(@NotNull User user, @NotNull MessageChannel channel) {
             super(user, channel);
+            sequenceNumber = 0;
         }
 
         @Override
         public void onMessageReceivedDuringSequence(@NotNull MessageReceivedEvent event) {
-            //todo write logic
+            switch (sequenceNumber) {
+                case 0:
+                    super.getChannel().sendMessage("Please select which action you want to perform:\n" +
+                            "0. Add a new category\n" +
+                            "1. Remove a existing category\n" +
+                            "2. Modify a existing category").queue(message -> super.addMessageToCleaner(message));
+                    sequenceNumber = 1;
+                    break;
+                case 1:
+                    switch(Byte.parseByte(event.getMessage().getRawContent())) {
+                        case 0:
+                            super.getChannel().sendMessage("Please enter a unique category name and if you can only have one role of this category (true if the a user can only have on role out of this category). Syntax: \"Role name | true or false\"").queue(message -> super.addMessageToCleaner(message));
+                            sequenceNumber = 2;
+                            break;
+                        case 1:
+                            //todo logic to remove existing categories
+                            sequenceNumber = 3;
+                            break;
+                        case 2:
+                            //todo logic to add roles to existing categories
+                            sequenceNumber = 4;
+                            break;
+                        default:
+                            getChannel().sendMessage("Wrong answer please answer with a valid number").queue(message -> super.addMessageToCleaner(message));
+                            break;
+                    }
+                    break;
+                case 2:
+                    String[] input = event.getMessage().getRawContent().split(Pattern.quote("|"));
+                    ArrayList<String> existingCategoryNames = new ArrayList<>();
+                    iAmRoles.get(event.getGuild().getIdLong()).forEach(iAmRolesCategory -> existingCategoryNames.add(iAmRolesCategory.categoryName));
+                    if(existingCategoryNames.contains(event.getMessage().getRawContent())) {
+                        throw new IllegalArgumentException("The name you provided is already being used.");
+                    }
+                    iAmRoles.get(event.getGuild().getIdLong()).add(new IAmRolesCategory(input[0], Boolean.parseBoolean(input[1])));
+                    break;
+                case 3:
+                    //todo
+                    break;
+                case 4:
+                    //todo
+                    break;
+            }
         }
     }
 
     class IAmRolesCategory {
-        private long guildId;
+        private String categoryName;
         private boolean canOnlyHaveOne;
         private ArrayList<Long> roles;
 
-        public IAmRolesCategory(long guildId, boolean canOnlyHaveOne) {
-            this.guildId = guildId;
+        public IAmRolesCategory(String categoryName, boolean canOnlyHaveOne) {
+            this.categoryName = categoryName;
             this.canOnlyHaveOne = canOnlyHaveOne;
             this.roles = new ArrayList<>();
         }
 
-        public IAmRolesCategory(@JSONKey(jsonKey = "guildId") long guildId, @JSONKey(jsonKey = "canOnlyHaveOne") boolean canOnlyHaveOne, @JSONKey(jsonKey = "roles") JSONArray roles) {
-            this.guildId = guildId;
+        public IAmRolesCategory(@JSONKey(jsonKey = "categoryName") String categoryName, @JSONKey(jsonKey = "canOnlyHaveOne") boolean canOnlyHaveOne, @JSONKey(jsonKey = "roles") JSONArray roles) {
+            this.categoryName = categoryName;
             this.canOnlyHaveOne = canOnlyHaveOne;
             this.roles = new ArrayList<>(JSONToJavaObject.INSTANCE.toTypedList(roles, Long.class));
         }
 
         @JSONKey(jsonKey = "guildId")
-        public long getGuildId() {
-            return guildId;
+        public String getCategoryName() {
+            return categoryName;
         }
 
         @JSONKey(jsonKey = "roles")
@@ -96,7 +158,7 @@ public class IAmRoles extends CommandModule  {
         }
 
         @JSONKey(jsonKey = "canOnlyHaveOne")
-        public boolean isCanOnlyHaveOne() {
+        public boolean canOnlyHaveOne() {
             return canOnlyHaveOne;
         }
     }
@@ -113,7 +175,7 @@ public class IAmRoles extends CommandModule  {
         }
 
         @Override
-        public void commandExec(MessageReceivedEvent event, String command, String arguments) {
+        public void commandExec(@NotNull MessageReceivedEvent event, @NotNull String command, String arguments) {
             //todo rewrite
         }
     }
@@ -137,7 +199,7 @@ public class IAmRoles extends CommandModule  {
          * @param arguments The arguments that where entered after the command alias
          */
         @Override
-        public void commandExec(MessageReceivedEvent event, String command, String arguments) {
+        public void commandExec(@NotNull MessageReceivedEvent event, @NotNull String command, String arguments) {
             //todo rewrite
         }
     }
