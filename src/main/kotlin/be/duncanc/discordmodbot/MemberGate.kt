@@ -198,19 +198,24 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                     event.jda.addEventListener(ConfigureSequence(event.author, event.channel))
                 }
             }
+
             super.aliases[1].toLowerCase() -> {
                 if (event.jda.getGuildById(guildId).getMember(event.author).roles.any { it.idLong == memberRole }) {
                     return
                 }
+
                 if(event.guild.verificationLevel == Guild.VerificationLevel.VERY_HIGH && event.jda.getGuildById(guildId).getMember(event.author).roles.stream().noneMatch{ it.name.toLowerCase() == "no mobile verification" }) {
                     accept(event.jda.getGuildById(guildId).getMember(event.author))
+                    return
                 }
+
                 synchronized(needManualApproval) {
                     if (event.author.idLong in needManualApproval) {
                         event.channel.sendMessage("You have already tried answering a question. A moderator now needs to manually review you. Please state that you have read and agree to the rules and need manual approval.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                         return
                     }
                 }
+
                 event.jda.addEventListener(QuestionSequence(event.author, event.channel, questions[Random().nextInt(questions.size)]))
             }
             super.aliases[2].toLowerCase() -> {
