@@ -28,22 +28,19 @@ import be.duncanc.discordmodbot.commands.CommandModule;
 import be.duncanc.discordmodbot.sequence.Sequence;
 import be.duncanc.discordmodbot.utils.jsontojavaobject.JSONKey;
 import be.duncanc.discordmodbot.utils.jsontojavaobject.JSONToJavaObject;
-import com.sun.xml.internal.bind.v2.TODO;
 import net.dv8tion.jda.core.entities.MessageChannel;
-import net.dv8tion.jda.core.entities.Role;
 import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 
-import javax.print.DocFlavor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Pattern;
 
-public class IAmRoles extends CommandModule  {
+public class IAmRoles extends CommandModule {
     private static final String[] ALIASES = new String[]{"IAmRoles"};
     private static final String DESCRIPTION = "Controller for IAmRoles.";
     private static final String[] ALIASES_I_AM_NOT = new String[]{"IAmNot"};
@@ -76,6 +73,7 @@ public class IAmRoles extends CommandModule  {
     public class IAmRolesSequence extends Sequence {
 
         private byte sequenceNumber;
+        private String newCatogoryName = null;
 
         IAmRolesSequence(@NotNull User user, @NotNull MessageChannel channel) {
             super(user, channel);
@@ -93,7 +91,7 @@ public class IAmRoles extends CommandModule  {
                     sequenceNumber = 1;
                     break;
                 case 1:
-                    switch(Byte.parseByte(event.getMessage().getRawContent())) {
+                    switch (Byte.parseByte(event.getMessage().getRawContent())) {
                         case 0:
                             super.getChannel().sendMessage("Please enter a unique category name and if you can only have one role of this category (true if the a user can only have on role out of this category). Syntax: \"Role name | true or false\"").queue(message -> super.addMessageToCleaner(message));
                             sequenceNumber = 2;
@@ -112,13 +110,17 @@ public class IAmRoles extends CommandModule  {
                     }
                     break;
                 case 2:
-                    String[] input = event.getMessage().getRawContent().split(Pattern.quote("|"));
-                    ArrayList<String> existingCategoryNames = new ArrayList<>();
-                    iAmRoles.get(event.getGuild().getIdLong()).forEach(iAmRolesCategory -> existingCategoryNames.add(iAmRolesCategory.categoryName));
-                    if(existingCategoryNames.contains(event.getMessage().getRawContent())) {
-                        throw new IllegalArgumentException("The name you provided is already being used.");
+                    if(newCatogoryName == null) {
+                        ArrayList<String> existingCategoryNames = new ArrayList<>();
+                        iAmRoles.get(event.getGuild().getIdLong()).forEach(iAmRolesCategory -> existingCategoryNames.add(iAmRolesCategory.categoryName));
+                        if (existingCategoryNames.contains(event.getMessage().getRawContent())) {
+                            throw new IllegalArgumentException("The name you provided is already being used.");
+                        }
+                        newCatogoryName = event.getMessage().getRawContent();
+                        super.getChannel().sendMessage("Please enter if a user can only have on role of this category. true or false?").queue(message -> super.addMessageToCleaner(message));
+                    } else {
+                        //todo
                     }
-                    iAmRoles.get(event.getGuild().getIdLong()).add(new IAmRolesCategory(input[0], Boolean.parseBoolean(input[1])));
                     break;
                 case 3:
                     //todo
