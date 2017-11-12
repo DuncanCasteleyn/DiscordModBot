@@ -28,6 +28,7 @@ import be.duncanc.discordmodbot.commands.CommandModule;
 import be.duncanc.discordmodbot.sequence.Sequence;
 import be.duncanc.discordmodbot.utils.jsontojavaobject.JSONKey;
 import be.duncanc.discordmodbot.utils.jsontojavaobject.JSONToJavaObject;
+import net.dv8tion.jda.core.MessageBuilder;
 import net.dv8tion.jda.core.entities.MessageChannel;
 import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
@@ -38,7 +39,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.regex.Pattern;
+import java.util.concurrent.TimeUnit;
 
 public class IAmRoles extends CommandModule {
     private static final String[] ALIASES = new String[]{"IAmRoles"};
@@ -73,7 +74,8 @@ public class IAmRoles extends CommandModule {
     public class IAmRolesSequence extends Sequence {
 
         private byte sequenceNumber;
-        private String newCatogoryName = null;
+        private String newCategoryName = null;
+        private ArrayList<IAmRolesCategory> iAmRolesCategories = null;
 
         IAmRolesSequence(@NotNull User user, @NotNull MessageChannel channel) {
             super(user, channel);
@@ -86,8 +88,8 @@ public class IAmRoles extends CommandModule {
                 case 0:
                     super.getChannel().sendMessage("Please select which action you want to perform:\n" +
                             "0. Add a new category\n" +
-                            "1. Remove a existing category\n" +
-                            "2. Modify a existing category").queue(message -> super.addMessageToCleaner(message));
+                            "1. Remove an existing category\n" +
+                            "2. Modify an existing category").queue(message -> super.addMessageToCleaner(message));
                     sequenceNumber = 1;
                     break;
                 case 1:
@@ -97,11 +99,16 @@ public class IAmRoles extends CommandModule {
                             sequenceNumber = 2;
                             break;
                         case 1:
-                            //todo logic to remove existing categories
+                            MessageBuilder deleteCategoryMessage = new MessageBuilder().append("Please select which role category you'd like to delete.");
+                            iAmRolesCategories = iAmRoles.get(event.getGuild().getIdLong());
+                            for (int i = 0; i < iAmRolesCategories.size(); i++) {
+                                deleteCategoryMessage.append('\n').append(i).append(". ").append(iAmRolesCategories.get(i).categoryName);
+                            }
+                            deleteCategoryMessage.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach(message -> super.getChannel().sendMessage(message).queue(message1 -> super.addMessageToCleaner(message1)));
                             sequenceNumber = 3;
                             break;
                         case 2:
-                            //todo logic to add roles to existing categories
+                            //todo logic to add roles to existing categories or modify if you can only select one role
                             sequenceNumber = 4;
                             break;
                         default:
@@ -110,20 +117,24 @@ public class IAmRoles extends CommandModule {
                     }
                     break;
                 case 2:
-                    if(newCatogoryName == null) {
+                    if (newCategoryName == null) {
                         ArrayList<String> existingCategoryNames = new ArrayList<>();
                         iAmRoles.get(event.getGuild().getIdLong()).forEach(iAmRolesCategory -> existingCategoryNames.add(iAmRolesCategory.categoryName));
                         if (existingCategoryNames.contains(event.getMessage().getRawContent())) {
                             throw new IllegalArgumentException("The name you provided is already being used.");
                         }
-                        newCatogoryName = event.getMessage().getRawContent();
-                        super.getChannel().sendMessage("Please enter if a user can only have on role of this category. true or false?").queue(message -> super.addMessageToCleaner(message));
+                        newCategoryName = event.getMessage().getRawContent();
+                        super.getChannel().sendMessage("Please enter if a user can only have one role of this category. true or false?").queue(message -> super.addMessageToCleaner(message));
                     } else {
-                        //todo
+                        iAmRoles.get(event.getGuild().getIdLong()).add(new IAmRolesCategory(newCategoryName, Boolean.parseBoolean(event.getMessage().getRawContent())));
+                        super.getChannel().sendMessage("Successfully added new category.").queue(message -> message.delete().queueAfter(1, TimeUnit.MINUTES));
+                        super.destroy();
                     }
                     break;
                 case 3:
-                    //todo
+                    iAmRolesCategories.remove(Integer.parseInt(event.getMessage().getRawContent()));
+                    super.getChannel().sendMessage("Successfully removed the category").queue(message -> message.delete().queueAfter(1, TimeUnit.MINUTES));
+                    super.destroy();
                     break;
                 case 4:
                     //todo
@@ -137,7 +148,7 @@ public class IAmRoles extends CommandModule {
         private boolean canOnlyHaveOne;
         private ArrayList<Long> roles;
 
-        public IAmRolesCategory(String categoryName, boolean canOnlyHaveOne) {
+        public IAmRolesCategory(@NotNull String categoryName, boolean canOnlyHaveOne) {
             this.categoryName = categoryName;
             this.canOnlyHaveOne = canOnlyHaveOne;
             this.roles = new ArrayList<>();
@@ -162,6 +173,25 @@ public class IAmRoles extends CommandModule {
         @JSONKey(jsonKey = "canOnlyHaveOne")
         public boolean canOnlyHaveOne() {
             return canOnlyHaveOne;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            IAmRolesCategory that = (IAmRolesCategory) o;
+
+            return categoryName.equals(that.categoryName);
+        }
+
+        @Override
+        public int hashCode() {
+            return categoryName.hashCode();
         }
     }
 
