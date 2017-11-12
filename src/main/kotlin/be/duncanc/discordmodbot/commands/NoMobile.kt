@@ -27,6 +27,7 @@ package be.duncanc.discordmodbot.commands
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.entities.Guild
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import java.util.concurrent.TimeUnit
 
 class NoMobile : CommandModule(ALIASES, null, DESCRIPTION) {
 
@@ -50,12 +51,12 @@ class NoMobile : CommandModule(ALIASES, null, DESCRIPTION) {
             it.controller.addSingleRoleToMember(member, role).reason("Requested with !NoMobile command").queue()
             guildList.add(it)
         }
-        if(guildList.isEmpty()) {
-            event.channel.sendMessage("There were no guilds/servers were this action could be performed.").queue()
+        if (guildList.isEmpty()) {
+            event.channel.sendMessage("There were no guilds/servers were this action could be performed.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
         } else {
             val message = MessageBuilder().append("You now have the ability to chat in the following guilds/servers without mobile verification:")
             guildList.forEach { message.append("\n").append(it.name) }
-            event.channel.sendMessage(message.build()).queue()
+            event.channel.sendMessage(message.build()).queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
         }
     }
 }

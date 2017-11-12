@@ -91,7 +91,7 @@ public class Mute extends CommandModule {
                     Serializable serializableCaseResult = GuildLogger.Companion.getCaseNumberSerializable(event.getGuild().getIdLong());
                     EmbedBuilder logEmbed = new EmbedBuilder()
                             .setColor(Color.YELLOW)
-                            .setTitle("User was muted | Case: " + serializableCaseResult)
+                            .setTitle("User muted | Case: " + serializableCaseResult)
                             .addField("User", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(toMute), true)
                             .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true)
                             .addField("Reason", reason, false);
