@@ -111,7 +111,7 @@ public class Kick extends CommandModule {
         if (runBots != null) {
             EmbedBuilder logEmbed = new EmbedBuilder()
                     .setColor(Color.RED)
-                    .setTitle("User was kicked | Case: " + GuildLogger.Companion.getCaseNumberSerializable(event.getGuild().getIdLong()))
+                    .setTitle("User kicked | Case: " + GuildLogger.Companion.getCaseNumberSerializable(event.getGuild().getIdLong()))
                     .addField("User", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(toKick), true)
                     .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true)
                     .addField("Reason", reason, false);
@@ -167,7 +167,7 @@ public class Kick extends CommandModule {
             }
 
             Message creatorMessage = new MessageBuilder()
-                    .append("Ban failed ").append(toKick.toString())
+                    .append("Kick failed ").append(toKick.toString())
                     .append("\n\nWas unable to ban the user\n")
                     .append(banThrowable.getClass().getSimpleName()).append(": ").append(banThrowable.getMessage())
                     .append(".\n\nWas unable to send a DM to the user.\n")

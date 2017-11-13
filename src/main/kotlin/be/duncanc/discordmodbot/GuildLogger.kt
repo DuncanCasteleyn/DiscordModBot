@@ -337,7 +337,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
                 val logEmbed = EmbedBuilder()
                         .setColor(Color.RED)
                         .addField("User", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
-                        .setTitle("SERVER NOTIFICATION: User left")
+                        .setTitle("User left")
                 logger.log(logEmbed, event.member.user, event.guild, null, if (moderator == null) LogTypeAction.USER else LogTypeAction.MODERATOR)
             } else {
                 logKick(event.member, event.guild, event.guild.getMember(moderator), reason)
@@ -351,7 +351,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
             val logEmbed = EmbedBuilder()
                     .setColor(Color.RED)
                     .addField("User", JDALibHelper.getEffectiveNameAndUsername(member), true)
-                    .setTitle("SERVER NOTIFICATION: User kicked | Case: " + getCaseNumberSerializable(guild.idLong))
+                    .setTitle("User kicked | Case: " + getCaseNumberSerializable(guild.idLong))
                     .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(moderator), true)
             if (reason != null) {
                 logEmbed.addField("Reason", reason, false)
@@ -389,7 +389,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
 
             val logEmbed = EmbedBuilder()
                     .setColor(Color.RED)
-                    .setTitle("SERVER NOTIFICATION: User banned | Case: " + getCaseNumberSerializable(event.guild.idLong))
+                    .setTitle("User banned | Case: " + getCaseNumberSerializable(event.guild.idLong))
                     .addField("User", event.user.name, true)
             if (moderator != null) {
                 logEmbed.addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.guild.getMember(moderator)), true)
@@ -408,7 +408,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
 
         val logEmbed = EmbedBuilder()
                 .setColor(Color.GREEN)
-                .setTitle("SERVER NOTIFICATION: User joined", null)
+                .setTitle("User joined", null)
                 .addField("User", event.member.user.name, false)
                 .addField("Account created", event.member.user.creationTime.format(DATE_TIME_FORMATTER), false)
         guildLoggerExecutor.execute { logger.log(logEmbed, event.member.user, event.guild, null, LogTypeAction.USER) }
@@ -438,7 +438,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
 
             val logEmbed = EmbedBuilder()
                     .setColor(Color.GREEN)
-                    .setTitle("SERVER NOTIFICATION: User ban revoked", null)
+                    .setTitle("User ban revoked", null)
                     .addField("User", event.user.name, true)
             if (moderator != null) {
                 logEmbed.addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.guild.getMember(moderator)), true)
@@ -486,7 +486,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
                 logEmbed.setTitle("Moderator has changed nickname")
                         .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.guild.getMember(moderator)), false)
             }
-            logger.log(logEmbed, event.member.user, event.guild, null, if (moderator == null ||  moderator == event.member.user) LogTypeAction.USER else LogTypeAction.MODERATOR)
+            logger.log(logEmbed, event.member.user, event.guild, null, if (moderator == null || moderator == event.member.user) LogTypeAction.USER else LogTypeAction.MODERATOR)
         }, 1, TimeUnit.SECONDS)
     }
 

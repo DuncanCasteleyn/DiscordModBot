@@ -144,10 +144,10 @@ open class MemberGate internal constructor(private val guildId: Long, private va
         if (event.guild.idLong != guildId || event.user.isBot) {
             return
         }
-        if(event.guild.verificationLevel == Guild.VerificationLevel.VERY_HIGH) {
+        if (event.guild.verificationLevel == Guild.VerificationLevel.VERY_HIGH) {
             event.jda.getTextChannelById(gateTextChannel).sendMessage("Welcome " + event.member.asMention + ", this server uses phone verification.\n" +
                     "If you have verified your phone and are able to chat in this channel, you can simply type ``!join`` to join the server.\n" +
-                    "If you can't use phone verification, send "+ event.jda.selfUser.asMention + " a dm and type ``!nomobile``. You will be granted a special role! After that, return to this channel and type ``!join`` and follow the instructions.\n" +
+                    "If you can't use phone verification, send " + event.jda.selfUser.asMention + " a dm and type ``!nomobile``. You will be granted a special role! After that, return to this channel and type ``!join`` and follow the instructions.\n" +
                     "\n" +
                     "**Warning: Users that are not mobile verified will be punished much more severely and faster when breaking the rules or when suspected of bypassing a ban.**").queue({ message -> message.delete().queueAfter(5, TimeUnit.MINUTES) })
         } else {
@@ -198,19 +198,24 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                     event.jda.addEventListener(ConfigureSequence(event.author, event.channel))
                 }
             }
+
             super.aliases[1].toLowerCase() -> {
                 if (event.jda.getGuildById(guildId).getMember(event.author).roles.any { it.idLong == memberRole }) {
                     return
                 }
-                if(event.guild.verificationLevel == Guild.VerificationLevel.VERY_HIGH && event.jda.getGuildById(guildId).getMember(event.author).roles.stream().noneMatch{ it.name.toLowerCase() == "no mobile verification" }) {
+
+                if (event.guild.verificationLevel == Guild.VerificationLevel.VERY_HIGH && event.jda.getGuildById(guildId).getMember(event.author).roles.stream().noneMatch { it.name.toLowerCase() == "no mobile verification" }) {
                     accept(event.jda.getGuildById(guildId).getMember(event.author))
+                    return
                 }
+
                 synchronized(needManualApproval) {
                     if (event.author.idLong in needManualApproval) {
                         event.channel.sendMessage("You have already tried answering a question. A moderator now needs to manually review you. Please state that you have read and agree to the rules and need manual approval.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                         return
                     }
                 }
+
                 event.jda.addEventListener(QuestionSequence(event.author, event.channel, questions[Random().nextInt(questions.size)]))
             }
             super.aliases[2].toLowerCase() -> {

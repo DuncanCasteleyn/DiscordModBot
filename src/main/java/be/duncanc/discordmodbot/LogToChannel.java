@@ -80,7 +80,7 @@ public class LogToChannel {
             userLogChannels.add(logChannel);
         }
 
-        if(jda.getSelfUser().getIdLong() == 368811552960413696L) {
+        if (jda.getSelfUser().getIdLong() == 368811552960413696L) {
             TextChannel logChannel = jda.getTextChannelById(368820484139122688L);
             logChannels.add(logChannel);
             userLogChannels.add(logChannel);
@@ -117,7 +117,7 @@ public class LogToChannel {
      */
     public void log(EmbedBuilder logEmbed, User associatedUser, Guild guild, List<MessageEmbed> embeds, GuildLogger.LogTypeAction actionType, byte[] bytes) {
         List<TextChannel> targetChannel;
-        if(actionType == GuildLogger.LogTypeAction.MODERATOR) {
+        if (actionType == GuildLogger.LogTypeAction.MODERATOR) {
             targetChannel = logChannels;
         } else {
             targetChannel = userLogChannels;

@@ -167,7 +167,7 @@ open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
                 0.toByte() -> {
                     when (event.message.rawContent.toByte()) {
                         0.toByte() -> {
-                            if(eventManger != null) {
+                            if (eventManger != null) {
                                 val response: Array<String> = if (eventManger.events.containsKey(guildId)) {
                                     arrayOf("already", "remove")
                                 } else {
