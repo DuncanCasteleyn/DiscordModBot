@@ -31,8 +31,8 @@ import net.dv8tion.jda.core.entities.ChannelType
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.exceptions.PermissionException
 import net.dv8tion.jda.core.hooks.ListenerAdapter
-import net.dv8tion.jda.core.utils.SimpleLog
-import org.slf4j.event.Level
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -47,8 +47,8 @@ import java.util.concurrent.TimeUnit
  */
 abstract class CommandModule @JvmOverloads protected constructor(internal val aliases: Array<String>, internal val argumentationSyntax: String?, internal val description: String?, private val cleanCommandMessage: Boolean = true) : ListenerAdapter() {
     companion object {
-        const val COMMAND_SIGN: Char = '!'
-        protected val LOG: SimpleLog = SimpleLog.getLog(CommandModule::class.java)
+        const val COMMAND_SIGN = '!'
+        protected val LOG: Logger = LoggerFactory.getLogger(CommandModule::class.java)
     }
 
     init {
@@ -97,8 +97,7 @@ abstract class CommandModule @JvmOverloads protected constructor(internal val al
                     event.channel.sendMessage(exceptionMessage).queue { it.delete().queueAfter(5, TimeUnit.MINUTES) }
 
                 } catch (t: Throwable) {
-                    LOG.fatal("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " failed executing " + event.message.content + " command from user " + event.author.toString())
-                    LOG.log(Level.INFO, t)
+                    LOG.error("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " failed executing " + event.message.content + " command from user " + event.author.toString(), t)
                     val exceptionMessage = MessageBuilder().append("Cannot complete action due to an error; see the message below for details.").appendCodeBlock(t.javaClass.simpleName + ": " + t.message, "text").build()
                     event.channel.sendMessage(exceptionMessage).queue { it.delete().queueAfter(5, TimeUnit.MINUTES) }
                 }
@@ -108,9 +107,8 @@ abstract class CommandModule @JvmOverloads protected constructor(internal val al
                         event.message.delete().queue()
                     }
                 } catch (e: Exception) {
-                    LOG.warn("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " failed deleting " + event.message.content + " command from user " + event.author.toString())
+                    LOG.warn("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " failed deleting " + event.message.content + " command from user " + event.author.toString(), e)
                 }
-
             }
         }
     }

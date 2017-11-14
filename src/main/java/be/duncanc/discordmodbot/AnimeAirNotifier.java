@@ -25,10 +25,10 @@
 
 package be.duncanc.discordmodbot;
 
-import net.dv8tion.jda.core.utils.SimpleLog;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.slf4j.event.Level;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.channels.ClosedByInterruptException;
@@ -47,7 +47,7 @@ import java.util.stream.Stream;
  * This class will notify users about airing anime.
  */
 public class AnimeAirNotifier {
-    private static final SimpleLog LOG = SimpleLog.getLog(AnimeAirNotifier.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AnimeAirNotifier.class);
     private static final Path file = Paths.get("AnimeAirNotifier.json");
     private static final HashMap<Integer, AnimeAirInfo> animeAirInfoMap;
     private static final HashMap<Long, ArrayList<Subscription>> subscriptions;
@@ -57,7 +57,7 @@ public class AnimeAirNotifier {
         try {
             input = Files.readAllLines(file);
         } catch (IOException e) {
-            LOG.log(Level.ERROR, e);
+            LOG.error("Reading from config failed", e);
         }
         JSONObject jsonObject;
         if (input != null) {
@@ -117,7 +117,7 @@ public class AnimeAirNotifier {
                     Files.write(file, lines, Charset.forName("UTF-8"));
                 } catch (ClosedByInterruptException ignored) {
                 } catch (Exception e) {
-                    LOG.log(Level.ERROR, e);
+                    LOG.error("Saving to config failed", e);
                 }
             }
         }

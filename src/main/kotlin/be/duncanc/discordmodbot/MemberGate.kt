@@ -35,17 +35,15 @@ import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent
 import net.dv8tion.jda.core.events.guild.member.GuildMemberLeaveEvent
 import net.dv8tion.jda.core.events.guild.member.GuildMemberRoleAddEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
-import net.dv8tion.jda.core.utils.SimpleLog
 import org.apache.commons.collections4.map.LinkedMap
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
-import org.slf4j.event.Level
+import org.slf4j.LoggerFactory
 import java.awt.Color
 import java.io.IOException
 import java.nio.charset.Charset
 import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -60,14 +58,14 @@ import kotlin.collections.ArrayList
  */
 open class MemberGate internal constructor(private val guildId: Long, private val memberRole: Long, private val rulesTextChannel: Long, private val gateTextChannel: Long, private val welcomeTextChannel: Long, private val welcomeMessages: Array<WelcomeMessage>) : CommandModule(ALIASES, null, null) {
     companion object {
-        private val ALIASES: Array<String> = arrayOf("gateConfig", "join", "review")
-        private val FILE_PATH: Path = Paths.get("MemberGate.json")
-        private val LOG: SimpleLog = SimpleLog.getLog(MemberGate::class.java)
+        private val ALIASES = arrayOf("gateConfig", "join", "review")
+        private val FILE_PATH = Paths.get("MemberGate.json")
+        private val LOG = LoggerFactory.getLogger(MemberGate::class.java)
     }
 
     internal val questions: ArrayList<Question>
-    private val needManualApproval: LinkedMap<Long, String?> = LinkedMap()
-    private val informUserMessageIds: HashMap<Long, Long> = HashMap()
+    private val needManualApproval = LinkedMap<Long, String?>()
+    private val informUserMessageIds = HashMap<Long, Long>()
 
     /**
      * Loads up the existing questions
@@ -98,10 +96,10 @@ open class MemberGate internal constructor(private val guildId: Long, private va
             }
         } catch (ioE: IOException) {
             tempQuestions = ArrayList()
-            LOG.log(Level.ERROR, ioE)
+            LOG.error("Initialization failed", ioE)
         } catch (jE: JSONException) {
             tempQuestions = ArrayList()
-            LOG.log(Level.ERROR, jE)
+            LOG.error("Initialization failed", jE)
         }
         questions = tempQuestions
     }
@@ -440,9 +438,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
          * @param event the event containing the message that came from the sequence to answer the question.
          * @return true when the answer is correct, false otherwise.
          */
-        internal fun checkAnswer(event: MessageReceivedEvent): Boolean {
-            return keywordList.all { it.any { it.toLowerCase() in event.message.content.toLowerCase() } }
-        }
+        internal fun checkAnswer(event: MessageReceivedEvent): Boolean = keywordList.all { it.any { it.toLowerCase() in event.message.content.toLowerCase() } }
 
         /**
          * Adds more keywords to a question.

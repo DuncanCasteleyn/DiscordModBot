@@ -26,10 +26,10 @@ package be.duncanc.discordmodbot.utils.jsontojavaobject
 
 import be.duncanc.discordmodbot.utils.jsontojavaobject.JSONToJavaObject.CONVERT_TO_JAVA_NOT_SUPPORTED
 import be.duncanc.discordmodbot.utils.jsontojavaobject.JSONToJavaObject.NO_JSON_CONVERT_REQUIRED
-import net.dv8tion.jda.core.utils.SimpleLog
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
+import org.slf4j.LoggerFactory
 import java.lang.reflect.Constructor
 
 /**
@@ -42,7 +42,7 @@ import java.lang.reflect.Constructor
 @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN", "UNCHECKED_CAST")
 object JSONToJavaObject {
 
-    private val LOG = SimpleLog.getLog(JSONToJavaObject.javaClass)
+    private val LOG = LoggerFactory.getLogger(JSONToJavaObject.javaClass)
     private val NO_JSON_CONVERT_REQUIRED = arrayOf(java.lang.Boolean::class.java, java.lang.Number::class.java, java.lang.Character::class.java, java.lang.String::class.java)
     private val CONVERT_TO_JAVA_NOT_SUPPORTED = arrayOf(java.util.Map::class.java, java.util.List::class.java)
 
@@ -131,7 +131,7 @@ object JSONToJavaObject {
                 return createInstance(longestConstructor, json)
             } catch (throwable: Throwable) {
                 lastThrow = throwable
-                LOG.debug(throwable)
+                LOG.debug("Converting to java object failed due to an error", throwable)
             }
         }
 

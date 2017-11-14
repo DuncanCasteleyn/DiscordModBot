@@ -44,7 +44,7 @@ import net.dv8tion.jda.core.events.message.guild.GuildMessageDeleteEvent
 import net.dv8tion.jda.core.events.message.guild.GuildMessageUpdateEvent
 import net.dv8tion.jda.core.events.user.UserNameUpdateEvent
 import net.dv8tion.jda.core.hooks.ListenerAdapter
-import net.dv8tion.jda.core.utils.SimpleLog
+import org.slf4j.LoggerFactory
 import java.awt.Color
 import java.io.IOException
 import java.io.Serializable
@@ -72,7 +72,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
 
     companion object {
         private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd-M-yyyy hh:mm a O")
-        private val LOG = SimpleLog.getLog(GuildLogger::class.java)
+        private val LOG = LoggerFactory.getLogger(GuildLogger::class.java)
         private val LIGHT_BLUE = Color(52, 152, 219)
         private val LOG_ENTRY_CHECK_LIMIT = 5
 

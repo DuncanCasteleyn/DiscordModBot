@@ -36,7 +36,6 @@ import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.core.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.event.Level;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -382,7 +381,7 @@ public class SlowMode extends CommandModule {
                             }
                         }
                     } catch (Throwable t) {
-                        Companion.getLOG().log(Level.ERROR, t);
+                        Companion.getLOG().error("Something went wrong while cleaning users", t);
                     }
                 }
             }
