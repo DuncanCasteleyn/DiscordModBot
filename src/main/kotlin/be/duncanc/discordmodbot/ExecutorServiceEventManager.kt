@@ -37,7 +37,7 @@ import java.util.concurrent.Executors
  * @property executor provides the service to execute event handling.
  * @since 1.1.0
  */
-internal class ExecutorServiceEventManager : InterfacedEventManager() {
+internal class ExecutorServiceEventManager(name: String) : InterfacedEventManager() {
 
     private val executor: ExecutorService
 
@@ -46,7 +46,7 @@ internal class ExecutorServiceEventManager : InterfacedEventManager() {
      */
     init {
         executor = Executors.newSingleThreadExecutor {
-            val t = Thread(it, this.toString())
+            val t = Thread(it, ExecutorServiceEventManager::class.java.simpleName + ": " + name)
             t.isDaemon = true
             t
         }

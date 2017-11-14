@@ -70,7 +70,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: be.dunca
 
                 val fairyTailJDABuilder = JDABuilder(AccountType.BOT)
                         .setCorePoolSize(BOT_THREAD_POOL_SIZE)
-                        .setEventManager(be.duncanc.discordmodbot.ExecutorServiceEventManager())
+                        .setEventManager(be.duncanc.discordmodbot.ExecutorServiceEventManager("Fairy tail"))
                         .setToken(configObject.getString("FairyTail"))
                         .setBulkDeleteSplittingEnabled(false)
                         .addEventListener(fairyTailGuildLogger, Help(), fairyTailQuitBot, fairyTailSettings, *generalCommands)
@@ -89,7 +89,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: be.dunca
                 val reZeroJDABuilder = JDABuilder(AccountType.BOT)
                         .setCorePoolSize(BOT_THREAD_POOL_SIZE)
                         .setToken(configObject.getString("ReZero"))
-                        .setEventManager(be.duncanc.discordmodbot.ExecutorServiceEventManager())
+                        .setEventManager(be.duncanc.discordmodbot.ExecutorServiceEventManager("Re:Zero"))
                         .setBulkDeleteSplittingEnabled(false)
                         .addEventListener(reZeroGuildLogger, CreateRoleCommandsOnReady(helpCommand, reZeroQuitBot), helpCommand, reZeroQuitBot, memberGate, Mute(), RemoveMute(), reZeroSettings, EventsManager(), *generalCommands)
 
@@ -113,7 +113,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: be.dunca
 
                 val blackCloverBuilder = JDABuilder(AccountType.BOT)
                         .setCorePoolSize(BOT_THREAD_POOL_SIZE)
-                        .setEventManager(ExecutorServiceEventManager())
+                        .setEventManager(ExecutorServiceEventManager("Black clover"))
                         .setToken(configObject.getString("BlackClover"))
                         .setBulkDeleteSplittingEnabled(false)
                         .addEventListener(blackCloverLogger, Help(), blackCloverQuitBot, blackCloverSettings, *generalCommands)
