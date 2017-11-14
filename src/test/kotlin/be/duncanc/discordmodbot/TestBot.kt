@@ -29,8 +29,7 @@ import be.duncanc.discordmodbot.commands.Help
 import net.dv8tion.jda.core.AccountType
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.JDABuilder
-import net.dv8tion.jda.core.utils.SimpleLog
-import org.slf4j.event.Level
+import org.slf4j.LoggerFactory
 
 /**
  * This main class starts the bot
@@ -38,7 +37,7 @@ import org.slf4j.event.Level
 class TestBot private constructor(bot: JDA, logToChannel: be.duncanc.discordmodbot.LogToChannel, logger: GuildLogger) : RunBots(bot, logToChannel, logger) {
     companion object {
 
-        private val LOG = SimpleLog.getLog(TestBot::class.java)
+        private val LOG = LoggerFactory.getLogger(TestBot::class.java)
 
 
         @JvmStatic
@@ -66,7 +65,7 @@ class TestBot private constructor(bot: JDA, logToChannel: be.duncanc.discordmodb
 
                 be.duncanc.discordmodbot.MessageHistory.registerMessageHistory(devJDA)
             } catch (e: Exception) {
-                LOG.log(Level.ERROR, e)
+                LOG.error("An error occurred while starting the test bot", e)
             }
         }
     }

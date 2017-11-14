@@ -25,10 +25,10 @@
 
 package be.duncanc.discordmodbot;
 
-import net.dv8tion.jda.core.utils.SimpleLog;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.slf4j.event.Level;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -44,7 +44,7 @@ import java.util.Collections;
  * Created by Duncan on 7/06/2017.
  */
 public class CaseSystem {
-    private static final SimpleLog LOG = SimpleLog.getLog(CaseSystem.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CaseSystem.class);
     private static final Path fileStorage = Paths.get("CaseSystem.json");
 
     private final long guildId;
@@ -95,7 +95,7 @@ public class CaseSystem {
             try {
                 Files.write(fileStorage, Collections.singletonList(jsonObject.toString()), Charset.defaultCharset());
             } catch (IOException e) {
-                LOG.log(Level.ERROR, e);
+                LOG.error("Failed to update config file", e);
                 lastUsedNumber--;
                 throw e;
             }
@@ -117,7 +117,7 @@ public class CaseSystem {
                 try {
                     Files.write(fileStorage, Collections.singletonList(jsonObject.toString()), Charset.defaultCharset());
                 } catch (IOException e) {
-                    LOG.log(Level.ERROR, e);
+                    LOG.error("Failed to reset config file", e);
                 }
             }
         }

@@ -25,6 +25,7 @@
 package be.duncanc.discordmodbot.commands
 
 import net.dv8tion.jda.core.MessageBuilder
+import net.dv8tion.jda.core.entities.ChannelType
 import net.dv8tion.jda.core.entities.Guild
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import java.util.concurrent.TimeUnit
@@ -44,6 +45,11 @@ class NoMobile : CommandModule(ALIASES, null, DESCRIPTION) {
      * @param arguments The arguments that where provided with the command.
      */
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+        if (!event.isFromType(ChannelType.PRIVATE)) {
+            throw UnsupportedOperationException("You are trying to use a command that is intended to be used by direct messaging.\n" +
+                    "If you are using this command in a text channel of the guild you are trying to join you are doing something wrong.")
+        }
+
         val guildList = ArrayList<Guild>()
         event.author.mutualGuilds.filter { it.getMember(event.author).roles.isEmpty() && it.getRolesByName("No mobile verification", true).size == 1 }.forEach {
             val member = it.getMember(event.author)

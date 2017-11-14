@@ -27,7 +27,6 @@ package be.duncanc.discordmodbot.commands;
 
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.event.Level;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +54,7 @@ public class QuitBot extends CommandModule {
                 try {
                     beforeBotQuit.onAboutToQuit();
                 } catch (Exception e) {
-                    Companion.getLOG().log(Level.ERROR, e);
+                    Companion.getLOG().error("Failed executing a task before quit due to an exception", e);
                 }
             });
             event.getChannel().sendMessage(event.getAuthor().getAsMention() + " **Shutting down... :wave: **").queue();

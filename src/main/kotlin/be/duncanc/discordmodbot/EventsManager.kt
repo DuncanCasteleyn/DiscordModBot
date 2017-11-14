@@ -34,9 +34,8 @@ import net.dv8tion.jda.core.entities.MessageChannel
 import net.dv8tion.jda.core.entities.User
 import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
-import net.dv8tion.jda.core.utils.SimpleLog
 import org.json.JSONObject
-import org.slf4j.event.Level
+import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
 import java.nio.file.Paths
@@ -58,7 +57,7 @@ open class EventsManager : CommandModule(be.duncanc.discordmodbot.EventsManager.
         private val EVENTS_LIST_ALIASES = arrayOf("EventsList")
         private val EVENT_MANAGER_ALIASES = arrayOf("EventManager", "ManageEvents")
         private val FILE_PATH = Paths.get("Events.json")
-        private val LOG = SimpleLog.getLog(be.duncanc.discordmodbot.EventsManager::class.java)
+        private val LOG = LoggerFactory.getLogger(be.duncanc.discordmodbot.EventsManager::class.java)
         private val DATE_TIME_FORMATTER_PARSER = DateTimeFormatter.ofPattern("d-M-yyyy H:mm X", Locale.ENGLISH)
         private val DATE_TIME_FORMATTER_LIST = DateTimeFormatter.ofPattern("E dd-MM-yyyy HH:mm", Locale.ENGLISH)
     }
@@ -113,7 +112,7 @@ open class EventsManager : CommandModule(be.duncanc.discordmodbot.EventsManager.
                         throw IllegalStateException("Unexpected type " + it.javaClass.typeName + " after mapping JSON.")
                     }
                 } catch (ise: IllegalStateException) {
-                    EventsManager.Companion.LOG.log(Level.ERROR, ise)
+                    EventsManager.Companion.LOG.error("Reading config failed", ise)
                 }
                 events.put(it.key.toLong(), arrayList)
             }

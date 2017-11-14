@@ -31,7 +31,6 @@ import net.dv8tion.jda.core.JDABuilder
 import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.exceptions.RateLimitedException
 import net.dv8tion.jda.core.hooks.ListenerAdapter
-import org.slf4j.event.Level
 import javax.security.auth.login.LoginException
 
 /**
@@ -64,9 +63,9 @@ class DebugTests internal constructor(bot: JDA, logToChannel: be.duncanc.discord
                         })
                         .buildAsync()
             } catch (e: LoginException) {
-                RunBots.LOG.log(Level.ERROR, e)
+                RunBots.LOG.error("Login failed", e)
             } catch (e: RateLimitedException) {
-                RunBots.LOG.log(Level.ERROR, e)
+                RunBots.LOG.error("Rate limited", e)
             }
 
         }

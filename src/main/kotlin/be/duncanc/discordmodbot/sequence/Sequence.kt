@@ -34,8 +34,7 @@ import net.dv8tion.jda.core.entities.User
 import net.dv8tion.jda.core.events.guild.member.GuildMemberLeaveEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.hooks.ListenerAdapter
-import net.dv8tion.jda.core.utils.SimpleLog
-import org.slf4j.event.Level
+import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -49,7 +48,7 @@ import java.util.concurrent.TimeUnit
  */
 abstract class Sequence @JvmOverloads protected constructor(val user: User, val channel: MessageChannel, cleanAfterSequence: Boolean = true, informUser: Boolean = true) : ListenerAdapter() {
     companion object {
-        private val LOG = SimpleLog.getLog(Sequence::class.java)
+        private val LOG = LoggerFactory.getLogger(Sequence::class.java)
     }
 
     private val cleanAfterSequence: ArrayList<Message>?
@@ -77,7 +76,7 @@ abstract class Sequence @JvmOverloads protected constructor(val user: User, val 
                         "You can also kill a sequence by sending \"STOP\"").complete()
                 addMessageToCleaner(sequenceInformMessage)
             } catch (e: Exception) {
-                LOG.log(Level.INFO, e)
+                LOG.info("A sequence was terminated due to an exception during initialization", e)
             }
         }
     }
@@ -106,7 +105,7 @@ abstract class Sequence @JvmOverloads protected constructor(val user: User, val 
         try {
             onMessageReceivedDuringSequence(event)
         } catch (t: Throwable) {
-            LOG.log(Level.INFO, t)
+            LOG.info("A sequence was terminated due to an exception", t)
             destroy()
             val errorMessage: Message = MessageBuilder().append(user.asMention + " The sequence has been terminated due to an error; see the message below for more information.")
                     .appendCodeBlock(t.javaClass.simpleName + ": " + t.message, "text")

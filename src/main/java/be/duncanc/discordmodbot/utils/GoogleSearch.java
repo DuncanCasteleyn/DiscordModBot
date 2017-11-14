@@ -16,11 +16,11 @@
 
 package be.duncanc.discordmodbot.utils;
 
-import net.dv8tion.jda.core.utils.SimpleLog;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.slf4j.event.Level;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -45,7 +45,7 @@ import java.util.Random;
  */
 public class GoogleSearch {
     private static final String GOOGLE_URL = "https://www.googleapis.com/customsearch/v1?cx=%s&key=%s&num=%d&q=%s";
-    private static final SimpleLog LOG = SimpleLog.getLog(GoogleSearch.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GoogleSearch.class);
     private static String GOOGLE_API_KEY = null;
     private static LocalDateTime dayStartTime = null;
     private static int currentGoogleUsage = 0;
@@ -96,7 +96,7 @@ public class GoogleSearch {
             }
             return results;
         } catch (IOException e) {
-            LOG.log(Level.ERROR, e);
+            LOG.error("Something went wrong while retrieving the results", e);
             return null;
         }
     }

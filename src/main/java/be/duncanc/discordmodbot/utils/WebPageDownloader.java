@@ -16,8 +16,8 @@
 
 package be.duncanc.discordmodbot.utils;
 
-import net.dv8tion.jda.core.utils.SimpleLog;
-import org.slf4j.event.Level;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -34,7 +34,7 @@ import java.net.URL;
  * For the original see: https://github.com/DV8FromTheWorld/Yui/blob/master/src/main/java/net/dv8tion/discord/util/Downloader.java
  */
 public class WebPageDownloader {
-    private static final SimpleLog LOG = SimpleLog.getLog(WebPageDownloader.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebPageDownloader.class);
 
     public static String webPage(String urlText) {
         String webpageText = "";
@@ -52,7 +52,7 @@ public class WebPageDownloader {
                 webpageText += line;
             }
         } catch (IOException ioe) {
-            LOG.log(Level.ERROR, ioe);
+            LOG.error("Retrieving web page failed", ioe);
             return null;
         } finally {
             try {
