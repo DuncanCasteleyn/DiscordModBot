@@ -25,10 +25,10 @@
 
 package be.duncanc.discordmodbot.utils;
 
-import net.dv8tion.jda.core.utils.SimpleLog;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.slf4j.event.Level;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.charset.Charset;
@@ -48,7 +48,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Deprecated
 public final class DataStorageParser {
-    private static final SimpleLog LOG = SimpleLog.getLog(DataStorageParser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DataStorageParser.class);
     private static final Runnable autoSaver;
     private static final Runnable jsonWriter;
     private static final Path file = Paths.get("DiscordBot.json");
@@ -66,7 +66,7 @@ public final class DataStorageParser {
         } catch (JSONException | NoSuchFileException e) {
             notFinalJSONObject = new JSONObject();
         } catch (Exception e) {
-            LOG.log(Level.ERROR, e);
+            LOG.error("Failed loading config", e);
             throw new InstantiationError(e.getMessage());
         }
         jsonObject = notFinalJSONObject;
@@ -113,7 +113,7 @@ public final class DataStorageParser {
                     Files.write(file, lines, Charset.forName("UTF-8"));
                 } catch (ClosedByInterruptException ignored) {
                 } catch (Exception e) {
-                    LOG.log(Level.ERROR, e);
+                    LOG.error("Failed writing config", e);
                 }
             }
         };

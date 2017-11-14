@@ -33,7 +33,8 @@ import net.dv8tion.jda.core.entities.MessageEmbed;
 import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.exceptions.PermissionException;
-import net.dv8tion.jda.core.utils.SimpleLog;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -51,7 +52,7 @@ import java.util.List;
 //todo add to settings class
 public class LogToChannel {
 
-    private static final SimpleLog LOG = SimpleLog.getLog(LogToChannel.class);
+    private static final Logger LOG = LoggerFactory.getLogger(LogToChannel.class);
     private final List<TextChannel> logChannels;
     private final List<TextChannel> userLogChannels;
 

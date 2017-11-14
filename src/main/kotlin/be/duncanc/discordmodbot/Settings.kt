@@ -34,9 +34,8 @@ import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.guild.GuildJoinEvent
 import net.dv8tion.jda.core.events.guild.GuildLeaveEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
-import net.dv8tion.jda.core.utils.SimpleLog
 import org.json.JSONObject
-import org.slf4j.event.Level
+import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
 import java.nio.file.Paths
@@ -98,7 +97,7 @@ open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
         try {
             loadGuildSettingFromFile()
         } catch (e: NoSuchFileException) {
-            SimpleLog.getLog(CommandModule::class.java).log(Level.WARN, e)
+            LoggerFactory.getLogger(CommandModule::class.java).warn("Loading config file failed", e)
         }
     }
 

@@ -30,9 +30,8 @@ import be.duncanc.discordmodbot.commands.roles.CreateRoleCommandsOnReady
 import net.dv8tion.jda.core.AccountType
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.JDABuilder
-import net.dv8tion.jda.core.utils.SimpleLog
 import org.json.JSONObject
-import org.slf4j.event.Level
+import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Paths
 
@@ -50,13 +49,11 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: be.dunca
 
         private val configFile = Paths.get("Config.json")
         internal val BOT_THREAD_POOL_SIZE = 3
-        internal val LOG = SimpleLog.getLog(RunBots::class.java)
+        internal val LOG = LoggerFactory.getLogger(RunBots::class.java)
         var bots: Array<RunBots>? = null
             internal set
 
-        fun getRunBot(jda: JDA): RunBots? {
-            return bots!!.firstOrNull { it.bot === jda }
-        }
+        fun getRunBot(jda: JDA): RunBots? = bots!!.firstOrNull { it.bot === jda }
 
         @JvmStatic
         fun main(args: Array<String>) {
@@ -128,7 +125,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: be.dunca
                     be.duncanc.discordmodbot.MessageHistory.registerMessageHistory(bot.bot)
                 }
             } catch (e: Exception) {
-                LOG.log(Level.ERROR, e)
+                LOG.error("Exception while booting the bots", e)
             }
 
         }

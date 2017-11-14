@@ -30,11 +30,11 @@ import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.impl.JDAImpl;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.core.requests.Requester;
-import net.dv8tion.jda.core.utils.SimpleLog;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.apache.commons.collections4.map.LinkedMap;
-import org.slf4j.event.Level;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -48,7 +48,7 @@ import java.util.ArrayList;
 class AttachmentProxyCreator {
     private static final long CACHE_CHANNEL = 310006048595509248L;
     private static final int CACHE_SIZE = 500;
-    private static final SimpleLog LOG = SimpleLog.getLog(AttachmentProxyCreator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AttachmentProxyCreator.class);
 
     private final LinkedMap<Long, Message> attachmentCache;
 
@@ -142,7 +142,7 @@ class AttachmentProxyCreator {
 
                     event.getJDA().getTextChannelById(CACHE_CHANNEL).sendFile(buffer.toByteArray(), attachment.getFileName(), new MessageBuilder().append(event.getMessage().getId()).build()).queue(message -> addToCache(event.getMessage().getIdLong(), message));
                 } catch (Exception e) {
-                    LOG.log(Level.INFO, e);
+                    LOG.info("An exception occurred when retrieving one of the attachments", e);
                     addToCache(event.getMessage().getIdLong(), null);
                 } finally {
                     if (in != null) {
