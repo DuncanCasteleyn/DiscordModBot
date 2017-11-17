@@ -101,7 +101,7 @@ public class Warn extends CommandModule {
                 Serializable serializableCaseResult = GuildLogger.Companion.getCaseNumberSerializable(event.getGuild().getIdLong());
                 EmbedBuilder logEmbed = new EmbedBuilder()
                         .setColor(Color.YELLOW)
-                        .setTitle("User was warned | Case: " + serializableCaseResult)
+                        .setTitle("User warned | Case: " + serializableCaseResult)
                         .addField("User", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(toWarn), true)
                         .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true)
                         .addField("Reason", reason, false);

@@ -45,7 +45,7 @@ class NoMobile : CommandModule(ALIASES, null, DESCRIPTION) {
      * @param arguments The arguments that where provided with the command.
      */
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-        if (!event.isFromType(ChannelType.TEXT)) {
+        if (!event.isFromType(ChannelType.PRIVATE)) {
             throw UnsupportedOperationException("You are trying to use a command that is intended to be used by direct messaging.\n" +
                     "If you are using this command in a text channel of the guild you are trying to join you are doing something wrong.")
         }

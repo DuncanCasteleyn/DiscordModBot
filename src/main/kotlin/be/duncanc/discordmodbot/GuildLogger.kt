@@ -302,7 +302,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
     }
 
     private fun logBulkDelete(event: MessageBulkDeleteEvent, logEmbed: EmbedBuilder, bytes: ByteArray) {
-        guildLoggerExecutor.execute { logger.log(logEmbed, null, event.guild, null, LogTypeAction.MODERATOR, bytes) }
+        guildLoggerExecutor.execute { logger.log(logEmbed, null, event.guild, null, LogTypeAction.USER, bytes) }
     }
 
     override fun onGuildMemberLeave(event: GuildMemberLeaveEvent) {
