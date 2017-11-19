@@ -36,6 +36,7 @@ import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import org.json.JSONArray
 import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.collections.ArrayList
 
 @Suppress("unused")
 class IAmRoles : CommandModule {
@@ -144,7 +145,7 @@ class IAmRoles : CommandModule {
                     iAmRolesCategory = iAmRolesCategories[Integer.parseInt(event.message.rawContent)]
                     super.channel.sendMessage("Please enter the number of the action you'd like to perform.\n" +
                             "0. Modify the name. Current value: " + iAmRolesCategory!!.categoryName + "\n" +
-                            "1. Invert if the users can only have one role. Current value" + iAmRolesCategory!!.canOnlyHaveOne + "\n" +
+                            "1. Invert if the users can only have one role from the category. Current value" + iAmRolesCategory!!.canOnlyHaveOne + "\n" +
                             "2. Add or remove roles.").queue { message -> super.addMessageToCleaner(message) }
                     sequenceNumber = 5
                 }
@@ -154,16 +155,48 @@ class IAmRoles : CommandModule {
                         sequenceNumber = 6
                     }
                     1.toByte() -> {
-                        //todo
+                        iAmRolesCategory!!.canOnlyHaveOne = !iAmRolesCategory!!.canOnlyHaveOne
+                        super.channel.sendMessage("Inverted setting.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                        super.destroy()
                     }
                     2.toByte() -> {
-                        //todo
+                        super.channel.sendMessage("Please enter the name of the role you'd like to remove or add. This will automatically detect if the role is already in the list and remove or add it.").queue { super.addMessageToCleaner(it) }
+                        sequenceNumber = 7
                     }
                 }
                 6.toByte() -> {
                     iAmRolesCategory!!.categoryName = event.message.content
                     super.channel.sendMessage("Name successfully changed.").queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
                     super.destroy()
+                }
+                7.toByte() -> {
+                    val matchedRoles = (super.channel as TextChannel).guild.getRolesByName(event.message.rawContent, true)
+                    when {
+                        matchedRoles.size > 1 -> throw IllegalArgumentException("The role name you provided matches multiple roles and is not supported by !IAm and !IaANot")
+                        matchedRoles.isEmpty() -> throw IllegalArgumentException("Could not find any roles with that name")
+                        else -> {
+                            val roleId = matchedRoles[0].idLong
+                            var removed: Boolean? = null
+                            try {
+                                iAmRolesCategory!!.addRole(roleId)
+                                removed = false
+                            } catch (illegalArgumentException: IllegalArgumentException) {
+                                try {
+                                    iAmRolesCategory!!.removeRole(roleId)
+                                    removed = true
+                                } catch (illegalArgumentException2: IllegalArgumentException) {
+                                    illegalArgumentException2.addSuppressed(illegalArgumentException)
+                                    throw IllegalStateException("Something went wrong while trying to add and remove the role", illegalArgumentException2)
+                                }
+                            }
+                            when (removed) {
+                                true -> super.channel.sendMessage("The role was successfully removed form the category.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                                false -> super.channel.sendMessage("The role was successfully added to the category.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                                else -> throw IllegalStateException("Boolean value removed should no be able to be null at this point.")
+                            }
+                            super.destroy()
+                        }
+                    }
                 }
             }
         }
@@ -216,7 +249,24 @@ class IAmRoles : CommandModule {
             this.roles = ArrayList(JSONToJavaObject.toTypedList(roles, Long::class.java))
         }
 
-        @Synchronized override fun equals(other: Any?): Boolean {
+        @Synchronized
+        fun removeRole(roleId: Long) {
+            if (!roles.contains(roleId)) {
+                throw IllegalArgumentException("The role is not part of this category")
+            }
+            (roles as ArrayList).remove(roleId)
+        }
+
+        @Synchronized
+        fun addRole(roleId: Long) {
+            if (roles.contains(roleId)) {
+                throw IllegalArgumentException("The role is already part of this category")
+            }
+            (roles as ArrayList).add(roleId)
+        }
+
+        @Synchronized
+        override fun equals(other: Any?): Boolean {
             if (this === other) {
                 return true
             }
@@ -229,7 +279,8 @@ class IAmRoles : CommandModule {
             return categoryName == that!!.categoryName
         }
 
-        @Synchronized override fun hashCode(): Int = categoryName.hashCode()
+        @Synchronized
+        override fun hashCode(): Int = categoryName.hashCode()
     }
 
     /**
