@@ -192,7 +192,9 @@ class IAmRoles : CommandModule {
                     }
                 }
                 8.toByte() -> {
-                    //todo
+                    iAmRolesCategory!!.allowedRoles = event.message.rawContent.toInt()
+                    channel.sendMessage("Allowed roles successfully changed.").queue { it.delete().queueAfter(5, TimeUnit.MINUTES) }
+                    super.destroy()
                 }
             }
         }
