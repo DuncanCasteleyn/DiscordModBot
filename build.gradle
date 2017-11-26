@@ -24,9 +24,9 @@
  */
 
 buildscript {
-    ext.kotlin_version = '1.1.60'
-    ext.junit_version = '5.0.1'
-    ext.junit_plugin_version = '1.0.1'
+    ext.kotlin_version = '1.1.61'
+    ext.junit_version = '5.0.2'
+    ext.junit_plugin_version = '1.0.2'
 
     repositories {
         mavenCentral()
@@ -61,7 +61,7 @@ dependencies {
     testCompile("org.junit.jupiter:junit-jupiter-api:$junit_version")
     testRuntime("org.junit.jupiter:junit-jupiter-engine:$junit_version")
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
-    compile "net.dv8tion:JDA:3.3.1_304"
+    compile "net.dv8tion:JDA:3.3.1_307"
     compile 'org.apache.commons:commons-lang3:3.5'
     compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.21'
 }
