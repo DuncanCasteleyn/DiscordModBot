@@ -42,11 +42,11 @@ import kotlin.collections.ArrayList
 class IAmRoles : CommandModule {
     companion object {
         private val ALIASES = arrayOf("IAmRoles")
-        private val DESCRIPTION = "Controller for IAmRoles."
+        private const val DESCRIPTION = "Controller for IAmRoles."
         private val ALIASES_I_AM_NOT = arrayOf("IAmNot")
-        private val DESCRIPTION_I_AM_NOT = "Can be used to remove a role from yourself."
+        private const val DESCRIPTION_I_AM_NOT = "Can be used to remove a role from yourself."
         private val ALIASES_I_AM = arrayOf("iam")
-        private val DESCRIPTION_I_AM = "Can be used to self assign a role."
+        private const val DESCRIPTION_I_AM = "Can be used to self assign a role."
     }
 
     private val iAmRoles: HashMap<Long, ArrayList<IAmRolesCategory>> = HashMap()
@@ -109,10 +109,10 @@ class IAmRoles : CommandModule {
                         for (i in iAmRolesCategories.indices) {
                             modifyCategoryMessage.append('\n').append(i).append(". ").append(iAmRolesCategories[i].categoryName)
                         }
-                        modifyCategoryMessage.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { message -> super.channel.sendMessage(message).queue { message1 -> super.addMessageToCleaner(message1) } }
+                        modifyCategoryMessage.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { super.channel.sendMessage(it).queue { super.addMessageToCleaner(it) } }
                         sequenceNumber = 4
                     }
-                    else -> channel.sendMessage("Wrong answer please answer with a valid number").queue { message -> super.addMessageToCleaner(message) }
+                    else -> channel.sendMessage("Wrong answer please answer with a valid number").queue { super.addMessageToCleaner(it) }
                 }
                 2.toByte() -> if (newCategoryName == null) {
                     val existingCategoryNames = ArrayList<String>()
@@ -121,7 +121,7 @@ class IAmRoles : CommandModule {
                         throw IllegalArgumentException("The name you provided is already being used.")
                     }
                     newCategoryName = event.message.rawContent
-                    super.channel.sendMessage("Please enter how much roles a user can have from this category.").queue { message -> super.addMessageToCleaner(message) }
+                    super.channel.sendMessage("Please enter how much roles a user can have from this category.").queue { super.addMessageToCleaner(it) }
                 } else {
                     synchronized(iAmRolesCategories) {
                         iAmRolesCategories.add(IAmRolesCategory(newCategoryName!!, event.message.rawContent.toInt()))
@@ -141,7 +141,7 @@ class IAmRoles : CommandModule {
                     super.channel.sendMessage("Please enter the number of the action you'd like to perform.\n" +
                             "0. Modify the name. Current value: " + iAmRolesCategory!!.categoryName + "\n" +
                             "1. Invert if the users can only have one role from the category. Current value" + iAmRolesCategory!!.allowedRoles + "\n" +
-                            "2. Add or remove roles.").queue { message -> super.addMessageToCleaner(message) }
+                            "2. Add or remove roles.").queue { super.addMessageToCleaner(it) }
                     sequenceNumber = 5
                 }
                 5.toByte() -> when (java.lang.Byte.parseByte(event.message.rawContent)) {
@@ -171,17 +171,17 @@ class IAmRoles : CommandModule {
                         else -> {
                             val roleId = matchedRoles[0].idLong
                             val removed: Boolean? = try {
-                                        iAmRolesCategory!!.addRole(roleId)
-                                        false
-                                    } catch (illegalArgumentException: IllegalArgumentException) {
-                                        try {
-                                            iAmRolesCategory!!.removeRole(roleId)
-                                            true
-                                        } catch (illegalArgumentException2: IllegalArgumentException) {
-                                            illegalArgumentException2.addSuppressed(illegalArgumentException)
-                                            throw IllegalStateException("Something went wrong while trying to add and remove the role", illegalArgumentException2)
-                                        }
-                                    }
+                                iAmRolesCategory!!.addRole(roleId)
+                                false
+                            } catch (illegalArgumentException: IllegalArgumentException) {
+                                try {
+                                    iAmRolesCategory!!.removeRole(roleId)
+                                    true
+                                } catch (illegalArgumentException2: IllegalArgumentException) {
+                                    illegalArgumentException2.addSuppressed(illegalArgumentException)
+                                    throw IllegalStateException("Something went wrong while trying to add and remove the role", illegalArgumentException2)
+                                }
+                            }
                             when (removed) {
                                 true -> super.channel.sendMessage("The role was successfully removed form the category.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                                 false -> super.channel.sendMessage("The role was successfully added to the category.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
@@ -219,7 +219,7 @@ class IAmRoles : CommandModule {
 
         @get:JSONKey(jsonKey = "roles")
         @get:Synchronized
-        private val roles: List<Long>
+        val roles: List<Long>
             get() = Collections.unmodifiableList(field)
 
         /**
@@ -291,30 +291,42 @@ class IAmRoles : CommandModule {
 
         /**
          * Used to self assign a role by command.
-         *
-         * @param event     A MessageReceivedEvent that came with the command
-         * @param command   The command alias that was used to trigger this commandExec
-         * @param arguments The arguments that where entered after the command alias
          */
         public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-            if(arguments == null) {
+            if (arguments == null) {
                 throw IllegalArgumentException("Arguments are required for this command")
             }
 
-            TODO()
+            val iAmRolesList = iAmRoles[event.guild.idLong]!! //todo recheck this
+            val matchedIAmRoles = event.guild.getRolesByName(event.message.rawContent, true).filter {
+                var roleIsIAmRole = false
+                for (iAmRole in iAmRolesList) {
+                    roleIsIAmRole = iAmRole.roles.contains(it.idLong)
+                    if (roleIsIAmRole) {
+                        break
+                    }
+                }
+                roleIsIAmRole
+            }
+
+            when {
+                matchedIAmRoles.isEmpty() -> throw IllegalArgumentException("No matching roles")
+                matchedIAmRoles.size > 1 -> throw IllegalArgumentException("Too many matching roles")
+                else -> {
+                    event.guild.controller.addSingleRoleToMember(event.member, matchedIAmRoles[0]).reason("Requested with !IAm command").queue()
+                    event.channel.sendMessage(event.author.asMention + " The role " + matchedIAmRoles[0].name + " was assigned.").queue()
+                }
+            }
         }
     }
 
     /**
      * I am not command to allow users to remove roles from them self.
-     *
-     *
-     * Created by Duncan on 23/02/2017.
      */
     internal inner class IAmNot : CommandModule(ALIASES_I_AM_NOT, null, DESCRIPTION_I_AM_NOT) {
 
         public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-            if(arguments == null) {
+            if (arguments == null) {
                 throw IllegalArgumentException("Arguments are required for this command")
             }
             TODO()
