@@ -33,6 +33,7 @@ import net.dv8tion.jda.core.audit.AuditLogOption
 import net.dv8tion.jda.core.entities.Guild
 import net.dv8tion.jda.core.entities.Member
 import net.dv8tion.jda.core.entities.User
+import net.dv8tion.jda.core.entities.impl.GuildImpl
 import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.guild.GuildBanEvent
 import net.dv8tion.jda.core.events.guild.GuildUnbanEvent
@@ -74,7 +75,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
         private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd-M-yyyy hh:mm a O")
         private val LOG = LoggerFactory.getLogger(GuildLogger::class.java)
         private val LIGHT_BLUE = Color(52, 152, 219)
-        private val LOG_ENTRY_CHECK_LIMIT = 5
+        private const val LOG_ENTRY_CHECK_LIMIT = 5
 
         fun getCaseNumberSerializable(guildId: Long): Serializable {
             val caseNumber: Long = try {
@@ -103,7 +104,12 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
         logger.initChannelList(event.jda)
         logger.logChannels.forEach { textChannel ->
             textChannel.guild.auditLogs.type(ActionType.MESSAGE_DELETE).limit(1).cache(false).queue { auditLogEntries ->
-                val auditLogEntry = auditLogEntries[0]
+                val auditLogEntry = if (auditLogEntries.isEmpty()) {
+                    AuditLogEntry(ActionType.MESSAGE_DELETE, -1, -1, textChannel.guild as GuildImpl, null, null, null, null)
+                    //Creating a dummy
+                } else {
+                    auditLogEntries[0]
+                }
                 lastCheckedMessageDeleteEntries.put(auditLogEntry.guild.idLong, auditLogEntry)
             }
         }
