@@ -55,11 +55,15 @@ class IAmRoles : CommandModule {
         val FILE_PATH: Path = Paths.get("IAmRoles.json")
 
         val iAmRoles = if (IAmRoles.FILE_PATH.toFile().exists()) {
-            val stringBuilder = StringBuilder()
-            synchronized(IAmRoles.FILE_PATH) {
-                Files.readAllLines(IAmRoles.FILE_PATH).forEach { stringBuilder.append(it.toString()) }
+            try {
+                val stringBuilder = StringBuilder()
+                synchronized(IAmRoles.FILE_PATH) {
+                    Files.readAllLines(IAmRoles.FILE_PATH).forEach { stringBuilder.append(it.toString()) }
+                }
+                JSONToJavaObject.toJavaObject(JSONObject(stringBuilder.toString()), IAmRoles::class.java)
+            } catch(ise : IllegalStateException) {
+                IAmRoles()
             }
-            JSONToJavaObject.toJavaObject(JSONObject(stringBuilder.toString()), IAmRoles::class.java)
         } else {
             IAmRoles()
         }
