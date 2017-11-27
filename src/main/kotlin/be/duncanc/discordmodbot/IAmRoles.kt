@@ -33,6 +33,7 @@ import net.dv8tion.jda.core.entities.MessageChannel
 import net.dv8tion.jda.core.entities.Role
 import net.dv8tion.jda.core.entities.TextChannel
 import net.dv8tion.jda.core.entities.User
+import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import org.json.JSONArray
 import org.json.JSONObject
@@ -71,6 +72,7 @@ class IAmRoles : CommandModule {
 
     @JSONKey("iAmRoles")
     private val iAmRoles: HashMap<Long, ArrayList<IAmRolesCategory>> = HashMap()
+    private val subCommands = arrayOf(IAm(), IAmNot())
 
     private constructor() : super(ALIASES, null, DESCRIPTION)
 
@@ -78,7 +80,7 @@ class IAmRoles : CommandModule {
      * This constructor is used with reflection by the JSONToJavaObject object
      */
     @Suppress("unused")
-    private constructor(@JSONKey("iAmRoles") iAmRoles: HashMap<String, JSONArray>) : super(ALIASES, null, DESCRIPTION) {
+    private constructor(@JSONKey("iAmRoles") iAmRoles: HashMap<String, JSONArray>) : this() {
         iAmRoles.forEach {
             val iAmRolesList = ArrayList<IAmRolesCategory>()
             it.value.forEach { jsonObject: Any? -> iAmRolesList.add(JSONToJavaObject.toJavaObject(json = jsonObject as JSONObject, clazz = IAmRolesCategory::class.java)) }
@@ -92,7 +94,7 @@ class IAmRoles : CommandModule {
 
     inner class IAmRolesSequence internal constructor(user: User, channel: MessageChannel) : Sequence(user, channel) {
 
-        private var sequenceNumber: Byte = 0
+        private var sequenceNumber: Byte = 1
         private var newCategoryName: String? = null
         private var iAmRolesCategory: IAmRolesCategory? = null
         private val iAmRolesCategories: ArrayList<IAmRolesCategory>
@@ -109,23 +111,23 @@ class IAmRoles : CommandModule {
                 }
             }
             iAmRolesCategories = tempVar
+            super.channel.sendMessage("Please select which action you want to perform:\n" +
+                    "0. Add a new category\n" +
+                    "1. Remove an existing category\n" +
+                    "2. Modify an existing category").queue { message -> super.addMessageToCleaner(message) }
         }
 
         public override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
             when (sequenceNumber) {
-                0.toByte() -> {
-                    super.channel.sendMessage("Please select which action you want to perform:\n" +
-                            "0. Add a new category\n" +
-                            "1. Remove an existing category\n" +
-                            "2. Modify an existing category").queue { message -> super.addMessageToCleaner(message) }
-                    sequenceNumber = 1
-                }
                 1.toByte() -> when (java.lang.Byte.parseByte(event.message.rawContent)) {
                     0.toByte() -> {
-                        super.channel.sendMessage("Please enter a unique category name and if you can only have one role of this category (true if the a user can only have on role out of this category). Syntax: \"Role name | true or false\"").queue { message -> super.addMessageToCleaner(message) }
+                        super.channel.sendMessage("Please enter a unique category name.").queue { message -> super.addMessageToCleaner(message) }
                         sequenceNumber = 2
                     }
                     1.toByte() -> {
+                        if(iAmRolesCategories.isEmpty()) {
+                            throw IllegalStateException("No categories have been set up, there is nothing to delete.")
+                        }
                         val deleteCategoryMessage = MessageBuilder().append("Please select which role category you'd like to delete.")
                         for (i in iAmRolesCategories.indices) {
                             deleteCategoryMessage.append('\n').append(i).append(". ").append(iAmRolesCategories[i].categoryName)
@@ -134,6 +136,9 @@ class IAmRoles : CommandModule {
                         sequenceNumber = 3
                     }
                     2.toByte() -> {
+                        if(iAmRolesCategories.isEmpty()) {
+                            throw IllegalStateException("No categories have been set up, there is nothing to modify.")
+                        }
                         val modifyCategoryMessage = MessageBuilder().append("Please select which role category you'd like to modify.")
                         for (i in iAmRolesCategories.indices) {
                             modifyCategoryMessage.append('\n').append(i).append(". ").append(iAmRolesCategories[i].categoryName)
@@ -234,6 +239,10 @@ class IAmRoles : CommandModule {
         }
     }
 
+    override fun onReady(event: ReadyEvent) {
+        event.jda.addEventListener(*subCommands)
+    }
+
     private fun saveIAmRoles() {
         synchronized(FILE_PATH) {
             Files.write(FILE_PATH, Collections.singletonList(JSONToJavaObject.toJson(this).toString()))
@@ -275,12 +284,9 @@ class IAmRoles : CommandModule {
         }
 
         /**
-         * A constructor to load an existing IAmRolesCategory from a JSON file.
-         *
-         * @param categoryName The name of the category.
-         * @param allowedRoles The amount of roles you can have from the same category.
-         * @param roles
+         * This constructor is used with reflection by the JSONToJavaObject object
          */
+        @Suppress("unused")
         constructor(@JSONKey(jsonKey = "categoryName") categoryName: String, @JSONKey(jsonKey = "allowedRoles") allowedRoles: Int, @JSONKey(jsonKey = "roles") roles: JSONArray) {
             this.categoryName = categoryName
             this.allowedRoles = allowedRoles
