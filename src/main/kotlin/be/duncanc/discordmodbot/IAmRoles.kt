@@ -43,7 +43,6 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
 
-@Suppress("unused")
 class IAmRoles : CommandModule {
     companion object {
         private val ALIASES = arrayOf("IAmRoles")
@@ -54,14 +53,28 @@ class IAmRoles : CommandModule {
         private const val DESCRIPTION_I_AM = "Can be used to self assign a role."
 
         val FILE_PATH: Path = Paths.get("IAmRoles.json")
+
+        val iAmRoles = if (IAmRoles.FILE_PATH.toFile().exists()) {
+            val stringBuilder = StringBuilder()
+            synchronized(IAmRoles.FILE_PATH) {
+                Files.readAllLines(IAmRoles.FILE_PATH).forEach { stringBuilder.append(it.toString()) }
+            }
+            JSONToJavaObject.toJavaObject(JSONObject(stringBuilder.toString()), IAmRoles::class.java)
+        } else {
+            IAmRoles()
+        }
     }
 
     @JSONKey("iAmRoles")
     private val iAmRoles: HashMap<Long, ArrayList<IAmRolesCategory>> = HashMap()
 
-    constructor() : super(ALIASES, null, DESCRIPTION)
+    private constructor() : super(ALIASES, null, DESCRIPTION)
 
-    constructor(@JSONKey("iAmRoles") iAmRoles: HashMap<String, JSONArray>) : super(ALIASES, null, DESCRIPTION) {
+    /**
+     * This constructor is used with reflection by the JSONToJavaObject object
+     */
+    @Suppress("unused")
+    private constructor(@JSONKey("iAmRoles") iAmRoles: HashMap<String, JSONArray>) : super(ALIASES, null, DESCRIPTION) {
         iAmRoles.forEach {
             val iAmRolesList = ArrayList<IAmRolesCategory>()
             it.value.forEach { jsonObject: Any? -> iAmRolesList.add(JSONToJavaObject.toJavaObject(json = jsonObject as JSONObject, clazz = IAmRolesCategory::class.java)) }
@@ -218,7 +231,9 @@ class IAmRoles : CommandModule {
     }
 
     private fun saveIAmRoles() {
-        Files.write(FILE_PATH, Collections.singletonList(JSONToJavaObject.toJson(this).toString()))
+        synchronized(FILE_PATH) {
+            Files.write(FILE_PATH, Collections.singletonList(JSONToJavaObject.toJson(this).toString()))
+        }
     }
 
     /**
