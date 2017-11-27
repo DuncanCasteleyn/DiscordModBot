@@ -62,7 +62,7 @@ import java.util.concurrent.TimeUnit
  *
  *
  * IMPORTANT READ BEFORE MODIFYING CODE:
- * The modifying the lastCheckedMessageDeleteEntries HashMap needs to happen using the guildLoggerExecutor because it's
+ * The modifying the lastCheckedMessageDeleteEntries HashMap needs to happen using the guildLoggerExecutor because its
  * thread are executed sequentially there is no need to lock the object, however if you try to do this without using the
  * service the chances of hitting a ConcurrentModificationException are 100%.
  *
