@@ -22,6 +22,8 @@
  * SOFTWARE.
  */
 
+@file:Suppress("DEPRECATION")
+
 package be.duncanc.discordmodbot.utils.jsontojavaobject
 
 import be.duncanc.discordmodbot.utils.jsontojavaobject.JSONToJavaObject.CONVERT_TO_JAVA_NOT_SUPPORTED
@@ -39,6 +41,9 @@ import java.lang.reflect.Constructor
  * @property CONVERT_TO_JAVA_NOT_SUPPORTED Types that cannot be converted automatically to a Java Object because we can't retrieve the expected type to go inside it and most the times list are created in the class itself and not by a constructor.
  * @see JSONKey
  */
+@Deprecated("The purpose of this object was to simplify turning objects from json into java, but the logic is over complicated and has issues. " +
+        "The tests work, but in practical environment we still run into issue and using this requires a new object to be created you can't fill the field of an existing one. " +
+        "It was still a good learning experience to create this to see how type arguments and java reflection worked.")
 @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN", "UNCHECKED_CAST")
 object JSONToJavaObject {
 

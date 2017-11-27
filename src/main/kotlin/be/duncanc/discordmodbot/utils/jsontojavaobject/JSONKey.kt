@@ -29,6 +29,7 @@ package be.duncanc.discordmodbot.utils.jsontojavaobject
  *
  * @param jsonKey The JSON key that will be used to store or retrieve the value.
  */
+@Deprecated("See the JSONToJavaObject.kt file for the deprecation reason")
 @Target(AnnotationTarget.PROPERTY, AnnotationTarget.PROPERTY_GETTER, AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.RUNTIME)
 @MustBeDocumented

@@ -26,7 +26,6 @@ package be.duncanc.discordmodbot
 
 import be.duncanc.discordmodbot.commands.CommandModule
 import be.duncanc.discordmodbot.sequence.Sequence
-import be.duncanc.discordmodbot.utils.jsontojavaobject.JSONKey
 import be.duncanc.discordmodbot.utils.jsontojavaobject.JSONToJavaObject
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.entities.MessageChannel
@@ -43,6 +42,7 @@ import java.nio.file.Paths
 import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 class IAmRoles : CommandModule {
     companion object {
@@ -55,14 +55,17 @@ class IAmRoles : CommandModule {
 
         val FILE_PATH: Path = Paths.get("IAmRoles.json")
 
-        val iAmRoles = if (IAmRoles.FILE_PATH.toFile().exists()) {
+        val INSTANCE = if (IAmRoles.FILE_PATH.toFile().exists()) {
             try {
-                val stringBuilder = StringBuilder()
-                synchronized(IAmRoles.FILE_PATH) {
-                    Files.readAllLines(IAmRoles.FILE_PATH).forEach { stringBuilder.append(it.toString()) }
+                val json : () -> JSONObject = {
+                    val stringBuilder = StringBuilder()
+                    synchronized(IAmRoles.FILE_PATH) {
+                        Files.readAllLines(IAmRoles.FILE_PATH).forEach { stringBuilder.append(it.toString()) }
+                    }
+                    JSONObject(stringBuilder.toString())
                 }
-                JSONToJavaObject.toJavaObject(JSONObject(stringBuilder.toString()), IAmRoles::class.java)
-            } catch(ise : IllegalStateException) {
+               TODO(json.toString())
+            } catch (ise: IllegalStateException) {
                 IAmRoles()
             }
         } else {
@@ -70,7 +73,6 @@ class IAmRoles : CommandModule {
         }
     }
 
-    @JSONKey("iAmRoles")
     private val iAmRoles: HashMap<Long, ArrayList<IAmRolesCategory>> = HashMap()
     private val subCommands = arrayOf(IAm(), IAmNot())
 
@@ -79,8 +81,7 @@ class IAmRoles : CommandModule {
     /**
      * This constructor is used with reflection by the JSONToJavaObject object
      */
-    @Suppress("unused")
-    private constructor(@JSONKey("iAmRoles") iAmRoles: HashMap<String, JSONArray>) : this() {
+    private constructor(iAmRoles: HashMap<String, JSONArray>) : this() {
         iAmRoles.forEach {
             val iAmRolesList = ArrayList<IAmRolesCategory>()
             it.value.forEach { jsonObject: Any? -> iAmRolesList.add(JSONToJavaObject.toJavaObject(json = jsonObject as JSONObject, clazz = IAmRolesCategory::class.java)) }
@@ -106,8 +107,11 @@ class IAmRoles : CommandModule {
             }
             var tempVar: ArrayList<IAmRolesCategory> = ArrayList()
             synchronized(iAmRoles) {
-                if (iAmRoles.containsKey(channel.guild.idLong)) {
+                val key = channel.guild.idLong
+                if (iAmRoles.containsKey(key)) {
                     tempVar = iAmRoles[channel.guild.idLong]!!
+                } else {
+                    iAmRoles.put(key, tempVar)
                 }
             }
             iAmRolesCategories = tempVar
@@ -125,7 +129,7 @@ class IAmRoles : CommandModule {
                         sequenceNumber = 2
                     }
                     1.toByte() -> {
-                        if(iAmRolesCategories.isEmpty()) {
+                        if (iAmRolesCategories.isEmpty()) {
                             throw IllegalStateException("No categories have been set up, there is nothing to delete.")
                         }
                         val deleteCategoryMessage = MessageBuilder().append("Please select which role category you'd like to delete.")
@@ -136,7 +140,7 @@ class IAmRoles : CommandModule {
                         sequenceNumber = 3
                     }
                     2.toByte() -> {
-                        if(iAmRolesCategories.isEmpty()) {
+                        if (iAmRolesCategories.isEmpty()) {
                             throw IllegalStateException("No categories have been set up, there is nothing to modify.")
                         }
                         val modifyCategoryMessage = MessageBuilder().append("Please select which role category you'd like to modify.")
@@ -150,7 +154,7 @@ class IAmRoles : CommandModule {
                 }
                 2.toByte() -> if (newCategoryName == null) {
                     val existingCategoryNames = ArrayList<String>()
-                    iAmRoles[event.guild.idLong]!!.forEach { iAmRolesCategory -> existingCategoryNames.add(iAmRolesCategory.categoryName) }
+                    iAmRoles[event.guild.idLong]?.forEach { iAmRolesCategory -> existingCategoryNames.add(iAmRolesCategory.categoryName) }
                     if (existingCategoryNames.contains(event.message.rawContent)) {
                         throw IllegalArgumentException("The name you provided is already being used.")
                     }
@@ -245,7 +249,7 @@ class IAmRoles : CommandModule {
 
     private fun saveIAmRoles() {
         synchronized(FILE_PATH) {
-            Files.write(FILE_PATH, Collections.singletonList(JSONToJavaObject.toJson(this).toString()))
+            Files.write(FILE_PATH, Collections.singletonList(JSONObject(iAmRoles).toString()))
         }
     }
 
@@ -254,44 +258,14 @@ class IAmRoles : CommandModule {
      *
      * This class is Thread safe.
      */
-    internal inner class IAmRolesCategory {
-
-        @JSONKey(jsonKey = "categoryName")
-        @get:Synchronized
-        @set:Synchronized
-        var categoryName: String
-
-        @JSONKey(jsonKey = "allowedRoles")
-        @get:Synchronized
-        @set:Synchronized
-        var allowedRoles: Int
-
-        @JSONKey(jsonKey = "roles")
-        @get:Synchronized
-        val roles: List<Long>
-            get() = Collections.unmodifiableList(field)
-
-        /**
-         * Constructor for a new IAmRolesCategory.
-         *
-         * @param categoryName The name of the category.
-         * @param allowedRoles The amount of roles you can have from the same category.
-         */
-        constructor(categoryName: String, allowedRoles: Int) {
-            this.categoryName = categoryName
-            this.allowedRoles = allowedRoles
-            this.roles = ArrayList()
-        }
-
-        /**
-         * This constructor is used with reflection by the JSONToJavaObject object
-         */
-        @Suppress("unused")
-        constructor(@JSONKey(jsonKey = "categoryName") categoryName: String, @JSONKey(jsonKey = "allowedRoles") allowedRoles: Int, @JSONKey(jsonKey = "roles") roles: JSONArray) {
-            this.categoryName = categoryName
-            this.allowedRoles = allowedRoles
-            this.roles = ArrayList(JSONToJavaObject.toTypedList(roles, Long::class.java))
-        }
+    internal inner class IAmRolesCategory
+    /**
+     * Constructor for a new IAmRolesCategory.
+     *
+     * @param categoryName The name of the category.
+     * @param allowedRoles The amount of roles you can have from the same category.
+     */
+    constructor(@get:Synchronized @set:Synchronized var categoryName: String, @get:Synchronized @set:Synchronized var allowedRoles: Int, @get:Synchronized val roles: List<Long> = ArrayList()) {
 
         @Synchronized
         fun removeRole(roleId: Long) {
