@@ -286,11 +286,11 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
 
         var messageLogged = false
         event.messageIds.forEach { id ->
-            val message = history?.getMessage(java.lang.Long.parseUnsignedLong(id))
+            val message = history.getMessage(java.lang.Long.parseUnsignedLong(id))
             if (message != null) {
                 messageLogged = true
                 logWriter.append(message.author.toString()).append(":\n").append(message.content).append("\n\n")
-                val attachmentString = history?.getAttachmentsString(java.lang.Long.parseUnsignedLong(id))
+                val attachmentString = history.getAttachmentsString(java.lang.Long.parseUnsignedLong(id))
                 if (attachmentString != null) {
                     logWriter.append("Attachment(s):\n").append(attachmentString).append("\n")
                 } else {
