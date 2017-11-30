@@ -26,7 +26,6 @@ package be.duncanc.discordmodbot
 
 import be.duncanc.discordmodbot.commands.CommandModule
 import be.duncanc.discordmodbot.sequence.Sequence
-import be.duncanc.discordmodbot.utils.jsontojavaobject.JSONToJavaObject
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.entities.MessageChannel
 import net.dv8tion.jda.core.entities.Role
@@ -34,7 +33,6 @@ import net.dv8tion.jda.core.entities.TextChannel
 import net.dv8tion.jda.core.entities.User
 import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
-import org.json.JSONArray
 import org.json.JSONObject
 import java.nio.file.Files
 import java.nio.file.Path
@@ -55,16 +53,13 @@ class IAmRoles : CommandModule {
 
         val FILE_PATH: Path = Paths.get("IAmRoles.json")
 
-        val INSTANCE = if (IAmRoles.FILE_PATH.toFile().exists()) {
+        val INSTANCE: IAmRoles = if (IAmRoles.FILE_PATH.toFile().exists()) {
             try {
-                val json : () -> JSONObject = {
-                    val stringBuilder = StringBuilder()
-                    synchronized(IAmRoles.FILE_PATH) {
-                        Files.readAllLines(IAmRoles.FILE_PATH).forEach { stringBuilder.append(it.toString()) }
-                    }
-                    JSONObject(stringBuilder.toString())
+                val stringBuilder = StringBuilder()
+                synchronized(IAmRoles.FILE_PATH) {
+                    Files.readAllLines(IAmRoles.FILE_PATH).forEach { stringBuilder.append(it.toString()) }
                 }
-               TODO(json.toString())
+                IAmRoles(JSONObject(stringBuilder.toString()))
             } catch (ise: IllegalStateException) {
                 IAmRoles()
             }
@@ -78,15 +73,17 @@ class IAmRoles : CommandModule {
 
     private constructor() : super(ALIASES, null, DESCRIPTION)
 
-    /**
-     * This constructor is used with reflection by the JSONToJavaObject object
-     */
-    private constructor(iAmRoles: HashMap<String, JSONArray>) : this() {
-        iAmRoles.forEach {
-            val iAmRolesList = ArrayList<IAmRolesCategory>()
-            it.value.forEach { jsonObject: Any? -> iAmRolesList.add(JSONToJavaObject.toJavaObject(json = jsonObject as JSONObject, clazz = IAmRolesCategory::class.java)) }
-            this.iAmRoles.put(it.key.toLong(), iAmRolesList)
+    private constructor(json: JSONObject) : this() {
+        val hashMap = HashMap<Long, ArrayList<IAmRolesCategory>>()
+        json.toMap().forEach {
+            val arrayList = ArrayList<IAmRolesCategory>()
+            (it.value as ArrayList<*>).forEach { arrayContent ->
+                arrayContent as HashMap<*, *>
+                arrayList.add(IAmRolesCategory(arrayContent["categoryName"].toString(), arrayContent["allowedRoles"] as Int, arrayContent["roles"] as ArrayList<Long>))
+                TODO()
+            }
         }
+        TODO()
     }
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
