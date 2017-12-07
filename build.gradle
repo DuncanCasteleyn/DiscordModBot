@@ -50,9 +50,6 @@ mainClassName = 'be.duncanc.discordmodbot.RunBots'
 
 version '1.1.1_44'
 
-sourceCompatibility = 9
-targetCompatibility = 9
-
 repositories {
     jcenter()
 }
@@ -61,17 +58,17 @@ dependencies {
     testCompile("org.junit.jupiter:junit-jupiter-api:$junit_version")
     testRuntime("org.junit.jupiter:junit-jupiter-engine:$junit_version")
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
-    compile "net.dv8tion:JDA:3.3.1_307"
+    compile "net.dv8tion:JDA:3.3.1_308"
     compile 'org.apache.commons:commons-lang3:3.5'
     compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.21'
 }
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '4.2.1'
-}
-
+wrapper.gradleVersion = '4.4'
 compileJava.options.compilerArgs << "-Xlint:deprecation"
 compileJava.options.encoding = "UTF-8"
+
+sourceCompatibility = 9
+targetCompatibility = 9
 
 compileKotlin {
     kotlinOptions {
