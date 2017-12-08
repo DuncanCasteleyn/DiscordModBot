@@ -57,7 +57,7 @@ abstract class Sequence @JvmOverloads protected constructor(val user: User, val 
 
     init {
         if (cleanAfterSequence && channel is TextChannel) {
-            this.cleanAfterSequence = ArrayList<Message>()
+            this.cleanAfterSequence = ArrayList()
         } else {
             this.cleanAfterSequence = null
         }
