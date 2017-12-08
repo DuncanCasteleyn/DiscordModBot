@@ -103,7 +103,7 @@ class IAmRoles : CommandModule {
                 super.destroy()
                 throw UnsupportedOperationException("This command must be executed in a guild.")
             }
-            if(!channel.guild.getMember(user).hasPermission(Permission.MANAGE_ROLES)) {
+            if (!channel.guild.getMember(user).hasPermission(Permission.MANAGE_ROLES)) {
                 throw PermissionException("You do not have permission to modify IAmRoles categories.")
             }
             iAmRolesCategories = getCategoriesForGuild(channel.guild)
@@ -216,7 +216,7 @@ class IAmRoles : CommandModule {
                                 }
                             }
                             when (removed) {
-                                true -> super.channel.sendMessage(user.asMention +" The role was successfully removed form the category.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                                true -> super.channel.sendMessage(user.asMention + " The role was successfully removed form the category.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                                 false -> super.channel.sendMessage(user.asMention + " The role was successfully added to the category.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                                 else -> throw IllegalStateException("Boolean value removed should not be able to be null at this point.")
                             }
@@ -366,7 +366,7 @@ class IAmRoles : CommandModule {
                     } else {
                         val message = MessageBuilder()
                         message.append(user.asMention + " Please select which role(s) you'd like to assign. For multiple roles put each number on a new line (shift enter).\n" +
-                                "You are allowed to select up to " + iAmRolesCategories[selectedCategory].allowedRoles + ", all previously assigned roles from this category will be removed unless you select them.")
+                                "You are allowed to select up to " + (if (iAmRolesCategories[selectedCategory].allowedRoles > 0) iAmRolesCategories[selectedCategory].allowedRoles else "unlimited") + " role(s) from this category, all previously assigned roles from this category will be removed unless you select them.")
                         for (i in roles!!.indices) {
                             val role = (channel as TextChannel).guild.getRoleById(roles!![i])
                             message.append('\n').append(i).append(". ").append(role.name)
@@ -382,7 +382,7 @@ class IAmRoles : CommandModule {
                         if (requestedRoles.isEmpty()) {
                             throw IllegalArgumentException("You need to provide at least one role to assign.")
                         }
-                        if (requestedRoles.size > iAmRolesCategories[selectedCategory].allowedRoles && iAmRolesCategories[selectedCategory].allowedRoles > 0 ) {
+                        if (requestedRoles.size > iAmRolesCategories[selectedCategory].allowedRoles && iAmRolesCategories[selectedCategory].allowedRoles > 0) {
                             throw IllegalArgumentException("You listed more roles than allowed.")
                         }
                         val rolesToAdd = ArrayList<Role>()
