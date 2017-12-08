@@ -27,9 +27,11 @@ package be.duncanc.discordmodbot
 import be.duncanc.discordmodbot.commands.CommandModule
 import be.duncanc.discordmodbot.sequence.Sequence
 import net.dv8tion.jda.core.MessageBuilder
+import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.*
 import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import net.dv8tion.jda.core.exceptions.PermissionException
 import org.json.JSONObject
 import java.nio.file.Files
 import java.nio.file.Path
@@ -100,6 +102,9 @@ class IAmRoles : CommandModule {
             if (channel !is TextChannel) {
                 super.destroy()
                 throw UnsupportedOperationException("This command must be executed in a guild.")
+            }
+            if(!channel.guild.getMember(user).hasPermission(Permission.MANAGE_ROLES)) {
+                throw PermissionException("You do not have permission to modify IAmRoles categories.")
             }
             iAmRolesCategories = getCategoriesForGuild(channel.guild)
             super.channel.sendMessage("Please select which action you want to perform:\n" +
