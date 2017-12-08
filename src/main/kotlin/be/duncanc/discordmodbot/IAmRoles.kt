@@ -44,9 +44,9 @@ class IAmRoles : CommandModule {
         private val ALIASES = arrayOf("IAmRoles")
         private const val DESCRIPTION = "Controller for IAmRoles."
         private val ALIASES_I_AM_NOT = arrayOf("IAmNot")
-        private const val DESCRIPTION_I_AM_NOT = "Can be used to remove a role from yourself."
+        private const val DESCRIPTION_I_AM_NOT = "Can be used to remove all roles from a category from yourself."
         private val ALIASES_I_AM = arrayOf("iam")
-        private const val DESCRIPTION_I_AM = "Can be used to self assign a role."
+        private const val DESCRIPTION_I_AM = "Can be used to self assign a role, this will remove all existing roles except those requested."
 
         val FILE_PATH: Path = Paths.get("IAmRoles.json")
 
@@ -367,7 +367,6 @@ class IAmRoles : CommandModule {
         }
     }*/
 
-    @Suppress("unused")
     internal inner class RoleModificationSequence(user: User, channel: MessageChannel, private val remove: Boolean) : Sequence(user, channel, cleanAfterSequence = true, informUser = false) {
         private val iAmRolesCategories: ArrayList<IAmRolesCategory>
         private var roles: List<Long>? = null
@@ -380,7 +379,7 @@ class IAmRoles : CommandModule {
             }
             iAmRolesCategories = getCategoriesForGuild(channel.guild)
             val message = MessageBuilder()
-            if(remove) {
+            if (remove) {
                 message.append(user.asMention + " Please select from which category you'd like to remove all roles.")
             } else {
                 message.append(user.asMention + " Please select from which category you'd like to assign (a) role(s).")
@@ -392,15 +391,18 @@ class IAmRoles : CommandModule {
         }
 
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
-            when(roles) {
+            when (roles) {
                 null -> {
                     selectedCategory = event.message.rawContent.toInt()
                     roles = iAmRolesCategories[selectedCategory].roles
-                    if(roles!!.isEmpty()) {
+                    if (roles!!.isEmpty()) {
                         throw IllegalStateException("There are no roles in this category. Please contact a server admin.")
                     }
-                    if(remove) {
-                        
+                    if (remove) {
+                        val member = event.guild.getMember(user)
+                        val rolesToRemove = member.roles.filter { roles!!.contains(it.idLong) }.toList()
+                        event.guild.controller.removeRolesFromMember(member, rolesToRemove).reason("User used !iamnot command").queue()
+                        channel.sendMessage(user.asMention + " The roles where removed.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                         super.destroy()
                     } else {
                         val message = MessageBuilder()
@@ -414,14 +416,14 @@ class IAmRoles : CommandModule {
                     }
                 }
                 else -> {
-                    if(remove) {
+                    if (remove) {
                         throw IllegalStateException()
                     } else {
                         val requestedRoles = event.message.rawContent.split('\n')
-                        if(requestedRoles.isEmpty()) {
+                        if (requestedRoles.isEmpty()) {
                             throw IllegalArgumentException("You need to provide at least one role to assign.")
                         }
-                        if(requestedRoles.size > iAmRolesCategories!![selectedCategory].allowedRoles) {
+                        if (requestedRoles.size > iAmRolesCategories[selectedCategory].allowedRoles) {
                             throw IllegalArgumentException("You listed more roles than allowed.")
                         }
                         val rolesToAdd = ArrayList<Role>()
@@ -433,13 +435,11 @@ class IAmRoles : CommandModule {
                         val member = event.guild.getMember(user)
                         val rolesToRemove = member.roles.filter { roles!!.contains(it.idLong) && !rolesToAdd.contains(it) }.toList()
                         event.guild.controller.modifyMemberRoles(member, rolesToAdd, rolesToRemove).reason("User used !iam command").queue()
-                        channel.sendMessage(user.asMention + " The request roles where added.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                        channel.sendMessage(user.asMention + " The requested role(s) where/was added.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                         super.destroy()
                     }
                 }
             }
-
-            TODO("Need to write logic to filter out roles already assigned/not yet assigned and offer those as option")
         }
     }
 }
