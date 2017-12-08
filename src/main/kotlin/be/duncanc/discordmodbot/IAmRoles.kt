@@ -79,11 +79,13 @@ class IAmRoles : CommandModule {
             val arrayList = ArrayList<IAmRolesCategory>()
             (it.value as ArrayList<*>).forEach { arrayContent ->
                 arrayContent as HashMap<*, *>
-                arrayList.add(IAmRolesCategory(arrayContent["categoryName"].toString(), arrayContent["allowedRoles"] as Int, arrayContent["roles"] as ArrayList<Long>))
-                TODO()
+                val rolesList = ArrayList<Long>()
+                (arrayContent["roles"] as ArrayList<*>).forEach { rolesList.add(it as Long) }
+                arrayList.add(IAmRolesCategory(arrayContent["categoryName"].toString(), arrayContent["allowedRoles"] as Int, rolesList))
             }
+            hashMap.put(it.key.toLong(), arrayList)
         }
-        TODO()
+        iAmRoles.putAll(hashMap)
     }
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
@@ -359,6 +361,14 @@ class IAmRoles : CommandModule {
                 }
             }
             roleIsIAmRole
+        }
+    }
+
+    //TODO Later to make the !iam and !iamnot command more friendly but it's not a high priority.
+    @Suppress("unused")
+    internal inner class RoleModificationSequence(user: User, channel: MessageChannel, private val remove: Boolean) : Sequence(user, channel, cleanAfterSequence = true, informUser = false) {
+        override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
+            TODO("Need to write logic to filter out roles already assigned/not yet assigned and offer those as option")
         }
     }
 }
