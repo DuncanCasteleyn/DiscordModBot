@@ -146,12 +146,12 @@ class IAmRoles : CommandModule {
                         throw IllegalArgumentException("The name you provided is already being used.")
                     }
                     newCategoryName = event.message.rawContent
-                    super.channel.sendMessage("Please enter how much roles a user can have from this category.").queue { super.addMessageToCleaner(it) }
+                    super.channel.sendMessage("Please enter how much roles a user can have from this category? Use 0 for unlimited.").queue { super.addMessageToCleaner(it) }
                 } else {
                     synchronized(iAmRolesCategories) {
                         iAmRolesCategories.add(IAmRolesCategory(newCategoryName!!, event.message.rawContent.toInt()))
                     }
-                    super.channel.sendMessage("Successfully added new category.").queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
+                    super.channel.sendMessage(user.asMention + " Successfully added new category.").queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
                     saveIAmRoles()
                     super.destroy()
                 }
@@ -159,7 +159,7 @@ class IAmRoles : CommandModule {
                     synchronized(iAmRolesCategories) {
                         iAmRolesCategories.removeAt(Integer.parseInt(event.message.rawContent))
                     }
-                    super.channel.sendMessage("Successfully removed the category").queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
+                    super.channel.sendMessage(user.asMention + " Successfully removed the category").queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
                     saveIAmRoles()
                     super.destroy()
                 }
@@ -167,13 +167,13 @@ class IAmRoles : CommandModule {
                     iAmRolesCategory = iAmRolesCategories[Integer.parseInt(event.message.rawContent)]
                     super.channel.sendMessage("Please enter the number of the action you'd like to perform.\n" +
                             "0. Modify the name. Current value: " + iAmRolesCategory!!.categoryName + "\n" +
-                            "1. Invert if the users can only have one role from the category. Current value" + iAmRolesCategory!!.allowedRoles + "\n" +
+                            "1. Change how much roles you can assign from the category. Current value: " + iAmRolesCategory!!.allowedRoles + "\n" +
                             "2. Add or remove roles.").queue { super.addMessageToCleaner(it) }
                     sequenceNumber = 5
                 }
                 5.toByte() -> when (java.lang.Byte.parseByte(event.message.rawContent)) {
                     0.toByte() -> {
-                        super.channel.sendMessage("Please type a new name for the category.").queue { message -> super.addMessageToCleaner(message) }
+                        super.channel.sendMessage("Please enter a new name for the category.").queue { message -> super.addMessageToCleaner(message) }
                         sequenceNumber = 6
                     }
                     1.toByte() -> {
@@ -211,8 +211,8 @@ class IAmRoles : CommandModule {
                                 }
                             }
                             when (removed) {
-                                true -> super.channel.sendMessage("The role was successfully removed form the category.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
-                                false -> super.channel.sendMessage("The role was successfully added to the category.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                                true -> super.channel.sendMessage(user.asMention +" The role was successfully removed form the category.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                                false -> super.channel.sendMessage(user.asMention + " The role was successfully added to the category.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                                 else -> throw IllegalStateException("Boolean value removed should not be able to be null at this point.")
                             }
                             saveIAmRoles()
@@ -222,7 +222,7 @@ class IAmRoles : CommandModule {
                 }
                 8.toByte() -> {
                     iAmRolesCategory!!.allowedRoles = event.message.rawContent.toInt()
-                    channel.sendMessage("Allowed roles successfully changed.").queue { it.delete().queueAfter(5, TimeUnit.MINUTES) }
+                    channel.sendMessage(user.asMention + " Allowed roles successfully changed.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                     saveIAmRoles()
                     super.destroy()
                 }
@@ -308,23 +308,6 @@ class IAmRoles : CommandModule {
 
         public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
             event.jda.addEventListener(RoleModificationSequence(event.author, event.channel, remove = false))
-            /*if (arguments == null) {
-                throw IllegalArgumentException("Arguments are required for this command")
-            }
-
-            val iAmRolesList = iAmRoles[event.guild.idLong] ?:
-                    throw UnsupportedOperationException("This server/guild has not configured any roles.")
-
-            val matchedIAmRoles = event.guild.getRolesByName(arguments, true).filter(filterIAmRoles(iAmRolesList))
-
-            when {
-                matchedIAmRoles.isEmpty() -> throw IllegalArgumentException("No matching roles")
-                matchedIAmRoles.size > 1 -> throw IllegalArgumentException("Too many matching roles")
-                else -> {
-                    event.guild.controller.addSingleRoleToMember(event.member, matchedIAmRoles[0]).reason("Requested with !IAm command").queue()
-                    event.channel.sendMessage(event.author.asMention + " The role " + matchedIAmRoles[0].name + " was assigned.").queue()
-                }
-            }*/
         }
     }
 
@@ -335,37 +318,8 @@ class IAmRoles : CommandModule {
 
         public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
             event.jda.addEventListener(RoleModificationSequence(event.author, event.channel, remove = true))
-            /*if (arguments == null) {
-                throw IllegalArgumentException("Arguments are required for this command")
-            }
-            val iAmRolesList = iAmRoles[event.guild.idLong] ?:
-                    throw UnsupportedOperationException("This server/guild has not configured any roles.")
-
-            val matchedIAmRoles = event.guild.getRolesByName(arguments, true).filter(filterIAmRoles(iAmRolesList))
-
-            when {
-                matchedIAmRoles.isEmpty() -> throw IllegalArgumentException("No matching roles")
-                matchedIAmRoles.size > 1 -> throw IllegalArgumentException("Too many matching roles")
-                else -> {
-                    event.guild.controller.removeSingleRoleFromMember(event.member, matchedIAmRoles[0]).reason("Requested with !IAm command").queue()
-                    event.channel.sendMessage(event.author.asMention + " The role " + matchedIAmRoles[0].name + " was removed.").queue()
-                }
-            }*/
         }
     }
-
-    /*private fun filterIAmRoles(iAmRolesList: ArrayList<IAmRolesCategory>): (Role) -> Boolean {
-        return {
-            var roleIsIAmRole = false
-            for (iAmRole in iAmRolesList) {
-                roleIsIAmRole = iAmRole.roles.contains(it.idLong)
-                if (roleIsIAmRole) {
-                    break
-                }
-            }
-            roleIsIAmRole
-        }
-    }*/
 
     internal inner class RoleModificationSequence(user: User, channel: MessageChannel, private val remove: Boolean) : Sequence(user, channel, cleanAfterSequence = true, informUser = false) {
         private val iAmRolesCategories: ArrayList<IAmRolesCategory>
@@ -423,7 +377,7 @@ class IAmRoles : CommandModule {
                         if (requestedRoles.isEmpty()) {
                             throw IllegalArgumentException("You need to provide at least one role to assign.")
                         }
-                        if (requestedRoles.size > iAmRolesCategories[selectedCategory].allowedRoles) {
+                        if (requestedRoles.size > iAmRolesCategories[selectedCategory].allowedRoles && iAmRolesCategories[selectedCategory].allowedRoles > 0 ) {
                             throw IllegalArgumentException("You listed more roles than allowed.")
                         }
                         val rolesToAdd = ArrayList<Role>()
