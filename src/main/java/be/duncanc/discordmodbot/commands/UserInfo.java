@@ -68,7 +68,7 @@ public class UserInfo extends CommandModule {
             } else if (!arguments.contains("#")) {
                 privateChannel.sendMessage("Discriminator missing use username#discrimanator without @ sign, e.g.: \"Puck#5244\"").queue();
             } else {
-                String[] searchTerms = event.getMessage().getContent().substring(command.length() + 2).toLowerCase().split("#");
+                String[] searchTerms = event.getMessage().getContentRaw().substring(command.length() + 2).toLowerCase().split("#");
                 boolean targetFound = false;
                 for (Member member : event.getGuild().getMembers()) {
                     if (searchTerms[0].equals(member.getUser().getName().toLowerCase()) && searchTerms[1].equals(member.getUser().getDiscriminator())) {

@@ -72,7 +72,7 @@ abstract class CommandModule @JvmOverloads protected constructor(internal val al
      * @param event A {@code MessageReceivedEvent}.
      */
     override fun onMessageReceived(event: MessageReceivedEvent) {
-        val messageContent = event.message.rawContent.trim().replace("\\s+".toRegex(), " ")
+        val messageContent = event.message.contentRaw.trim().replace("\\s+".toRegex(), " ")
 
         if (event.author.isBot || messageContent == "" || event.jda.registeredListeners.stream().anyMatch { it is Sequence && it.user === event.author }) {
             return
@@ -82,7 +82,7 @@ abstract class CommandModule @JvmOverloads protected constructor(internal val al
             val argumentsArray = messageContent.split(" ")//.dropLastWhile { it.isEmpty() }.toTypedArray()
             val command = argumentsArray[0].substring(1)
             val arguments: String?
-            arguments = if (event.message.content.length - 1 >= command.length + 2) {
+            arguments = if (event.message.contentDisplay.length - 1 >= command.length + 2) {
                 messageContent.substring(command.length + 2)
             } else {
                 null
@@ -90,14 +90,14 @@ abstract class CommandModule @JvmOverloads protected constructor(internal val al
             if (Arrays.stream(aliases).anyMatch { s -> s.equals(command, ignoreCase = true) }) {
                 try {
                     commandExec(event, command, arguments)
-                    LOG.info("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " completed executing " + event.message.content + " command from user " + event.author.toString())
+                    LOG.info("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " completed executing " + event.message.contentStripped + " command from user " + event.author.toString())
                 } catch (pe: PermissionException) {
-                    LOG.warn("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " failed executing " + event.message.content + " command from user " + event.author.toString())
+                    LOG.warn("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " failed executing " + event.message.contentStripped + " command from user " + event.author.toString())
                     val exceptionMessage = MessageBuilder().append("Cannot complete action due to a permission issue; see the message below for details.").appendCodeBlock(pe.javaClass.simpleName + ": " + pe.message, "text").build()
                     event.channel.sendMessage(exceptionMessage).queue { it.delete().queueAfter(5, TimeUnit.MINUTES) }
 
                 } catch (t: Throwable) {
-                    LOG.error("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " failed executing " + event.message.content + " command from user " + event.author.toString(), t)
+                    LOG.error("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " failed executing " + event.message.contentStripped + " command from user " + event.author.toString(), t)
                     val exceptionMessage = MessageBuilder().append("Cannot complete action due to an error; see the message below for details.").appendCodeBlock(t.javaClass.simpleName + ": " + t.message, "text").build()
                     event.channel.sendMessage(exceptionMessage).queue { it.delete().queueAfter(5, TimeUnit.MINUTES) }
                 }
@@ -107,7 +107,7 @@ abstract class CommandModule @JvmOverloads protected constructor(internal val al
                         event.message.delete().queue()
                     }
                 } catch (e: Exception) {
-                    LOG.warn("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " failed deleting " + event.message.content + " command from user " + event.author.toString(), e)
+                    LOG.warn("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " failed deleting " + event.message.contentStripped + " command from user " + event.author.toString(), e)
                 }
             }
         }

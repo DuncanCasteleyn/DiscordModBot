@@ -164,7 +164,7 @@ open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
 
             when (sequenceNumber) {
                 0.toByte() -> {
-                    when (event.message.rawContent.toByte()) {
+                    when (event.message.contentRaw.toByte()) {
                         0.toByte() -> {
                             if (eventManger != null) {
                                 val response: Array<String> = if (eventManger.events.containsKey(guildId)) {
@@ -195,7 +195,7 @@ open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
                     }
                 }
                 1.toByte() -> {
-                    when (event.message.rawContent.toLowerCase()) {
+                    when (event.message.contentRaw.toLowerCase()) {
                         "yes" -> {
                             if (eventManger!!.events.containsKey(guildId)) {
                                 eventManger.events.remove(guildId)
@@ -213,7 +213,7 @@ open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
                     }
                 }
                 2.toByte() -> {
-                    val settingField = GuildSettings::class.java.declaredFields.filter { it.type == Boolean::class.java }[event.message.rawContent.toInt()].name.capitalize()
+                    val settingField = GuildSettings::class.java.declaredFields.filter { it.type == Boolean::class.java }[event.message.contentRaw.toInt()].name.capitalize()
                     GuildSettings::class.java.getMethod("set" + settingField, Boolean::class.java)
                             .invoke(guildSettings.filter { it.guildId == event.guild.idLong }[0], !(GuildSettings::class.java.getMethod("get" + settingField).invoke(guildSettings.filter { it.guildId == event.guild.idLong }[0]) as Boolean))
                     writeGuildSettingToFile()

@@ -150,7 +150,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
             }
             val logEmbed = EmbedBuilder()
                     .setTitle("#" + channel.name + ": Message was modified!")
-                    .setDescription("Old message was:\n" + oldMessage.content)
+                    .setDescription("Old message was:\n" + oldMessage.contentDisplay)
                     .setColor(LIGHT_BLUE)
                     .addField("Author", name, true)
             guildLoggerExecutor.execute { logger.log(logEmbed, oldMessage.author, guild, oldMessage.embeds, LogTypeAction.USER) }
@@ -237,7 +237,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
 
                 val logEmbed = EmbedBuilder()
                         .setTitle("#" + channel.name + ": Message was deleted!")
-                        .setDescription("Old message was:\n" + oldMessage.content)
+                        .setDescription("Old message was:\n" + oldMessage.contentDisplay)
                 if (attachmentString != null) {
                     logEmbed.addField("Attachment(s)", attachmentString, false)
                 }
@@ -289,7 +289,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
             val message = history.getMessage(java.lang.Long.parseUnsignedLong(id))
             if (message != null) {
                 messageLogged = true
-                logWriter.append(message.author.toString()).append(":\n").append(message.content).append("\n\n")
+                logWriter.append(message.author.toString()).append(":\n").append(message.contentDisplay).append("\n\n")
                 val attachmentString = history.getAttachmentsString(java.lang.Long.parseUnsignedLong(id))
                 if (attachmentString != null) {
                     logWriter.append("Attachment(s):\n").append(attachmentString).append("\n")

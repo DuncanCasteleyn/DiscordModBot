@@ -128,7 +128,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
         val gateTextChannel: TextChannel = guild.getTextChannelById(this.gateTextChannel)
         val userMessages: ArrayList<Message> = ArrayList()
         gateTextChannel.iterableHistory.map {
-            if (it.author == user || it.rawContent.contains(user.id)) {
+            if (it.author == user || it.contentRaw.contains(user.id)) {
                 userMessages.add(it)
             }
         }
@@ -310,7 +310,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
             }
             when (sequenceNumber) {
                 0.toByte() -> {
-                    when (event.message.rawContent.toLowerCase()) {
+                    when (event.message.contentRaw.toLowerCase()) {
                         "yes" -> {
                             super.channel.sendMessage(user.asMention + " Do you accept the rules? Answer with \"yes\" or \"no\"").queue { super.addMessageToCleaner(it) }
                             sequenceNumber = 1
@@ -325,7 +325,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                     }
                 }
                 1.toByte() -> {
-                    when (event.message.rawContent.toLowerCase()) {
+                    when (event.message.contentRaw.toLowerCase()) {
                         "yes" -> {
                             super.channel.sendMessage(user.asMention + " Please answer the following question:\n" + question.question).queue { super.addMessageToCleaner(it) }
                             sequenceNumber = 2
@@ -347,7 +347,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                     if (question.checkAnswer(event)) {
                         accept(member)
                     } else {
-                        failedQuestion(member = member, question = question.question, answer = event.message.content)
+                        failedQuestion(member = member, question = question.question, answer = event.message.contentDisplay)
                     }
                 }
             }
@@ -377,7 +377,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
             if (super.user != user || super.channel != channel) {
                 return
             }
-            val messageContent: String = event.message.content.toLowerCase()
+            val messageContent: String = event.message.contentDisplay.toLowerCase()
             when (sequenceNumber) {
                 0.toByte() -> {
                     when (messageContent) {
@@ -418,7 +418,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                     super.channel.sendMessage(super.user.asMention + " Question and keywords added.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                 }
                 else -> {
-                    val number: Int = event.message.content.toInt()
+                    val number: Int = event.message.contentDisplay.toInt()
                     val removedQuestion: Question = questions.removeAt(number)
                     saveQuestions()
                     destroy()
@@ -438,7 +438,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
          * @param event the event containing the message that came from the sequence to answer the question.
          * @return true when the answer is correct, false otherwise.
          */
-        internal fun checkAnswer(event: MessageReceivedEvent): Boolean = keywordList.all { it.any { it.toLowerCase() in event.message.content.toLowerCase() } }
+        internal fun checkAnswer(event: MessageReceivedEvent): Boolean = keywordList.all { it.any { it.toLowerCase() in event.message.contentDisplay.toLowerCase() } }
 
         /**
          * Adds more keywords to a question.
@@ -492,7 +492,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                 if (userId !in needManualApproval) {
                     throw IllegalStateException("The user is no longer in the queue; another moderator may have reviewed it already.")
                 }
-                val messageContent: String = event.message.content.toLowerCase()
+                val messageContent: String = event.message.contentDisplay.toLowerCase()
                 when (messageContent) {
                     "yes" -> {
                         val member: Member? = event.guild.getMemberById(userId)

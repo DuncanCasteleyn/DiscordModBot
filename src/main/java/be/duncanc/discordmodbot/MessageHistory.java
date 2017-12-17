@@ -102,7 +102,7 @@ public class MessageHistory extends ListenerAdapter implements QuitBot.BeforeBot
             attachmentProxyCreator.informDeleteFromCache(messages.remove(messages.firstKey()).getIdLong());
         }
         Message message = event.getMessage();
-        if (message.getContent().length() > 0 && message.getContent().charAt(0) == '!' || message.getAuthor().isBot()) {
+        if (message.getContentDisplay().length() > 0 && message.getContentDisplay().charAt(0) == '!' || message.getAuthor().isBot()) {
             return;
         }
         messages.put(message.getIdLong(), message);

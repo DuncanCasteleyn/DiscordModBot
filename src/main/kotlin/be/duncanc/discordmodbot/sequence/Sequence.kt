@@ -98,7 +98,7 @@ abstract class Sequence @JvmOverloads protected constructor(val user: User, val 
 
         cleaner.cancel(false)
         addMessageToCleaner(event.message)
-        if (event.message.rawContent == "STOP") {
+        if (event.message.contentRaw == "STOP") {
             destroy()
             return
         }

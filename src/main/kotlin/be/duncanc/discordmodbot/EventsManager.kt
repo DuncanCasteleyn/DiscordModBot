@@ -161,7 +161,7 @@ open class EventsManager : CommandModule(be.duncanc.discordmodbot.EventsManager.
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
             when (sequenceNumber) {
                 0.toByte() -> {
-                    when (event.message.rawContent) {
+                    when (event.message.contentRaw) {
                         "add" -> {
                             sequenceNumber = 1
                             event.channel.sendMessage("Please enter the event name.").queue { super.addMessageToCleaner(it) }
@@ -186,20 +186,20 @@ open class EventsManager : CommandModule(be.duncanc.discordmodbot.EventsManager.
                     sequenceNumber = 2
                     try {
                         events[event.guild.idLong]!!.forEach {
-                            if (it.eventName == event.message.rawContent) {
+                            if (it.eventName == event.message.contentRaw) {
                                 throw IllegalArgumentException("An event with this name already exists, please try again and chose another name.")
                             }
                         }
                     } catch (npe: NullPointerException) {
                         throw UnsupportedOperationException("This guild has not been configured to use the event manager.", npe)
                     }
-                    eventName = event.message.rawContent
+                    eventName = event.message.contentRaw
                     event.channel.sendMessage("Please enter the date and time of the event. Example: \"12-08-2018 12:00 +02\"").queue { addMessageToCleaner(it) }
                 }
                 2.toByte() -> {
                     val scheduledEvent = be.duncanc.discordmodbot.EventsManager.Event(eventName)
                     try {
-                        scheduledEvent.eventDateTime = OffsetDateTime.parse(event.message.content, be.duncanc.discordmodbot.EventsManager.Companion.DATE_TIME_FORMATTER_PARSER).atZoneSameInstant(ZoneOffset.UTC).toOffsetDateTime()
+                        scheduledEvent.eventDateTime = OffsetDateTime.parse(event.message.contentDisplay, be.duncanc.discordmodbot.EventsManager.Companion.DATE_TIME_FORMATTER_PARSER).atZoneSameInstant(ZoneOffset.UTC).toOffsetDateTime()
                         events[event.guild.idLong]!!.add(scheduledEvent)
                         writeEventsToFile()
                         destroy()
@@ -209,7 +209,7 @@ open class EventsManager : CommandModule(be.duncanc.discordmodbot.EventsManager.
                     }
                 }
                 3.toByte() -> {
-                    val searchTerm = event.message.rawContent
+                    val searchTerm = event.message.contentRaw
                     val matches = events[event.guild.idLong]!!.filter { it.eventName == searchTerm }
                     if (matches.isEmpty()) {
                         super.channel.sendMessage("Could not find any events with that name.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
