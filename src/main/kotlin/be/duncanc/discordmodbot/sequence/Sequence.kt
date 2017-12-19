@@ -73,10 +73,12 @@ abstract class Sequence @JvmOverloads protected constructor(val user: User, val 
                         "To complete the sequence answer the questions or tasks give by the bot in " + (if (channel is TextChannel) channel.asMention else "Private chat") + " \n" +
                         "Any message you send in this channel will be used as input.\n" +
                         "\nA sequence automatically expires after not receiving a message for 5 minutes within this channel.\n" +
-                        "You can also kill a sequence by sending \"STOP\"").complete()
+                        "You can also kill a sequence by sending \"STOP\" (Case sensitive).").complete()
                 addMessageToCleaner(sequenceInformMessage)
             } catch (e: Exception) {
                 LOG.info("A sequence was terminated due to an exception during initialization", e)
+                destroy()
+                throw e
             }
         }
     }
