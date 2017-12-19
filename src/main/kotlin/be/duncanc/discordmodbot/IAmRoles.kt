@@ -326,7 +326,7 @@ class IAmRoles : CommandModule {
         }
     }
 
-    internal inner class RoleModificationSequence(user: User, channel: MessageChannel, private val remove: Boolean) : Sequence(user, channel, cleanAfterSequence = true, informUser = false) {
+    internal inner class RoleModificationSequence(user: User, channel: MessageChannel, private val remove: Boolean) : Sequence(user, channel, cleanAfterSequence = true, informUser = true) {
         private val iAmRolesCategories: ArrayList<IAmRolesCategory>
         private var roles: List<Long>? = null
         private var selectedCategory: Int = -1
