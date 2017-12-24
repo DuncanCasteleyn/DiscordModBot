@@ -70,7 +70,7 @@ abstract class Sequence @JvmOverloads protected constructor(val user: User, val 
         if (informUser) {
             try {
                 val sequenceInformMessage: Message = channel.sendMessage(user.asMention + " You are now in a sequence. The bot will ignore all further commands as you first need to complete the sequence.\n" +
-                        "To complete the sequence answer the questions or tasks give by the bot in " + (if (channel is TextChannel) channel.asMention else "Private chat") + " \n" +
+                        "To complete the sequence answer the questions or tasks given by the bot in " + (if (channel is TextChannel) channel.asMention else "Private chat") + " \n" +
                         "Any message you send in this channel will be used as input.\n" +
                         "\nA sequence automatically expires after not receiving a message for 5 minutes within this channel.\n" +
                         "You can also kill a sequence by sending \"STOP\" (Case sensitive).").complete()
