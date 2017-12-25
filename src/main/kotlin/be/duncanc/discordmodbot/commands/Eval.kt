@@ -60,7 +60,7 @@ class Eval : CommandModule(ALIASES, DESCRIPTION, ARGUMENTATION, false) {
                 "Packages.net.dv8tion.jda.core.managers," +
                 "Packages.net.dv8tion.jda.core.managers.impl," +
                 "Packages.net.dv8tion.jda.core.utils," +
-                "Packages.net.dunciboy.discord_bot);")
+                "Packages.be.duncanc.discordmodbot);")
 
     }
 
@@ -70,7 +70,8 @@ class Eval : CommandModule(ALIASES, DESCRIPTION, ARGUMENTATION, false) {
             return
         }
 
-        val messageBuilder: MessageBuilder = MessageBuilder()
+        val messageBuilder = MessageBuilder()
+
         try {
             engine.put("event", event)
             engine.put("message", event.message)
