@@ -59,7 +59,7 @@ dependencies {
     compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.21'
 }
 
-wrapper.gradleVersion = '4.4'
+wrapper.gradleVersion = '4.4.1'
 
 compileJava.options.compilerArgs << "-Xlint:deprecation"
 compileJava.options.encoding = "UTF-8"
