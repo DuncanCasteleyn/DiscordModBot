@@ -27,6 +27,7 @@ package be.duncanc.discordmodbot.commands;
 
 import be.duncanc.discordmodbot.GuildLogger;
 import be.duncanc.discordmodbot.JDALibHelper;
+import be.duncanc.discordmodbot.MuteRoles;
 import be.duncanc.discordmodbot.RunBots;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.MessageBuilder;
@@ -85,7 +86,7 @@ public class Mute extends CommandModule {
             if (!event.getMember().canInteract(toMute)) {
                 throw new PermissionException("You can't interact with this member");
             }
-            event.getGuild().getController().addRolesToMember(toMute, event.getGuild().getRoleById("221678882342830090")).reason(reason).queue(aVoid -> {
+            event.getGuild().getController().addRolesToMember(toMute, MuteRoles.INSTANCE.getMuteRole(event.getGuild())).reason(reason).queue(aVoid -> {
                 RunBots runBots = RunBots.Companion.getRunBot(event.getJDA());
                 if (runBots != null) {
                     Serializable serializableCaseResult = GuildLogger.Companion.getCaseNumberSerializable(event.getGuild().getIdLong());

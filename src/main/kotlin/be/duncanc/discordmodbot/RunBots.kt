@@ -72,7 +72,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: be.dunca
                         .setEventManager(be.duncanc.discordmodbot.ExecutorServiceEventManager("Fairy tail"))
                         .setToken(configObject.getString("FairyTail"))
                         .setBulkDeleteSplittingEnabled(false)
-                        .addEventListener(fairyTailGuildLogger, Help(), fairyTailQuitBot, fairyTailSettings, *generalCommands)
+                        .addEventListener(fairyTailGuildLogger, Help(), fairyTailQuitBot, fairyTailSettings, *generalCommands, MuteRoles)
 
 
                 //Re:Zero bot
@@ -91,7 +91,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: be.dunca
                         .setToken(configObject.getString("ReZero"))
                         .setEventManager(be.duncanc.discordmodbot.ExecutorServiceEventManager("Re:Zero"))
                         .setBulkDeleteSplittingEnabled(false)
-                        .addEventListener(reZeroGuildLogger, helpCommand, reZeroQuitBot, memberGate, Mute(), RemoveMute(), reZeroSettings, EventsManager(), *generalCommands, iAmRoles)
+                        .addEventListener(reZeroGuildLogger, helpCommand, reZeroQuitBot, memberGate, Mute(), RemoveMute(), reZeroSettings, EventsManager(), *generalCommands, iAmRoles, MuteRoles)
 
                 //TEMP EVENT BOT STARTS HERE
                 /*val qAndA = QAndA(
@@ -116,7 +116,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: be.dunca
                         .setEventManager(ExecutorServiceEventManager("Black clover"))
                         .setToken(configObject.getString("BlackClover"))
                         .setBulkDeleteSplittingEnabled(false)
-                        .addEventListener(blackCloverLogger, Help(), blackCloverQuitBot, blackCloverSettings, *generalCommands)
+                        .addEventListener(blackCloverLogger, Help(), blackCloverQuitBot, blackCloverSettings, *generalCommands, MuteRoles)
 
 
                 bots = arrayOf(RunBots(fairyTailJDABuilder.buildAsync(), fairyTailLogToChannel, fairyTailGuildLogger), RunBots(reZeroJDABuilder.buildAsync(), reZeroLogToChannel, reZeroGuildLogger), RunBots(blackCloverBuilder.buildAsync(), blackCloverLogToChannel, blackCloverLogger))
