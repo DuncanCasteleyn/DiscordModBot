@@ -31,6 +31,7 @@ import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.*
 import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import net.dv8tion.jda.core.events.role.RoleDeleteEvent
 import net.dv8tion.jda.core.exceptions.PermissionException
 import org.json.JSONObject
 import java.nio.file.Files
@@ -89,6 +90,16 @@ class IAmRoles : CommandModule {
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.jda.addEventListener(IAmRolesSequence(event.author, event.channel))
+    }
+
+    override fun onRoleDelete(event: RoleDeleteEvent) {
+        iAmRoles[event.guild.idLong]?.forEach { roleCategory ->
+            ArrayList(roleCategory.roles).forEach {
+                if(it == event.role.idLong) {
+                    roleCategory.removeRole(it)
+                }
+            }
+        }
     }
 
     inner class IAmRolesSequence internal constructor(user: User, channel: MessageChannel) : Sequence(user, channel) {
