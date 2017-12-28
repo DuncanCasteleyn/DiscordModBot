@@ -95,7 +95,7 @@ class IAmRoles : CommandModule {
     override fun onRoleDelete(event: RoleDeleteEvent) {
         iAmRoles[event.guild.idLong]?.forEach { roleCategory ->
             ArrayList(roleCategory.roles).forEach {
-                if(it == event.role.idLong) {
+                if (it == event.role.idLong) {
                     roleCategory.removeRole(it)
                 }
             }
