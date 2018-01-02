@@ -339,7 +339,8 @@ class IAmRoles : CommandModule {
 
     internal inner class RoleModificationSequence(user: User, channel: MessageChannel, private val remove: Boolean) : Sequence(user, channel, cleanAfterSequence = true, informUser = true) {
         private val iAmRolesCategories: ArrayList<IAmRolesCategory>
-        private var roles: List<Long>? = null
+        private var roles: ArrayList<Long>? = null
+        private var assignedRoles: ArrayList<Role>? = null
         private var selectedCategory: Int = -1
 
         init {
@@ -350,7 +351,7 @@ class IAmRoles : CommandModule {
             iAmRolesCategories = getCategoriesForGuild(channel.guild)
             val message = MessageBuilder()
             if (remove) {
-                message.append(user.asMention + " Please select from which category you'd like to remove all roles.")
+                message.append(user.asMention + " Please select from which category you'd like to remove roles.")
             } else {
                 message.append(user.asMention + " Please select from which category you'd like to assign (a) role(s).")
             }
@@ -364,50 +365,71 @@ class IAmRoles : CommandModule {
             when (roles) {
                 null -> {
                     selectedCategory = event.message.contentRaw.toInt()
-                    roles = iAmRolesCategories[selectedCategory].roles
+                    roles = ArrayList(iAmRolesCategories[selectedCategory].roles)
                     if (roles!!.isEmpty()) {
                         throw IllegalStateException("There are no roles in this category. Please contact a server admin.")
                     }
+                    assignedRoles = ArrayList(event.member.roles)
+                    assignedRoles!!.removeIf { assignedRole ->
+                        iAmRolesCategories[selectedCategory].roles.none { it == assignedRole.idLong }
+                    }
+                    roles!!.removeIf { roleId -> assignedRoles!!.any { it.idLong == roleId } }
+
+                    val message = MessageBuilder(user.asMention)
+                    message.append(" Please select which role(s) you'd like to ").append(if (remove) "remove" else "add").append(". For multiple roles put each number on a new line (shift enter).\n")
+                    val maxAssignableRoles = iAmRolesCategories[selectedCategory].allowedRoles - assignedRoles!!.size
+                    if (!remove) {
+                        message.append("You are allowed to select up to ").append(if (iAmRolesCategories[selectedCategory].allowedRoles > 0) maxAssignableRoles else "unlimited").append(" role(s) from this category")
+                    }
                     if (remove) {
-                        val member = event.guild.getMember(user)
-                        val rolesToRemove = member.roles.filter { roles!!.contains(it.idLong) }.toList()
-                        event.guild.controller.removeRolesFromMember(member, rolesToRemove).reason("User used !iamnot command").queue()
-                        channel.sendMessage(user.asMention + " The roles where removed.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
-                        super.destroy()
+                        if (assignedRoles!!.isEmpty()) {
+                            throw IllegalStateException("You have no roles to remove from this category.")
+                        }
+                        for (i in assignedRoles!!.indices) {
+                            message.append('\n').append(i).append(". ").append(assignedRoles!![i].name)
+                        }
                     } else {
-                        val message = MessageBuilder()
-                        message.append(user.asMention + " Please select which role(s) you'd like to assign. For multiple roles put each number on a new line (shift enter).\n" +
-                                "You are allowed to select up to " + (if (iAmRolesCategories[selectedCategory].allowedRoles > 0) iAmRolesCategories[selectedCategory].allowedRoles else "unlimited") + " role(s) from this category, all previously assigned roles from this category will be removed unless you select them.")
+                        if (roles!!.isEmpty()) {
+                            throw IllegalStateException("You already have all the roles from this category.")
+                        } else if (iAmRolesCategories[selectedCategory].allowedRoles > 0 && maxAssignableRoles <= 0) {
+                            throw IllegalStateException("You already have the max amount of roles you can assign for this category.")
+                        }
                         for (i in roles!!.indices) {
                             val role = (channel as TextChannel).guild.getRoleById(roles!![i])
                             message.append('\n').append(i).append(". ").append(role.name)
                         }
-                        message.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { super.channel.sendMessage(it).queue { super.addMessageToCleaner(it) } }
                     }
+                    message.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { super.channel.sendMessage(it).queue { super.addMessageToCleaner(it) } }
                 }
                 else -> {
-                    if (remove) {
-                        throw IllegalStateException()
-                    } else {
-                        val requestedRoles = event.message.contentRaw.split('\n')
-                        if (requestedRoles.isEmpty()) {
-                            throw IllegalArgumentException("You need to provide at least one role to assign.")
-                        }
-                        if (requestedRoles.size > iAmRolesCategories[selectedCategory].allowedRoles && iAmRolesCategories[selectedCategory].allowedRoles > 0) {
+                    val requestedRoles = event.message.contentRaw.split('\n')
+                    if (requestedRoles.isEmpty()) {
+                        throw IllegalArgumentException("You need to provide at least one role to " + if (remove) "remove" else "assign." + ".")
+                    }
+                    if (!remove) {
+                        if (requestedRoles.size > iAmRolesCategories[selectedCategory].allowedRoles - assignedRoles!!.size && iAmRolesCategories[selectedCategory].allowedRoles > 0) {
                             throw IllegalArgumentException("You listed more roles than allowed.")
                         }
-                        val rolesToAdd = ArrayList<Role>()
-                        requestedRoles.forEach {
-                            val id = roles!![it.toInt()]
-                            rolesToAdd.add(event.guild.getRoleById(id))
-                        }
-
-                        val member = event.guild.getMember(user)
-                        val rolesToRemove = member.roles.filter { roles!!.contains(it.idLong) && !rolesToAdd.contains(it) }.toList()
-                        event.guild.controller.modifyMemberRoles(member, rolesToAdd, rolesToRemove).reason("User used !iam command").queue()
-                        channel.sendMessage(user.asMention + " The requested role(s) where/was added.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
-                        super.destroy()
                     }
+                    val rRoles = ArrayList<Role>()
+                    requestedRoles.forEach {
+                        if (remove) {
+                            rRoles.add(assignedRoles!![it.toInt()])
+                        } else {
+                            val id = this.roles!![it.toInt()]
+                            rRoles.add(event.guild.getRoleById(id))
+                        }
+                    }
+
+                    val member = event.guild.getMember(user)
+                    val controller = event.guild.controller
+                    if (remove) {
+                        controller.removeRolesFromMember(member, rRoles).reason("User used !iam command").queue()
+                    } else {
+                        controller.addRolesToMember(member, rRoles).reason("User used !iam command").queue()
+                    }
+                    channel.sendMessage(user.asMention + " The requested role(s) where/was " + if (remove) "removed" else "added.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                    super.destroy()
                 }
             }
         }
