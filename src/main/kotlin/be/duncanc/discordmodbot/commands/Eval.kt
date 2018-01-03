@@ -66,7 +66,7 @@ class Eval : CommandModule(ALIASES, DESCRIPTION, ARGUMENTATION, false) {
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         if (event.author.idLong != 159419654148718593L) {
-            event.textChannel.sendMessage("Sorry, this command is for the bot owner only!").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+            event.channel.sendMessage("Sorry, this command is for the bot owner only!").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
             return
         }
 
@@ -82,7 +82,9 @@ class Eval : CommandModule(ALIASES, DESCRIPTION, ARGUMENTATION, false) {
                 engine.put("guild", event.guild)
                 engine.put("member", event.member)
             }
-            val future: Future<*> = scriptExecutorService.submit(Callable { engine.eval("(function() {with (imports) {$arguments}})();") })
+            val future: Future<*> = scriptExecutorService.submit(Callable { engine.eval("(function() {with (imports) {\n" +
+                    "$arguments\n" +
+                    "}})();") })
             val out: Any? = future.get(10, TimeUnit.SECONDS);
             if (!future.isDone) {
                 future.cancel(true);
