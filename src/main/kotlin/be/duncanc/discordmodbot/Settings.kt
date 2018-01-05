@@ -41,6 +41,7 @@ import java.nio.file.NoSuchFileException
 import java.nio.file.Paths
 import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.collections.HashSet
 
 /**
  * This allows for settings to be adjusted.
@@ -58,36 +59,44 @@ open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
         private const val DESCRIPTION = "Adjust server settings."
         private const val OWNER_ID = 159419654148718593L
         private val exceptedFromLogging = ArrayList<Long>()
-        private val guildSettings = ArrayList<GuildSettings>()
+        private val guildSettings = HashSet<GuildSettings>()
 
         init {
             loadGuildSettingFromFile()
         }
 
         private fun writeGuildSettingToFile() {
-            synchronized(this) {
-                val jsonObject = JSONObject()
-                jsonObject.put("exceptedFromLogging", exceptedFromLogging)
-                jsonObject.put("guildSettings", guildSettings)
-                Files.write(FILE_PATH, Collections.singletonList(jsonObject.toString()))
+            synchronized(FILE_PATH) {
+                synchronized(exceptedFromLogging) {
+                    synchronized(guildSettings) {
+                        val jsonObject = JSONObject()
+                        jsonObject.put("exceptedFromLogging", exceptedFromLogging)
+                        jsonObject.put("guildSettings", guildSettings)
+                        Files.write(FILE_PATH, Collections.singletonList(jsonObject.toString()))
+                    }
+                }
             }
         }
 
         private fun loadGuildSettingFromFile() {
-            synchronized(this) {
-                try {
-                    val stringBuilder = StringBuilder()
-                    Files.readAllLines(FILE_PATH).map { stringBuilder.append(it) }
-                    val jsonObject = JSONObject(stringBuilder.toString())
-                    jsonObject.getJSONArray("guildSettings").forEach {
-                        it as JSONObject
-                        guildSettings.add(GuildSettings(it.getLong("guildId"), it.getBoolean("logMessageDelete"), it.getBoolean("logMessageUpdate"), it.getBoolean("logMemberRemove"), it.getBoolean("logMemberBan"), it.getBoolean("logMemberAdd"), it.getBoolean("logMemberRemoveBan")))
-                    }
-                    jsonObject.getJSONArray("exceptedFromLogging").forEach {
-                        exceptedFromLogging.add(it.toString().toLong())
-                    }
-                } catch (ignored: NoSuchFileException) {
+            synchronized(FILE_PATH) {
+                synchronized(exceptedFromLogging) {
+                    synchronized(guildSettings) {
+                        try {
+                            val stringBuilder = StringBuilder()
+                            Files.readAllLines(FILE_PATH).map { stringBuilder.append(it) }
+                            val jsonObject = JSONObject(stringBuilder.toString())
+                            jsonObject.getJSONArray("guildSettings").forEach {
+                                it as JSONObject
+                                guildSettings.add(GuildSettings(it.getLong("guildId"), it.getBoolean("logMessageDelete"), it.getBoolean("logMessageUpdate"), it.getBoolean("logMemberRemove"), it.getBoolean("logMemberBan"), it.getBoolean("logMemberAdd"), it.getBoolean("logMemberRemoveBan")))
+                            }
+                            jsonObject.getJSONArray("exceptedFromLogging").forEach {
 
+                                exceptedFromLogging.add(it.toString().toLong())
+                            }
+                        } catch (ignored: NoSuchFileException) {
+                        }
+                    }
                 }
             }
         }
@@ -102,19 +111,19 @@ open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
     }
 
     fun isExceptedFromLogging(channelId: Long): Boolean {
-        synchronized(Companion) {
+        synchronized(exceptedFromLogging) {
             return exceptedFromLogging.contains(channelId)
         }
     }
 
-    fun getGuildSettings(): List<GuildSettings> {
-        synchronized(Companion) {
-            return Collections.unmodifiableList(guildSettings)
+    fun getGuildSettings(): Set<GuildSettings> {
+        synchronized(guildSettings) {
+            return Collections.unmodifiableSet(guildSettings)
         }
     }
 
     override fun onReady(event: ReadyEvent) {
-        synchronized(Companion) {
+        synchronized(guildSettings) {
             event.jda.guilds.forEach {
                 val settings = GuildSettings(it.idLong)
                 guildSettings.add(settings)
@@ -123,16 +132,17 @@ open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
                 }
             }
         }
+        writeGuildSettingToFile()
     }
 
     override fun onGuildJoin(event: GuildJoinEvent) {
-        synchronized(Companion) {
+        synchronized(guildSettings) {
             guildSettings.add(GuildSettings(event.guild.idLong))
         }
     }
 
     override fun onGuildLeave(event: GuildLeaveEvent) {
-        synchronized(Companion) {
+        synchronized(guildSettings) {
             guildSettings.removeIf { it.guildId == event.guild.idLong }
         }
     }
@@ -224,5 +234,18 @@ open class Settings : CommandModule(ALIAS, null, DESCRIPTION) {
         }
     }
 
-    class GuildSettings @JvmOverloads constructor(val guildId: Long, var logMessageDelete: Boolean = true, var logMessageUpdate: Boolean = true, var logMemberRemove: Boolean = true, var logMemberBan: Boolean = true, var logMemberAdd: Boolean = true, var logMemberRemoveBan: Boolean = true)
+    class GuildSettings @JvmOverloads constructor(val guildId: Long, var logMessageDelete: Boolean = true, var logMessageUpdate: Boolean = true, var logMemberRemove: Boolean = true, var logMemberBan: Boolean = true, var logMemberAdd: Boolean = true, var logMemberRemoveBan: Boolean = true) {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as GuildSettings
+
+            return guildId == other.guildId
+        }
+
+        override fun hashCode(): Int {
+            return guildId.hashCode()
+        }
+    }
 }
