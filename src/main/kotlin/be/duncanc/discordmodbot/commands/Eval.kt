@@ -82,9 +82,11 @@ class Eval : CommandModule(ALIASES, DESCRIPTION, ARGUMENTATION, false) {
                 engine.put("guild", event.guild)
                 engine.put("member", event.member)
             }
-            val future: Future<*> = scriptExecutorService.submit(Callable { engine.eval("(function() {with (imports) {\n" +
-                    "$arguments\n" +
-                    "}})();") })
+            val future: Future<*> = scriptExecutorService.submit(Callable {
+                engine.eval("(function() {with (imports) {\n" +
+                        "$arguments\n" +
+                        "}})();")
+            })
             val out: Any? = future.get(10, TimeUnit.SECONDS);
             if (!future.isDone) {
                 future.cancel(true);

@@ -406,10 +406,8 @@ class IAmRoles : CommandModule {
                     if (requestedRoles.isEmpty()) {
                         throw IllegalArgumentException("You need to provide at least one role to " + if (remove) "remove" else "assign." + ".")
                     }
-                    if (!remove) {
-                        if (requestedRoles.size > iAmRolesCategories[selectedCategory].allowedRoles - assignedRoles!!.size && iAmRolesCategories[selectedCategory].allowedRoles > 0) {
-                            throw IllegalArgumentException("You listed more roles than allowed.")
-                        }
+                    if (!remove && requestedRoles.size > iAmRolesCategories[selectedCategory].allowedRoles - assignedRoles!!.size && iAmRolesCategories[selectedCategory].allowedRoles > 0) {
+                        throw IllegalArgumentException("You listed more roles than allowed.")
                     }
                     val rRoles = ArrayList<Role>()
                     requestedRoles.forEach {
