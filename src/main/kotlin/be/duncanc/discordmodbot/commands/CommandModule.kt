@@ -27,6 +27,7 @@ package be.duncanc.discordmodbot.commands
 
 import be.duncanc.discordmodbot.sequence.Sequence
 import net.dv8tion.jda.core.MessageBuilder
+import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.ChannelType
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.exceptions.PermissionException
@@ -45,7 +46,7 @@ import java.util.concurrent.TimeUnit
  * @property cleanCommandMessage Allows you to enable or disable cleaning up commands.
  * @since 1.0.0
  */
-abstract class CommandModule @JvmOverloads protected constructor(internal val aliases: Array<String>, internal val argumentationSyntax: String?, internal val description: String?, private val cleanCommandMessage: Boolean = true) : ListenerAdapter() {
+abstract class CommandModule @JvmOverloads protected constructor(internal val aliases: Array<String>, internal val argumentationSyntax: String?, internal val description: String?, private val cleanCommandMessage: Boolean = true, vararg val requiredPermissions: Permission) : ListenerAdapter() {
     companion object {
         const val COMMAND_SIGN = '!'
         protected val LOG: Logger = LoggerFactory.getLogger(CommandModule::class.java)
@@ -53,7 +54,7 @@ abstract class CommandModule @JvmOverloads protected constructor(internal val al
 
     init {
         if (aliases.isEmpty()) {
-            throw IllegalArgumentException("aliases must contain at least one alias.")
+            throw IllegalArgumentException("Aliases must contain at least one alias.")
         }
     }
 
@@ -89,6 +90,13 @@ abstract class CommandModule @JvmOverloads protected constructor(internal val al
             }
             if (Arrays.stream(aliases).anyMatch { s -> s.equals(command, ignoreCase = true) }) {
                 try {
+                    if(requiredPermissions.isNotEmpty()) {
+                        if(event.isFromType(ChannelType.TEXT) && !event.member.permissions.containsAll(requiredPermissions.asList())) {
+                            throw PermissionException("You do not have sufficient permissions to use this command.\nYou need the following permissions: " + requiredPermissions.contentToString())
+                        } else if(!event.isFromType(ChannelType.TEXT)) {
+                            throw PermissionException("This command requires permissions, which means it has to be executed from a text channel on a guild/server.")
+                        }
+                    }
                     commandExec(event, command, arguments)
                     LOG.info("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " completed executing " + event.message.contentStripped + " command from user " + event.author.toString())
                 } catch (pe: PermissionException) {
