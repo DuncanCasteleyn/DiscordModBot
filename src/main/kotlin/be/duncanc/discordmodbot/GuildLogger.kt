@@ -26,29 +26,40 @@
 package be.duncanc.discordmodbot
 
 
+import be.duncanc.discordmodbot.commands.CommandModule
+import be.duncanc.discordmodbot.sequence.Sequence
 import net.dv8tion.jda.core.EmbedBuilder
+import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.audit.ActionType
 import net.dv8tion.jda.core.audit.AuditLogEntry
 import net.dv8tion.jda.core.audit.AuditLogOption
 import net.dv8tion.jda.core.entities.Guild
 import net.dv8tion.jda.core.entities.Member
+import net.dv8tion.jda.core.entities.MessageChannel
 import net.dv8tion.jda.core.entities.User
 import net.dv8tion.jda.core.entities.impl.GuildImpl
 import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.guild.GuildBanEvent
+import net.dv8tion.jda.core.events.guild.GuildJoinEvent
+import net.dv8tion.jda.core.events.guild.GuildLeaveEvent
 import net.dv8tion.jda.core.events.guild.GuildUnbanEvent
 import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent
 import net.dv8tion.jda.core.events.guild.member.GuildMemberLeaveEvent
 import net.dv8tion.jda.core.events.guild.member.GuildMemberNickChangeEvent
 import net.dv8tion.jda.core.events.message.MessageBulkDeleteEvent
+import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.events.message.guild.GuildMessageDeleteEvent
 import net.dv8tion.jda.core.events.message.guild.GuildMessageUpdateEvent
 import net.dv8tion.jda.core.events.user.UserNameUpdateEvent
 import net.dv8tion.jda.core.hooks.ListenerAdapter
+import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import java.awt.Color
 import java.io.IOException
 import java.io.Serializable
+import java.nio.file.Files
+import java.nio.file.NoSuchFileException
+import java.nio.file.Paths
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
@@ -69,7 +80,7 @@ import java.util.concurrent.TimeUnit
  * @author Duncan
  * @since 1.0
  */
-class GuildLogger internal constructor(private val logger: be.duncanc.discordmodbot.LogToChannel, private val settings: Settings) : ListenerAdapter() {
+class GuildLogger internal constructor(private val logger: be.duncanc.discordmodbot.LogToChannel, private val settings: LogSettings) : ListenerAdapter() {
 
     companion object {
         private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd-M-yyyy hh:mm a O")
@@ -498,5 +509,200 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
 
     enum class LogTypeAction {
         MODERATOR, USER
+    }
+
+    object LogSettings : CommandModule(arrayOf("LogSettings"), null, "Adjust server settings.") {
+
+        private val FILE_PATH = Paths.get("GuildSettings.json")
+        private const val OWNER_ID = 159419654148718593L
+        private val exceptedFromLogging = ArrayList<Long>()
+        private val guildSettings = HashSet<GuildSettings>()
+
+        init {
+            loadGuildSettingFromFile()
+        }
+
+        private fun writeGuildSettingToFile() {
+            synchronized(FILE_PATH) {
+                synchronized(exceptedFromLogging) {
+                    synchronized(guildSettings) {
+                        val jsonObject = JSONObject()
+                        jsonObject.put("exceptedFromLogging", exceptedFromLogging)
+                        jsonObject.put("guildSettings", guildSettings)
+                        Files.write(FILE_PATH, Collections.singletonList(jsonObject.toString()))
+                    }
+                }
+            }
+        }
+
+        private fun loadGuildSettingFromFile() {
+            synchronized(FILE_PATH) {
+                synchronized(exceptedFromLogging) {
+                    synchronized(guildSettings) {
+                        try {
+                            val stringBuilder = StringBuilder()
+                            Files.readAllLines(FILE_PATH).map { stringBuilder.append(it) }
+                            val jsonObject = JSONObject(stringBuilder.toString())
+                            jsonObject.getJSONArray("guildSettings").forEach {
+                                it as JSONObject
+                                guildSettings.add(GuildSettings(it.getLong("guildId"), it.getBoolean("logMessageDelete"), it.getBoolean("logMessageUpdate"), it.getBoolean("logMemberRemove"), it.getBoolean("logMemberBan"), it.getBoolean("logMemberAdd"), it.getBoolean("logMemberRemoveBan")))
+                            }
+                            jsonObject.getJSONArray("exceptedFromLogging").forEach {
+
+                                exceptedFromLogging.add(it.toString().toLong())
+                            }
+                        } catch (ignored: NoSuchFileException) {
+                        }
+                    }
+                }
+            }
+        }
+
+        init {
+            try {
+                loadGuildSettingFromFile()
+            } catch (e: NoSuchFileException) {
+                LoggerFactory.getLogger(CommandModule::class.java).warn("Loading config file failed", e)
+            }
+        }
+
+        fun isExceptedFromLogging(channelId: Long): Boolean {
+            synchronized(exceptedFromLogging) {
+                return exceptedFromLogging.contains(channelId)
+            }
+        }
+
+        fun getGuildSettings(): Set<GuildSettings> {
+            synchronized(guildSettings) {
+                return Collections.unmodifiableSet(guildSettings)
+            }
+        }
+
+        override fun onReady(event: ReadyEvent) {
+            synchronized(guildSettings) {
+                event.jda.guilds.forEach {
+                    val settings = GuildSettings(it.idLong)
+                    guildSettings.add(settings)
+                    if (it.idLong == 175856762677624832L) {
+                        settings.logMessageUpdate = false
+                    }
+                }
+            }
+            writeGuildSettingToFile()
+        }
+
+        override fun onGuildJoin(event: GuildJoinEvent) {
+            synchronized(guildSettings) {
+                guildSettings.add(GuildSettings(event.guild.idLong))
+            }
+        }
+
+        override fun onGuildLeave(event: GuildLeaveEvent) {
+            synchronized(guildSettings) {
+                guildSettings.removeIf { it.guildId == event.guild.idLong }
+            }
+        }
+
+        override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+            if (event.author.idLong == OWNER_ID) {
+                event.jda.addEventListener(SettingsSequence(event.author, event.channel))
+            } else {
+                event.channel.sendMessage("Sorry, only the owner can use this command right now.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+            }
+        }
+
+        class SettingsSequence(user: User, channel: MessageChannel) : Sequence(user, channel) {
+            private val eventManger: EventsManager? = try {
+                super.channel.jda.registeredListeners.filter { it is be.duncanc.discordmodbot.EventsManager }[0] as be.duncanc.discordmodbot.EventsManager
+            } catch (e: IndexOutOfBoundsException) {
+                null
+            }
+            private var sequenceNumber = 0.toByte()
+
+            init {
+                super.channel.sendMessage("What would you like to do? Respond with the number of the action you'd like to perform?\n\n" +
+                        "0. Add or remove this guild from the event manager\n" +
+                        "1. Modify log settings").queue { super.addMessageToCleaner(it) }
+            }
+
+            override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
+                val guildId = event.guild.idLong
+
+                when (sequenceNumber) {
+                    0.toByte() -> {
+                        when (event.message.contentRaw.toByte()) {
+                            0.toByte() -> {
+                                if (eventManger != null) {
+                                    val response: Array<String> = if (eventManger.events.containsKey(guildId)) {
+                                        arrayOf("already", "remove")
+                                    } else {
+                                        arrayOf("not", "add")
+                                    }
+                                    super.channel.sendMessageFormat("The guild is currently %s in the list to use the event manager, do you want to %s it? Respond with \"yes\" or \"no\".", response[0], response[1]).queue { addMessageToCleaner(it) }
+                                } else {
+                                    throw UnsupportedOperationException("This bot does not have an event manager")
+                                }
+                                sequenceNumber = 1
+                            }
+                            1.toByte() -> {
+                                val settingFields = GuildSettings::class.java.declaredFields.filter { it.type == Boolean::class.java }.map { it.name }
+                                val messageBuilder = MessageBuilder().append("Enter the number of the boolean you'd like to invert.\nIf you don't want to invert anything type \"STOP\" (case sensitive).\n\n")
+                                for (i in 0 until settingFields.size) {
+                                    messageBuilder.append(i)
+                                            .append(". ")
+                                            .append(settingFields[i])
+                                            .append(" = ")
+                                            .append(GuildSettings::class.java.getMethod("get" + settingFields[i].capitalize()).invoke(guildSettings.filter { it.guildId == event.guild.idLong }[0]))
+                                            .append('\n')
+                                }
+                                channel.sendMessage(messageBuilder.build()).queue { addMessageToCleaner(it) }
+                                sequenceNumber = 2
+                            }
+                        }
+                    }
+                    1.toByte() -> {
+                        when (event.message.contentRaw.toLowerCase()) {
+                            "yes" -> {
+                                if (eventManger!!.events.containsKey(guildId)) {
+                                    eventManger.events.remove(guildId)
+                                } else {
+                                    eventManger.events.put(guildId, ArrayList())
+                                }
+                                eventManger.cleanExpiredEvents()
+                                eventManger.writeEventsToFile()
+                                super.channel.sendMessage("Executed without problem.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                                super.destroy()
+                            }
+                            else -> {
+                                super.destroy()
+                            }
+                        }
+                    }
+                    2.toByte() -> {
+                        val settingField = GuildSettings::class.java.declaredFields.filter { it.type == Boolean::class.java }[event.message.contentRaw.toInt()].name.capitalize()
+                        GuildSettings::class.java.getMethod("set" + settingField, Boolean::class.java)
+                                .invoke(guildSettings.filter { it.guildId == event.guild.idLong }[0], !(GuildSettings::class.java.getMethod("get" + settingField).invoke(guildSettings.filter { it.guildId == event.guild.idLong }[0]) as Boolean))
+                        writeGuildSettingToFile()
+                        channel.sendMessage("Successfully inverted " + settingField.decapitalize() + ".").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                        destroy()
+                    }
+                }
+            }
+        }
+
+        class GuildSettings @JvmOverloads constructor(val guildId: Long, var logMessageDelete: Boolean = true, var logMessageUpdate: Boolean = true, var logMemberRemove: Boolean = true, var logMemberBan: Boolean = true, var logMemberAdd: Boolean = true, var logMemberRemoveBan: Boolean = true) {
+            override fun equals(other: Any?): Boolean {
+                if (this === other) return true
+                if (javaClass != other?.javaClass) return false
+
+                other as GuildSettings
+
+                return guildId == other.guildId
+            }
+
+            override fun hashCode(): Int {
+                return guildId.hashCode()
+            }
+        }
     }
 }
