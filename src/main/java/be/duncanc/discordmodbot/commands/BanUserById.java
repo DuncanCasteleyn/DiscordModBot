@@ -82,7 +82,7 @@ public class BanUserById extends Ban {
             event.getJDA().retrieveUserById(userId).queue(toBan ->
             {
                 Member toBanMemberCheck = event.getGuild().getMember(toBan);
-                if (toBan != null && !event.getMember().canInteract(toBanMemberCheck)) {
+                if (toBanMemberCheck != null && !event.getMember().canInteract(toBanMemberCheck)) {
                     if (privateChannel != null) {
                         privateChannel.sendMessage("You can't ban a user that you can't interact with.").queue();
                     }
