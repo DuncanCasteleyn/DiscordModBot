@@ -80,7 +80,7 @@ import java.util.concurrent.TimeUnit
  * @author Duncan
  * @since 1.0
  */
-class GuildLogger internal constructor(private val logger: be.duncanc.discordmodbot.LogToChannel, private val settings: LogSettings) : ListenerAdapter() {
+class GuildLogger internal constructor(private val logger: be.duncanc.discordmodbot.LogToChannel) : ListenerAdapter() {
 
     companion object {
         private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd-M-yyyy hh:mm a O")
@@ -127,13 +127,13 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
     }
 
     override fun onGuildMessageUpdate(event: GuildMessageUpdateEvent) {
-        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMessageUpdate) {
+        if (!LogSettings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMessageUpdate) {
             return
         }
 
         val guild = event.guild
         val channel = event.channel
-        if (settings.isExceptedFromLogging(channel.idLong)) {
+        if (LogSettings.isExceptedFromLogging(channel.idLong)) {
             return
         }
 
@@ -175,12 +175,12 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
      * @param event The event that trigger this method
      */
     override fun onGuildMessageDelete(event: GuildMessageDeleteEvent) {
-        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMessageDelete) {
+        if (!LogSettings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMessageDelete) {
             return
         }
         val guild = event.guild
         val channel = event.channel
-        if (settings.isExceptedFromLogging(channel.idLong)) {
+        if (LogSettings.isExceptedFromLogging(channel.idLong)) {
             return
         }
 
@@ -265,11 +265,11 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
     }
 
     override fun onMessageBulkDelete(event: MessageBulkDeleteEvent) {
-        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMessageDelete) {
+        if (!LogSettings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMessageDelete) {
             return
         }
         val channel = event.channel
-        if (settings.isExceptedFromLogging(channel.idLong)) {
+        if (LogSettings.isExceptedFromLogging(channel.idLong)) {
             return
         }
 
@@ -323,7 +323,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
     }
 
     override fun onGuildMemberLeave(event: GuildMemberLeaveEvent) {
-        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMemberRemove) {
+        if (!LogSettings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMemberRemove) {
             return
         }
 
@@ -378,7 +378,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
     }
 
     override fun onGuildBan(event: GuildBanEvent) {
-        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMemberBan) {
+        if (!LogSettings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMemberBan) {
             return
         }
 
@@ -419,7 +419,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
     }
 
     override fun onGuildMemberJoin(event: GuildMemberJoinEvent) {
-        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMemberAdd) {
+        if (!LogSettings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMemberAdd) {
             return
         }
 
@@ -433,7 +433,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
 
 
     override fun onGuildUnban(event: GuildUnbanEvent) {
-        if (!settings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMemberRemoveBan) {
+        if (!LogSettings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMemberRemoveBan) {
             return
         }
 
