@@ -47,14 +47,13 @@ class TestBot private constructor(bot: JDA, logToChannel: be.duncanc.discordmodb
                 val configObject = loadConfig()
 
                 val devLogToChannel = be.duncanc.discordmodbot.LogToChannel()
-                val devSettings = Settings()
-                val devGuildLogger = GuildLogger(devLogToChannel, devSettings)
+                val devGuildLogger = GuildLogger(devLogToChannel)
 
                 val devJDABuilder = JDABuilder(AccountType.BOT)
                         .setBulkDeleteSplittingEnabled(false)
                         .setCorePoolSize(RunBots.Companion.BOT_THREAD_POOL_SIZE)
                         .setToken(configObject.getString("Dev"))
-                        .addEventListener(devGuildLogger, Help(), be.duncanc.discordmodbot.commands.QuitBot(), devSettings, be.duncanc.discordmodbot.EventsManager(), IAmRoles.INSTANCE)
+                        .addEventListener(devGuildLogger, Help(), be.duncanc.discordmodbot.commands.QuitBot(), GuildLogger.LogSettings, be.duncanc.discordmodbot.EventsManager(), IAmRoles.INSTANCE)
                 for (generalCommand in RunBots.Companion.generalCommands) {
                     devJDABuilder.addEventListener(generalCommand)
                 }

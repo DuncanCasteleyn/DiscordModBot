@@ -30,6 +30,7 @@ import be.duncanc.discordmodbot.commands.CommandModule
 import be.duncanc.discordmodbot.sequence.Sequence
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.MessageBuilder
+import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.audit.ActionType
 import net.dv8tion.jda.core.audit.AuditLogEntry
 import net.dv8tion.jda.core.audit.AuditLogOption
@@ -508,7 +509,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
         MODERATOR, USER
     }
 
-    object LogSettings : CommandModule(arrayOf("LogSettings"), null, "Adjust server settings.") {
+    object LogSettings : CommandModule(arrayOf("LogSettings"), null, "Adjust server settings.", requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)) {
 
         private val FILE_PATH = Paths.get("GuildSettings.json")
         private const val OWNER_ID = 159419654148718593L
@@ -601,11 +602,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
         }
 
         override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-            if (event.author.idLong == OWNER_ID) {
                 event.jda.addEventListener(SettingsSequence(event.author, event.channel))
-            } else {
-                event.channel.sendMessage("Sorry, only the owner can use this command right now.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
-            }
         }
 
         class SettingsSequence(user: User, channel: MessageChannel) : Sequence(user, channel) {
