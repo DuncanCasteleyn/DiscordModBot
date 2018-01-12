@@ -184,14 +184,14 @@ open class EventsManager : CommandModule(be.duncanc.discordmodbot.EventsManager.
                 }
                 1.toByte() -> {
                     sequenceNumber = 2
-                    try {
-                        events[event.guild.idLong]!!.forEach {
-                            if (it.eventName == event.message.contentRaw) {
-                                throw IllegalArgumentException("An event with this name already exists, please try again and chose another name.")
-                            }
+                    val guildId = event.guild.idLong
+                    if (!events.containsKey(guildId)) {
+                        events.put(event.guild.idLong, java.util.ArrayList())
+                    }
+                    events[event.guild.idLong]!!.forEach {
+                        if (it.eventName == event.message.contentRaw) {
+                            throw IllegalArgumentException("An event with this name already exists, please try again and chose another name.")
                         }
-                    } catch (npe: NullPointerException) {
-                        throw UnsupportedOperationException("This guild has not been configured to use the event manager.", npe)
                     }
                     eventName = event.message.contentRaw
                     event.channel.sendMessage("Please enter the date and time of the event. Example: \"12-08-2018 12:00 +02\"").queue { addMessageToCleaner(it) }

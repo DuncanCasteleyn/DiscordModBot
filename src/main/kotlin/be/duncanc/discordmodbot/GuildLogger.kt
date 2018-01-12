@@ -33,10 +33,7 @@ import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.audit.ActionType
 import net.dv8tion.jda.core.audit.AuditLogEntry
 import net.dv8tion.jda.core.audit.AuditLogOption
-import net.dv8tion.jda.core.entities.Guild
-import net.dv8tion.jda.core.entities.Member
-import net.dv8tion.jda.core.entities.MessageChannel
-import net.dv8tion.jda.core.entities.User
+import net.dv8tion.jda.core.entities.*
 import net.dv8tion.jda.core.entities.impl.GuildImpl
 import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.guild.GuildBanEvent
@@ -612,81 +609,27 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
         }
 
         class SettingsSequence(user: User, channel: MessageChannel) : Sequence(user, channel) {
-            private val eventManger: EventsManager? = try {
-                super.channel.jda.registeredListeners.filter { it is be.duncanc.discordmodbot.EventsManager }[0] as be.duncanc.discordmodbot.EventsManager
-            } catch (e: IndexOutOfBoundsException) {
-                null
-            }
-            private var sequenceNumber = 0.toByte()
-
             init {
-                super.channel.sendMessage("What would you like to do? Respond with the number of the action you'd like to perform?\n\n" +
-                        "0. Add or remove this guild from the event manager\n" +
-                        "1. Modify log settings").queue { super.addMessageToCleaner(it) }
+                val settingFields = GuildSettings::class.java.declaredFields.filter { it.type == Boolean::class.java }.map { it.name }
+                val messageBuilder = MessageBuilder().append("Enter the number of the boolean you'd like to invert.\nIf you don't want to invert anything type \"STOP\" (case sensitive).\n\n")
+                for (i in 0 until settingFields.size) {
+                    messageBuilder.append(i)
+                            .append(". ")
+                            .append(settingFields[i])
+                            .append(" = ")
+                            .append(GuildSettings::class.java.getMethod("get" + settingFields[i].capitalize()).invoke(guildSettings.filter { it.guildId == (channel as TextChannel).guild.idLong }[0]))
+                            .append('\n')
+                }
+                channel.sendMessage(messageBuilder.build()).queue { addMessageToCleaner(it) }
             }
 
             override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
-                val guildId = event.guild.idLong
-
-                when (sequenceNumber) {
-                    0.toByte() -> {
-                        when (event.message.contentRaw.toByte()) {
-                            0.toByte() -> {
-                                if (eventManger != null) {
-                                    val response: Array<String> = if (eventManger.events.containsKey(guildId)) {
-                                        arrayOf("already", "remove")
-                                    } else {
-                                        arrayOf("not", "add")
-                                    }
-                                    super.channel.sendMessageFormat("The guild is currently %s in the list to use the event manager, do you want to %s it? Respond with \"yes\" or \"no\".", response[0], response[1]).queue { addMessageToCleaner(it) }
-                                } else {
-                                    throw UnsupportedOperationException("This bot does not have an event manager")
-                                }
-                                sequenceNumber = 1
-                            }
-                            1.toByte() -> {
-                                val settingFields = GuildSettings::class.java.declaredFields.filter { it.type == Boolean::class.java }.map { it.name }
-                                val messageBuilder = MessageBuilder().append("Enter the number of the boolean you'd like to invert.\nIf you don't want to invert anything type \"STOP\" (case sensitive).\n\n")
-                                for (i in 0 until settingFields.size) {
-                                    messageBuilder.append(i)
-                                            .append(". ")
-                                            .append(settingFields[i])
-                                            .append(" = ")
-                                            .append(GuildSettings::class.java.getMethod("get" + settingFields[i].capitalize()).invoke(guildSettings.filter { it.guildId == event.guild.idLong }[0]))
-                                            .append('\n')
-                                }
-                                channel.sendMessage(messageBuilder.build()).queue { addMessageToCleaner(it) }
-                                sequenceNumber = 2
-                            }
-                        }
-                    }
-                    1.toByte() -> {
-                        when (event.message.contentRaw.toLowerCase()) {
-                            "yes" -> {
-                                if (eventManger!!.events.containsKey(guildId)) {
-                                    eventManger.events.remove(guildId)
-                                } else {
-                                    eventManger.events.put(guildId, ArrayList())
-                                }
-                                eventManger.cleanExpiredEvents()
-                                eventManger.writeEventsToFile()
-                                super.channel.sendMessage("Executed without problem.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
-                                super.destroy()
-                            }
-                            else -> {
-                                super.destroy()
-                            }
-                        }
-                    }
-                    2.toByte() -> {
-                        val settingField = GuildSettings::class.java.declaredFields.filter { it.type == Boolean::class.java }[event.message.contentRaw.toInt()].name.capitalize()
-                        GuildSettings::class.java.getMethod("set" + settingField, Boolean::class.java)
-                                .invoke(guildSettings.filter { it.guildId == event.guild.idLong }[0], !(GuildSettings::class.java.getMethod("get" + settingField).invoke(guildSettings.filter { it.guildId == event.guild.idLong }[0]) as Boolean))
-                        writeGuildSettingToFile()
-                        channel.sendMessage("Successfully inverted " + settingField.decapitalize() + ".").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
-                        destroy()
-                    }
-                }
+                val settingField = GuildSettings::class.java.declaredFields.filter { it.type == Boolean::class.java }[event.message.contentRaw.toInt()].name.capitalize()
+                GuildSettings::class.java.getMethod("set" + settingField, Boolean::class.java)
+                        .invoke(guildSettings.filter { it.guildId == event.guild.idLong }[0], !(GuildSettings::class.java.getMethod("get" + settingField).invoke(guildSettings.filter { it.guildId == event.guild.idLong }[0]) as Boolean))
+                writeGuildSettingToFile()
+                channel.sendMessage("Successfully inverted " + settingField.decapitalize() + ".").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                destroy()
             }
         }
 
