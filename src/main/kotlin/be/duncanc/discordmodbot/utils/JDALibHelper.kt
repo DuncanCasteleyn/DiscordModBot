@@ -23,7 +23,7 @@
  *
  */
 
-package be.duncanc.discordmodbot
+package be.duncanc.discordmodbot.utils
 
 import net.dv8tion.jda.core.entities.Member
 import net.dv8tion.jda.core.entities.Message

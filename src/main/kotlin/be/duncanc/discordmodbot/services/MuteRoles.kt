@@ -1,4 +1,4 @@
-package be.duncanc.discordmodbot
+package be.duncanc.discordmodbot.services
 
 import be.duncanc.discordmodbot.commands.CommandModule
 import net.dv8tion.jda.core.Permission

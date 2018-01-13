@@ -25,7 +25,7 @@
 
 package be.duncanc.discordmodbot.commands;
 
-import be.duncanc.discordmodbot.JDALibHelper;
+import be.duncanc.discordmodbot.utils.JDALibHelper;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.entities.ChannelType;
 import net.dv8tion.jda.core.entities.Member;

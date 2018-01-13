@@ -23,7 +23,7 @@
  *
  */
 
-package be.duncanc.discordmodbot;
+package be.duncanc.discordmodbot.services;
 
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.JDA;
@@ -59,7 +59,7 @@ public class LogToChannel {
     /**
      * Find the the logging channels.
      */
-    LogToChannel() {
+    public LogToChannel() {
         logChannels = new ArrayList<>();
         userLogChannels = new ArrayList<>();
     }

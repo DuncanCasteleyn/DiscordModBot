@@ -23,7 +23,7 @@
  *
  */
 
-package be.duncanc.discordmodbot;
+package be.duncanc.discordmodbot.services;
 
 import org.json.JSONArray;
 import org.json.JSONObject;

@@ -26,6 +26,7 @@
 package be.duncanc.discordmodbot
 
 import be.duncanc.discordmodbot.commands.Help
+import be.duncanc.discordmodbot.services.*
 import net.dv8tion.jda.core.AccountType
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.JDABuilder
@@ -34,7 +35,7 @@ import org.slf4j.LoggerFactory
 /**
  * This main class starts the bot
  */
-class TestBot private constructor(bot: JDA, logToChannel: be.duncanc.discordmodbot.LogToChannel, logger: GuildLogger) : RunBots(bot, logToChannel, logger) {
+class TestBot private constructor(bot: JDA, logToChannel: LogToChannel, logger: GuildLogger) : RunBots(bot, logToChannel, logger) {
     companion object {
 
         private val LOG = LoggerFactory.getLogger(TestBot::class.java)
@@ -46,14 +47,14 @@ class TestBot private constructor(bot: JDA, logToChannel: be.duncanc.discordmodb
             try {
                 val configObject = loadConfig()
 
-                val devLogToChannel = be.duncanc.discordmodbot.LogToChannel()
+                val devLogToChannel = LogToChannel()
                 val devGuildLogger = GuildLogger(devLogToChannel)
 
                 val devJDABuilder = JDABuilder(AccountType.BOT)
                         .setBulkDeleteSplittingEnabled(false)
                         .setCorePoolSize(RunBots.Companion.BOT_THREAD_POOL_SIZE)
                         .setToken(configObject.getString("Dev"))
-                        .addEventListener(devGuildLogger, Help(), be.duncanc.discordmodbot.commands.QuitBot(), GuildLogger.LogSettings, be.duncanc.discordmodbot.EventsManager(), IAmRoles.INSTANCE)
+                        .addEventListener(devGuildLogger, Help(), be.duncanc.discordmodbot.commands.QuitBot(), GuildLogger.LogSettings, EventsManager(), IAmRoles.INSTANCE)
                 for (generalCommand in RunBots.Companion.generalCommands) {
                     devJDABuilder.addEventListener(generalCommand)
                 }
@@ -62,7 +63,7 @@ class TestBot private constructor(bot: JDA, logToChannel: be.duncanc.discordmodb
 
                 RunBots.Companion.bots = arrayOf(TestBot(devJDA, devLogToChannel, devGuildLogger))
 
-                be.duncanc.discordmodbot.MessageHistory.registerMessageHistory(devJDA)
+                MessageHistory.registerMessageHistory(devJDA)
             } catch (e: Exception) {
                 LOG.error("An error occurred while starting the test bot", e)
             }

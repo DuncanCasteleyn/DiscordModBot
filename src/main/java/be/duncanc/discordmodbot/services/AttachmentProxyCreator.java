@@ -23,8 +23,9 @@
  *
  */
 
-package be.duncanc.discordmodbot;
+package be.duncanc.discordmodbot.services;
 
+import be.duncanc.discordmodbot.utils.JDALibHelper;
 import net.dv8tion.jda.core.MessageBuilder;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.impl.JDAImpl;

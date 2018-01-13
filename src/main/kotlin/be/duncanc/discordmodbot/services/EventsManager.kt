@@ -23,11 +23,11 @@
  *
  */
 
-package be.duncanc.discordmodbot
+package be.duncanc.discordmodbot.services
 
 import be.duncanc.discordmodbot.commands.CommandModule
 import be.duncanc.discordmodbot.commands.Help
-import be.duncanc.discordmodbot.sequence.Sequence
+import be.duncanc.discordmodbot.sequences.Sequence
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.MessageChannel
@@ -48,8 +48,8 @@ import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
-open class EventsManager : CommandModule(be.duncanc.discordmodbot.EventsManager.Companion.EVENTS_LIST_ALIASES, null, be.duncanc.discordmodbot.EventsManager.Companion.EVENTS_LIST_DESCRIPTION) {
-    lateinit var events: HashMap<Long, ArrayList<be.duncanc.discordmodbot.EventsManager.Event>>
+open class EventsManager : CommandModule(EVENTS_LIST_ALIASES, null, EVENTS_LIST_DESCRIPTION) {
+    lateinit var events: HashMap<Long, ArrayList<Event>>
 
     companion object {
         const private val EVENTS_LIST_DESCRIPTION = "Shows a list with currently planned events."
@@ -57,7 +57,7 @@ open class EventsManager : CommandModule(be.duncanc.discordmodbot.EventsManager.
         private val EVENTS_LIST_ALIASES = arrayOf("EventsList")
         private val EVENT_MANAGER_ALIASES = arrayOf("EventManager", "ManageEvents")
         private val FILE_PATH = Paths.get("Events.json")
-        private val LOG = LoggerFactory.getLogger(be.duncanc.discordmodbot.EventsManager::class.java)
+        private val LOG = LoggerFactory.getLogger(EventsManager::class.java)
         private val DATE_TIME_FORMATTER_PARSER = DateTimeFormatter.ofPattern("d-M-yyyy H:mm X", Locale.ENGLISH)
         private val DATE_TIME_FORMATTER_LIST = DateTimeFormatter.ofPattern("E dd-MM-yyyy HH:mm", Locale.ENGLISH)
     }
@@ -74,7 +74,7 @@ open class EventsManager : CommandModule(be.duncanc.discordmodbot.EventsManager.
             val messageBuilder = MessageBuilder()
             val events = events[event.guild.idLong]
             cleanExpiredEvents()
-            messageBuilder.append("Current UTC time is ").append(OffsetDateTime.now().atZoneSameInstant(ZoneOffset.UTC).format(be.duncanc.discordmodbot.EventsManager.Companion.DATE_TIME_FORMATTER_LIST)).append("\n\nEvents list (all times are UTC):\n\n")
+            messageBuilder.append("Current UTC time is ").append(OffsetDateTime.now().atZoneSameInstant(ZoneOffset.UTC).format(DATE_TIME_FORMATTER_LIST)).append("\n\nEvents list (all times are UTC):\n\n")
             events!!.map { messageBuilder.append("``").append(it.toString()).append("``\n") }
             messageBuilder.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { event.channel.sendMessage(it).queue { it.delete().queueAfter(2, TimeUnit.MINUTES) } }
         } catch (npe: NullPointerException) {
@@ -85,23 +85,23 @@ open class EventsManager : CommandModule(be.duncanc.discordmodbot.EventsManager.
     fun writeEventsToFile() {
         val json = JSONObject()
         events.map { json.put(it.key.toString(), it.value) }
-        Files.write(be.duncanc.discordmodbot.EventsManager.Companion.FILE_PATH, Collections.singletonList(json.toString()))
+        Files.write(FILE_PATH, Collections.singletonList(json.toString()))
     }
 
     fun readEventsFromFile() {
         try {
             val stringBuilder = StringBuilder()
-            Files.readAllLines(be.duncanc.discordmodbot.EventsManager.Companion.FILE_PATH).map { stringBuilder.append(it) }
+            Files.readAllLines(FILE_PATH).map { stringBuilder.append(it) }
             val json = JSONObject(stringBuilder.toString())
             events = HashMap()
             json.toMap().forEach {
                 val value = it.value
-                val arrayList = ArrayList<be.duncanc.discordmodbot.EventsManager.Event>()
+                val arrayList = ArrayList<Event>()
                 try {
                     if (value is ArrayList<*>) {
                         value.forEach {
                             if (it is HashMap<*, *>) {
-                                val event = be.duncanc.discordmodbot.EventsManager.Event(it["eventName"] as String)
+                                val event = Event(it["eventName"] as String)
                                 event.eventDateTime = OffsetDateTime.parse(it["eventDateTime"] as String)
                                 arrayList.add(event)
                             } else {
@@ -112,7 +112,7 @@ open class EventsManager : CommandModule(be.duncanc.discordmodbot.EventsManager.
                         throw IllegalStateException("Unexpected type " + it.javaClass.typeName + " after mapping JSON.")
                     }
                 } catch (ise: IllegalStateException) {
-                    EventsManager.Companion.LOG.error("Reading config failed", ise)
+                    LOG.error("Reading config failed", ise)
                 }
                 events.put(it.key.toLong(), arrayList)
             }
@@ -132,14 +132,14 @@ open class EventsManager : CommandModule(be.duncanc.discordmodbot.EventsManager.
         lateinit var eventDateTime: OffsetDateTime
 
         override fun toString(): String {
-            val dateTimeFormatted = eventDateTime.format(be.duncanc.discordmodbot.EventsManager.Companion.DATE_TIME_FORMATTER_LIST)
+            val dateTimeFormatted = eventDateTime.format(DATE_TIME_FORMATTER_LIST)
             return String.format("%-25s%s", eventName, dateTimeFormatted)
         }
 
 
     }
 
-    inner class EventManagerCommand : CommandModule(be.duncanc.discordmodbot.EventsManager.Companion.EVENT_MANAGER_ALIASES, null, be.duncanc.discordmodbot.EventsManager.Companion.EVENT_MANAGER_DESCRIPTION) {
+    inner class EventManagerCommand : CommandModule(EVENT_MANAGER_ALIASES, null, EVENT_MANAGER_DESCRIPTION) {
 
         override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
             if (event.member.hasPermission(Permission.MANAGE_ROLES)) {
@@ -197,9 +197,9 @@ open class EventsManager : CommandModule(be.duncanc.discordmodbot.EventsManager.
                     event.channel.sendMessage("Please enter the date and time of the event. Example: \"12-08-2018 12:00 +02\"").queue { addMessageToCleaner(it) }
                 }
                 2.toByte() -> {
-                    val scheduledEvent = be.duncanc.discordmodbot.EventsManager.Event(eventName)
+                    val scheduledEvent = Event(eventName)
                     try {
-                        scheduledEvent.eventDateTime = OffsetDateTime.parse(event.message.contentDisplay, be.duncanc.discordmodbot.EventsManager.Companion.DATE_TIME_FORMATTER_PARSER).atZoneSameInstant(ZoneOffset.UTC).toOffsetDateTime()
+                        scheduledEvent.eventDateTime = OffsetDateTime.parse(event.message.contentDisplay, DATE_TIME_FORMATTER_PARSER).atZoneSameInstant(ZoneOffset.UTC).toOffsetDateTime()
                         events[event.guild.idLong]!!.add(scheduledEvent)
                         writeEventsToFile()
                         destroy()

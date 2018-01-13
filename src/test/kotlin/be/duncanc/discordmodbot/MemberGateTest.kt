@@ -25,6 +25,7 @@
 
 package be.duncanc.discordmodbot
 
+import be.duncanc.discordmodbot.services.MemberGate
 import org.junit.jupiter.api.Test
 
 /**

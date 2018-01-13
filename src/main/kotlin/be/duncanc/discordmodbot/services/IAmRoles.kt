@@ -22,10 +22,10 @@
  * SOFTWARE.
  */
 
-package be.duncanc.discordmodbot
+package be.duncanc.discordmodbot.services
 
 import be.duncanc.discordmodbot.commands.CommandModule
-import be.duncanc.discordmodbot.sequence.Sequence
+import be.duncanc.discordmodbot.sequences.Sequence
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.*
@@ -53,11 +53,11 @@ class IAmRoles : CommandModule {
 
         val FILE_PATH: Path = Paths.get("IAmRoles.json")
 
-        val INSTANCE: IAmRoles = if (IAmRoles.FILE_PATH.toFile().exists()) {
+        val INSTANCE: IAmRoles = if (FILE_PATH.toFile().exists()) {
             try {
                 val stringBuilder = StringBuilder()
-                synchronized(IAmRoles.FILE_PATH) {
-                    Files.readAllLines(IAmRoles.FILE_PATH).forEach { stringBuilder.append(it.toString()) }
+                synchronized(FILE_PATH) {
+                    Files.readAllLines(FILE_PATH).forEach { stringBuilder.append(it.toString()) }
                 }
                 IAmRoles(JSONObject(stringBuilder.toString()))
             } catch (ise: IllegalStateException) {

@@ -26,6 +26,8 @@
 package be.duncanc.discordmodbot
 
 import be.duncanc.discordmodbot.commands.*
+import be.duncanc.discordmodbot.services.*
+import be.duncanc.discordmodbot.utils.ExecutorServiceEventManager
 import net.dv8tion.jda.core.AccountType
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.JDABuilder
@@ -40,7 +42,7 @@ import java.nio.file.Paths
  *
  * @since 1.0.0
  */
-open class RunBots internal constructor(val bot: JDA, val logToChannel: be.duncanc.discordmodbot.LogToChannel, val logger: GuildLogger) {
+open class RunBots internal constructor(val bot: JDA, val logToChannel: LogToChannel, val logger: GuildLogger) {
     companion object {
 
         internal val generalCommands: Array<CommandModule>
@@ -62,13 +64,13 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: be.dunca
                 be.duncanc.discordmodbot.utils.GoogleSearch.setup(configObject.getString("GoogleApi"))
 
                 //Fairy tail bot
-                val fairyTailLogToChannel = be.duncanc.discordmodbot.LogToChannel()
+                val fairyTailLogToChannel = LogToChannel()
                 val fairyTailGuildLogger = GuildLogger(fairyTailLogToChannel)
                 val fairyTailQuitBot = be.duncanc.discordmodbot.commands.QuitBot()
 
                 val fairyTailJDABuilder = JDABuilder(AccountType.BOT)
                         .setCorePoolSize(BOT_THREAD_POOL_SIZE)
-                        .setEventManager(be.duncanc.discordmodbot.ExecutorServiceEventManager("Fairy tail"))
+                        .setEventManager(ExecutorServiceEventManager("Fairy tail"))
                         .setToken(configObject.getString("FairyTail"))
                         .setBulkDeleteSplittingEnabled(false)
                         .addEventListener(fairyTailGuildLogger, Help(), fairyTailQuitBot, GuildLogger.LogSettings, *generalCommands, MuteRoles)
@@ -87,7 +89,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: be.dunca
                 val reZeroJDABuilder = JDABuilder(AccountType.BOT)
                         .setCorePoolSize(BOT_THREAD_POOL_SIZE)
                         .setToken(configObject.getString("ReZero"))
-                        .setEventManager(be.duncanc.discordmodbot.ExecutorServiceEventManager("Re:Zero"))
+                        .setEventManager(ExecutorServiceEventManager("Re:Zero"))
                         .setBulkDeleteSplittingEnabled(false)
                         .addEventListener(reZeroGuildLogger, helpCommand, reZeroQuitBot, memberGate, Mute(), RemoveMute(), GuildLogger.LogSettings, EventsManager(), *generalCommands, iAmRoles, MuteRoles)
 
@@ -104,7 +106,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: be.dunca
                 //TEMP EVENT BOT ENDS HERE
 
                 //black clover bot
-                val blackCloverLogToChannel = be.duncanc.discordmodbot.LogToChannel()
+                val blackCloverLogToChannel = LogToChannel()
                 val blackCloverLogger = GuildLogger(blackCloverLogToChannel)
                 val blackCloverQuitBot = QuitBot()
 
@@ -119,7 +121,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: be.dunca
                 bots = arrayOf(RunBots(fairyTailJDABuilder.buildAsync(), fairyTailLogToChannel, fairyTailGuildLogger), RunBots(reZeroJDABuilder.buildAsync(), reZeroLogToChannel, reZeroGuildLogger), RunBots(blackCloverBuilder.buildAsync(), blackCloverLogToChannel, blackCloverLogger))
 
                 for (bot in bots!!) {
-                    be.duncanc.discordmodbot.MessageHistory.registerMessageHistory(bot.bot)
+                    MessageHistory.registerMessageHistory(bot.bot)
                 }
             } catch (e: Exception) {
                 LOG.error("Exception while booting the bots", e)

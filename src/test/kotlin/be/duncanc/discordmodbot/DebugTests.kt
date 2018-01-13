@@ -25,6 +25,8 @@
 
 package be.duncanc.discordmodbot
 
+import be.duncanc.discordmodbot.services.GuildLogger
+import be.duncanc.discordmodbot.services.LogToChannel
 import net.dv8tion.jda.core.AccountType
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.JDABuilder
@@ -39,7 +41,7 @@ import javax.security.auth.login.LoginException
  *
  * Created by Duncan on 1/06/2017.
  */
-class DebugTests internal constructor(bot: JDA, logToChannel: be.duncanc.discordmodbot.LogToChannel, logger: GuildLogger) : RunBots(bot, logToChannel, logger) {
+class DebugTests internal constructor(bot: JDA, logToChannel: LogToChannel, logger: GuildLogger) : RunBots(bot, logToChannel, logger) {
 
     init {
         throw AssertionError()

@@ -22,42 +22,33 @@
  * SOFTWARE.
  *
  */
-package be.duncanc.discordmodbot
 
-import net.dv8tion.jda.core.events.Event
-import net.dv8tion.jda.core.hooks.InterfacedEventManager
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
+package be.duncanc.discordmodbot.utils
+
+import org.slf4j.Logger
 
 /**
- * This event manager uses a single thread executor service.
- * <p>
+ * This object wraps a runnable making it possible to easily create a runnable that catches a `Throwable` and logs it.
+ *
+ *
  * Created by Duncan on 12/06/2017.
  *
- * @property executor provides the service to execute event handling.
+ * @property runnable The Runnable we need to run and secure from throwing exceptions.
+ * @property logger A logger to log any throwable that we might catch so it be resolved later.
  * @since 1.1.0
  */
-internal class ExecutorServiceEventManager(name: String) : InterfacedEventManager() {
-
-    private val executor: ExecutorService
+class ThrowableSafeRunnable constructor(private val runnable: Runnable, private val logger: Logger) : Runnable {
 
     /**
-     * Creates a single thread executor service.
+     * Runs the runnable given when this object was created and secures it against a `Throwable`.
+
+     * @see Thread.run
      */
-    init {
-        executor = Executors.newSingleThreadExecutor {
-            val t = Thread(it, ExecutorServiceEventManager::class.java.simpleName + ": " + name)
-            t.isDaemon = true
-            t
+    override fun run() {
+        try {
+            runnable.run()
+        } catch (t: Throwable) {
+            logger.error("An error occurred during the execution", t)
         }
-    }
-
-    /**
-     * Executes the handle function of the super class using the ExecutorService.
-     *
-     * @see InterfacedEventManager.handle
-     */
-    override fun handle(event: Event) {
-        executor.submit { super.handle(event) }
     }
 }

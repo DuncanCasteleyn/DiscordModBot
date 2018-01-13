@@ -23,11 +23,13 @@
  *
  */
 
-package be.duncanc.discordmodbot
+package be.duncanc.discordmodbot.services
 
 
 import be.duncanc.discordmodbot.commands.CommandModule
-import be.duncanc.discordmodbot.sequence.Sequence
+import be.duncanc.discordmodbot.sequences.Sequence
+import be.duncanc.discordmodbot.utils.JDALibHelper
+import be.duncanc.discordmodbot.utils.ThrowableSafeRunnable
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
@@ -78,7 +80,7 @@ import java.util.concurrent.TimeUnit
  * @author Duncan
  * @since 1.0
  */
-class GuildLogger internal constructor(private val logger: be.duncanc.discordmodbot.LogToChannel) : ListenerAdapter() {
+class GuildLogger internal constructor(private val logger: LogToChannel) : ListenerAdapter() {
 
     companion object {
         private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd-M-yyyy hh:mm a O")
@@ -88,7 +90,7 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
 
         fun getCaseNumberSerializable(guildId: Long): Serializable {
             val caseNumber: Long = try {
-                be.duncanc.discordmodbot.CaseSystem(guildId).newCaseNumber
+                CaseSystem(guildId).newCaseNumber
             } catch (e: IOException) {
                 -1
             }
@@ -135,13 +137,13 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
             return
         }
 
-        var history: be.duncanc.discordmodbot.MessageHistory? = null
-        for (messageHistory in be.duncanc.discordmodbot.MessageHistory.getInstanceList()) {
+        var history: MessageHistory? = null
+        for (messageHistory in MessageHistory.getInstanceList()) {
             try {
                 if (event.jda === messageHistory.instance) {
                     history = messageHistory
                 }
-            } catch (ignored: be.duncanc.discordmodbot.MessageHistory.EmptyCacheException) {
+            } catch (ignored: MessageHistory.EmptyCacheException) {
             }
 
         }
@@ -182,13 +184,13 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
             return
         }
 
-        var history: be.duncanc.discordmodbot.MessageHistory? = null
-        for (messageHistory in be.duncanc.discordmodbot.MessageHistory.getInstanceList()) {
+        var history: MessageHistory? = null
+        for (messageHistory in MessageHistory.getInstanceList()) {
             try {
                 if (event.jda === messageHistory.instance) {
                     history = messageHistory
                 }
-            } catch (ignored: be.duncanc.discordmodbot.MessageHistory.EmptyCacheException) {
+            } catch (ignored: MessageHistory.EmptyCacheException) {
             }
 
         }
@@ -276,13 +278,13 @@ class GuildLogger internal constructor(private val logger: be.duncanc.discordmod
                 .setTitle("#" + event.channel.name + ": Bulk delete")
                 .addField("Amount of deleted messages", event.messageIds.size.toString(), false)
 
-        var history: be.duncanc.discordmodbot.MessageHistory? = null
-        for (messageHistory in be.duncanc.discordmodbot.MessageHistory.getInstanceList()) {
+        var history: MessageHistory? = null
+        for (messageHistory in MessageHistory.getInstanceList()) {
             try {
                 if (event.jda === messageHistory.instance) {
                     history = messageHistory
                 }
-            } catch (ignored: be.duncanc.discordmodbot.MessageHistory.EmptyCacheException) {
+            } catch (ignored: MessageHistory.EmptyCacheException) {
             }
         }
 

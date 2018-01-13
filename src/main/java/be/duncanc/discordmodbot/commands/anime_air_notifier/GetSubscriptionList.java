@@ -25,7 +25,7 @@
 
 package be.duncanc.discordmodbot.commands.anime_air_notifier;
 
-import be.duncanc.discordmodbot.AnimeAirNotifier;
+import be.duncanc.discordmodbot.services.AnimeAirNotifier;
 import be.duncanc.discordmodbot.commands.CommandModule;
 import net.dv8tion.jda.core.entities.ChannelType;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;

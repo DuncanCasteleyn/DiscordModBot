@@ -23,7 +23,7 @@
  *
  */
 
-package be.duncanc.discordmodbot;
+package be.duncanc.discordmodbot.services;
 
 
 import be.duncanc.discordmodbot.commands.QuitBot;
@@ -69,7 +69,7 @@ public class MessageHistory extends ListenerAdapter implements QuitBot.BeforeBot
      *
      * @param jDA the instance to register this listener instance for.
      */
-    static void registerMessageHistory(JDA jDA) {
+    public static void registerMessageHistory(JDA jDA) {
         MessageHistory messageHistory = new MessageHistory();
         jDA.addEventListener(messageHistory);
         jDA.getRegisteredListeners().stream().filter(o -> o instanceof QuitBot).forEach(o -> ((QuitBot) o).addCallBeforeQuit(messageHistory));

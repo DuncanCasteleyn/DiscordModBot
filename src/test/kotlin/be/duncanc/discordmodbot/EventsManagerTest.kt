@@ -24,13 +24,14 @@
 
 package be.duncanc.discordmodbot
 
+import be.duncanc.discordmodbot.services.EventsManager
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.time.OffsetDateTime
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class EventsManagerTest : be.duncanc.discordmodbot.EventsManager() {
+class EventsManagerTest : EventsManager() {
 
     /**
      * Required for TestInstance to work as junit test checks if all fields are initialized.

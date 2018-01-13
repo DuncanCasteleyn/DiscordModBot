@@ -51,6 +51,7 @@
  * limitations under the License.
  */
 
+import be.duncanc.discordmodbot.services.CaseSystem
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.RepeatedTest
 import java.io.IOException
@@ -64,12 +65,12 @@ internal class CaseSystemTest {
     @RepeatedTest(5)
     @Throws(IOException::class)
     fun requestCaseNumberTest() {
-        println(be.duncanc.discordmodbot.CaseSystem(-99).newCaseNumber)
+        println(CaseSystem(-99).newCaseNumber)
     }
 
     @DisplayName("net.dunciboy.discord_bot.Test if reset of count works")
     @RepeatedTest(2)
     fun resetTest() {
-        be.duncanc.discordmodbot.CaseSystem(-99).reset()
+        CaseSystem(-99).reset()
     }
 }

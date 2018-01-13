@@ -23,10 +23,12 @@
  *
  */
 
-package be.duncanc.discordmodbot
+package be.duncanc.discordmodbot.services
 
+import be.duncanc.discordmodbot.utils.JDALibHelper
+import be.duncanc.discordmodbot.RunBots
 import be.duncanc.discordmodbot.commands.CommandModule
-import be.duncanc.discordmodbot.sequence.Sequence
+import be.duncanc.discordmodbot.sequences.Sequence
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
@@ -289,7 +291,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
     }
 
     /**
-     * This sequence questions a user.
+     * This sequences questions a user.
      */
     private inner class QuestionSequence internal constructor(user: User, channel: MessageChannel, private val question: Question) : Sequence(user, channel, informUser = false) {
         private var sequenceNumber: Byte = 0
@@ -355,7 +357,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
     }
 
     /**
-     * This sequence allows to configure questions.
+     * This sequences allows to configure questions.
      */
     private inner class ConfigureSequence internal constructor(user: User, channel: MessageChannel) : Sequence(user, channel) {
         private var sequenceNumber: Byte = 0
@@ -364,7 +366,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
          * Asks first question
          */
         init {
-            channel.sendMessage(user.asMention + " Welcome to the member gate configuration sequence.\n\n" +
+            channel.sendMessage(user.asMention + " Welcome to the member gate configuration sequences.\n\n" +
                     "Select an action to perform:\n" +
                     "add a question\n" +
                     "remove a question").queue { super.addMessageToCleaner(it) }
@@ -435,7 +437,7 @@ open class MemberGate internal constructor(private val guildId: Long, private va
         private val keywordList: ArrayList<ArrayList<String>> = ArrayList()
 
         /**
-         * @param event the event containing the message that came from the sequence to answer the question.
+         * @param event the event containing the message that came from the sequences to answer the question.
          * @return true when the answer is correct, false otherwise.
          */
         internal fun checkAnswer(event: MessageReceivedEvent): Boolean = keywordList.all { it.any { it.toLowerCase() in event.message.contentDisplay.toLowerCase() } }

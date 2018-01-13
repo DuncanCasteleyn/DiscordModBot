@@ -25,7 +25,7 @@
 
 package be.duncanc.discordmodbot.commands
 
-import be.duncanc.discordmodbot.sequence.Sequence
+import be.duncanc.discordmodbot.sequences.Sequence
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.ChannelType
@@ -46,7 +46,7 @@ import java.util.concurrent.TimeUnit
  * @property cleanCommandMessage Allows you to enable or disable cleaning up commands.
  * @since 1.0.0
  */
-abstract class CommandModule @JvmOverloads protected constructor(internal val aliases: Array<String>, internal val argumentationSyntax: String?, internal val description: String?, private val cleanCommandMessage: Boolean = true, vararg val requiredPermissions: Permission) : ListenerAdapter() {
+abstract public class CommandModule @JvmOverloads protected constructor(internal val aliases: Array<String>, internal val argumentationSyntax: String?, internal val description: String?, private val cleanCommandMessage: Boolean = true, vararg val requiredPermissions: Permission) : ListenerAdapter() {
     companion object {
         const val COMMAND_SIGN = '!'
         protected val LOG: Logger = LoggerFactory.getLogger(CommandModule::class.java)
