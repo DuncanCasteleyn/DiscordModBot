@@ -73,7 +73,7 @@ import java.util.concurrent.TimeUnit
  *
  *
  * IMPORTANT READ BEFORE MODIFYING CODE:
- * The modifying the lastCheckedMessageDeleteEntries HashMap needs to happen using the guildLoggerExecutor because its
+ * The modifying the lastCheckedLogEntries HashMap needs to happen using the guildLoggerExecutor because its
  * thread are executed sequentially there is no need to lock the object, however if you try to do this without using the
  * service the chances of hitting a ConcurrentModificationException are 100%.
  *
@@ -100,7 +100,7 @@ class GuildLogger internal constructor(private val logger: LogToChannel) : Liste
     }
 
     private val guildLoggerExecutor: ScheduledExecutorService
-    private val lastCheckedMessageDeleteEntries: HashMap<Long, AuditLogEntry>
+    private val lastCheckedLogEntries: HashMap<Long, AuditLogEntry> //Long key is the guild id and the value is the last checked log entry.
 
     init {
         this.guildLoggerExecutor = Executors.newSingleThreadScheduledExecutor { r ->
@@ -108,20 +108,22 @@ class GuildLogger internal constructor(private val logger: LogToChannel) : Liste
             thread.isDaemon = true
             thread
         }
-        this.lastCheckedMessageDeleteEntries = HashMap()
+        this.lastCheckedLogEntries = HashMap()
     }
 
     override fun onReady(event: ReadyEvent) {
         logger.initChannelList(event.jda)
         logger.logChannels.forEach { textChannel ->
-            textChannel.guild.auditLogs.type(ActionType.MESSAGE_DELETE).limit(1).cache(false).queue { auditLogEntries ->
+            textChannel.guild.auditLogs.limit(1).cache(false).queue { auditLogEntries ->
                 val auditLogEntry = if (auditLogEntries.isEmpty()) {
                     AuditLogEntry(ActionType.MESSAGE_DELETE, -1, -1, textChannel.guild as GuildImpl, null, null, null, null)
                     //Creating a dummy
                 } else {
                     auditLogEntries[0]
                 }
-                lastCheckedMessageDeleteEntries.put(auditLogEntry.guild.idLong, auditLogEntry)
+                guildLoggerExecutor.execute {
+                    lastCheckedLogEntries.put(auditLogEntry.guild.idLong, auditLogEntry)
+                }
             }
         }
     }
@@ -197,8 +199,8 @@ class GuildLogger internal constructor(private val logger: LogToChannel) : Liste
 
         if (history == null) {
             guildLoggerExecutor.execute {
-                val logEntry = event.guild.auditLogs.type(ActionType.MESSAGE_DELETE).cache(false).limit(1).complete()[0]
-                lastCheckedMessageDeleteEntries.put(event.guild.idLong, logEntry)
+                val logEntry = event.guild.auditLogs.cache(false).limit(1).complete()[0]
+                lastCheckedLogEntries.put(event.guild.idLong, logEntry)
             }
             return
         }
@@ -216,23 +218,24 @@ class GuildLogger internal constructor(private val logger: LogToChannel) : Liste
                 var moderator: User? = null
                 run {
                     var i = 0
-                    var firstCheckedAuditLogEntry: AuditLogEntry? = null
-                    for (logEntry in event.guild.auditLogs.type(ActionType.MESSAGE_DELETE).cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
+                    for (logEntry in event.guild.auditLogs.cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
                         if (i == 0) {
-                            firstCheckedAuditLogEntry = logEntry
+                            guildLoggerExecutor.execute {
+                                lastCheckedLogEntries.put(event.guild.idLong, logEntry)
+                            }
                         }
-                        if (!lastCheckedMessageDeleteEntries.containsKey(event.guild.idLong)) {
+                        if (!lastCheckedLogEntries.containsKey(event.guild.idLong)) {
                             i = LOG_ENTRY_CHECK_LIMIT
                         } else {
-                            val cachedAuditLogEntry = lastCheckedMessageDeleteEntries[event.guild.idLong]
+                            val cachedAuditLogEntry = lastCheckedLogEntries[event.guild.idLong]
                             if (logEntry.idLong == cachedAuditLogEntry?.idLong) {
-                                if (logEntry.targetIdLong == oldMessage.author.idLong && logEntry.getOption<Any>(AuditLogOption.COUNT) != cachedAuditLogEntry.getOption<Any>(AuditLogOption.COUNT)) {
+                                if (logEntry.type == ActionType.MESSAGE_DELETE && logEntry.targetIdLong == oldMessage.author.idLong && logEntry.getOption<Any>(AuditLogOption.COUNT) != cachedAuditLogEntry.getOption<Any>(AuditLogOption.COUNT)) {
                                     moderator = logEntry.user
                                 }
                                 break
                             }
                         }
-                        if (logEntry.targetIdLong == oldMessage.author.idLong) {
+                        if (logEntry.type == ActionType.MESSAGE_DELETE && logEntry.targetIdLong == oldMessage.author.idLong) {
                             moderator = logEntry.user
                             break
                         }
@@ -240,9 +243,6 @@ class GuildLogger internal constructor(private val logger: LogToChannel) : Liste
                         if (i >= LOG_ENTRY_CHECK_LIMIT) {
                             break
                         }
-                    }
-                    if (firstCheckedAuditLogEntry != null) {
-                        lastCheckedMessageDeleteEntries.put(event.guild.idLong, firstCheckedAuditLogEntry)
                     }
                 }
 
@@ -332,8 +332,8 @@ class GuildLogger internal constructor(private val logger: LogToChannel) : Liste
             var reason: String? = null
             run {
                 var i = 0
-                for (logEntry in event.guild.auditLogs.type(ActionType.KICK).cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
-                    if (logEntry.targetIdLong == event.member.user.idLong) {
+                for (logEntry in event.guild.auditLogs.cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
+                    if (logEntry.type == ActionType.KICK && logEntry.targetIdLong == event.member.user.idLong && logEntry.idLong != lastCheckedLogEntries[event.guild.idLong]?.idLong) {
                         moderator = logEntry.user
                         reason = logEntry.reason
                         break
@@ -387,8 +387,8 @@ class GuildLogger internal constructor(private val logger: LogToChannel) : Liste
             var reason: String? = null
             run {
                 var i = 0
-                for (logEntry in event.guild.auditLogs.type(ActionType.BAN).cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
-                    if (logEntry.targetIdLong == event.user.idLong) {
+                for (logEntry in event.guild.auditLogs.cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
+                    if (logEntry.type == ActionType.BAN && logEntry.targetIdLong == event.user.idLong) {
                         moderator = logEntry.user
                         reason = logEntry.reason
                         break
@@ -442,7 +442,12 @@ class GuildLogger internal constructor(private val logger: LogToChannel) : Liste
             run {
                 var i = 0
                 for (logEntry in event.guild.auditLogs.type(ActionType.UNBAN).cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
-                    if (logEntry.targetIdLong == event.user.idLong) {
+                    if (i == 0) {
+                        guildLoggerExecutor.execute {
+                            lastCheckedLogEntries.put(event.guild.idLong, logEntry)
+                        }
+                    }
+                    if (logEntry.type == ActionType.UNBAN && logEntry.targetIdLong == event.user.idLong) {
                         moderator = logEntry.user
                         break
                     }
@@ -480,8 +485,8 @@ class GuildLogger internal constructor(private val logger: LogToChannel) : Liste
             var moderator: User? = null
             run {
                 var i = 0
-                for (logEntry in event.guild.auditLogs.type(ActionType.MEMBER_UPDATE).cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
-                    if (logEntry.targetIdLong == event.member.user.idLong) {
+                for (logEntry in event.guild.auditLogs.cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
+                    if (logEntry.type == ActionType.MESSAGE_UPDATE && logEntry.targetIdLong == event.member.user.idLong) {
                         moderator = logEntry.user
                         break
                     }
@@ -514,7 +519,6 @@ class GuildLogger internal constructor(private val logger: LogToChannel) : Liste
     object LogSettings : CommandModule(arrayOf("LogSettings"), null, "Adjust server settings.", requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)) {
 
         private val FILE_PATH = Paths.get("GuildSettings.json")
-        private const val OWNER_ID = 159419654148718593L
         private val exceptedFromLogging = ArrayList<Long>()
         private val guildSettings = HashSet<GuildSettings>()
 
@@ -604,7 +608,7 @@ class GuildLogger internal constructor(private val logger: LogToChannel) : Liste
         }
 
         override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-                event.jda.addEventListener(SettingsSequence(event.author, event.channel))
+            event.jda.addEventListener(SettingsSequence(event.author, event.channel))
         }
 
         class SettingsSequence(user: User, channel: MessageChannel) : Sequence(user, channel) {
