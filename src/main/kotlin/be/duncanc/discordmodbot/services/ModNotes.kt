@@ -8,11 +8,12 @@ import java.nio.file.Paths
 import java.time.OffsetDateTime
 import java.util.*
 import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 object ModNotes : CommandModule(arrayOf("AddNote"), "[user mention] [note text~]", "This command adds a note to the mentioned user for internal use.") {
     private val FILE_PATH = Paths.get("ModNotes.json")
 
-    private val notes = HashMap<Long, ArrayList<Notes>>() //todo think about saving this per user.
+    private val notes = HashMap<Long, HashMap<Long, ArrayList<Note>>>() //First map long are guild ids, second map long are user ids
 
     enum class NoteType {
         NORMAL, WARN, MUTE, KICK
@@ -37,13 +38,11 @@ object ModNotes : CommandModule(arrayOf("AddNote"), "[user mention] [note text~]
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    private fun addNote(note: String, type: NoteType) {
-        TODO()
+    private fun addNote(note: String, type: NoteType, userId: Long, guildId: Long, creationDate: OffsetDateTime = OffsetDateTime.now()) {
+        val guildNotes = notes[guildId] ?: notes.put(guildId, HashMap())!!
+        val userNotes = guildNotes[userId] ?: guildNotes.put(userId,ArrayList())!!
+        userNotes.add(Note(note, type, creationDate))
     }
 
     class Note(note: String, val type: NoteType, creationDate: OffsetDateTime = OffsetDateTime.now())
-
-    class Notes(val userId: Long) {
-        val notes = ArrayList<Note>()
-    }
 }
