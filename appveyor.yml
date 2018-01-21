@@ -1,6 +1,6 @@
 version: '{branch} {build}'
 install:
-  - cinst jdk9 -params 'installdir=C:\\jdk9'
+  - cinst jdk9 -params 'installdir=C:\\jdk9' -version="9.0.4.11"
   - SET JAVA_HOME=C:\jdk9
   - SET PATH=C:\jdk9\bin;%PATH%
 #environment:
