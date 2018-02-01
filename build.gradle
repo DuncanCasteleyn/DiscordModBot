@@ -80,4 +80,4 @@ compileTestKotlin {
 
 mainClassName = 'be.duncanc.discordmodbot.RunBots'
 
-version '1.2.2'
+version '1.2.3'
