@@ -24,9 +24,9 @@
  */
 
 buildscript {
-    ext.kotlin_version = '1.2.20'
-    ext.junit_version = '5.0.2'
-    ext.junit_plugin_version = '1.0.2'
+    ext.kotlin_version = '1.2.21'
+    ext.junit_version = '5.0.3'
+    ext.junit_plugin_version = '1.0.3'
 
     repositories {
         mavenCentral()
@@ -54,12 +54,12 @@ dependencies {
     testCompile("org.junit.jupiter:junit-jupiter-api:$junit_version")
     testRuntime("org.junit.jupiter:junit-jupiter-engine:$junit_version")
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-    compile "net.dv8tion:JDA:3.5.0_327"
+    compile "net.dv8tion:JDA:3.5.0_332"
     compile 'org.apache.commons:commons-lang3:3.5'
     compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.21'
 }
 
-wrapper.gradleVersion = '4.4.1'
+wrapper.gradleVersion = '4.5'
 
 compileJava.options.compilerArgs << "-Xlint:deprecation"
 compileJava.options.encoding = "UTF-8"

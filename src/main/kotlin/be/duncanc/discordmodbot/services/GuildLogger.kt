@@ -122,7 +122,7 @@ class GuildLogger internal constructor(private val logger: LogToChannel) : Liste
                     auditLogEntries[0]
                 }
                 guildLoggerExecutor.execute {
-                    lastCheckedLogEntries.put(auditLogEntry.guild.idLong, auditLogEntry)
+                    lastCheckedLogEntries[auditLogEntry.guild.idLong] = auditLogEntry
                 }
             }
         }
@@ -221,7 +221,7 @@ class GuildLogger internal constructor(private val logger: LogToChannel) : Liste
                     for (logEntry in event.guild.auditLogs.cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
                         if (i == 0) {
                             guildLoggerExecutor.execute {
-                                lastCheckedLogEntries.put(event.guild.idLong, logEntry)
+                                lastCheckedLogEntries[event.guild.idLong] = logEntry
                             }
                         }
                         if (!lastCheckedLogEntries.containsKey(event.guild.idLong)) {
@@ -441,10 +441,10 @@ class GuildLogger internal constructor(private val logger: LogToChannel) : Liste
             var moderator: User? = null
             run {
                 var i = 0
-                for (logEntry in event.guild.auditLogs.type(ActionType.UNBAN).cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
+                for (logEntry in event.guild.auditLogs.cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
                     if (i == 0) {
                         guildLoggerExecutor.execute {
-                            lastCheckedLogEntries.put(event.guild.idLong, logEntry)
+                            lastCheckedLogEntries[event.guild.idLong] = logEntry
                         }
                     }
                     if (logEntry.type == ActionType.UNBAN && logEntry.targetIdLong == event.user.idLong) {
@@ -485,8 +485,8 @@ class GuildLogger internal constructor(private val logger: LogToChannel) : Liste
             var moderator: User? = null
             run {
                 var i = 0
-                for (logEntry in event.guild.auditLogs.cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
-                    if (logEntry.type == ActionType.MESSAGE_UPDATE && logEntry.targetIdLong == event.member.user.idLong) {
+                for (logEntry in event.guild.auditLogs.type(ActionType.MEMBER_UPDATE).cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
+                    if (logEntry.type == ActionType.MEMBER_UPDATE && logEntry.targetIdLong == event.member.user.idLong) {
                         moderator = logEntry.user
                         break
                     }
