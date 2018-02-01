@@ -66,8 +66,13 @@ public class LogToChannel {
 
     void initChannelList(JDA jda) {
         if (jda.getSelfUser().getIdLong() == 232853504404881418L) {
+            //Re: Zero
             logChannels.add(jda.getTextChannelById(205415791238184969L));
             userLogChannels.add(jda.getTextChannelById(375783695711207424L));
+            //KoRn
+            TextChannel kornLogChannel = jda.getTextChannelById(324994155480743936L);
+            logChannels.add(kornLogChannel);
+            userLogChannels.add(kornLogChannel);
         }
         if (jda.getSelfUser().getIdLong() == 247032890024525825L) {
             TextChannel logChannel = jda.getTextChannelById(247081384110194688L);
