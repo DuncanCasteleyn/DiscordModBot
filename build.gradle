@@ -25,8 +25,8 @@
 
 buildscript {
     ext.kotlin_version = '1.2.20'
-    ext.junit_version = '5.0.2'
-    ext.junit_plugin_version = '1.0.2'
+    ext.junit_version = '5.0.3'
+    ext.junit_plugin_version = '1.0.3'
 
     repositories {
         mavenCentral()
