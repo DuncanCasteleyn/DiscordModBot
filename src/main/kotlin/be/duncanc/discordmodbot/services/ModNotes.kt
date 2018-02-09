@@ -23,7 +23,7 @@ object ModNotes : CommandModule(arrayOf("AddNote"), "[user mention] [note text~]
 
     private val notes = HashMap<Long, HashMap<Long, HashSet<Note>>>() //First map long are guild ids, second map long are user ids
 
-    public enum class NoteType {
+    enum class NoteType {
         NORMAL, WARN, MUTE, KICK
     }
 
@@ -188,4 +188,6 @@ object ModNotes : CommandModule(arrayOf("AddNote"), "[user mention] [note text~]
             }
         }
     }
+
+    //todo add way to delete notes.
 }
