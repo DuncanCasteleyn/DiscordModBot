@@ -139,6 +139,35 @@ object ModNotes : CommandModule(arrayOf("AddNote"), "[user mention] [note text~]
         override fun toString(): String {
             return "${type.toString().toLowerCase().capitalize()} note\n\nnote: $note\nCreated: $creationDate\nBy: $authorId"
         }
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as Note
+
+            if (note != other.note) {
+                return false
+            }
+            if (type != other.type) {
+                return false
+            }
+            if (authorId != other.authorId) {
+                return false
+            }
+
+            return creationDate != other.creationDate
+        }
+
+        override fun hashCode(): Int {
+            var result = note.hashCode()
+            result = 31 * result + type.hashCode()
+            result = 31 * result + authorId.hashCode()
+            result = 31 * result + creationDate.hashCode()
+            return result
+        }
+
+
     }
 
     object ViewNotes : CommandModule(arrayOf("ViewNotes"), "[user mention]", "This command show all the notes on a user. This will send to you by DM due to privacy reasons.", requiredPermissions = *arrayOf(Permission.MANAGE_ROLES)) {
