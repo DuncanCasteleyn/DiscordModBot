@@ -272,7 +272,7 @@ class GuildLogger internal constructor(private val logger: LogToChannel) : Liste
             emotes.forEach {
                 stringBuilder.append("[" + it.name + "](" + it.imageUrl + ")\n")
             }
-            logEmbed.addField("Emotes", stringBuilder.toString(), false)
+            logEmbed.addField("Emote(s)", stringBuilder.toString(), false)
         }
     }
 
@@ -321,7 +321,7 @@ class GuildLogger internal constructor(private val logger: LogToChannel) : Liste
                 }
                 var emotes = message.emotes
                 if(emotes.isNotEmpty()) {
-                    logWriter.append("Emotes:\n")
+                    logWriter.append("Emote(s):\n")
                     emotes.forEach {
                         logWriter.append(it.name).append(": ").append(it.imageUrl).append('\n')
                     }
