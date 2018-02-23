@@ -46,7 +46,7 @@ import java.util.concurrent.TimeUnit
  *
  * @since 1.1.0
  */
-abstract public class Sequence @JvmOverloads protected constructor(val user: User, val channel: MessageChannel, cleanAfterSequence: Boolean = true, informUser: Boolean = true) : ListenerAdapter() {
+abstract class Sequence @JvmOverloads protected constructor(val user: User, val channel: MessageChannel, cleanAfterSequence: Boolean = true, informUser: Boolean = true) : ListenerAdapter() {
     companion object {
         private val LOG = LoggerFactory.getLogger(Sequence::class.java)
     }
