@@ -30,15 +30,17 @@ import net.dv8tion.jda.core.entities.*
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 
 object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <subscribers role> <emote to react to> <event text>", "Creates an event, including role and message to announce the event", requiredPermissions = *arrayOf(Permission.MANAGE_ROLES)) {
+    private val events = HashMap<Long, ArrayList<EventRole>>()
+
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.jda.addEventListener(EventCreationSequence(event.author, event.textChannel))
     }
 
     class EventCreationSequence(user: User, channel: MessageChannel) : Sequence(user, channel, cleanAfterSequence = true, informUser = true) {
-        private var eventName :String? = null
-        private var eventRole :Role? = null
-        private var reactEmote :Emote? = null
-        private var announceChannel:TextChannel? = null
+        private var eventName: String? = null
+        private var eventRole: String? = null
+        private var reactEmote: Emote? = null
+        private var announceChannel: TextChannel? = null
 
         init {
             channel.sendMessage("Please enter the event id/name").queue()
@@ -51,7 +53,7 @@ object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <sub
                     channel.sendMessage("Please mention the role you wanted to be used.").queue()
                 }
                 eventRole == null -> {
-                    eventRole = event.message.mentionedRoles[0]
+                    eventRole = event.message.contentDisplay
                     channel.sendMessage("Please post the emote to be used.").queue()
                 }
                 reactEmote == null -> {
@@ -62,8 +64,33 @@ object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <sub
                     announceChannel = event.message.mentionedChannels[0]
                     channel.sendMessage("Please enter the announcement text.").queue()
                 }
-                else -> TODO()
+                else -> {
+                    val guild = event.guild
+
+                    val newRoleFuture = guild.controller.createRole().submit()
+                    val announceFuture = announceChannel!!.sendMessage(event.message.contentRaw).submit()
+                    if (newRoleFuture.isCompletedExceptionally && announceFuture.isCompletedExceptionally) {
+                        val changeRoleName = newRoleFuture.get().manager.setName(eventRole).submit()
+                        val reactFuture = announceFuture.get().addReaction(reactEmote).submit()
+                        if (!(changeRoleName.isCompletedExceptionally && reactFuture.isCompletedExceptionally)) {
+                            changeRoleName.cancel(true)
+                            newRoleFuture.get().delete().queue()
+                            reactFuture.cancel(true)
+                            announceFuture.get().delete().queue()
+                        }
+                    } else {
+                        if (!newRoleFuture.cancel(true) && newRoleFuture.isCompletedExceptionally) {
+                            newRoleFuture.get().delete().queue()
+                        }
+                        if (!announceFuture.cancel(true) && announceFuture.isCompletedExceptionally) {
+                            announceFuture.get().delete().queue()
+                        }
+                    }
+                    TODO()
+                }
             }
         }
     }
+
+    class EventRole(val eventId: String, val eventRole: Role, val reactEmote: Emote)
 }
