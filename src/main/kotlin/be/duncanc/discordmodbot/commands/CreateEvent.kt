@@ -28,12 +28,32 @@ import be.duncanc.discordmodbot.sequences.Sequence
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.*
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import java.nio.file.Paths
 
 object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <subscribers role> <emote to react to> <event text>", "Creates an event, including role and message to announce the event", requiredPermissions = *arrayOf(Permission.MANAGE_ROLES)) {
-    private val events = HashMap<Long, ArrayList<EventRole>>()
+    private val FILE = Paths.get("EventsTool.json")
+    private val events = HashMap<Guild, ArrayList<EventRole>>()
+
+    init {
+        load()
+    }
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.jda.addEventListener(EventCreationSequence(event.author, event.textChannel))
+    }
+
+    private fun save() {
+        synchronized(events) {
+
+        }
+        TODO()
+    }
+
+    private fun load() {
+        synchronized(events) {
+
+        }
+        TODO()
     }
 
     class EventCreationSequence(user: User, channel: MessageChannel) : Sequence(user, channel, cleanAfterSequence = true, informUser = true) {
@@ -86,11 +106,21 @@ object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <sub
                             announceFuture.get().delete().queue()
                         }
                     }
-                    TODO()
+                    val eventRole = EventRole(eventName!!, newRoleFuture.get(), reactEmote!!, announceChannel!!)
+                    synchronized(events) {
+                        if (events[event.guild] != null) {
+                            events[event.guild]!!.add(eventRole)
+                        } else {
+                            val newArrayList = ArrayList<EventRole>()
+                            newArrayList.add(eventRole)
+                            events[event.guild] = newArrayList
+                        }
+                        save()
+                    }
                 }
             }
         }
     }
 
-    class EventRole(val eventId: String, val eventRole: Role, val reactEmote: Emote)
+    class EventRole(val eventId: String, val eventRole: Role, val reactEmote: Emote, val anounceChannel: TextChannel)
 }
