@@ -28,19 +28,51 @@ import be.duncanc.discordmodbot.sequences.Sequence
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.*
+import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import net.dv8tion.jda.core.events.message.guild.GuildMessageDeleteEvent
+import net.dv8tion.jda.core.events.message.guild.react.GuildMessageReactionAddEvent
+import net.dv8tion.jda.core.events.message.guild.react.GuildMessageReactionRemoveEvent
 import org.json.JSONArray
 import org.json.JSONObject
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.*
+import kotlin.collections.ArrayList
 
 object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <subscribers role> <emote to react to> <event text>", "Creates an event, including role and message to announce the event", requiredPermissions = *arrayOf(Permission.MANAGE_ROLES)) {
     private val FILE = Paths.get("EventsTool.json")
     private val events = HashMap<Guild, ArrayList<EventRole>>()
 
+    override fun onReady(event: ReadyEvent) {
+        load(event.jda)
+    }
+
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.jda.addEventListener(EventCreationSequence(event.author, event.textChannel))
+    }
+
+    override fun onGuildMessageReactionAdd(event: GuildMessageReactionAddEvent) {
+        val serverEvent = events[event.guild]
+        if (serverEvent != null && serverEvent.any { it.announceMessage.idLong == event.messageIdLong }) {
+            val reactedEvent = serverEvent.filter { it.announceMessage.idLong == event.messageIdLong }[0]
+            event.guild.controller.addSingleRoleToMember(event.member, reactedEvent.eventRole)
+        }
+    }
+
+    override fun onGuildMessageReactionRemove(event: GuildMessageReactionRemoveEvent) {
+        val serverEvent = events[event.guild]
+        if (serverEvent != null && serverEvent.any { it.announceMessage.idLong == event.messageIdLong }) {
+            val reactedEvent = serverEvent.filter { it.announceMessage.idLong == event.messageIdLong }[0]
+            event.guild.controller.removeSingleRoleFromMember(event.member, reactedEvent.eventRole)
+        }
+    }
+
+    override fun onGuildMessageDelete(event: GuildMessageDeleteEvent) {
+        val serverEvent = events[event.guild]
+        if (serverEvent != null && serverEvent.any { it.announceMessage.idLong == event.messageIdLong }) {
+            serverEvent.removeAll(serverEvent.filter { it.announceMessage.idLong == event.messageIdLong })
+        }
     }
 
     private fun save() {
@@ -54,8 +86,9 @@ object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <sub
                         eventRoleJSONObject.put("eventId", it.eventId)
                         eventRoleJSONObject.put("eventRole", it.eventRole.idLong)
                         eventRoleJSONObject.put("reactEmote", it.reactEmote.idLong)
-                        eventRoleJSONObject.put("announceChannel", it.announceChannel.idLong)
-                        eventRoleJSONObject.put("guildId", it.announceChannel.guild.idLong)
+                        eventRoleJSONObject.put("announceMessage", it.announceMessage.idLong)
+                        eventRoleJSONObject.put("announceChannel", it.announceMessage.textChannel.idLong)
+                        //eventRoleJSONObject.put("guildId", it.announceChannel.guild.idLong)
                         jsonArray.put(eventRoleJSONObject)
                     }
                     json.put(it.key.id, jsonArray)
@@ -66,21 +99,29 @@ object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <sub
     }
 
     private fun load(jda: JDA) {
-        val stringBuilder = StringBuilder()
-        synchronized(FILE) {
-            Files.readAllLines(FILE).forEach {
-                stringBuilder.append(it)
-            }
-        }
-        val jsonObject = JSONObject(stringBuilder.toString())
-        val loadedEvents = HashMap<Guild, ArrayList<EventRole>>()
-        jsonObject.toMap().forEach {
-
-        }
         synchronized(events) {
-
+            val stringBuilder = StringBuilder()
+            synchronized(FILE) {
+                Files.readAllLines(FILE).forEach {
+                    stringBuilder.append(it)
+                }
+            }
+            val jsonObject = JSONObject(stringBuilder.toString())
+            val loadedEvents = HashMap<Guild, ArrayList<EventRole>>()
+            jsonObject.keys().forEach {
+                val guild = jda.getGuildById(it)
+                if (guild != null) {
+                    val eventsArray = jsonObject.getJSONArray(it)
+                    val newArrayList = ArrayList<EventRole>()
+                    eventsArray.forEach {
+                        it as JSONObject
+                        newArrayList.add(EventRole(it.getString("eventId"), jda.getRoleById(it.getLong("evenRole")), jda.getEmoteById(it.getLong("reactEmote")), jda.getTextChannelById(it.getLong("announceChannel")).getMessageById(it.getLong("announceMessage")).complete()))
+                    }
+                    loadedEvents[guild] = newArrayList
+                }
+            }
+            events.putAll(loadedEvents)
         }
-        TODO()
     }
 
     class EventCreationSequence(user: User, channel: MessageChannel) : Sequence(user, channel, cleanAfterSequence = true, informUser = true) {
@@ -133,7 +174,7 @@ object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <sub
                             announceFuture.get().delete().queue()
                         }
                     }
-                    val eventRole = EventRole(eventName!!, newRoleFuture.get(), reactEmote!!, announceChannel!!)
+                    val eventRole = EventRole(eventName!!, newRoleFuture.get(), reactEmote!!, announceFuture.get())
                     synchronized(events) {
                         if (events[event.guild] != null) {
                             events[event.guild]!!.add(eventRole)
@@ -149,5 +190,5 @@ object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <sub
         }
     }
 
-    class EventRole(val eventId: String, val eventRole: Role, val reactEmote: Emote, val announceChannel: TextChannel)
+    class EventRole(val eventId: String, val eventRole: Role, val reactEmote: Emote, internal val announceMessage: Message)
 }
