@@ -162,7 +162,7 @@ object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <sub
         private var announceChannel: TextChannel? = null
 
         init {
-            channel.sendMessage("Please enter the event id/name").queue()
+            channel.sendMessage("Please enter the event id/name").queue { super.addMessageToCleaner(it) }
         }
 
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) = when {
@@ -209,22 +209,20 @@ object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <sub
                         throw exception
                     }
                 } catch (exception: Exception) {
-                    if (exception is ExecutionException || exception is InterruptedException || exception is CancellationException) {
-                        if (!newRoleFuture.cancel(false)) {
-                            try {
-                                newRoleFuture.get().delete().queue()
-                            } catch (ignored: InterruptedException) {
-                            } catch (ignored: ExecutionException) {
-                            } catch (ignored: CancellationException) {
-                            }
+                    if (!newRoleFuture.cancel(false)) {
+                        try {
+                            newRoleFuture.get().delete().queue()
+                        } catch (ignored: InterruptedException) {
+                        } catch (ignored: ExecutionException) {
+                        } catch (ignored: CancellationException) {
                         }
-                        if (!announceFuture.cancel(false) && announceFuture.isDone) {
-                            try {
-                                announceFuture.get().delete().queue()
-                            } catch (ignored: InterruptedException) {
-                            } catch (ignored: ExecutionException) {
-                            } catch (ignored: CancellationException) {
-                            }
+                    }
+                    if (!announceFuture.cancel(false) && announceFuture.isDone) {
+                        try {
+                            announceFuture.get().delete().queue()
+                        } catch (ignored: InterruptedException) {
+                        } catch (ignored: ExecutionException) {
+                        } catch (ignored: CancellationException) {
                         }
                     }
                     throw exception
