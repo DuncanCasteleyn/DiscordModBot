@@ -25,31 +25,58 @@
 package be.duncanc.discordmodbot.commands
 
 import be.duncanc.discordmodbot.sequences.Sequence
+import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.*
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import org.json.JSONArray
+import org.json.JSONObject
+import java.nio.file.Files
 import java.nio.file.Paths
+import java.util.*
 
 object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <subscribers role> <emote to react to> <event text>", "Creates an event, including role and message to announce the event", requiredPermissions = *arrayOf(Permission.MANAGE_ROLES)) {
     private val FILE = Paths.get("EventsTool.json")
     private val events = HashMap<Guild, ArrayList<EventRole>>()
-
-    init {
-        load()
-    }
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.jda.addEventListener(EventCreationSequence(event.author, event.textChannel))
     }
 
     private fun save() {
-        synchronized(events) {
-
+        synchronized(FILE) {
+            val json = JSONObject()
+            synchronized(events) {
+                events.forEach {
+                    val jsonArray = JSONArray()
+                    it.value.forEach {
+                        val eventRoleJSONObject = JSONObject()
+                        eventRoleJSONObject.put("eventId", it.eventId)
+                        eventRoleJSONObject.put("eventRole", it.eventRole.idLong)
+                        eventRoleJSONObject.put("reactEmote", it.reactEmote.idLong)
+                        eventRoleJSONObject.put("announceChannel", it.announceChannel.idLong)
+                        eventRoleJSONObject.put("guildId", it.announceChannel.guild.idLong)
+                        jsonArray.put(eventRoleJSONObject)
+                    }
+                    json.put(it.key.id, jsonArray)
+                }
+            }
+            Files.write(FILE, Collections.singletonList(json.toString()))
         }
-        TODO()
     }
 
-    private fun load() {
+    private fun load(jda: JDA) {
+        val stringBuilder = StringBuilder()
+        synchronized(FILE) {
+            Files.readAllLines(FILE).forEach {
+                stringBuilder.append(it)
+            }
+        }
+        val jsonObject = JSONObject(stringBuilder.toString())
+        val loadedEvents = HashMap<Guild, ArrayList<EventRole>>()
+        jsonObject.toMap().forEach {
+
+        }
         synchronized(events) {
 
         }
@@ -122,5 +149,5 @@ object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <sub
         }
     }
 
-    class EventRole(val eventId: String, val eventRole: Role, val reactEmote: Emote, val anounceChannel: TextChannel)
+    class EventRole(val eventId: String, val eventRole: Role, val reactEmote: Emote, val announceChannel: TextChannel)
 }
