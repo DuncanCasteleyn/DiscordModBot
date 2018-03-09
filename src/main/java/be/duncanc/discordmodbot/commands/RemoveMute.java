@@ -25,9 +25,9 @@
 
 package be.duncanc.discordmodbot.commands;
 
+import be.duncanc.discordmodbot.RunBots;
 import be.duncanc.discordmodbot.services.GuildLogger;
 import be.duncanc.discordmodbot.utils.JDALibHelper;
-import be.duncanc.discordmodbot.RunBots;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.MessageBuilder;
 import net.dv8tion.jda.core.Permission;

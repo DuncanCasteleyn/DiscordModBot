@@ -25,7 +25,7 @@
 
 package be.duncanc.discordmodbot.commands;
 
-import be.duncanc.discordmodbot.*;
+import be.duncanc.discordmodbot.RunBots;
 import be.duncanc.discordmodbot.services.GuildLogger;
 import be.duncanc.discordmodbot.services.LogToChannel;
 import be.duncanc.discordmodbot.utils.JDALibHelper;

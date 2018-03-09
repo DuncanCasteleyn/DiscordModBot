@@ -41,6 +41,7 @@ import java.nio.file.Paths
 import java.util.*
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ExecutionException
+import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
 
 object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <subscribers role> <emote to react to> <event text>", "Creates an event, including role and message to announce the event", requiredPermissions = *arrayOf(Permission.MANAGE_ROLES)) {
@@ -114,7 +115,6 @@ object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <sub
                         eventRoleJSONObject.put("reactEmote", it.reactEmote.idLong)
                         eventRoleJSONObject.put("announceMessage", it.announceMessage.idLong)
                         eventRoleJSONObject.put("announceChannel", it.announceMessage.textChannel.idLong)
-                        //eventRoleJSONObject.put("guildId", it.announceChannel.guild.idLong)
                         jsonArray.put(eventRoleJSONObject)
                     }
                     json.put(it.key.id, jsonArray)
@@ -125,31 +125,33 @@ object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <sub
     }
 
     private fun load(jda: JDA) {
-        synchronized(events) {
-            val stringBuilder = StringBuilder()
-            synchronized(FILE) {
-                Files.readAllLines(FILE).forEach {
-                    stringBuilder.append(it)
-                }
-            }
-            val jsonObject = JSONObject(stringBuilder.toString())
-            val loadedEvents = HashMap<Guild, ArrayList<EventRole>>()
-            jsonObject.keys().forEach {
-                val guild = jda.getGuildById(it)
-                if (guild != null) {
-                    val eventsArray = jsonObject.getJSONArray(it)
-                    val newArrayList = ArrayList<EventRole>()
-                    eventsArray.forEach {
-                        it as JSONObject
-                        try {
-                            newArrayList.add(EventRole(it.getString("eventId"), jda.getRoleById(it.getLong("eventRole")), jda.getEmoteById(it.getLong("reactEmote")), jda.getTextChannelById(it.getLong("announceChannel")).getMessageById(it.getLong("announceMessage")).complete()))
-                        } catch (ignored: Exception) {
-                        }
+        if (FILE.toFile().exists()) {
+            synchronized(events) {
+                val stringBuilder = StringBuilder()
+                synchronized(FILE) {
+                    Files.readAllLines(FILE).forEach {
+                        stringBuilder.append(it)
                     }
-                    loadedEvents[guild] = newArrayList
                 }
+                val jsonObject = JSONObject(stringBuilder.toString())
+                val loadedEvents = HashMap<Guild, ArrayList<EventRole>>()
+                jsonObject.keys().forEach {
+                    val guild = jda.getGuildById(it)
+                    if (guild != null) {
+                        val eventsArray = jsonObject.getJSONArray(it)
+                        val newArrayList = ArrayList<EventRole>()
+                        eventsArray.forEach {
+                            it as JSONObject
+                            try {
+                                newArrayList.add(EventRole(it.getString("eventId"), jda.getRoleById(it.getLong("eventRole")), jda.getEmoteById(it.getLong("reactEmote")), jda.getTextChannelById(it.getLong("announceChannel")).getMessageById(it.getLong("announceMessage")).complete()))
+                            } catch (ignored: Exception) {
+                            }
+                        }
+                        loadedEvents[guild] = newArrayList
+                    }
+                }
+                events.putAll(loadedEvents)
             }
-            events.putAll(loadedEvents)
         }
     }
 
@@ -237,6 +239,8 @@ object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <sub
                         events[event.guild] = newArrayList
                     }
                     save()
+                    super.channel.sendMessage(super.user.asMention + " All tasks where completed without errors.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                    destroy()
                 }
             }
         }
