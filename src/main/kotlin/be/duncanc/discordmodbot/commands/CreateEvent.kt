@@ -53,25 +53,31 @@ object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <sub
     }
 
     override fun onGuildMessageReactionAdd(event: GuildMessageReactionAddEvent) {
-        val serverEvent = events[event.guild]
-        if (serverEvent != null && serverEvent.any { it.announceMessage.idLong == event.messageIdLong }) {
-            val reactedEvent = serverEvent.filter { it.announceMessage.idLong == event.messageIdLong }[0]
-            event.guild.controller.addSingleRoleToMember(event.member, reactedEvent.eventRole)
+        synchronized(events) {
+            val serverEvent = events[event.guild]
+            if (serverEvent != null && serverEvent.any { it.announceMessage.idLong == event.messageIdLong }) {
+                val reactedEvent = serverEvent.filter { it.announceMessage.idLong == event.messageIdLong }[0]
+                event.guild.controller.addSingleRoleToMember(event.member, reactedEvent.eventRole)
+            }
         }
     }
 
     override fun onGuildMessageReactionRemove(event: GuildMessageReactionRemoveEvent) {
-        val serverEvent = events[event.guild]
-        if (serverEvent != null && serverEvent.any { it.announceMessage.idLong == event.messageIdLong }) {
-            val reactedEvent = serverEvent.filter { it.announceMessage.idLong == event.messageIdLong }[0]
-            event.guild.controller.removeSingleRoleFromMember(event.member, reactedEvent.eventRole)
+        synchronized(events) {
+            val serverEvent = events[event.guild]
+            if (serverEvent != null && serverEvent.any { it.announceMessage.idLong == event.messageIdLong }) {
+                val reactedEvent = serverEvent.filter { it.announceMessage.idLong == event.messageIdLong }[0]
+                event.guild.controller.removeSingleRoleFromMember(event.member, reactedEvent.eventRole)
+            }
         }
     }
 
     override fun onGuildMessageDelete(event: GuildMessageDeleteEvent) {
-        val serverEvent = events[event.guild]
-        if (serverEvent != null && serverEvent.any { it.announceMessage.idLong == event.messageIdLong }) {
-            serverEvent.removeAll(serverEvent.filter { it.announceMessage.idLong == event.messageIdLong })
+        synchronized(events) {
+            val serverEvent = events[event.guild]
+            if (serverEvent != null && serverEvent.any { it.announceMessage.idLong == event.messageIdLong }) {
+                serverEvent.removeAll(serverEvent.filter { it.announceMessage.idLong == event.messageIdLong })
+            }
         }
     }
 
