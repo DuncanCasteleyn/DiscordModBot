@@ -267,7 +267,7 @@ class GuildLogger internal constructor(private val logger: LogToChannel) : Liste
     }
 
     private fun linkEmotes(emotes: MutableList<Emote>, logEmbed: EmbedBuilder) {
-        if(emotes.isNotEmpty()) {
+        if (emotes.isNotEmpty()) {
             val stringBuilder = StringBuilder()
             emotes.forEach {
                 stringBuilder.append("[" + it.name + "](" + it.imageUrl + ")\n")
@@ -320,7 +320,7 @@ class GuildLogger internal constructor(private val logger: LogToChannel) : Liste
                     logWriter.append("\n")
                 }
                 var emotes = message.emotes
-                if(emotes.isNotEmpty()) {
+                if (emotes.isNotEmpty()) {
                     logWriter.append("Emote(s):\n")
                     emotes.forEach {
                         logWriter.append(it.name).append(": ").append(it.imageUrl).append('\n')

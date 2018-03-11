@@ -49,7 +49,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: LogToCha
             get() = arrayOf(Ban(), BanUserById(), ChannelIds(), Info(), Kick(), Ping(), PurgeChannel(), RoleIds(), SlowMode(), UserInfo(), Warn(), Eval(), ReactionVote(), NoMobile())
 
         private val configFile = Paths.get("Config.json")
-        internal val BOT_THREAD_POOL_SIZE = 3
+        internal const val BOT_THREAD_POOL_SIZE = 3
         internal val LOG = LoggerFactory.getLogger(RunBots::class.java)
         var bots: Array<RunBots>? = null
             internal set
@@ -73,7 +73,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: LogToCha
                         .setEventManager(ExecutorServiceEventManager("Fairy tail"))
                         .setToken(configObject.getString("FairyTail"))
                         .setBulkDeleteSplittingEnabled(false)
-                        .addEventListener(fairyTailGuildLogger, Help(), fairyTailQuitBot, GuildLogger.LogSettings, *generalCommands, MuteRoles)
+                        .addEventListener(fairyTailGuildLogger, Help(), fairyTailQuitBot, GuildLogger.LogSettings, *generalCommands, MuteRoles, CreateEvent)
 
 
                 //Re:Zero bot
@@ -91,7 +91,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: LogToCha
                         .setToken(configObject.getString("ReZero"))
                         .setEventManager(ExecutorServiceEventManager("Re:Zero"))
                         .setBulkDeleteSplittingEnabled(false)
-                        .addEventListener(reZeroGuildLogger, helpCommand, reZeroQuitBot, memberGate, Mute(), RemoveMute(), GuildLogger.LogSettings, EventsManager(), *generalCommands, iAmRoles, MuteRoles)
+                        .addEventListener(reZeroGuildLogger, helpCommand, reZeroQuitBot, memberGate, Mute(), RemoveMute(), GuildLogger.LogSettings, EventsManager(), *generalCommands, iAmRoles, MuteRoles, CreateEvent)
 
                 //TEMP EVENT BOT STARTS HERE
                 /*val qAndA = QAndA(
@@ -115,7 +115,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: LogToCha
                         .setEventManager(ExecutorServiceEventManager("Black clover"))
                         .setToken(configObject.getString("BlackClover"))
                         .setBulkDeleteSplittingEnabled(false)
-                        .addEventListener(blackCloverLogger, Help(), blackCloverQuitBot, GuildLogger.LogSettings, *generalCommands, MuteRoles)
+                        .addEventListener(blackCloverLogger, Help(), blackCloverQuitBot, GuildLogger.LogSettings, *generalCommands, MuteRoles, CreateEvent)
 
 
                 bots = arrayOf(RunBots(fairyTailJDABuilder.buildAsync(), fairyTailLogToChannel, fairyTailGuildLogger), RunBots(reZeroJDABuilder.buildAsync(), reZeroLogToChannel, reZeroGuildLogger), RunBots(blackCloverBuilder.buildAsync(), blackCloverLogToChannel, blackCloverLogger))

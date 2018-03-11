@@ -25,6 +25,7 @@
 
 package be.duncanc.discordmodbot
 
+import be.duncanc.discordmodbot.commands.CreateEvent
 import be.duncanc.discordmodbot.commands.Help
 import be.duncanc.discordmodbot.services.*
 import net.dv8tion.jda.core.AccountType
@@ -54,7 +55,7 @@ class TestBot private constructor(bot: JDA, logToChannel: LogToChannel, logger: 
                         .setBulkDeleteSplittingEnabled(false)
                         .setCorePoolSize(RunBots.Companion.BOT_THREAD_POOL_SIZE)
                         .setToken(configObject.getString("Dev"))
-                        .addEventListener(devGuildLogger, Help(), be.duncanc.discordmodbot.commands.QuitBot(), GuildLogger.LogSettings, EventsManager(), IAmRoles.INSTANCE)
+                        .addEventListener(devGuildLogger, Help(), be.duncanc.discordmodbot.commands.QuitBot(), GuildLogger.LogSettings, EventsManager(), IAmRoles.INSTANCE, CreateEvent)
                 for (generalCommand in RunBots.Companion.generalCommands) {
                     devJDABuilder.addEventListener(generalCommand)
                 }

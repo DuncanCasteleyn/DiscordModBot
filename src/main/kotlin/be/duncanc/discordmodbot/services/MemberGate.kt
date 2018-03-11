@@ -25,10 +25,10 @@
 
 package be.duncanc.discordmodbot.services
 
-import be.duncanc.discordmodbot.utils.JDALibHelper
 import be.duncanc.discordmodbot.RunBots
 import be.duncanc.discordmodbot.commands.CommandModule
 import be.duncanc.discordmodbot.sequences.Sequence
+import be.duncanc.discordmodbot.utils.JDALibHelper
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission

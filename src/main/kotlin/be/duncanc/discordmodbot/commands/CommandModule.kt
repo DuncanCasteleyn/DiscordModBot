@@ -90,10 +90,10 @@ abstract class CommandModule @JvmOverloads protected constructor(internal val al
             }
             if (Arrays.stream(aliases).anyMatch { s -> s.equals(command, ignoreCase = true) }) {
                 try {
-                    if(requiredPermissions.isNotEmpty()) {
-                        if(event.isFromType(ChannelType.TEXT) && !event.member.permissions.containsAll(requiredPermissions.asList())) {
+                    if (requiredPermissions.isNotEmpty()) {
+                        if (event.isFromType(ChannelType.TEXT) && !event.member.permissions.containsAll(requiredPermissions.asList())) {
                             throw PermissionException("You do not have sufficient permissions to use this command.\nYou need the following permissions: " + requiredPermissions.contentToString())
-                        } else if(!event.isFromType(ChannelType.TEXT)) {
+                        } else if (!event.isFromType(ChannelType.TEXT)) {
                             throw PermissionException("This command requires permissions, which means it has to be executed from a text channel on a guild/server.")
                         }
                     }
