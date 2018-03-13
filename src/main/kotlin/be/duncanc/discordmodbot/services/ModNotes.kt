@@ -19,6 +19,7 @@ import kotlin.collections.HashSet
 object ModNotes : CommandModule(arrayOf("AddNote"), "[user mention] [note text~]", "This command adds a note to the mentioned user for internal use.", requiredPermissions = *arrayOf(Permission.MANAGE_ROLES)) {
     private val FILE_PATH = Paths.get("ModNotes.json")
     private val LOG = LoggerFactory.getLogger(this::class.java)
+    private const val NOTE_LIMIT = 50
 
     private val notes = HashMap<Long, HashMap<Long, HashSet<Note>>>() //First map long are guild ids, second map long are user ids
 
@@ -118,6 +119,9 @@ object ModNotes : CommandModule(arrayOf("AddNote"), "[user mention] [note text~]
                 newHashSet
             } else {
                 guildNotes[userId]!!
+            }
+            if(userNotes.size > NOTE_LIMIT) {
+                throw IllegalStateException("You have reached the limit of $NOTE_LIMIT notes for this user. Maybe it's time you permanently remove this user?")
             }
             userNotes.add(Note(note, type, authorId, creationDate))
             saveToFile()
