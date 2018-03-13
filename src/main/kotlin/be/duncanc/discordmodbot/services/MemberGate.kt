@@ -73,35 +73,36 @@ open class MemberGate internal constructor(private val guildId: Long, private va
      * Loads up the existing questions
      */
     init {
-        var tempQuestions: ArrayList<Question>
-        try {
-            val stringBuilder = StringBuilder()
-            Files.readAllLines(FILE_PATH).map { stringBuilder.append(it) }
-            val jsonObject = JSONObject(stringBuilder.toString())
-            tempQuestions = ArrayList()
-            jsonObject.getJSONArray("questions").forEach {
-                if (it is JSONObject) {
-                    val question = Question(it.getString("question"))
-                    it.getJSONArray("keywordsList").forEach {
-                        if (it is JSONArray) {
-                            val stringArray: ArrayList<String> = ArrayList()
-                            it.mapTo(stringArray) { it.toString() }
-                            question.addKeywords(stringArray)
-                        } else {
-                            throw JSONException("JSON file contains unexpected object in JSONArray \"keywordsList\".")
+        var tempQuestions = ArrayList<Question>()
+        if (FILE_PATH.toFile().exists()) {
+            try {
+                val stringBuilder = StringBuilder()
+                Files.readAllLines(FILE_PATH).map { stringBuilder.append(it) }
+                val jsonObject = JSONObject(stringBuilder.toString())
+                jsonObject.getJSONArray("questions").forEach {
+                    if (it is JSONObject) {
+                        val question = Question(it.getString("question"))
+                        it.getJSONArray("keywordsList").forEach {
+                            if (it is JSONArray) {
+                                val stringArray: ArrayList<String> = ArrayList()
+                                it.mapTo(stringArray) { it.toString() }
+                                question.addKeywords(stringArray)
+                            } else {
+                                throw JSONException("JSON file contains unexpected object in JSONArray \"keywordsList\".")
+                            }
                         }
+                        tempQuestions.add(question)
+                    } else {
+                        throw JSONException("JSON file contains unexpected object in JSONArray \"questions\".")
                     }
-                    tempQuestions.add(question)
-                } else {
-                    throw JSONException("JSON file contains unexpected object in JSONArray \"questions\".")
                 }
+            } catch (ioE: IOException) {
+                tempQuestions = ArrayList()
+                LOG.error("Initialization failed", ioE)
+            } catch (jE: JSONException) {
+                tempQuestions = ArrayList()
+                LOG.error("Initialization failed", jE)
             }
-        } catch (ioE: IOException) {
-            tempQuestions = ArrayList()
-            LOG.error("Initialization failed", ioE)
-        } catch (jE: JSONException) {
-            tempQuestions = ArrayList()
-            LOG.error("Initialization failed", jE)
         }
         questions = tempQuestions
     }
