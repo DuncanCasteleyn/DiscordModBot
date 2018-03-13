@@ -27,6 +27,7 @@ package be.duncanc.discordmodbot.commands;
 
 import be.duncanc.discordmodbot.RunBots;
 import be.duncanc.discordmodbot.services.GuildLogger;
+import be.duncanc.discordmodbot.services.ModNotes;
 import be.duncanc.discordmodbot.services.MuteRoles;
 import be.duncanc.discordmodbot.utils.JDALibHelper;
 import net.dv8tion.jda.core.EmbedBuilder;
@@ -112,6 +113,8 @@ public class Mute extends CommandModule {
                         ),
                         throwable -> onFailToInformUser(privateChannel, toMute, throwable)
                 );
+                ModNotes.INSTANCE.addNote(reason, ModNotes.NoteType.MUTE, toMute.getUser().getIdLong(), event.getGuild().getIdLong(), event.getAuthor().getIdLong());
+
             }, throwable -> {
                 if (privateChannel == null) {
                     return;

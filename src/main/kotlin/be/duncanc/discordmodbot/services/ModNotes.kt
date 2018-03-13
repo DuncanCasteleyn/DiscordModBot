@@ -13,7 +13,6 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.OffsetDateTime
 import java.util.*
-import java.util.concurrent.TimeUnit
 import kotlin.collections.HashMap
 import kotlin.collections.HashSet
 
@@ -103,7 +102,8 @@ object ModNotes : CommandModule(arrayOf("AddNote"), "[user mention] [note text~]
         addNote(noteText, NoteType.NORMAL, toAddNote.user.idLong, event.guild.idLong, event.author.idLong)
     }
 
-    private fun addNote(note: String, type: NoteType, userId: Long, guildId: Long, authorId: Long, creationDate: OffsetDateTime = OffsetDateTime.now()) {
+    @JvmOverloads
+    fun addNote(note: String, type: NoteType, userId: Long, guildId: Long, authorId: Long, creationDate: OffsetDateTime = OffsetDateTime.now()) {
         synchronized(notes) {
             val guildNotes = if (notes[guildId] == null) {
                 val newHashMap = HashMap<Long, HashSet<Note>>()
@@ -176,11 +176,9 @@ object ModNotes : CommandModule(arrayOf("AddNote"), "[user mention] [note text~]
                 try {
                     val userNotes = getNotes((event.message.mentionedUsers[0].idLong), event.guild.idLong)
                     event.author.openPrivateChannel().queue {
-                        val messageBuilder = MessageBuilder()
-                        userNotes.forEach { messageBuilder.append(it.toString()).append('\n') }
-                        messageBuilder.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { message ->
-                            it.sendMessage(message).queue { it.delete().queueAfter(15, TimeUnit.MINUTES) }
-                        }
+                        val notes = StringBuilder()
+                        userNotes.forEach { notes.append(it.toString()).append("\n\n") }
+                        it.sendFile(notes.toString().toByteArray(), "notes.txt", MessageBuilder().append("You'll find the logs for the user ").append(event.message.mentionedUsers[0].asMention).append(" in the attached file.").build()).queue()
                     }
                 } catch (ie: IndexOutOfBoundsException) {
                     throw IllegalArgumentException("You need to mention a user", ie)
@@ -188,6 +186,4 @@ object ModNotes : CommandModule(arrayOf("AddNote"), "[user mention] [note text~]
             }
         }
     }
-
-    //todo add way to delete notes.
 }
