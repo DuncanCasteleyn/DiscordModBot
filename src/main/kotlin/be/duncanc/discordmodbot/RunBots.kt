@@ -105,20 +105,8 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: LogToCha
                         .buildAsync()*/
                 //TEMP EVENT BOT ENDS HERE
 
-                //black clover bot
-                val blackCloverLogToChannel = LogToChannel()
-                val blackCloverLogger = GuildLogger(blackCloverLogToChannel)
-                val blackCloverQuitBot = QuitBot()
 
-                val blackCloverBuilder = JDABuilder(AccountType.BOT)
-                        .setCorePoolSize(BOT_THREAD_POOL_SIZE)
-                        .setEventManager(ExecutorServiceEventManager("Black clover"))
-                        .setToken(configObject.getString("BlackClover"))
-                        .setBulkDeleteSplittingEnabled(false)
-                        .addEventListener(blackCloverLogger, Help(), blackCloverQuitBot, GuildLogger.LogSettings, *generalCommands, MuteRoles, CreateEvent)
-
-
-                bots = arrayOf(RunBots(fairyTailJDABuilder.buildAsync(), fairyTailLogToChannel, fairyTailGuildLogger), RunBots(reZeroJDABuilder.buildAsync(), reZeroLogToChannel, reZeroGuildLogger), RunBots(blackCloverBuilder.buildAsync(), blackCloverLogToChannel, blackCloverLogger))
+                bots = arrayOf(RunBots(fairyTailJDABuilder.buildAsync(), fairyTailLogToChannel, fairyTailGuildLogger), RunBots(reZeroJDABuilder.buildAsync(), reZeroLogToChannel, reZeroGuildLogger))
 
                 for (bot in bots!!) {
                     MessageHistory.registerMessageHistory(bot.bot)
