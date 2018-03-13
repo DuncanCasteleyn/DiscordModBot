@@ -166,6 +166,7 @@ class GuildLogger internal constructor(private val logger: LogToChannel) : Liste
                     .setDescription("Old message was:\n" + oldMessage.contentDisplay)
                     .setColor(LIGHT_BLUE)
                     .addField("Author", name, true)
+            linkEmotes(oldMessage.emotes, logEmbed)
             guildLoggerExecutor.execute { logger.log(logEmbed, oldMessage.author, guild, oldMessage.embeds, LogTypeAction.USER) }
         }
     }
@@ -200,7 +201,7 @@ class GuildLogger internal constructor(private val logger: LogToChannel) : Liste
         if (history == null) {
             guildLoggerExecutor.execute {
                 val logEntry = event.guild.auditLogs.cache(false).limit(1).complete()[0]
-                lastCheckedLogEntries.put(event.guild.idLong, logEntry)
+                lastCheckedLogEntries[event.guild.idLong] = logEntry
             }
             return
         }
@@ -259,8 +260,19 @@ class GuildLogger internal constructor(private val logger: LogToChannel) : Liste
                 } else {
                     logEmbed.setColor(LIGHT_BLUE)
                 }
+                linkEmotes(oldMessage.emotes, logEmbed)
                 logger.log(logEmbed, oldMessage.author, guild, oldMessage.embeds, if (moderator == null) LogTypeAction.USER else LogTypeAction.MODERATOR)
             }, 1, TimeUnit.SECONDS)
+        }
+    }
+
+    private fun linkEmotes(emotes: MutableList<Emote>, logEmbed: EmbedBuilder) {
+        if (emotes.isNotEmpty()) {
+            val stringBuilder = StringBuilder()
+            emotes.forEach {
+                stringBuilder.append("[" + it.name + "](" + it.imageUrl + ")\n")
+            }
+            logEmbed.addField("Emote(s)", stringBuilder.toString(), false)
         }
     }
 
@@ -306,6 +318,14 @@ class GuildLogger internal constructor(private val logger: LogToChannel) : Liste
                     logWriter.append("Attachment(s):\n").append(attachmentString).append("\n")
                 } else {
                     logWriter.append("\n")
+                }
+                var emotes = message.emotes
+                if (emotes.isNotEmpty()) {
+                    logWriter.append("Emote(s):\n")
+                    emotes.forEach {
+                        logWriter.append(it.name).append(": ").append(it.imageUrl).append('\n')
+                    }
+                    logWriter.append('\n')
                 }
             }
         }

@@ -95,7 +95,9 @@ class Eval : CommandModule(ALIASES, DESCRIPTION, ARGUMENTATION, false) {
             messageBuilder.appendCodeBlock(out?.toString() ?: "Executed without error.", "text")
         } catch (executionException: ExecutionException) {
             val throwable: Throwable? = executionException.cause
-            messageBuilder.appendCodeBlock("${throwable?.javaClass?.simpleName ?: executionException.javaClass.simpleName}: ${throwable?.message ?: executionException.message}", "text")
+            messageBuilder.appendCodeBlock("${throwable?.javaClass?.simpleName
+                    ?: executionException.javaClass.simpleName}: ${throwable?.message
+                    ?: executionException.message}", "text")
         } catch (throwable: Throwable) {
             messageBuilder.appendCodeBlock("${throwable.javaClass.simpleName}: ${throwable.message}", "text")
         }

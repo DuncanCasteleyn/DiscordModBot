@@ -24,9 +24,9 @@
  */
 
 buildscript {
-    ext.kotlin_version = '1.2.21'
-    ext.junit_version = '5.0.3'
-    ext.junit_plugin_version = '1.0.3'
+    ext.kotlin_version = '1.2.30'
+    ext.junit_version = '5.1.0'
+    ext.junit_plugin_version = '1.1.0'
 
     repositories {
         mavenCentral()
@@ -55,30 +55,30 @@ dependencies {
     testRuntime("org.junit.jupiter:junit-jupiter-engine:$junit_version")
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     compile "org.jetbrains.kotlin:kotlin-reflect"
-    compile "net.dv8tion:JDA:3.5.0_336"
+    compile 'net.dv8tion:JDA:3.5.1_348'
     compile 'org.apache.commons:commons-lang3:3.5'
     compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.21'
 }
 
-wrapper.gradleVersion = '4.5'
+wrapper.gradleVersion = '4.6'
 
-compileJava.options.compilerArgs << "-Xlint:deprecation"
-compileJava.options.encoding = "UTF-8"
+compileJava.options.compilerArgs << '-Xlint:deprecation'
+compileJava.options.encoding = 'UTF-8'
 
 sourceCompatibility = 9
 targetCompatibility = 9
 
 compileKotlin {
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = '1.8'
     }
 }
 compileTestKotlin {
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = '1.8'
     }
 }
 
 mainClassName = 'be.duncanc.discordmodbot.RunBots'
 
-version '1.3.0-development'
+version '1.4.0-development'
