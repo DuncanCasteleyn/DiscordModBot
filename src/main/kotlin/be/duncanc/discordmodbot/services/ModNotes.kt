@@ -13,6 +13,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.OffsetDateTime
 import java.util.*
+import java.util.concurrent.TimeUnit
 import kotlin.collections.HashMap
 import kotlin.collections.HashSet
 
@@ -101,6 +102,7 @@ object ModNotes : CommandModule(arrayOf("AddNote"), "[user mention] [note text~]
             throw PermissionException("You can't interact with this member")
         }
         addNote(noteText, NoteType.NORMAL, toAddNote.user.idLong, event.guild.idLong, event.author.idLong)
+        event.channel.sendMessage("Note was added to the user.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
     }
 
     @JvmOverloads
@@ -120,7 +122,7 @@ object ModNotes : CommandModule(arrayOf("AddNote"), "[user mention] [note text~]
             } else {
                 guildNotes[userId]!!
             }
-            if(userNotes.size > NOTE_LIMIT) {
+            if (userNotes.size > NOTE_LIMIT) {
                 throw IllegalStateException("You have reached the limit of $NOTE_LIMIT notes for this user. Maybe it's time you permanently remove this user?")
             }
             userNotes.add(Note(note, type, authorId, creationDate))
