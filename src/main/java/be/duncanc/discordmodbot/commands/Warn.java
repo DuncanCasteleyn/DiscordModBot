@@ -27,6 +27,7 @@ package be.duncanc.discordmodbot.commands;
 
 import be.duncanc.discordmodbot.RunBots;
 import be.duncanc.discordmodbot.services.GuildLogger;
+import be.duncanc.discordmodbot.services.ModNotes;
 import be.duncanc.discordmodbot.utils.JDALibHelper;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.MessageBuilder;
@@ -124,6 +125,8 @@ public class Warn extends CommandModule {
                     ),
                     throwable -> onFailToWarnUser(privateChannel, toWarn, throwable)
             );
+
+            ModNotes.INSTANCE.addNote(reason, ModNotes.NoteType.WARN, toWarn.getUser().getIdLong(), event.getGuild().getIdLong(), event.getAuthor().getIdLong());
         }
     }
 

@@ -27,6 +27,7 @@ package be.duncanc.discordmodbot.commands;
 
 import be.duncanc.discordmodbot.RunBots;
 import be.duncanc.discordmodbot.services.GuildLogger;
+import be.duncanc.discordmodbot.services.ModNotes;
 import be.duncanc.discordmodbot.utils.JDALibHelper;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.MessageBuilder;
@@ -98,7 +99,10 @@ public class Kick extends CommandModule {
 
             toKick.getUser().openPrivateChannel().queue(
                     privateChannelUserToMute -> privateChannelUserToMute.sendMessage(userKickNotification).queue(
-                            message -> onSuccessfulInformUser(event, reason, privateChannel, toKick, message, kickRestAction),
+                            (Message message) -> {
+                                onSuccessfulInformUser(event, reason, privateChannel, toKick, message, kickRestAction);
+                                ModNotes.INSTANCE.addNote(reason, ModNotes.NoteType.WARN, toKick.getUser().getIdLong(), event.getGuild().getIdLong(), event.getAuthor().getIdLong());
+                            },
                             throwable -> onFailToInformUser(event, reason, privateChannel, toKick, throwable, kickRestAction)
                     ),
                     throwable -> onFailToInformUser(event, reason, privateChannel, toKick, throwable, kickRestAction)
