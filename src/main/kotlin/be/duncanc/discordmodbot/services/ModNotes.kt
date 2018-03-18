@@ -176,7 +176,7 @@ object ModNotes : CommandModule(arrayOf("AddNote"), "[user mention] [note text~]
 
     }
 
-    object ViewNotes : CommandModule(arrayOf("ViewNotes"), "[user mention]", "This command show all the notes on a user. This will send to you by DM due to privacy reasons.", requiredPermissions = *arrayOf(Permission.MANAGE_ROLES)) {
+    object ViewNotes : CommandModule(arrayOf("ViewNotes", "Notes"), "[user mention]", "This command show all the notes on a user. This will send to you by DM due to privacy reasons.", requiredPermissions = *arrayOf(Permission.MANAGE_ROLES)) {
         override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
             synchronized(notes) {
                 try {
