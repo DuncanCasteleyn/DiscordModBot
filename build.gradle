@@ -55,7 +55,7 @@ dependencies {
     testRuntime("org.junit.jupiter:junit-jupiter-engine:$junit_version")
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
-    compile 'net.dv8tion:JDA:3.5.1_348'
+    compile 'net.dv8tion:JDA:3.5.1_351'
     compile 'org.apache.commons:commons-lang3:3.5'
     compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.21'
 }
@@ -81,4 +81,4 @@ compileTestKotlin {
 
 mainClassName = 'be.duncanc.discordmodbot.RunBots'
 
-version '1.3.2'
+version '1.3.3'
