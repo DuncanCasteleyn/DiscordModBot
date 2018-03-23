@@ -83,7 +83,7 @@ class IAmRoles : CommandModule {
                 (arrayContent["roles"] as ArrayList<*>).forEach { rolesList.add(it as Long) }
                 arrayList.add(IAmRolesCategory(arrayContent["categoryName"].toString(), arrayContent["allowedRoles"] as Int, rolesList))
             }
-            hashMap.put(it.key.toLong(), arrayList)
+            hashMap[it.key.toLong()] = arrayList
         }
         iAmRoles.putAll(hashMap)
     }
@@ -426,7 +426,7 @@ class IAmRoles : CommandModule {
                     } else {
                         controller.addRolesToMember(member, rRoles).reason("User used !iam command").queue()
                     }
-                    channel.sendMessage(user.asMention + " The requested role(s) where/was " + if (remove) "removed" else "added.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                    channel.sendMessage(user.asMention + " The requested role(s) were/was " + if (remove) "removed" else "added.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                     super.destroy()
                 }
             }
