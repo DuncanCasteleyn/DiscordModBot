@@ -50,7 +50,8 @@ import net.dv8tion.jda.core.events.message.MessageBulkDeleteEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.events.message.guild.GuildMessageDeleteEvent
 import net.dv8tion.jda.core.events.message.guild.GuildMessageUpdateEvent
-import net.dv8tion.jda.core.events.user.UserNameUpdateEvent
+import net.dv8tion.jda.core.events.user.update.UserUpdateDiscriminatorEvent
+import net.dv8tion.jda.core.events.user.update.UserUpdateNameEvent
 import net.dv8tion.jda.core.hooks.ListenerAdapter
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
@@ -319,7 +320,7 @@ class GuildLogger internal constructor(private val logger: LogToChannel) : Liste
                 } else {
                     logWriter.append("\n")
                 }
-                var emotes = message.emotes
+                val emotes = message.emotes
                 if (emotes.isNotEmpty()) {
                     logWriter.append("Emote(s):\n")
                     emotes.forEach {
@@ -489,13 +490,24 @@ class GuildLogger internal constructor(private val logger: LogToChannel) : Liste
         }, 1, TimeUnit.SECONDS)
     }
 
-    override fun onUserNameUpdate(event: UserNameUpdateEvent) {
+    override fun onUserUpdateName(event: UserUpdateNameEvent) {
         for (guild in logger.userOnGuilds(event.user)) {
             val logEmbed = EmbedBuilder()
                     .setColor(LIGHT_BLUE)
                     .setTitle("User has changed username")
-                    .addField("Old username & discriminator", event.oldName + "#" + event.oldDiscriminator, false)
-                    .addField("New username & discriminator", event.user.name + "#" + event.user.discriminator, false)
+                    .addField("Old username", event.oldName, false)
+                    .addField("New username", event.newName, false)
+            guildLoggerExecutor.execute { logger.log(logEmbed, event.user, guild, null, LogTypeAction.USER) }
+        }
+    }
+
+    override fun onUserUpdateDiscriminator(event: UserUpdateDiscriminatorEvent) {
+        for (guild in logger.userOnGuilds(event.user)) {
+            val logEmbed = EmbedBuilder()
+                    .setColor(LIGHT_BLUE)
+                    .setTitle("User's discriminator changed")
+                    .addField("Old discriminator", event.oldDiscriminator, false)
+                    .addField("New discriminator", event.newDiscriminator, false)
             guildLoggerExecutor.execute { logger.log(logEmbed, event.user, guild, null, LogTypeAction.USER) }
         }
     }
