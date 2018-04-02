@@ -91,7 +91,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: LogToCha
                         .setToken(configObject.getString("ReZero"))
                         .setEventManager(ExecutorServiceEventManager("Re:Zero"))
                         .setBulkDeleteSplittingEnabled(false)
-                        .addEventListener(reZeroGuildLogger, helpCommand, reZeroQuitBot, memberGate, Mute(), RemoveMute(), GuildLogger.LogSettings, EventsManager(), *generalCommands, iAmRoles, MuteRoles, CreateEvent, ModNotes, PetraBanisher)
+                        .addEventListener(reZeroGuildLogger, helpCommand, reZeroQuitBot, memberGate, Mute(), RemoveMute(), GuildLogger.LogSettings, EventsManager(), *generalCommands, iAmRoles, MuteRoles, CreateEvent, ModNotes)
 
                 //TEMP EVENT BOT STARTS HERE
                 /*val qAndA = QAndA(
