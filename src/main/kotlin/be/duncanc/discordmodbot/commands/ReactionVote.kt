@@ -29,7 +29,7 @@ import net.dv8tion.jda.core.entities.Guild
 import net.dv8tion.jda.core.entities.Message
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 
-class ReactionVote : CommandModule(ALIASES, ARGUMENTATION, DESCRIPTION, cleanCommandMessage = false) {
+class ReactionVote : CommandModule(ALIASES, ARGUMENTATION, DESCRIPTION, cleanCommandMessage = false, ignoreWhiteList = true) {
 
     companion object {
         private val ALIASES = arrayOf("ReactionVote", "Vote")

@@ -51,7 +51,7 @@ public class RemoveMute extends CommandModule {
      * Constructor for abstract class
      */
     public RemoveMute() {
-        super(ALIASES, ARGUMENTATION_SYNTAX, DESCRIPTION);
+        super(ALIASES, ARGUMENTATION_SYNTAX, DESCRIPTION, true, true);
     }
 
     /**

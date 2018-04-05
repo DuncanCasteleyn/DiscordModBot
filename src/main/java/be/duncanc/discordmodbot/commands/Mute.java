@@ -52,7 +52,7 @@ public class Mute extends CommandModule {
     private static final String DESCRIPTION = "This command will put a user in the muted group and log the mute to the log channel.";
 
     public Mute() {
-        super(ALIASES, ARGUMENTATION_SYNTAX, DESCRIPTION);
+        super(ALIASES, ARGUMENTATION_SYNTAX, DESCRIPTION, true, true);
     }
 
     @Override

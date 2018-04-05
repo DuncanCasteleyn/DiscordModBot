@@ -64,7 +64,6 @@ open class EventsManager : CommandModule(EVENTS_LIST_ALIASES, null, EVENTS_LIST_
 
     override fun onReady(event: ReadyEvent) {
         event.jda.addEventListener(EventManagerCommand())
-        (event.jda.registeredListeners.first { it is Help } as Help).loadCommands(event.jda)
         readEventsFromFile()
         cleanExpiredEvents()
     }

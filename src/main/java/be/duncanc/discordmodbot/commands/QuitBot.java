@@ -43,7 +43,7 @@ public class QuitBot extends CommandModule {
     private List<BeforeBotQuit> callBeforeBotQuit;
 
     public QuitBot() {
-        super(ALIASES, null, DESCRIPTION);
+        super(ALIASES, null, DESCRIPTION, true, true);
         callBeforeBotQuit = new ArrayList<>();
     }
 

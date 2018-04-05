@@ -55,7 +55,7 @@ public class Warn extends CommandModule {
      * Constructor for abstract class
      */
     public Warn() {
-        super(ALIASES, ARGUMENTATION_SYNTAX, DESCRIPTION);
+        super(ALIASES, ARGUMENTATION_SYNTAX, DESCRIPTION, true, true);
     }
 
     /**

@@ -37,43 +37,24 @@ import java.util.concurrent.TimeUnit
  *
  * @since 1.0.0
  */
-class Help constructor() : CommandModule(ALIASES, null, DESCRIPTION) {
-
-    private val helpEmbed: EmbedBuilder = EmbedBuilder().setTitle("Help")
-
-    @Suppress("UNUSED_PARAMETER")
-    @Deprecated("No longer supported, use default constructor instead.", ReplaceWith("Help()"))
-    constructor(vararg commandModules: CommandModule) : this()
-
-    @Suppress("UNUSED_PARAMETER")
-    @Deprecated("No longer supported.", ReplaceWith("loadCommands(jda)"))
-    fun addCommands(vararg commandModules: CommandModule) {
-        throw UnsupportedOperationException("No longer supported.")
-        //Arrays.stream(commandModules).forEach { commandModule -> helpEmbed.addField(Arrays.toString(commandModule.aliases).replace("[", "").replace("]", "").replace(",", ", ") + if (commandModule.argumentationSyntax != null) " " + commandModule.argumentationSyntax else "", commandModule.description, false) }
-    }
-
-    fun loadCommands(jda: JDA) {
-        helpEmbed.clearFields()
-        jda.registeredListeners.filter { it is CommandModule }.forEach {
-            it as CommandModule
-            helpEmbed.addField(Arrays.toString(it.aliases).replace("[", "").replace("]", "").replace(",", ", ") + if (it.argumentationSyntax != null) " " + it.argumentationSyntax else "", it.description
-                    ?: "No description available.", false)
-        }
-    }
-
-    override fun onReady(event: ReadyEvent) {
-        loadCommands(event.jda)
-    }
+class Help : CommandModule(ALIASES, null, DESCRIPTION) {
 
     /**
      * Sends an embed to the users containing help for the commands
      */
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+        val helpEmbed: EmbedBuilder = EmbedBuilder().setTitle("Help")
+        event.jda.registeredListeners.filter { it is CommandModule }.forEach {
+            it as CommandModule
+            helpEmbed.addField(Arrays.toString(it.aliases).replace("[", "").replace("]", "").replace(",", ", ") + if (it.argumentationSyntax != null) " " + it.argumentationSyntax else "", it.description
+                    ?: "No description available.", false)
+        }
+
         event.channel.sendMessage(helpEmbed.build()).queue { it.delete().queueAfter(2, TimeUnit.MINUTES) }
     }
 
     companion object {
         private val ALIASES = arrayOf("Help")
-        private val DESCRIPTION = "Show a list of commands"
+        private const val DESCRIPTION = "Show a list of commands"
     }
 }

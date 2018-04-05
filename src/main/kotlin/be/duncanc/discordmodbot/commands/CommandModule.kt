@@ -26,16 +26,27 @@
 package be.duncanc.discordmodbot.commands
 
 import be.duncanc.discordmodbot.sequences.Sequence
+import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.ChannelType
+import net.dv8tion.jda.core.entities.Guild
+import net.dv8tion.jda.core.entities.Message
+import net.dv8tion.jda.core.entities.TextChannel
+import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.exceptions.PermissionException
 import net.dv8tion.jda.core.hooks.ListenerAdapter
+import org.json.JSONArray
+import org.json.JSONObject
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.collections.HashSet
 
 /**
  * an abstract class that can be used to listen for commands.
@@ -46,7 +57,7 @@ import java.util.concurrent.TimeUnit
  * @property cleanCommandMessage Allows you to enable or disable cleaning up commands.
  * @since 1.0.0
  */
-abstract class CommandModule @JvmOverloads protected constructor(internal val aliases: Array<String>, internal val argumentationSyntax: String?, internal val description: String?, private val cleanCommandMessage: Boolean = true, vararg val requiredPermissions: Permission) : ListenerAdapter() {
+abstract class CommandModule @JvmOverloads protected constructor(internal val aliases: Array<String>, internal val argumentationSyntax: String?, internal val description: String?, private val cleanCommandMessage: Boolean = true, private val ignoreWhiteList: Boolean = false, vararg val requiredPermissions: Permission) : ListenerAdapter() {
     companion object {
         const val COMMAND_SIGN = '!'
         protected val LOG: Logger = LoggerFactory.getLogger(CommandModule::class.java)
@@ -75,7 +86,7 @@ abstract class CommandModule @JvmOverloads protected constructor(internal val al
     override fun onMessageReceived(event: MessageReceivedEvent) {
         val messageContent = event.message.contentRaw.trim().replace("\\s+".toRegex(), " ")
 
-        if (event.author.isBot || messageContent == "" || event.jda.registeredListeners.stream().anyMatch { it is Sequence && it.user === event.author }) {
+        if (event.author.isBot || messageContent == "" || event.jda.registeredListeners.stream().anyMatch { it is Sequence && it.user == event.author }) {
             return
         }
 
@@ -90,6 +101,9 @@ abstract class CommandModule @JvmOverloads protected constructor(internal val al
             }
             if (Arrays.stream(aliases).anyMatch { s -> s.equals(command, ignoreCase = true) }) {
                 try {
+                    if (event.isFromType(ChannelType.TEXT) && !ignoreWhiteList && !CommandTextChannelsWhitelist.isWhitelisted(event.textChannel)) {
+                        throw CommandTextChannelsWhitelist.IllegalTextChannelException()
+                    }
                     if (requiredPermissions.isNotEmpty()) {
                         if (event.isFromType(ChannelType.TEXT) && !event.member.permissions.containsAll(requiredPermissions.asList())) {
                             throw PermissionException("You do not have sufficient permissions to use this command.\nYou need the following permissions: " + requiredPermissions.contentToString())
@@ -119,5 +133,84 @@ abstract class CommandModule @JvmOverloads protected constructor(internal val al
                 }
             }
         }
+    }
+
+    object CommandTextChannelsWhitelist : CommandModule(arrayOf("CommandWhitelistChannel"), null, "Whitelists the channel so commands can be used in it.", ignoreWhiteList = true, requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)) {
+        private val whitelist = HashMap<Guild, HashSet<TextChannel>>()
+        private val FILE_PATH: Path = Paths.get("CommandTextChannelsWhitelist.json")
+
+        private fun save() {
+            synchronized(whitelist) {
+                val jsonObject = JSONObject()
+                whitelist.forEach { mapEntry ->
+                    val jsonArray = JSONArray()
+                    mapEntry.value.forEach { setEntry ->
+                        jsonArray.put(setEntry.idLong)
+                    }
+                    jsonObject.put(mapEntry.key.id, jsonArray)
+                }
+                synchronized(FILE_PATH) {
+                    Files.write(FILE_PATH, Collections.singletonList(jsonObject.toString()))
+                }
+            }
+        }
+
+        private fun load(jda: JDA) {
+            if (FILE_PATH.toFile().exists()) {
+                synchronized(FILE_PATH) {
+                    val jsonObject = JSONObject(Files.readAllLines(FILE_PATH))
+                    val whitelist = HashMap<Guild, HashSet<TextChannel>>()
+                    jsonObject.toMap().forEach { mapK, mapV ->
+                        mapV as JSONArray
+                        val set = HashSet<TextChannel>()
+                        mapV.forEach {
+                            val textChannel = jda.getTextChannelById(it as Long)
+                            if (textChannel.guild.id == mapK) {
+                                set.add(textChannel)
+                            }
+                        }
+                        whitelist[jda.getGuildById(mapV as String)] = set
+                    }
+                    synchronized(this.whitelist) {
+                        this.whitelist.putAll(whitelist)
+                    }
+                }
+            }
+        }
+
+        override fun onReady(event: ReadyEvent) {
+            load(event.jda)
+        }
+
+        override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+            val hashSet = whitelist[event.guild]
+            if (hashSet?.contains(event.textChannel) == true) {
+                hashSet.remove(event.textChannel)
+                if (hashSet.isEmpty()) {
+                    whitelist.remove(event.guild)
+                    event.channel.sendMessage("The channel was removed from the whitelist. There are no channels left on the whitelist commands can be used in all channels now.").queue(cleanMessages())
+                } else {
+                    event.channel.sendMessage("The channel was removed from the whitelist.").queue(cleanMessages())
+                }
+            } else if (hashSet == null) {
+                val newHashSet = HashSet<TextChannel>()
+                newHashSet.add(event.textChannel)
+                whitelist[event.guild] = newHashSet
+                event.channel.sendMessage("The channel was added to the whitelist. Commands can now only be used in whitelisted channels.").queue(cleanMessages())
+            } else {
+                hashSet.add(event.textChannel)
+                event.channel.sendMessage("The channel was added to the whitelist.").queue(cleanMessages())
+            }
+            save()
+        }
+
+        private fun cleanMessages(): (Message) -> Unit =
+                { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+
+        fun isWhitelisted(textChannel: TextChannel): Boolean {
+            return whitelist[textChannel.guild]?.contains(textChannel) == true
+        }
+
+        class IllegalTextChannelException : RuntimeException("You are not allowed to execute commands in this channel.")
     }
 }

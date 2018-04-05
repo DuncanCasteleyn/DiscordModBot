@@ -52,7 +52,7 @@ public class Kick extends CommandModule {
     private static final String DESCRIPTION = "This command will kick the mentioned users and log this to the log channel. A reason is required.";
 
     public Kick() {
-        super(ALIASES, ARGUMENTATION_SYNTAX, DESCRIPTION);
+        super(ALIASES, ARGUMENTATION_SYNTAX, DESCRIPTION, true, true);
     }
 
     @Override

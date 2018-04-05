@@ -52,7 +52,7 @@ import java.util.concurrent.TimeUnit;
 public class PurgeChannel extends CommandModule {
     private static final String[] ALIASES = new String[]{"PurgeChannel", "Purge"};
     private static final String ARGUMENTATION_SYNTAX = "[Amount of messages] (Mention user(s) to filter on)";
-    private static final String DESCRIPTION = "Cleans the amount of messages given as argument. If (a) user(s) are/is mentioned at the end of this command only their/his messages will be deleted. (Messages older than 2 weeks are ignored due to api issues.)";
+    private static final String DESCRIPTION = "Cleans the amount of messages given as argument in the channel where executed. If (a) user(s) are/is mentioned at the end of this command only their/his messages will be deleted, but due to limitations in the discord api this **only works on users that are present in the server**, mentioning a user that is not on the server will causes the command to think you mentioned nobody wiping everyone's messages. (Messages older than 2 weeks are ignored due to api issues.)";
 
     public PurgeChannel() {
         super(ALIASES, ARGUMENTATION_SYNTAX, DESCRIPTION, false);

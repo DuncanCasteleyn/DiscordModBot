@@ -59,7 +59,7 @@ public class SlowMode extends CommandModule {
     private ArrayList<SlowModeOnChannel> slowedChannels;
 
     public SlowMode() {
-        super(ALIASES, ARGUMENTATION_SYNTAX, DESCRIPTION);
+        super(ALIASES, ARGUMENTATION_SYNTAX, DESCRIPTION, true, true);
         slowedChannels = new ArrayList<>();
     }
 

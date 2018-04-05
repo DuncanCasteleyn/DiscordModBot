@@ -54,7 +54,7 @@ public class Ban extends CommandModule {
      * Constructor for abstract class.
      */
     public Ban() {
-        super(ALIASES, ARGUMENTATION_SYNTAX, DESCRIPTION);
+        super(ALIASES, ARGUMENTATION_SYNTAX, DESCRIPTION, true, true);
     }
 
     /**
@@ -65,7 +65,7 @@ public class Ban extends CommandModule {
      * @param description         The description of the command
      */
     Ban(String[] aliases, String argumentationSyntax, String description) {
-        super(aliases, argumentationSyntax, description);
+        super(aliases, argumentationSyntax, description, true , true);
     }
 
     @Override
