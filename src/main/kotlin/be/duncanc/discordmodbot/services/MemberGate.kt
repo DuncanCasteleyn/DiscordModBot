@@ -58,7 +58,7 @@ import kotlin.collections.ArrayList
  * <p>
  * Welcomes users when the join, get accepted and makes them answer questions before they get accepted.
  */
-open class MemberGate internal constructor(private val guildId: Long, private val memberRole: Long, private val rulesTextChannel: Long, private val gateTextChannel: Long, private val welcomeTextChannel: Long, private val welcomeMessages: Array<WelcomeMessage>) : CommandModule(ALIASES, null, null) {
+open class MemberGate internal constructor(private val guildId: Long, private val memberRole: Long, private val rulesTextChannel: Long, private val gateTextChannel: Long, private val welcomeTextChannel: Long, private val welcomeMessages: Array<WelcomeMessage>) : CommandModule(ALIASES, null, null, ignoreWhiteList = true) {
     companion object {
         private val ALIASES = arrayOf("gateConfig", "join", "review")
         private val FILE_PATH = Paths.get("MemberGate.json")
