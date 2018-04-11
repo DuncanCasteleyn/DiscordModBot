@@ -60,6 +60,10 @@ object ModNotes : CommandModule(arrayOf("AddNote"), "[user mention] [note text~]
     }
 
     private fun loadFromFile() {
+        if(!FILE_PATH.toFile().exists()) {
+            return
+        }
+
         val fileContent = Files.readAllLines(FILE_PATH)
         val stringBuilder = StringBuilder()
         fileContent.forEach {

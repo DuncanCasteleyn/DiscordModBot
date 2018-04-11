@@ -46,6 +46,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.collections.ArrayList
 import kotlin.collections.HashSet
 
 /**
@@ -158,18 +159,23 @@ abstract class CommandModule @JvmOverloads protected constructor(internal val al
         private fun load(jda: JDA) {
             if (FILE_PATH.toFile().exists()) {
                 synchronized(FILE_PATH) {
-                    val jsonObject = JSONObject(Files.readAllLines(FILE_PATH))
+                    val stringBuilder = StringBuilder()
+                    Files.readAllLines(FILE_PATH).forEach { stringBuilder.append(it) }
+                    val jsonObject = JSONObject(stringBuilder.toString())
                     val whitelist = HashMap<Guild, HashSet<TextChannel>>()
                     jsonObject.toMap().forEach { mapK, mapV ->
-                        mapV as JSONArray
+                        mapV as ArrayList<*>
                         val set = HashSet<TextChannel>()
                         mapV.forEach {
                             val textChannel = jda.getTextChannelById(it as Long)
-                            if (textChannel.guild.id == mapK) {
+                            if (textChannel != null && textChannel.guild.id == mapK) {
                                 set.add(textChannel)
                             }
                         }
-                        whitelist[jda.getGuildById(mapV as String)] = set
+                        val guild = jda.getGuildById(mapK as String)
+                        if(guild != null) {
+                            whitelist[guild] = set
+                        }
                     }
                     synchronized(this.whitelist) {
                         this.whitelist.putAll(whitelist)
