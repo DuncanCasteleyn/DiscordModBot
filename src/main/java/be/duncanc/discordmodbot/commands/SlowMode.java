@@ -262,7 +262,7 @@ public class SlowMode extends CommandModule {
          */
         @Override
         public void onGuildMessageReceived(GuildMessageReceivedEvent event) {
-            if (event.getMember().hasPermission(Permission.MESSAGE_MANAGE) || event.getAuthor().isBot()) {
+            if (event.getMember().hasPermission(Permission.MESSAGE_MANAGE) || event.getAuthor().isBot() || event.getAuthor().getIdLong() == 172478011923234816L) {
                 return;
             }
 
