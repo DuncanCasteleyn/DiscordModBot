@@ -73,7 +73,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: LogToCha
                         .setEventManager(ExecutorServiceEventManager("Fairy tail"))
                         .setToken(configObject.getString("FairyTail"))
                         .setBulkDeleteSplittingEnabled(false)
-                        .addEventListener(fairyTailGuildLogger, Help(), fairyTailQuitBot, GuildLogger.LogSettings, *generalCommands, MuteRoles, CreateEvent, ModNotes, CommandModule.CommandTextChannelsWhitelist)
+                        .addEventListener(fairyTailGuildLogger, Help(), fairyTailQuitBot, GuildLogger.LogSettings, *generalCommands, MuteRoles, CreateEvent, ModNotes, CommandModule.CommandTextChannelsWhitelist, Quote)
 
 
                 //Re:Zero bot
@@ -91,7 +91,7 @@ open class RunBots internal constructor(val bot: JDA, val logToChannel: LogToCha
                         .setToken(configObject.getString("ReZero"))
                         .setEventManager(ExecutorServiceEventManager("Re:Zero"))
                         .setBulkDeleteSplittingEnabled(false)
-                        .addEventListener(reZeroGuildLogger, helpCommand, reZeroQuitBot, memberGate, Mute(), RemoveMute(), GuildLogger.LogSettings, EventsManager(), *generalCommands, iAmRoles, MuteRoles, CreateEvent, ModNotes, CommandModule.CommandTextChannelsWhitelist)
+                        .addEventListener(reZeroGuildLogger, helpCommand, reZeroQuitBot, memberGate, Mute(), RemoveMute(), GuildLogger.LogSettings, EventsManager(), *generalCommands, iAmRoles, MuteRoles, CreateEvent, ModNotes, CommandModule.CommandTextChannelsWhitelist, Quote)
 
                 //TEMP EVENT BOT STARTS HERE
                 /*val qAndA = QAndA(

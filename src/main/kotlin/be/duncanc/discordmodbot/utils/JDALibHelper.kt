@@ -45,10 +45,10 @@ object JDALibHelper {
         if (member == null) {
             throw IllegalArgumentException("Member may not be null")
         }
-        if (member.nickname != null) {
-            return member.nickname + "(" + member.user.name + ")"
+        return if (member.nickname != null) {
+            member.nickname + "(" + member.user.name + ")"
         } else {
-            return member.user.name
+            member.user.name
         }
     }
 
