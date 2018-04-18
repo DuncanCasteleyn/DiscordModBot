@@ -18,6 +18,7 @@ object Quote : CommandModule(arrayOf("Quote"), "[message id to quote] [response 
         val quoteEmbed = EmbedBuilder()
                 .setAuthor(JDALibHelper.getEffectiveNameAndUsername(messageToQuote.member), null, messageToQuote.author.effectiveAvatarUrl)
                 .setDescription(messageToQuote.contentDisplay)
+                .setFooter(event.author.id, event.author.effectiveAvatarUrl)
         val response = arguments.substring(channelId.length)
         val responseEmbed = if (response.isEmpty()) {
             null
@@ -25,6 +26,7 @@ object Quote : CommandModule(arrayOf("Quote"), "[message id to quote] [response 
             EmbedBuilder()
                     .setAuthor(JDALibHelper.getEffectiveNameAndUsername(event.member), null, event.author.effectiveAvatarUrl)
                     .setDescription(response)
+                    .setFooter(event.author.id, event.author.effectiveAvatarUrl)
         }
         event.textChannel.sendMessage(quoteEmbed.build()).queue()
         if (responseEmbed != null) {
