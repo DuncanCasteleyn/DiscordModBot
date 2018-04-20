@@ -25,10 +25,7 @@
 
 package be.duncanc.discordmodbot
 
-import be.duncanc.discordmodbot.services.GuildLogger
-import be.duncanc.discordmodbot.services.LogToChannel
 import net.dv8tion.jda.core.AccountType
-import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.JDABuilder
 import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.exceptions.RateLimitedException
@@ -41,35 +38,28 @@ import javax.security.auth.login.LoginException
  *
  * Created by Duncan on 1/06/2017.
  */
-class DebugTests internal constructor(bot: JDA, logToChannel: LogToChannel, logger: GuildLogger) : RunBots(bot, logToChannel, logger) {
+class DebugTests : RunBots() {
 
-    init {
-        throw AssertionError()
-    }
 
-    companion object {
+    override fun main(args: Array<String>) {
+        try {
+            val configObject = loadConfig()
 
-        @JvmStatic
-        fun main(args: Array<String>) {
-            try {
-                val configObject = loadConfig()
-
-                JDABuilder(AccountType.BOT)
-                        .setCorePoolSize(RunBots.BOT_THREAD_POOL_SIZE)
-                        .setToken(configObject.getString("ReZero"))
-                        .setBulkDeleteSplittingEnabled(false)
-                        .addEventListener(object : ListenerAdapter() {
-                            override fun onReady(event: ReadyEvent) {
-                                //do something
-                            }
-                        })
-                        .buildAsync()
-            } catch (e: LoginException) {
-                RunBots.LOG.error("Login failed", e)
-            } catch (e: RateLimitedException) {
-                RunBots.LOG.error("Rate limited", e)
-            }
-
+            JDABuilder(AccountType.BOT)
+                    .setCorePoolSize(RunBots.BOT_THREAD_POOL_SIZE)
+                    .setToken(configObject.getString("ReZero"))
+                    .setBulkDeleteSplittingEnabled(false)
+                    .addEventListener(object : ListenerAdapter() {
+                        override fun onReady(event: ReadyEvent) {
+                            //do something
+                        }
+                    })
+                    .buildAsync()
+        } catch (e: LoginException) {
+            RunBots.LOG.error("Login failed", e)
+        } catch (e: RateLimitedException) {
+            RunBots.LOG.error("Rate limited", e)
         }
+
     }
 }

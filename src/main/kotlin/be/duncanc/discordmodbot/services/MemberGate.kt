@@ -25,7 +25,6 @@
 
 package be.duncanc.discordmodbot.services
 
-import be.duncanc.discordmodbot.RunBots
 import be.duncanc.discordmodbot.commands.CommandModule
 import be.duncanc.discordmodbot.sequences.Sequence
 import be.duncanc.discordmodbot.utils.JDALibHelper
@@ -337,7 +336,11 @@ open class MemberGate internal constructor(private val guildId: Long, private va
                             destroy()
                             val reason = "Doesn't agree with the rules."
                             event.guild.controller.kick(event.member, reason).queue()
-                            RunBots.getRunBot(event.jda)?.logger?.logKick(event.member, event.guild, event.guild.getMember(event.jda.selfUser), reason)
+                            val logToChannel = event.jda.registeredListeners.firstOrNull { it is GuildLogger }
+                            if (logToChannel != null) {
+                                logToChannel as GuildLogger
+                                logToChannel.logKick(event.member, event.guild, event.guild.getMember(event.jda.selfUser), reason)
+                            }
                         }
                         else -> {
                             super.channel.sendMessage(user.asMention + " Invalid response! Answer with \"yes\" or \"no\"!").queue { super.addMessageToCleaner(it) }

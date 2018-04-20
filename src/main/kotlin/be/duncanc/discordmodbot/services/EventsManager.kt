@@ -26,7 +26,6 @@
 package be.duncanc.discordmodbot.services
 
 import be.duncanc.discordmodbot.commands.CommandModule
-import be.duncanc.discordmodbot.commands.Help
 import be.duncanc.discordmodbot.sequences.Sequence
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
