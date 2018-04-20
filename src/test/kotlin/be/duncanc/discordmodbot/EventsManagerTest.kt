@@ -25,12 +25,10 @@
 package be.duncanc.discordmodbot
 
 import be.duncanc.discordmodbot.services.EventsManager
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
+import org.junit.Before
+import org.junit.Test
 import java.time.OffsetDateTime
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EventsManagerTest : EventsManager() {
 
     /**
@@ -40,8 +38,9 @@ class EventsManagerTest : EventsManager() {
         events = HashMap()
     }
 
-    @BeforeAll
+
     @Test
+    @Before
     fun testWrite() {
         val eventsList = ArrayList<Event>()
         val event = Event("Test")

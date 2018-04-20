@@ -26,7 +26,7 @@
 package be.duncanc.discordmodbot
 
 import be.duncanc.discordmodbot.services.MemberGate
-import org.junit.jupiter.api.Test
+import org.junit.Test
 
 /**
  * Created by Duncan on 30/06/2017.
@@ -39,7 +39,7 @@ class MemberGateTest : MemberGate(175856762677624832L, 319590906523156481L, 1758
     }
 
     @Test
-    fun AddQuestionTest() {
+    fun addQuestionTest() {
         val messageContent = "Testing?\nYes,we,might\nyolo"
         val inputQuestionList: List<String> = messageContent.split('\n')
         if (inputQuestionList.size < 2) {

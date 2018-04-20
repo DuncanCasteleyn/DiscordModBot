@@ -12,7 +12,7 @@ object Quote : CommandModule(arrayOf("Quote"), "[message id to quote] [response 
         }
         val channelId = arguments.split(" ")[0]
         val messageToQuote = event.textChannel.getMessageById(channelId).complete()
-        if(messageToQuote.contentDisplay.isEmpty()) {
+        if (messageToQuote.contentDisplay.isEmpty()) {
             throw IllegalArgumentException("The message you want to quote has no content to quote.")
         }
         val quoteEmbed = EmbedBuilder()

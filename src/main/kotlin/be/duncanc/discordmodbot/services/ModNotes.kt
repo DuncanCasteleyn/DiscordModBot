@@ -60,7 +60,7 @@ object ModNotes : CommandModule(arrayOf("AddNote"), "[user mention] [note text~]
     }
 
     private fun loadFromFile() {
-        if(!FILE_PATH.toFile().exists()) {
+        if (!FILE_PATH.toFile().exists()) {
             return
         }
 

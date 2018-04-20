@@ -52,8 +52,8 @@
  */
 
 import be.duncanc.discordmodbot.services.CaseSystem
-import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.api.RepeatedTest
+import org.junit.Test
+import org.springframework.test.annotation.Repeat
 import java.io.IOException
 
 /**
@@ -61,15 +61,16 @@ import java.io.IOException
  */
 
 internal class CaseSystemTest {
-    @DisplayName("net.dunciboy.discord_bot.Test requesting numbers")
-    @RepeatedTest(5)
+
+    @Test
+    @Repeat(5)
     @Throws(IOException::class)
     fun requestCaseNumberTest() {
         println(CaseSystem(-99).newCaseNumber)
     }
 
-    @DisplayName("net.dunciboy.discord_bot.Test if reset of count works")
-    @RepeatedTest(2)
+    @Test
+    @Repeat(2)
     fun resetTest() {
         CaseSystem(-99).reset()
     }

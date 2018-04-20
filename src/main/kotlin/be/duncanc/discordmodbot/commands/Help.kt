@@ -26,8 +26,6 @@
 package be.duncanc.discordmodbot.commands
 
 import net.dv8tion.jda.core.EmbedBuilder
-import net.dv8tion.jda.core.JDA
-import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import java.util.*
 import java.util.concurrent.TimeUnit

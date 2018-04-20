@@ -25,7 +25,6 @@
 
 package be.duncanc.discordmodbot.commands;
 
-import be.duncanc.discordmodbot.RunBots;
 import be.duncanc.discordmodbot.services.GuildLogger;
 import be.duncanc.discordmodbot.services.LogToChannel;
 import be.duncanc.discordmodbot.utils.JDALibHelper;
@@ -78,26 +77,20 @@ public class SlowMode extends CommandModule {
             event.getAuthor().openPrivateChannel().queue(privateChannel -> privateChannel.sendMessage(noPermissionMessage).queue());
         } else {
             if (event.getGuild().getMember(event.getJDA().getSelfUser()).getPermissions().contains(Permission.MANAGE_PERMISSIONS)) {
-                RunBots runBots = RunBots.Companion.getRunBot(event.getJDA());
-                LogToChannel logger;
-                if (runBots != null) {
-                    logger = runBots.getLogToChannel();
-                } else {
-                    logger = null;
-                }
+                LogToChannel logToChannel = (LogToChannel) event.getJDA().getRegisteredListeners().stream().filter(o -> o instanceof LogToChannel).findFirst().orElse(null);
                 boolean wasSlowed = false;
                 for (SlowModeOnChannel slowChannel : slowedChannels) {
                     if (slowChannel.getSlowChannel() == event.getChannel()) {
                         slowChannel.disable();
                         slowedChannels.remove(slowChannel);
-                        if (logger != null) {
+                        if (logToChannel != null) {
                             EmbedBuilder logEmbed = new EmbedBuilder()
                                     .setColor(Color.GREEN)
                                     .setTitle("Slow mode disabled", null)
                                     .addField("Moderator", JDALibHelper.INSTANCE.getEffectiveNameAndUsername(event.getMember()), true)
                                     .addField("Channel", event.getTextChannel().getName(), true);
 
-                            runBots.getLogToChannel().log(logEmbed, event.getAuthor(), event.getGuild(), null, GuildLogger.LogTypeAction.MODERATOR);
+                            logToChannel.log(logEmbed, event.getAuthor(), event.getGuild(), null, GuildLogger.LogTypeAction.MODERATOR);
 
                             //logger.log("Slow mode on #" + event.getTextChannel().getName() + " disabled", "toggled by " + JDALibHelper.getEffectiveNameAndUsername(event.getMember()), event.getGuild(), event.getAuthor().getId(), event.getAuthor().getEffectiveAvatarUrl());
                         }
@@ -109,7 +102,7 @@ public class SlowMode extends CommandModule {
                     if (args != null && args.length >= 3) {
                         try {
                             slowedChannels.add(new SlowModeOnChannel(event.getTextChannel(), Integer.parseInt(args[0]), Integer.parseInt(args[1]), Integer.parseInt(args[2])));
-                            if (logger != null) {
+                            if (logToChannel != null) {
                                 EmbedBuilder logEmbed = new EmbedBuilder()
                                         .setColor(Color.YELLOW)
                                         .setTitle("Slow mode enabled", null)
@@ -120,7 +113,7 @@ public class SlowMode extends CommandModule {
                                         .addField("Threshold time", args[1], true)
                                         .addField("Mute time", args[2], true);
 
-                                runBots.getLogToChannel().log(logEmbed, event.getAuthor(), event.getGuild(), null, GuildLogger.LogTypeAction.MODERATOR);
+                                logToChannel.log(logEmbed, event.getAuthor(), event.getGuild(), null, GuildLogger.LogTypeAction.MODERATOR);
                             }
                         } catch (NumberFormatException e) {
                             PrivateChannel privateChannel;
@@ -132,7 +125,7 @@ public class SlowMode extends CommandModule {
                         final int thresholdTime = 5;
                         final int muteTime = 5;
                         slowedChannels.add(new SlowModeOnChannel(event.getTextChannel(), threshold, thresholdTime, muteTime));
-                        if (logger != null) {
+                        if (logToChannel != null) {
                             EmbedBuilder logEmbed = new EmbedBuilder()
                                     .setColor(Color.YELLOW)
                                     .setTitle("Slow mode enabled", null)
@@ -143,7 +136,7 @@ public class SlowMode extends CommandModule {
                                     .addField("Threshold time", String.valueOf(thresholdTime), true)
                                     .addField("Mute time", String.valueOf(muteTime), true);
 
-                            runBots.getLogToChannel().log(logEmbed, event.getAuthor(), event.getGuild(), null, GuildLogger.LogTypeAction.MODERATOR);
+                            logToChannel.log(logEmbed, event.getAuthor(), event.getGuild(), null, GuildLogger.LogTypeAction.MODERATOR);
                         }
                     }
                 }

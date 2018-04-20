@@ -46,7 +46,6 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
 import java.util.concurrent.TimeUnit
-import kotlin.collections.ArrayList
 import kotlin.collections.HashSet
 
 /**
@@ -173,7 +172,7 @@ abstract class CommandModule @JvmOverloads protected constructor(internal val al
                             }
                         }
                         val guild = jda.getGuildById(mapK as String)
-                        if(guild != null) {
+                        if (guild != null) {
                             whitelist[guild] = set
                         }
                     }
