@@ -46,26 +46,7 @@ import java.util.concurrent.TimeUnit
  *
  * This class creates a command to ban users with logging.
  */
-open class Ban : CommandModule {
-    companion object {
-        private val ALIASES = arrayOf("Ban")
-        private const val ARGUMENTATION_SYNTAX = "[User mention] [Reason~]"
-        private const val DESCRIPTION = "Will ban the mentioned user, clear all message that where posted by the user in the last 24 hours and log it to the log channel."
-    }
-
-    /**
-     * Constructor for abstract class.
-     */
-    constructor() : super(ALIASES, ARGUMENTATION_SYNTAX, DESCRIPTION, true, true)
-
-    /**
-     * Constructor for abstract class
-     *
-     * @param aliases             the description for this command
-     * @param argumentationSyntax the syntax for the argumentation of the command, put null if none needed.
-     * @param description         The description of the command
-     */
-    internal constructor(aliases: Array<String>, argumentationSyntax: String, description: String) : super(aliases, argumentationSyntax, description, true, true)
+object Ban : CommandModule(arrayOf("Ban"), "[User mention] [Reason~]", "Will ban the mentioned user, clear all message that where posted by the user in the last 24 hours and log it to the log channel.", true, true) {
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.author.openPrivateChannel().queue(
@@ -73,7 +54,7 @@ open class Ban : CommandModule {
         ) { commandExec(event, arguments, null as PrivateChannel?) }
     }
 
-    open fun commandExec(event: MessageReceivedEvent, arguments: String?, privateChannel: PrivateChannel?) {
+    fun commandExec(event: MessageReceivedEvent, arguments: String?, privateChannel: PrivateChannel?) {
         if (!event.isFromType(ChannelType.TEXT)) {
             if (privateChannel != null) {
                 event.channel.sendMessage("This command only works in a guild.").queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }

@@ -52,7 +52,7 @@ class TestBot : RunBots() {
                     .setBulkDeleteSplittingEnabled(false)
                     .setCorePoolSize(RunBots.BOT_THREAD_POOL_SIZE)
                     .setToken(configObject.getString("Dev"))
-                    .addEventListener(devGuildLogger, Help(), be.duncanc.discordmodbot.commands.QuitBot(), GuildLogger.LogSettings, EventsManager(), IAmRoles.INSTANCE, CreateEvent, ModNotes, Quote)
+                    .addEventListener(devGuildLogger, Help, be.duncanc.discordmodbot.commands.QuitBot(), GuildLogger.LogSettings, EventsManager(), IAmRoles.INSTANCE, CreateEvent, ModNotes, Quote)
             for (generalCommand in RunBots.generalCommands) {
                 devJDABuilder.addEventListener(generalCommand)
             }

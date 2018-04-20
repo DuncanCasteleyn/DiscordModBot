@@ -45,14 +45,15 @@ import java.util.concurrent.TimeUnit
 /**
  * Constructor for abstract class
  */
-class BanUserById : Ban(ALIASES, ARGUMENTATION_SYNTAX, DESCRIPTION) {
-    companion object {
-        private val ALIASES = arrayOf("BanByUserId", "BanById")
-        private const val ARGUMENTATION_SYNTAX = "[user id] [reason~]"
-        private const val DESCRIPTION = "Will ban the user with the id, clear all message that where posted by the user the last 24 hours and log it to the log channel."
+object BanUserById : CommandModule(arrayOf("BanByUserId", "BanById"), "[user id] [reason~]", "Will ban the user with the id, clear all message that where posted by the user the last 24 hours and log it to the log channel.", true, true) {
+
+    public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+        event.author.openPrivateChannel().queue(
+                { privateChannel -> Ban.commandExec(event, arguments, privateChannel) }
+        ) { Ban.commandExec(event, arguments, null as PrivateChannel?) }
     }
 
-    override fun commandExec(event: MessageReceivedEvent, arguments: String?, privateChannel: PrivateChannel?) {
+    fun commandExec(event: MessageReceivedEvent, arguments: String?, privateChannel: PrivateChannel?) {
         if (!event.isFromType(ChannelType.TEXT)) {
             if (privateChannel != null) {
                 event.channel.sendMessage("This command only works in a guild.").queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }

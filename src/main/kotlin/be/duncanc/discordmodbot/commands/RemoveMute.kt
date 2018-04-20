@@ -47,12 +47,7 @@ import java.awt.Color
 /**
  * Constructor for abstract class
  */
-class RemoveMute : CommandModule(ALIASES, ARGUMENTATION_SYNTAX, DESCRIPTION, true, true) {
-    companion object {
-        private val ALIASES = arrayOf("Unmute", "RemoveMute")
-        private const val ARGUMENTATION_SYNTAX = "[User mention] [Reason~]"
-        private const val DESCRIPTION = "This command will remove a mute from a user and log it to the log channel."
-    }
+object RemoveMute : CommandModule(arrayOf("Unmute", "RemoveMute"), "[User mention] [Reason~]", "This command will remove a mute from a user and log it to the log channel.", true, true) {
 
     /**
      * Do something with the event, command and arguments.

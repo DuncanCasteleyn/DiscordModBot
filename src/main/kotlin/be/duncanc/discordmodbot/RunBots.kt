@@ -52,7 +52,7 @@ class RunBots {
         const val BOT_THREAD_POOL_SIZE = 3
         internal val LOG = LoggerFactory.getLogger(RunBots::class.java)
         internal val generalCommands: Array<CommandModule>
-            get() = arrayOf(Ban(), BanUserById(), ChannelIds(), Info(), Kick(), Ping(), PurgeChannel(), RoleIds(), SlowMode(), UserInfo(), Warn(), Eval(), ReactionVote(), NoMobile())
+            get() = arrayOf(Ban, BanUserById, ChannelIds(), Info, Kick, Ping(), PurgeChannel, RoleIds(), SlowMode(), UserInfo(), Warn, Eval(), ReactionVote, NoMobile)
     }
 
     fun main(args: Array<String>) {
@@ -73,13 +73,12 @@ class RunBots {
                     .setEventManager(ExecutorServiceEventManager("Fairy tail"))
                     .setToken(configObject.getString("FairyTail"))
                     .setBulkDeleteSplittingEnabled(false)
-                    .addEventListener(fairyTailGuildLogger, Help(), fairyTailQuitBot, GuildLogger.LogSettings, *generalCommands, MuteRoles, CreateEvent, ModNotes, CommandModule.CommandTextChannelsWhitelist, Quote)
+                    .addEventListener(fairyTailGuildLogger, Help, fairyTailQuitBot, GuildLogger.LogSettings, *generalCommands, MuteRoles, CreateEvent, ModNotes, CommandModule.CommandTextChannelsWhitelist, Quote)
 
 
             //Re:Zero bot
             val reZeroLogToChannel = LogToChannel()
             val reZeroGuildLogger = GuildLogger(reZeroLogToChannel)
-            val helpCommand = Help()
             val reZeroQuitBot = be.duncanc.discordmodbot.commands.QuitBot()
             val iAmRoles: IAmRoles = IAmRoles.INSTANCE
 
@@ -91,7 +90,7 @@ class RunBots {
                     .setToken(configObject.getString("ReZero"))
                     .setEventManager(ExecutorServiceEventManager("Re:Zero"))
                     .setBulkDeleteSplittingEnabled(false)
-                    .addEventListener(reZeroGuildLogger, helpCommand, reZeroQuitBot, memberGate, Mute(), RemoveMute(), GuildLogger.LogSettings, EventsManager(), *generalCommands, iAmRoles, MuteRoles, CreateEvent, ModNotes, CommandModule.CommandTextChannelsWhitelist, Quote)
+                    .addEventListener(reZeroGuildLogger, Help, reZeroQuitBot, memberGate, Mute, RemoveMute, GuildLogger.LogSettings, EventsManager(), *generalCommands, iAmRoles, MuteRoles, CreateEvent, ModNotes, CommandModule.CommandTextChannelsWhitelist, Quote)
 
             //TEMP EVENT BOT STARTS HERE
             /*val qAndA = QAndA(
