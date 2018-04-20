@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit
  *
  * @since 1.0.0
  */
-class Help : CommandModule(ALIASES, null, DESCRIPTION) {
+object Help : CommandModule(arrayOf("Help"), null, "Show a list of commands") {
 
     /**
      * Sends an embed to the users containing help for the commands
@@ -49,10 +49,5 @@ class Help : CommandModule(ALIASES, null, DESCRIPTION) {
         }
 
         event.channel.sendMessage(helpEmbed.build()).queue { it.delete().queueAfter(2, TimeUnit.MINUTES) }
-    }
-
-    companion object {
-        private val ALIASES = arrayOf("Help")
-        private const val DESCRIPTION = "Show a list of commands"
     }
 }

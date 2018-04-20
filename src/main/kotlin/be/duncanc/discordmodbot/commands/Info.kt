@@ -35,18 +35,12 @@ import java.awt.Color
  *
  * @since 1.0.0
  */
-class Info : CommandModule(ALIASES, null, DESCRIPTION) {
-    companion object {
-
-        private val ALIASES = arrayOf("Info")
-        private const val DESCRIPTION = "Returns information about the bot."
-        private val INFO_MESSAGE: MessageEmbed = EmbedBuilder()
-                .setTitle("Discord bot", null)
-                .setDescription("**Author:** Dunciboy\n**Language:** Java & Kotlin\n**Discord-lib:** JDA\n**Bot hosting:** freegamehosting.eu")
-                .setColor(Color.RED)
-                .build()
-
-    }
+object Info : CommandModule(arrayOf("Info"), null, "Returns information about the bot.") {
+    private val INFO_MESSAGE: MessageEmbed = EmbedBuilder()
+            .setTitle("Discord bot", null)
+            .setDescription("**Author:** Dunciboy\n**Language:** Java & Kotlin\n**Discord-lib:** JDA")
+            .setColor(Color.RED)
+            .build()
 
     /**
      * Sends information about the bot to the user.

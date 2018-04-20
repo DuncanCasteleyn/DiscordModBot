@@ -30,20 +30,8 @@ import net.dv8tion.jda.core.entities.Guild
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import java.util.concurrent.TimeUnit
 
-class NoMobile : CommandModule(ALIASES, null, DESCRIPTION) {
+object NoMobile : CommandModule(arrayOf("NoMobile"), null, "This will assign the \"No mobile verification\" role to all mutual guilds that use this system.") {
 
-    companion object {
-        private val ALIASES = arrayOf("NoMobile")
-        private const val DESCRIPTION = "This will asign the \"No mobile verification\" role to all mutual guilds that use this system."
-    }
-
-    /**
-     * When the command is triggered this function will be called
-     *
-     * @param event The {@code MessageReceivedEvent}
-     * @param command The command that was used.
-     * @param arguments The arguments that where provided with the command.
-     */
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         if (!event.isFromType(ChannelType.PRIVATE)) {
             throw UnsupportedOperationException("You are trying to use a command that is intended to be used by direct messaging.\n" +

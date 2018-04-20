@@ -46,12 +46,7 @@ import java.awt.Color
  *
  * This class creates a mute command that will be logged.
  */
-class Mute : CommandModule(ALIASES, ARGUMENTATION_SYNTAX, DESCRIPTION, true, true) {
-    companion object {
-        private val ALIASES = arrayOf("Mute")
-        private const val ARGUMENTATION_SYNTAX = "[User mention] [Reason~]"
-        private const val DESCRIPTION = "This command will put a user in the muted group and log the mute to the log channel."
-    }
+object Mute : CommandModule(arrayOf("Mute"), "[User mention] [Reason~]", "This command will put a user in the muted group and log the mute to the log channel.", true, true) {
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.author.openPrivateChannel().queue(

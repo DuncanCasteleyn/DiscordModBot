@@ -29,14 +29,10 @@ import net.dv8tion.jda.core.entities.Guild
 import net.dv8tion.jda.core.entities.Message
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 
-class ReactionVote : CommandModule(ALIASES, ARGUMENTATION, DESCRIPTION, cleanCommandMessage = false, ignoreWhiteList = true) {
+//todo make emotes not static
+object ReactionVote : CommandModule(arrayOf("ReactionVote", "Vote"), "[message id]", "Will put reactions to vote yes or no on a message.\nIf no message id is provided the message that contains the command will be used to vote.", cleanCommandMessage = false, ignoreWhiteList = true) {
 
-    companion object {
-        private val ALIASES = arrayOf("ReactionVote", "Vote")
-        private const val DESCRIPTION = "Will put reactions to vote yes or no on a message.\nIf no message id is provided the message that contains the command will be used to vote."
-        private const val ARGUMENTATION = "[message id]"
-        private const val EMOTE_SOURCE = 160450060436504578L
-    }
+    private const val EMOTE_SOURCE = 160450060436504578L
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         val emoteSource: Guild = event.jda.getGuildById(EMOTE_SOURCE)

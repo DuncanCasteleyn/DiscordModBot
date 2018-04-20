@@ -47,12 +47,7 @@ import java.util.concurrent.TimeUnit
  *
  * This class create a kick command that will be logged.
  */
-class Kick : CommandModule(ALIASES, ARGUMENTATION_SYNTAX, DESCRIPTION, true, true) {
-    companion object {
-        private val ALIASES = arrayOf("Kick")
-        private const val ARGUMENTATION_SYNTAX = "[User mention] [Reason~]"
-        private const val DESCRIPTION = "This command will kick the mentioned users and log this to the log channel. A reason is required."
-    }
+object Kick : CommandModule(arrayOf("Kick"), "[User mention] [Reason~]", "This command will kick the mentioned users and log this to the log channel. A reason is required.", true, true) {
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.author.openPrivateChannel().queue(

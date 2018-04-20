@@ -45,24 +45,8 @@ import java.awt.Color
  *
  * This class creates a command that allowed you to warn users by sending them a dm and logging.
  */
-/**
- * Constructor for abstract class
- */
-class Warn : CommandModule(ALIASES, ARGUMENTATION_SYNTAX, DESCRIPTION, true, true) {
-    companion object {
+object Warn : CommandModule(arrayOf("Warn"), "[User mention] [Reason~]", "Warns as user by sending the user mentioned a message and logs the warning to the log channel.", true, true) {
 
-        private val ALIASES = arrayOf("Warn")
-        private const val ARGUMENTATION_SYNTAX = "[User mention] [Reason~]"
-        private const val DESCRIPTION = "Warns as user by sending the user mentioned a message and logs the warning to the log channel."
-    }
-
-    /**
-     * Do something with the event, command and arguments.
-     *
-     * @param event     A MessageReceivedEvent that came with the command
-     * @param command   The command alias that was used to trigger this commandExec
-     * @param arguments The arguments that where entered after the command alias
-     */
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.author.openPrivateChannel().queue(
                 { privateChannel -> commandExec(event, arguments, privateChannel) }
