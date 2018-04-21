@@ -30,6 +30,7 @@ import net.dv8tion.jda.core.JDABuilder
 import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.exceptions.RateLimitedException
 import net.dv8tion.jda.core.hooks.ListenerAdapter
+import org.springframework.boot.ApplicationArguments
 import javax.security.auth.login.LoginException
 
 /**
@@ -41,7 +42,7 @@ import javax.security.auth.login.LoginException
 class DebugTests : RunBots() {
 
 
-    override fun main(args: Array<String>) {
+    override fun run(args: ApplicationArguments?) {
         try {
             val configObject = loadConfig()
 

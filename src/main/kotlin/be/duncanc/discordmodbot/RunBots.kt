@@ -32,7 +32,8 @@ import net.dv8tion.jda.core.AccountType
 import net.dv8tion.jda.core.JDABuilder
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
-import org.springframework.boot.SpringApplication
+import org.springframework.boot.ApplicationArguments
+import org.springframework.boot.ApplicationRunner
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import java.nio.file.Files
@@ -45,9 +46,7 @@ import java.nio.file.Paths
  * @since 1.0.0
  */
 @SpringBootApplication
-class RunBots {
-
-
+class RunBots : ApplicationRunner {
     companion object {
         private val configFile = Paths.get("Config.json")
         const val BOT_THREAD_POOL_SIZE = 3
@@ -58,7 +57,9 @@ class RunBots {
 
     fun main(args: Array<String>) {
         runApplication<RunBots>(*args)
+    }
 
+    override fun run(args: ApplicationArguments?) {
         try {
             val configObject = loadConfig()
 
