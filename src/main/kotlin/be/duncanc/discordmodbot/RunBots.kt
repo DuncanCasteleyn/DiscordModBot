@@ -53,10 +53,11 @@ class RunBots : ApplicationRunner {
         internal val LOG = LoggerFactory.getLogger(RunBots::class.java)
         internal val generalCommands: Array<CommandModule>
             get() = arrayOf(Ban, BanUserById, ChannelIds(), Info, Kick, Ping(), PurgeChannel, RoleIds(), SlowMode(), UserInfo(), Warn, Eval(), ReactionVote, NoMobile)
-    }
 
-    fun main(args: Array<String>) {
-        runApplication<RunBots>(*args)
+        @JvmStatic
+        fun main(args: Array<String>) {
+            runApplication<RunBots>(*args)
+        }
     }
 
     override fun run(args: ApplicationArguments?) {

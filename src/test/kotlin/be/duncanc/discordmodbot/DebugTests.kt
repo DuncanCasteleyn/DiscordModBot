@@ -31,6 +31,7 @@ import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.exceptions.RateLimitedException
 import net.dv8tion.jda.core.hooks.ListenerAdapter
 import org.springframework.boot.ApplicationArguments
+import org.springframework.boot.runApplication
 import javax.security.auth.login.LoginException
 
 /**
@@ -40,6 +41,12 @@ import javax.security.auth.login.LoginException
  * Created by Duncan on 1/06/2017.
  */
 class DebugTests : RunBots() {
+    companion object {
+        @JvmStatic
+        fun main(args: Array<String>) {
+            runApplication<RunBots>(*args)
+        }
+    }
 
 
     override fun run(args: ApplicationArguments?) {

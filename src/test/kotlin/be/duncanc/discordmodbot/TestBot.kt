@@ -33,11 +33,18 @@ import net.dv8tion.jda.core.AccountType
 import net.dv8tion.jda.core.JDABuilder
 import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationArguments
+import org.springframework.boot.runApplication
 
 /**
  * This main class starts the bot
  */
 class TestBot : RunBots() {
+    companion object {
+        @JvmStatic
+        fun main(args: Array<String>) {
+            runApplication<RunBots>(*args)
+        }
+    }
 
     private val log = LoggerFactory.getLogger(TestBot::class.java)
 
