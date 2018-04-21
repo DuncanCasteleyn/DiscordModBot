@@ -30,7 +30,8 @@ import net.dv8tion.jda.core.JDABuilder
 import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.exceptions.RateLimitedException
 import net.dv8tion.jda.core.hooks.ListenerAdapter
-import org.springframework.boot.ApplicationArguments
+import org.springframework.boot.SpringBootConfiguration
+import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import javax.security.auth.login.LoginException
 
@@ -40,34 +41,30 @@ import javax.security.auth.login.LoginException
  *
  * Created by Duncan on 1/06/2017.
  */
-class DebugTests : RunBots() {
+@SpringBootApplication
+class DebugTests {
     companion object {
         @JvmStatic
         fun main(args: Array<String>) {
-            runApplication<RunBots>(*args)
+            runApplication<DebugTests>(*args)
+            try {
+                val configObject = RunBots.loadConfig()
+
+                JDABuilder(AccountType.BOT)
+                        .setCorePoolSize(RunBots.BOT_THREAD_POOL_SIZE)
+                        .setToken(configObject.getString("ReZero"))
+                        .setBulkDeleteSplittingEnabled(false)
+                        .addEventListener(object : ListenerAdapter() {
+                            override fun onReady(event: ReadyEvent) {
+                                //do something
+                            }
+                        })
+                        .buildAsync()
+            } catch (e: LoginException) {
+                RunBots.LOG.error("Login failed", e)
+            } catch (e: RateLimitedException) {
+                RunBots.LOG.error("Rate limited", e)
+            }
         }
-    }
-
-
-    override fun run(args: ApplicationArguments?) {
-        try {
-            val configObject = loadConfig()
-
-            JDABuilder(AccountType.BOT)
-                    .setCorePoolSize(RunBots.BOT_THREAD_POOL_SIZE)
-                    .setToken(configObject.getString("ReZero"))
-                    .setBulkDeleteSplittingEnabled(false)
-                    .addEventListener(object : ListenerAdapter() {
-                        override fun onReady(event: ReadyEvent) {
-                            //do something
-                        }
-                    })
-                    .buildAsync()
-        } catch (e: LoginException) {
-            RunBots.LOG.error("Login failed", e)
-        } catch (e: RateLimitedException) {
-            RunBots.LOG.error("Rate limited", e)
-        }
-
     }
 }

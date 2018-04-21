@@ -32,43 +32,41 @@ import be.duncanc.discordmodbot.services.*
 import net.dv8tion.jda.core.AccountType
 import net.dv8tion.jda.core.JDABuilder
 import org.slf4j.LoggerFactory
-import org.springframework.boot.ApplicationArguments
+import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 
 /**
  * This main class starts the bot
  */
-class TestBot : RunBots() {
+@SpringBootApplication
+class TestBot {
     companion object {
+        private val log = LoggerFactory.getLogger(TestBot::class.java)
+
         @JvmStatic
         fun main(args: Array<String>) {
-            runApplication<RunBots>(*args)
-        }
-    }
+            runApplication<TestBot>(*args)
+            try {
+                val configObject = RunBots.loadConfig()
 
-    private val log = LoggerFactory.getLogger(TestBot::class.java)
+                val devLogToChannel = LogToChannel()
+                val devGuildLogger = GuildLogger(devLogToChannel)
 
-    override fun run(args: ApplicationArguments?) {
-        try {
-            val configObject = loadConfig()
+                val devJDABuilder = JDABuilder(AccountType.BOT)
+                        .setBulkDeleteSplittingEnabled(false)
+                        .setCorePoolSize(RunBots.BOT_THREAD_POOL_SIZE)
+                        .setToken(configObject.getString("Dev"))
+                        .addEventListener(devGuildLogger, Help, be.duncanc.discordmodbot.commands.QuitBot(), GuildLogger.LogSettings, EventsManager(), IAmRoles.INSTANCE, CreateEvent, ModNotes, Quote)
+                for (generalCommand in RunBots.generalCommands) {
+                    devJDABuilder.addEventListener(generalCommand)
+                }
 
-            val devLogToChannel = LogToChannel()
-            val devGuildLogger = GuildLogger(devLogToChannel)
+                val devJDA = devJDABuilder.buildAsync()
 
-            val devJDABuilder = JDABuilder(AccountType.BOT)
-                    .setBulkDeleteSplittingEnabled(false)
-                    .setCorePoolSize(RunBots.BOT_THREAD_POOL_SIZE)
-                    .setToken(configObject.getString("Dev"))
-                    .addEventListener(devGuildLogger, Help, be.duncanc.discordmodbot.commands.QuitBot(), GuildLogger.LogSettings, EventsManager(), IAmRoles.INSTANCE, CreateEvent, ModNotes, Quote)
-            for (generalCommand in RunBots.generalCommands) {
-                devJDABuilder.addEventListener(generalCommand)
+                MessageHistory.registerMessageHistory(devJDA)
+            } catch (e: Exception) {
+                log.error("An error occurred while starting the test bot", e)
             }
-
-            val devJDA = devJDABuilder.buildAsync()
-
-            MessageHistory.registerMessageHistory(devJDA)
-        } catch (e: Exception) {
-            log.error("An error occurred while starting the test bot", e)
         }
     }
 }
