@@ -32,6 +32,7 @@ import be.duncanc.discordmodbot.services.*
 import net.dv8tion.jda.core.AccountType
 import net.dv8tion.jda.core.JDABuilder
 import org.slf4j.LoggerFactory
+import org.springframework.boot.ApplicationArguments
 
 /**
  * This main class starts the bot
@@ -40,8 +41,7 @@ class TestBot : RunBots() {
 
     private val log = LoggerFactory.getLogger(TestBot::class.java)
 
-    override fun main(args: Array<String>) {
-
+    override fun run(args: ApplicationArguments?) {
         try {
             val configObject = loadConfig()
 
