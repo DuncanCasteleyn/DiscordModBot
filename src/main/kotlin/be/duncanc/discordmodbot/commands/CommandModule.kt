@@ -79,7 +79,7 @@ abstract class CommandModule @JvmOverloads protected constructor(internal val al
     protected abstract fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?)
 
     /**
-     * When a message is received it will decide if the message is command that should be handled by the command executor.
+     * When a message is received it will decide if the message is a command that should be handled by the command executor.
 
      * @param event A {@code MessageReceivedEvent}.
      */
