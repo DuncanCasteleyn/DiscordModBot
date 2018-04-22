@@ -34,6 +34,7 @@ import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
+import org.springframework.context.annotation.Primary
 import java.nio.file.Files
 import java.nio.file.Paths
 
@@ -43,6 +44,7 @@ import java.nio.file.Paths
  *
  * @since 1.0.0
  */
+@Primary
 @SpringBootApplication
 class RunBots {
     companion object {
