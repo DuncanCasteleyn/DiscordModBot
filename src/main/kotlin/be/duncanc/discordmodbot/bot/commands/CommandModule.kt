@@ -213,7 +213,7 @@ abstract class CommandModule @JvmOverloads protected constructor(internal val al
                 { it.delete().queueAfter(1, TimeUnit.MINUTES) }
 
         fun isWhitelisted(textChannel: TextChannel): Boolean {
-            return whitelist[textChannel.guild]?.contains(textChannel) == true
+            return whitelist[textChannel.guild]?.contains(textChannel) == true || whitelist.isEmpty()
         }
 
         class IllegalTextChannelException : RuntimeException("You are not allowed to execute commands in this channel.")
