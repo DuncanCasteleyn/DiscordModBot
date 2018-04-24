@@ -26,6 +26,7 @@
 package be.duncanc.discordmodbot
 
 import be.duncanc.discordmodbot.bot.RunBots
+import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.commands.CreateEvent
 import be.duncanc.discordmodbot.bot.commands.Help
 import be.duncanc.discordmodbot.bot.commands.Quote
@@ -66,7 +67,7 @@ class TestBot : CommandLineRunner {
                     .setBulkDeleteSplittingEnabled(false)
                     .setCorePoolSize(RunBots.BOT_THREAD_POOL_SIZE)
                     .setToken(configObject.getString("Dev"))
-                    .addEventListener(*RunBots.generalCommands, devGuildLogger, Help, be.duncanc.discordmodbot.bot.commands.QuitBot(), GuildLogger.LogSettings, EventsManager(), IAmRoles.INSTANCE, CreateEvent, ModNotes, Quote, applicationContext.getBean("feedback"))
+                    .addEventListener(*RunBots.generalCommands, devGuildLogger, Help, be.duncanc.discordmodbot.bot.commands.QuitBot(), GuildLogger.LogSettings, EventsManager(), IAmRoles.INSTANCE, CreateEvent, ModNotes, Quote, applicationContext.getBean("feedback"), CommandModule.CommandTextChannelsWhitelist)
 
             val devJDA = devJDABuilder.buildAsync()
 
