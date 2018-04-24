@@ -23,7 +23,7 @@
  *
  */
 
-package be.duncanc.discordmodbot
+package be.duncanc.discordmodbot.bot
 
 import be.duncanc.discordmodbot.bot.services.MemberGate
 import org.junit.Test

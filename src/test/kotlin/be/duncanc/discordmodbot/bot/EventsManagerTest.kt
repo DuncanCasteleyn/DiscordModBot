@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package be.duncanc.discordmodbot
+package be.duncanc.discordmodbot.bot
 
 import be.duncanc.discordmodbot.bot.services.EventsManager
 import org.junit.Before

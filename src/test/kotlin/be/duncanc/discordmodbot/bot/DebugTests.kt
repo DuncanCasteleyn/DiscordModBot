@@ -23,9 +23,8 @@
  *
  */
 
-package be.duncanc.discordmodbot
+package be.duncanc.discordmodbot.bot
 
-import be.duncanc.discordmodbot.bot.RunBots
 import net.dv8tion.jda.core.AccountType
 import net.dv8tion.jda.core.JDABuilder
 import net.dv8tion.jda.core.events.ReadyEvent
