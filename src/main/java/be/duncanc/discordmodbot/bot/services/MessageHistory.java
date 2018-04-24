@@ -169,7 +169,7 @@ public class MessageHistory extends ListenerAdapter implements QuitBot.BeforeBot
         return attachmentProxyCreator.getAttachmentUrl(id);
     }
 
-    private void cleanAttachmentCache() {
+    public void cleanAttachmentCache() {
         attachmentProxyCreator.cleanCache();
     }
 

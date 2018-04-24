@@ -23,34 +23,37 @@
  *
  */
 
-package be.duncanc.discordmodbot
+package be.duncanc.discordmodbot.bot
 
-import be.duncanc.discordmodbot.bot.RunBots
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.commands.CreateEvent
 import be.duncanc.discordmodbot.bot.commands.Help
 import be.duncanc.discordmodbot.bot.commands.Quote
 import be.duncanc.discordmodbot.bot.services.*
 import net.dv8tion.jda.core.AccountType
+import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.JDABuilder
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.getBeansOfType
 import org.springframework.boot.CommandLineRunner
 import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
+import java.util.concurrent.TimeUnit
+import javax.annotation.PreDestroy
 
 /**
  * This main class starts the bot
  */
 
+@Suppress("unused")
 @Profile("testing")
 @Component
 class TestBot : CommandLineRunner {
 
     @Autowired
     private lateinit var applicationContext: ApplicationContext
+    private lateinit var devJDA: JDA
 
     companion object {
         private val log = LoggerFactory.getLogger(TestBot::class.java)
@@ -71,11 +74,22 @@ class TestBot : CommandLineRunner {
                     .addEventListener(*RunBots.generalCommands, devGuildLogger, Help, be.duncanc.discordmodbot.bot.commands.QuitBot(), GuildLogger.LogSettings, EventsManager(), IAmRoles.INSTANCE, CreateEvent, ModNotes, Quote, CommandModule.CommandTextChannelsWhitelist)
                     .addEventListener(*applicationContext.getBeansOfType(CommandModule::class.java).values.toTypedArray())
 
-            val devJDA = devJDABuilder.buildAsync()
+            devJDA = devJDABuilder.buildAsync()
 
             MessageHistory.registerMessageHistory(devJDA)
         } catch (e: Exception) {
             log.error("An error occurred while starting the test bot", e)
         }
+    }
+
+    @PreDestroy
+    fun cleanUpBots() {
+        devJDA.registeredListeners.filter { it is MessageHistory }.forEach {
+            it as MessageHistory
+            it.cleanAttachmentCache()
+        }
+        devJDA.shutdown()
+
+        TimeUnit.SECONDS.sleep(5)
     }
 }

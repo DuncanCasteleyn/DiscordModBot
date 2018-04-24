@@ -29,6 +29,7 @@ import be.duncanc.discordmodbot.bot.commands.*
 import be.duncanc.discordmodbot.bot.services.*
 import be.duncanc.discordmodbot.bot.utils.ExecutorServiceEventManager
 import net.dv8tion.jda.core.AccountType
+import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.JDABuilder
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
@@ -39,6 +40,8 @@ import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.util.concurrent.TimeUnit
+import javax.annotation.PreDestroy
 
 
 @Profile("production")
@@ -60,6 +63,8 @@ class RunBots : CommandLineRunner {
 
     @Autowired
     private lateinit var applicationContext: ApplicationContext
+    private lateinit var reZeroBot: JDA
+    private lateinit var fairyTailBot: JDA
 
 
     override fun run(vararg args: String?) {
@@ -110,10 +115,30 @@ class RunBots : CommandLineRunner {
                     .buildAsync()*/
             //TEMP EVENT BOT ENDS HERE
 
-            MessageHistory.registerMessageHistory(reZeroJDABuilder.buildAsync())
-            MessageHistory.registerMessageHistory(fairyTailJDABuilder.buildAsync())
+            reZeroBot = reZeroJDABuilder.buildAsync()
+            fairyTailBot = fairyTailJDABuilder.buildAsync()
+
+            MessageHistory.registerMessageHistory(reZeroBot)
+            MessageHistory.registerMessageHistory(fairyTailBot)
         } catch (e: Exception) {
             LOG.error("Exception while booting the bots", e)
         }
+    }
+
+    @PreDestroy
+    fun cleanUpBots() {
+        reZeroBot.registeredListeners.filter { it is MessageHistory }.forEach {
+            it as MessageHistory
+            it.cleanAttachmentCache()
+        }
+        fairyTailBot.registeredListeners.filter { it is MessageHistory }.forEach {
+            it as MessageHistory
+            it.cleanAttachmentCache()
+        }
+
+        reZeroBot.shutdown()
+        fairyTailBot.shutdown()
+
+        TimeUnit.SECONDS.sleep(5)
     }
 }

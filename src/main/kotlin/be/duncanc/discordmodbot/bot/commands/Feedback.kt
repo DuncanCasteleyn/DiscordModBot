@@ -29,7 +29,7 @@ class Feedback private constructor() : CommandModule(arrayOf("Feedback", "Report
     private val disableFeedback = DisableFeedback()
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-        if(!event.isFromType(ChannelType.PRIVATE)) {
+        if (!event.isFromType(ChannelType.PRIVATE)) {
             throw UnsupportedOperationException("Feedback must be provided in private chat.")
         }
         event.jda.addEventListener(FeedbackSequence(event.author, event.privateChannel, event.jda))
@@ -41,12 +41,12 @@ class Feedback private constructor() : CommandModule(arrayOf("Feedback", "Report
 
     inner class FeedbackSequence(user: User, channel: MessageChannel, jda: JDA) : Sequence(user, channel, cleanAfterSequence = false, informUser = true) {
         private var guild: Guild? = null
-        private val selectableGuilds : List<Guild>
+        private val selectableGuilds: List<Guild>
 
         init {
             val validGuilds = reportChannelRepository.findAll()
             selectableGuilds = jda.guilds.filter { guild -> validGuilds.any { it.guildId == guild.idLong } && guild.isMember(user) }.toList()
-            if(selectableGuilds.isEmpty()) {
+            if (selectableGuilds.isEmpty()) {
                 throw UnsupportedOperationException("None of the servers you are on have this feature enabled.")
             }
 
@@ -67,13 +67,14 @@ class Feedback private constructor() : CommandModule(arrayOf("Feedback", "Report
             } else {
                 val feedbackChannel = reportChannelRepository.findById(guild!!.idLong).orElseThrow { throw RuntimeException("The feedback feature was disabled during runtime") }.textChannelId!!
                 val embedBuilder = EmbedBuilder()
+                        .setAuthor(JDALibHelper.getEffectiveNameAndUsername(guild!!.getMember(user)), null, user.effectiveAvatarUrl)
                         .setDescription(event.message.contentStripped)
-                        .addField("Author", JDALibHelper.getEffectiveNameAndUsername(guild!!.getMember(user)), false)
                         .setFooter(user.id, null)
                         .setTimestamp(OffsetDateTime.now())
                         .setColor(Color.GREEN)
                 guild!!.getTextChannelById(feedbackChannel).sendMessage(embedBuilder.build()).queue()
                 channel.sendMessage("Your feedback has been transferred to the moderators.\n\nThank you for helping us.").queue()
+                super.destroy()
             }
         }
     }

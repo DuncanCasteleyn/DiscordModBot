@@ -44,7 +44,7 @@ import java.util.concurrent.TimeUnit
  *
  * This command purges a channel of messages.
  */
-object PurgeChannel : CommandModule(arrayOf("PurgeChannel", "Purge"), "[Amount of messages] (Mention user(s) to filter on)", "Cleans the amount of messages given as argument in the channel where executed. If (a) user(s) are/is mentioned at the end of this command only their/his messages will be deleted, but due to limitations in the discord api this **only works on users that are present in the server**, mentioning a user that is not on the server will causes the command to think you mentioned nobody wiping everyone's messages. (Messages older than 2 weeks are ignored due to api issues.)", false) {
+object PurgeChannel : CommandModule(arrayOf("PurgeChannel", "Purge"), "[Amount of messages] (Mention user(s) to filter on)", "Cleans the amount of messages given as argument in the channel where executed. If (a) user(s) are/is mentioned at the end of this command only their/his messages will be deleted, but due to limitations in the discord api this **only works on users that are present in the server**, mentioning a user that is not on the server will causes the command to think you mentioned nobody wiping everyone's messages. (Messages older than 2 weeks are ignored due to api issues.)",  cleanCommandMessage = false, ignoreWhiteList = true) {
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         try {
