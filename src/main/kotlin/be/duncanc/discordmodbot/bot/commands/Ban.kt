@@ -100,7 +100,8 @@ object Ban : CommandModule(arrayOf("Ban"), "[User mention] [Reason~]", "Will ban
     }
 
     private fun logBan(event: MessageReceivedEvent, reason: String, toBan: Member) {
-        val logToChannel = event.jda.registeredListeners.firstOrNull { it is LogToChannel } as LogToChannel?
+        val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
+        val logToChannel = guildLogger?.logger
         if (logToChannel != null) {
             val logEmbed = EmbedBuilder()
                     .setColor(Color.RED)

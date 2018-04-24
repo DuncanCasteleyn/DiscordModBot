@@ -72,7 +72,8 @@ object Warn : CommandModule(arrayOf("Warn"), "[User mention] [Reason~]", "Warns 
             if (!event.member.canInteract(toWarn)) {
                 throw PermissionException("You can't interact with this member")
             }
-            val logToChannel = event.jda.registeredListeners.firstOrNull { it is LogToChannel } as LogToChannel?
+            val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
+            val logToChannel = guildLogger?.logger
             if (logToChannel != null) {
                 val serializableCaseResult = GuildLogger.getCaseNumberSerializable(event.guild.idLong)
                 val logEmbed = EmbedBuilder()

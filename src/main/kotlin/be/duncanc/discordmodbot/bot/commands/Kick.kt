@@ -98,7 +98,8 @@ object Kick : CommandModule(arrayOf("Kick"), "[User mention] [Reason~]", "This c
     }
 
     private fun logKick(event: MessageReceivedEvent, reason: String, toKick: Member) {
-        val logToChannel = event.jda.registeredListeners.firstOrNull { it is LogToChannel } as LogToChannel?
+        val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
+        val logToChannel = guildLogger?.logger
         if (logToChannel != null) {
             val logEmbed = EmbedBuilder()
                     .setColor(Color.RED)

@@ -74,7 +74,8 @@ object Mute : CommandModule(arrayOf("Mute"), "[User mention] [Reason~]", "This c
                 throw PermissionException("You can't interact with this member")
             }
             event.guild.controller.addRolesToMember(toMute, MuteRoles.getMuteRole(event.guild)).reason(reason).queue({
-                val logToChannel = event.jda.registeredListeners.firstOrNull { it is LogToChannel } as LogToChannel?
+                val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
+                val logToChannel = guildLogger?.logger
                 if (logToChannel != null) {
                     val serializableCaseResult = GuildLogger.getCaseNumberSerializable(event.guild.idLong)
                     val logEmbed = EmbedBuilder()

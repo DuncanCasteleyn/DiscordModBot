@@ -81,7 +81,7 @@ import java.util.concurrent.TimeUnit
  * @author Duncan
  * @since 1.0
  */
-class GuildLogger internal constructor(private val logger: LogToChannel) : ListenerAdapter() {
+class GuildLogger internal constructor(val logger: LogToChannel) : ListenerAdapter() {
 
     companion object {
         private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd-M-yyyy hh:mm a O")
