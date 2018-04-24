@@ -96,6 +96,7 @@ class RunBots : CommandLineRunner {
                     .setEventManager(ExecutorServiceEventManager("Re:Zero"))
                     .setBulkDeleteSplittingEnabled(false)
                     .addEventListener(reZeroGuildLogger, Help, reZeroQuitBot, memberGate, Mute, RemoveMute, GuildLogger.LogSettings, EventsManager(), *generalCommands, iAmRoles, MuteRoles, CreateEvent, ModNotes, CommandModule.CommandTextChannelsWhitelist, Quote)
+                    .addEventListener(*applicationContext.getBeansOfType(CommandModule::class.java).values.toTypedArray())
 
             //TEMP EVENT BOT STARTS HERE
             /*val qAndA = QAndA(
