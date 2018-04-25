@@ -28,9 +28,11 @@ import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.entities.ChannelType
 import net.dv8tion.jda.core.entities.Guild
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
 
-object NoMobile : CommandModule(arrayOf("NoMobile"), null, "This will assign the \"No mobile verification\" role to all mutual guilds that use this system.") {
+@Component
+class NoMobile private constructor() : CommandModule(arrayOf("NoMobile"), null, "This will assign the \"No mobile verification\" role to all mutual guilds that use this system.") {
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         if (!event.isFromType(ChannelType.PRIVATE)) {

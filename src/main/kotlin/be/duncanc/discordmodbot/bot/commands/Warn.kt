@@ -36,6 +36,8 @@ import net.dv8tion.jda.core.entities.MessageEmbed
 import net.dv8tion.jda.core.entities.PrivateChannel
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.exceptions.PermissionException
+import org.springframework.context.ApplicationContext
+import org.springframework.stereotype.Component
 import java.awt.Color
 
 /**
@@ -44,7 +46,10 @@ import java.awt.Color
  *
  * This class creates a command that allowed you to warn users by sending them a dm and logging.
  */
-object Warn : CommandModule(arrayOf("Warn"), "[User mention] [Reason~]", "Warns as user by sending the user mentioned a message and logs the warning to the log channel.", true, true) {
+@Component
+class Warn : CommandModule(arrayOf("Warn"), "[User mention] [Reason~]", "Warns as user by sending the user mentioned a message and logs the warning to the log channel.", true, true) {
+
+    private lateinit var applicationContext: ApplicationContext
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.author.openPrivateChannel().queue(
@@ -101,7 +106,7 @@ object Warn : CommandModule(arrayOf("Warn"), "[User mention] [Reason~]", "Warns 
                     }
             ) { throwable -> onFailToWarnUser(privateChannel!!, toWarn, throwable) }
 
-            ModNotes.addNote(reason, ModNotes.NoteType.WARN, toWarn.user.idLong, event.guild.idLong, event.author.idLong)
+            applicationContext.getBean(ModNotes::class.java).addNote(reason, ModNotes.NoteType.WARN, toWarn.user.idLong, event.guild.idLong, event.author.idLong)
         }
     }
 

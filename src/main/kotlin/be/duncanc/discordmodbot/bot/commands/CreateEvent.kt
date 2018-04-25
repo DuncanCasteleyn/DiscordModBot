@@ -36,6 +36,7 @@ import net.dv8tion.jda.core.events.message.guild.react.GuildMessageReactionRemov
 import net.dv8tion.jda.core.events.role.RoleDeleteEvent
 import org.json.JSONArray
 import org.json.JSONObject
+import org.springframework.stereotype.Component
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.*
@@ -44,9 +45,12 @@ import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
 
-object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <subscribers role> <emote to react to> <event text>", "Creates an event, including role and message to announce the event", requiredPermissions = *arrayOf(Permission.MANAGE_ROLES)) {
-    private val FILE = Paths.get("EventsTool.json")
-    private val events = HashMap<Guild, ArrayList<EventRole>>()
+@Component
+class CreateEvent private constructor() : CommandModule(arrayOf("CreateEvent"), "<event id/name> <subscribers role> <emote to react to> <event text>", "Creates an event, including role and message to announce the event", requiredPermissions = *arrayOf(Permission.MANAGE_ROLES)) {
+    companion object {
+        private val FILE = Paths.get("EventsTool.json")
+        private val EVENTS = HashMap<Guild, ArrayList<EventRole>>()
+    }
 
     override fun onReady(event: ReadyEvent) {
         load(event.jda)
@@ -57,8 +61,8 @@ object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <sub
     }
 
     override fun onGuildMessageReactionAdd(event: GuildMessageReactionAddEvent) {
-        synchronized(events) {
-            val serverEvent = events[event.guild]
+        synchronized(EVENTS) {
+            val serverEvent = EVENTS[event.guild]
             if (serverEvent != null && serverEvent.any { it.announceMessage.idLong == event.messageIdLong }) {
                 val reactedEvent = serverEvent.filter { it.announceMessage.idLong == event.messageIdLong }[0]
                 event.guild.controller.addSingleRoleToMember(event.member, reactedEvent.eventRole).reason("Voted on event reaction").queue()
@@ -67,8 +71,8 @@ object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <sub
     }
 
     override fun onGuildMessageReactionRemove(event: GuildMessageReactionRemoveEvent) {
-        synchronized(events) {
-            val serverEvent = events[event.guild]
+        synchronized(EVENTS) {
+            val serverEvent = EVENTS[event.guild]
             if (serverEvent != null && serverEvent.any { it.announceMessage.idLong == event.messageIdLong }) {
                 val reactedEvent = serverEvent.filter { it.announceMessage.idLong == event.messageIdLong }[0]
                 event.guild.controller.removeSingleRoleFromMember(event.member, reactedEvent.eventRole).reason("Remove vote on event reaction").queue()
@@ -77,8 +81,8 @@ object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <sub
     }
 
     override fun onGuildMessageDelete(event: GuildMessageDeleteEvent) {
-        synchronized(events) {
-            val serverEvent = events[event.guild]
+        synchronized(EVENTS) {
+            val serverEvent = EVENTS[event.guild]
             if (serverEvent != null && serverEvent.any { it.announceMessage.idLong == event.messageIdLong }) {
                 val toRemove = serverEvent.filter { it.announceMessage.idLong == event.messageIdLong }.toList()
                 toRemove.forEach {
@@ -90,8 +94,8 @@ object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <sub
     }
 
     override fun onRoleDelete(event: RoleDeleteEvent) {
-        synchronized(events) {
-            val serverEvent = events[event.guild]
+        synchronized(EVENTS) {
+            val serverEvent = EVENTS[event.guild]
             if (serverEvent != null && serverEvent.any { it.eventRole.idLong == event.role.idLong }) {
                 val toRemove = serverEvent.filter { it.eventRole.idLong == event.role.idLong }.toList()
                 toRemove.forEach {
@@ -105,8 +109,8 @@ object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <sub
     private fun save() {
         synchronized(FILE) {
             val json = JSONObject()
-            synchronized(events) {
-                events.forEach {
+            synchronized(EVENTS) {
+                EVENTS.forEach {
                     val jsonArray = JSONArray()
                     it.value.forEach {
                         val eventRoleJSONObject = JSONObject()
@@ -126,7 +130,7 @@ object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <sub
 
     private fun load(jda: JDA) {
         if (FILE.toFile().exists()) {
-            synchronized(events) {
+            synchronized(EVENTS) {
                 val stringBuilder = StringBuilder()
                 synchronized(FILE) {
                     Files.readAllLines(FILE).forEach {
@@ -150,12 +154,12 @@ object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <sub
                         loadedEvents[guild] = newArrayList
                     }
                 }
-                events.putAll(loadedEvents)
+                EVENTS.putAll(loadedEvents)
             }
         }
     }
 
-    class EventCreationSequence(user: User, channel: MessageChannel) : Sequence(user, channel, cleanAfterSequence = true, informUser = true) {
+    inner class EventCreationSequence(user: User, channel: MessageChannel) : Sequence(user, channel, cleanAfterSequence = true, informUser = true) {
         private var eventName: String? = null
         private var eventRole: String? = null
         private var reactEmote: Emote? = null
@@ -228,13 +232,13 @@ object CreateEvent : CommandModule(arrayOf("CreateEvent"), "<event id/name> <sub
                     throw exception
                 }
                 val eventRole = EventRole(eventName!!, newRoleFuture.get(), reactEmote!!, announceFuture.get())
-                synchronized(events) {
-                    if (events[event.guild] != null) {
-                        events[event.guild]!!.add(eventRole)
+                synchronized(EVENTS) {
+                    if (EVENTS[event.guild] != null) {
+                        EVENTS[event.guild]!!.add(eventRole)
                     } else {
                         val newArrayList = ArrayList<EventRole>()
                         newArrayList.add(eventRole)
-                        events[event.guild] = newArrayList
+                        EVENTS[event.guild] = newArrayList
                     }
                     save()
                     super.channel.sendMessage(super.user.asMention + " All tasks where completed without errors.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }

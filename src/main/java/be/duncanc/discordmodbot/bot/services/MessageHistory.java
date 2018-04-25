@@ -29,11 +29,14 @@ package be.duncanc.discordmodbot.bot.services;
 import be.duncanc.discordmodbot.bot.commands.QuitBot;
 import net.dv8tion.jda.core.JDA;
 import net.dv8tion.jda.core.entities.Message;
+import net.dv8tion.jda.core.events.ReadyEvent;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageUpdateEvent;
 import net.dv8tion.jda.core.hooks.ListenerAdapter;
 import org.apache.commons.collections4.map.LinkedMap;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 
@@ -44,6 +47,7 @@ import java.util.ArrayList;
  * @author Dunciboy
  * @version 22 October 2016
  */
+@Component
 public class MessageHistory extends ListenerAdapter implements QuitBot.BeforeBotQuit {
 
     private static final int HISTORY_SIZE = 1000;
@@ -57,22 +61,12 @@ public class MessageHistory extends ListenerAdapter implements QuitBot.BeforeBot
     /**
      * Default constructor
      */
-    private MessageHistory() {
+    @Autowired
+    private MessageHistory(AttachmentProxyCreator attachmentProxyCreator) {
         messages = new LinkedMap<>();
-        attachmentProxyCreator = new AttachmentProxyCreator();
         deleted = false;
         MESSAGE_HISTORY_INSTANCES.add(this);
-    }
-
-    /**
-     * Creates an instance of the messageHistory and register it as event listener.
-     *
-     * @param jDA the instance to register this listener instance for.
-     */
-    public static void registerMessageHistory(JDA jDA) {
-        MessageHistory messageHistory = new MessageHistory();
-        jDA.addEventListener(messageHistory);
-        jDA.getRegisteredListeners().stream().filter(o -> o instanceof QuitBot).forEach(o -> ((QuitBot) o).addCallBeforeQuit(messageHistory));
+        this.attachmentProxyCreator = attachmentProxyCreator;
     }
 
     /**
@@ -122,6 +116,14 @@ public class MessageHistory extends ListenerAdapter implements QuitBot.BeforeBot
         }
 
         messages.remove(id);
+    }
+
+    @Override
+    public void onReady(ReadyEvent event) {
+        QuitBot quitBot = (QuitBot) event.getJDA().getRegisteredListeners().stream().filter(o -> o instanceof QuitBot).findFirst().orElse(null);
+        if (quitBot != null) {
+            quitBot.addCallBeforeQuit(this);
+        }
     }
 
     /**

@@ -26,21 +26,18 @@
 package be.duncanc.discordmodbot.bot
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
-import be.duncanc.discordmodbot.bot.commands.CreateEvent
-import be.duncanc.discordmodbot.bot.commands.Help
-import be.duncanc.discordmodbot.bot.commands.Quote
-import be.duncanc.discordmodbot.bot.services.*
+import be.duncanc.discordmodbot.bot.services.GuildLogger
+import be.duncanc.discordmodbot.bot.services.IAmRoles
 import net.dv8tion.jda.core.AccountType
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.JDABuilder
+import net.dv8tion.jda.core.hooks.ListenerAdapter
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.CommandLineRunner
 import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
-import java.util.concurrent.TimeUnit
-import javax.annotation.PreDestroy
 
 /**
  * This main class starts the bot
@@ -64,32 +61,16 @@ class TestBot : CommandLineRunner {
         try {
             val configObject = RunBots.loadConfig()
 
-            val devLogToChannel = LogToChannel()
-            val devGuildLogger = GuildLogger(devLogToChannel)
-
             val devJDABuilder = JDABuilder(AccountType.BOT)
                     .setBulkDeleteSplittingEnabled(false)
                     .setCorePoolSize(RunBots.BOT_THREAD_POOL_SIZE)
                     .setToken(configObject.getString("Dev"))
-                    .addEventListener(*RunBots.generalCommands, devGuildLogger, Help, be.duncanc.discordmodbot.bot.commands.QuitBot(), GuildLogger.LogSettings, EventsManager(), IAmRoles.INSTANCE, CreateEvent, ModNotes, Quote, CommandModule.CommandTextChannelsWhitelist)
-                    .addEventListener(*applicationContext.getBeansOfType(CommandModule::class.java).values.toTypedArray())
+                    .addEventListener(GuildLogger.LogSettings, IAmRoles.INSTANCE, CommandModule.CommandTextChannelsWhitelist)
+                    .addEventListener(*applicationContext.getBeansOfType(ListenerAdapter::class.java).values.toTypedArray())
 
             devJDA = devJDABuilder.buildAsync()
-
-            MessageHistory.registerMessageHistory(devJDA)
         } catch (e: Exception) {
             log.error("An error occurred while starting the test bot", e)
         }
-    }
-
-    @PreDestroy
-    fun cleanUpBots() {
-        devJDA.registeredListeners.filter { it is MessageHistory }.forEach {
-            it as MessageHistory
-            it.cleanAttachmentCache()
-        }
-        devJDA.shutdown()
-
-        TimeUnit.SECONDS.sleep(5)
     }
 }

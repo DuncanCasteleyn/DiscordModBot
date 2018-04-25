@@ -30,6 +30,7 @@ import net.dv8tion.jda.core.entities.Message
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent
 import org.apache.commons.collections4.map.LinkedMap
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.util.*
@@ -40,6 +41,7 @@ import java.util.*
  *
  * This class duplicates embeds and links to images to keep them alive for logging.
  */
+@Component
 internal class AttachmentProxyCreator {
     companion object {
         private const val CACHE_CHANNEL = 310006048595509248L

@@ -35,6 +35,7 @@ import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
 import java.nio.file.Paths
@@ -47,12 +48,13 @@ import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
-open class EventsManager : CommandModule(EVENTS_LIST_ALIASES, null, EVENTS_LIST_DESCRIPTION) {
+@Component
+class EventsManager private constructor() : CommandModule(EVENTS_LIST_ALIASES, null, EVENTS_LIST_DESCRIPTION) {
     lateinit var events: HashMap<Long, ArrayList<Event>>
 
     companion object {
-        const private val EVENTS_LIST_DESCRIPTION = "Shows a list with currently planned events."
-        const private val EVENT_MANAGER_DESCRIPTION = "Allows you to manage events."
+        private const val EVENTS_LIST_DESCRIPTION = "Shows a list with currently planned events."
+        private const val EVENT_MANAGER_DESCRIPTION = "Allows you to manage events."
         private val EVENTS_LIST_ALIASES = arrayOf("EventsList")
         private val EVENT_MANAGER_ALIASES = arrayOf("EventManager", "ManageEvents")
         private val FILE_PATH = Paths.get("Events.json")

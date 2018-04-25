@@ -27,6 +27,9 @@ package be.duncanc.discordmodbot.bot.commands
 
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import org.springframework.beans.factory.config.ConfigurableBeanFactory
+import org.springframework.context.annotation.Scope
+import org.springframework.stereotype.Component
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -35,7 +38,9 @@ import java.util.concurrent.TimeUnit
  *
  * @since 1.0.0
  */
-object Help : CommandModule(arrayOf("Help"), null, "Show a list of commands") {
+@Component
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+class Help private constructor() : CommandModule(arrayOf("Help"), null, "Show a list of commands") {
 
     /**
      * Sends an embed to the users containing help for the commands

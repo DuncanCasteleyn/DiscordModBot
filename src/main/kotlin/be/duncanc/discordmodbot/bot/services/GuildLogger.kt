@@ -55,6 +55,10 @@ import net.dv8tion.jda.core.events.user.update.UserUpdateNameEvent
 import net.dv8tion.jda.core.hooks.ListenerAdapter
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.config.ConfigurableBeanFactory
+import org.springframework.context.annotation.Scope
+import org.springframework.stereotype.Component
 import java.awt.Color
 import java.io.IOException
 import java.io.Serializable
@@ -81,7 +85,9 @@ import java.util.concurrent.TimeUnit
  * @author Duncan
  * @since 1.0
  */
-class GuildLogger internal constructor(val logger: LogToChannel) : ListenerAdapter() {
+@Component
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+class GuildLogger private constructor() : ListenerAdapter() {
 
     companion object {
         private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd-M-yyyy hh:mm a O")
@@ -100,8 +106,11 @@ class GuildLogger internal constructor(val logger: LogToChannel) : ListenerAdapt
         }
     }
 
+    @Autowired
+    lateinit var logger: LogToChannel
     private val guildLoggerExecutor: ScheduledExecutorService
     private val lastCheckedLogEntries: HashMap<Long, AuditLogEntry> //Long key is the guild id and the value is the last checked log entry.
+
 
     init {
         this.guildLoggerExecutor = Executors.newSingleThreadScheduledExecutor { r ->

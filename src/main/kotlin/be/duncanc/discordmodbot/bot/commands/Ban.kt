@@ -36,6 +36,7 @@ import net.dv8tion.jda.core.entities.PrivateChannel
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.exceptions.PermissionException
 import net.dv8tion.jda.core.requests.RestAction
+import org.springframework.stereotype.Component
 import java.awt.Color
 import java.util.concurrent.TimeUnit
 
@@ -45,7 +46,8 @@ import java.util.concurrent.TimeUnit
  *
  * This class creates a command to ban users with logging.
  */
-object Ban : CommandModule(arrayOf("Ban"), "[User mention] [Reason~]", "Will ban the mentioned user, clear all message that where posted by the user in the last 24 hours and log it to the log channel.", true, true) {
+@Component
+class Ban private constructor() : CommandModule(arrayOf("Ban"), "[User mention] [Reason~]", "Will ban the mentioned user, clear all message that where posted by the user in the last 24 hours and log it to the log channel.", true, true) {
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.author.openPrivateChannel().queue(

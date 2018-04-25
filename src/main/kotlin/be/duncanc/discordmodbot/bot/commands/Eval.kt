@@ -28,6 +28,9 @@ package be.duncanc.discordmodbot.bot.commands
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.entities.ChannelType
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import org.springframework.beans.factory.config.ConfigurableBeanFactory
+import org.springframework.context.annotation.Scope
+import org.springframework.stereotype.Component
 import java.util.concurrent.*
 import javax.script.ScriptEngine
 import javax.script.ScriptEngineManager
@@ -37,7 +40,9 @@ import javax.script.ScriptEngineManager
  *
  * @since 1.1.0
  */
-class Eval : CommandModule(ALIASES, DESCRIPTION, ARGUMENTATION, false) {
+@Component
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+class Eval private constructor() : CommandModule(ALIASES, DESCRIPTION, ARGUMENTATION, false) {
     companion object {
         private val ALIASES = arrayOf("Eval")
         private const val DESCRIPTION = "Allows you to evaluate code using the JDA library"

@@ -32,20 +32,20 @@ import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.Role;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.stereotype.Component;
 
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Commands to get all role ids of the current guild where executed.
- * <p>
- * Created by Duncan on 19/02/2017.
  */
+@Component
 public class RoleIds extends CommandModule {
     private static final String[] ALIASES = new String[]{"RoleIds", "GetRoleIds"};
     private static final String DESCRIPTION = "Get all the role ids of the guild where executed.";
 
-    public RoleIds() {
+    private RoleIds() {
         super(ALIASES, null, DESCRIPTION);
     }
 

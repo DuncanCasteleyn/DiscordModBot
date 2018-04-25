@@ -28,6 +28,7 @@ package be.duncanc.discordmodbot.bot.commands
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.entities.MessageEmbed
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import org.springframework.stereotype.Component
 import java.awt.Color
 
 /**
@@ -35,12 +36,15 @@ import java.awt.Color
  *
  * @since 1.0.0
  */
-object Info : CommandModule(arrayOf("Info"), null, "Returns information about the bot.") {
-    private val INFO_MESSAGE: MessageEmbed = EmbedBuilder()
-            .setTitle("Discord bot", null)
-            .setDescription("**Author:** Dunciboy\n**Language:** Java & Kotlin\n**Discord-lib:** JDA")
-            .setColor(Color.RED)
-            .build()
+@Component
+class Info private constructor() : CommandModule(arrayOf("Info"), null, "Returns information about the bot.") {
+    companion object {
+        private val INFO_MESSAGE: MessageEmbed = EmbedBuilder()
+                .setTitle("Discord bot", null)
+                .setDescription("**Author:** Dunciboy\n**Language:** Java & Kotlin\n**Discord-lib:** JDA")
+                .setColor(Color.RED)
+                .build()
+    }
 
     /**
      * Sends information about the bot to the user.

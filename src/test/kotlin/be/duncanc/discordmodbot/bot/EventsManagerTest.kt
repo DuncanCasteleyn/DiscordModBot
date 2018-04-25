@@ -27,31 +27,35 @@ package be.duncanc.discordmodbot.bot
 import be.duncanc.discordmodbot.bot.services.EventsManager
 import org.junit.Before
 import org.junit.Test
+import org.springframework.beans.factory.annotation.Autowired
 import java.time.OffsetDateTime
 
-class EventsManagerTest : EventsManager() {
+class EventsManagerTest {
+
+    @Autowired
+    private lateinit var eventsManager: EventsManager
 
     /**
      * Required for TestInstance to work as junit test checks if all fields are initialized.
      */
     init {
-        events = HashMap()
+        eventsManager.events = HashMap()
     }
 
 
     @Test
     @Before
     fun testWrite() {
-        val eventsList = ArrayList<Event>()
-        val event = Event("Test")
+        val eventsList = ArrayList<EventsManager.Event>()
+        val event = EventsManager.Event("Test")
         event.eventDateTime = OffsetDateTime.now()
         eventsList.add(event)
-        events.put(-1, eventsList)
-        writeEventsToFile()
+        eventsManager.events[-1] = eventsList
+        eventsManager.writeEventsToFile()
     }
 
     @Test
     fun testRead() {
-        readEventsFromFile()
+        eventsManager.readEventsFromFile()
     }
 }

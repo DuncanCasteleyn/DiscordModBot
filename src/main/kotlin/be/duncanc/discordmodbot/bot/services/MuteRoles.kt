@@ -8,16 +8,20 @@ import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.events.role.RoleDeleteEvent
 import net.dv8tion.jda.core.exceptions.PermissionException
 import org.json.JSONObject
+import org.springframework.stereotype.Component
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-object MuteRoles : CommandModule(arrayOf("MuteRole"), "Name of the mute role or nothing to remove, the role", "This command allows you to set the mute role for a guild/server") {
+@Component
+class MuteRoles private constructor() : CommandModule(arrayOf("MuteRole"), "Name of the mute role or nothing to remove, the role", "This command allows you to set the mute role for a guild/server") {
 
-    private val FILE_PATH: Path = Paths.get("MuteRoles.json")
-    private val muteRoles = HashMap<Long, Long>()
+    companion object {
+        private val FILE_PATH: Path = Paths.get("MuteRoles.json")
+        private val muteRoles = HashMap<Long, Long>()
+    }
 
     init {
         if (FILE_PATH.toFile().exists()) {

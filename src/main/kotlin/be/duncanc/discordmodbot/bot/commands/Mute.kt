@@ -37,15 +37,19 @@ import net.dv8tion.jda.core.entities.MessageEmbed
 import net.dv8tion.jda.core.entities.PrivateChannel
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.exceptions.PermissionException
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationContext
+import org.springframework.stereotype.Component
 import java.awt.Color
 
 /**
- * Created by Duncan on 24/02/2017.
- *
- *
  * This class creates a mute command that will be logged.
  */
-object Mute : CommandModule(arrayOf("Mute"), "[User mention] [Reason~]", "This command will put a user in the muted group and log the mute to the log channel.", true, true) {
+@Component
+class Mute private constructor() : CommandModule(arrayOf("Mute"), "[User mention] [Reason~]", "This command will put a user in the muted group and log the mute to the log channel.", true, true) {
+
+    @Autowired
+    private lateinit var applicationContext: ApplicationContext
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.author.openPrivateChannel().queue(
@@ -72,7 +76,7 @@ object Mute : CommandModule(arrayOf("Mute"), "[User mention] [Reason~]", "This c
             if (!event.member.canInteract(toMute)) {
                 throw PermissionException("You can't interact with this member")
             }
-            event.guild.controller.addRolesToMember(toMute, MuteRoles.getMuteRole(event.guild)).reason(reason).queue({
+            event.guild.controller.addRolesToMember(toMute, applicationContext.getBean(MuteRoles::class.java).getMuteRole(event.guild)).reason(reason).queue({
                 val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
                 val logToChannel = guildLogger?.logger
                 if (logToChannel != null) {
@@ -99,7 +103,7 @@ object Mute : CommandModule(arrayOf("Mute"), "[User mention] [Reason~]", "This c
                             ) { throwable -> onFailToInformUser(privateChannel, toMute, throwable) }
                         }
                 ) { throwable -> onFailToInformUser(privateChannel, toMute, throwable) }
-                ModNotes.addNote(reason, ModNotes.NoteType.MUTE, toMute.user.idLong, event.guild.idLong, event.author.idLong)
+                applicationContext.getBean(ModNotes::class.java).addNote(reason, ModNotes.NoteType.MUTE, toMute.user.idLong, event.guild.idLong, event.author.idLong)
 
             }) { throwable ->
                 if (privateChannel == null) {

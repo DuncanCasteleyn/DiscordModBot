@@ -27,17 +27,14 @@ package be.duncanc.discordmodbot.bot.commands;
 
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.stereotype.Component;
 
-/**
- * Created by Duncan on 11/02/2017.
- * <p>
- * Interface to force implementation for commands
- */
+@Component
 public class Ping extends CommandModule {
     private static final String[] ALIASES = new String[]{"Ping"};
     private static final String DESCRIPTION = "responds with \"pong!\".";
 
-    public Ping() {
+    private Ping() {
         super(ALIASES, null, DESCRIPTION);
     }
 

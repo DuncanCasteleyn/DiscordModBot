@@ -34,6 +34,9 @@ import net.dv8tion.jda.core.entities.TextChannel
 import net.dv8tion.jda.core.entities.User
 import net.dv8tion.jda.core.exceptions.PermissionException
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.config.ConfigurableBeanFactory
+import org.springframework.context.annotation.Scope
+import org.springframework.stereotype.Component
 import java.time.OffsetDateTime
 import java.util.*
 
@@ -46,7 +49,9 @@ import java.util.*
  * @since 1.0
  */
 //todo add to settings class
-class LogToChannel {
+@Component
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+class LogToChannel private constructor() {
 
     companion object {
         private val LOG = LoggerFactory.getLogger(LogToChannel::class.java)

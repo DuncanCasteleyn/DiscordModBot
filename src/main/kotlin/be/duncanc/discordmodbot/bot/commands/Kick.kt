@@ -37,16 +37,20 @@ import net.dv8tion.jda.core.entities.PrivateChannel
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.exceptions.PermissionException
 import net.dv8tion.jda.core.requests.RestAction
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationContext
+import org.springframework.stereotype.Component
 import java.awt.Color
 import java.util.concurrent.TimeUnit
 
 /**
- * Created by Duncan on 24/02/2017.
- *
- *
  * This class create a kick command that will be logged.
  */
-object Kick : CommandModule(arrayOf("Kick"), "[User mention] [Reason~]", "This command will kick the mentioned users and log this to the log channel. A reason is required.", true, true) {
+@Component
+class Kick private constructor() : CommandModule(arrayOf("Kick"), "[User mention] [Reason~]", "This command will kick the mentioned users and log this to the log channel. A reason is required.", true, true) {
+
+    @Autowired
+    private lateinit var applicationContext: ApplicationContext
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.author.openPrivateChannel().queue(
@@ -88,7 +92,7 @@ object Kick : CommandModule(arrayOf("Kick"), "[User mention] [Reason~]", "This c
                         privateChannelUserToMute.sendMessage(userKickNotification).queue(
                                 { message: Message ->
                                     onSuccessfulInformUser(event, reason, privateChannel, toKick, message, kickRestAction)
-                                    ModNotes.addNote(reason, ModNotes.NoteType.WARN, toKick.user.idLong, event.guild.idLong, event.author.idLong)
+                                    applicationContext.getBean(ModNotes::class.java).addNote(reason, ModNotes.NoteType.WARN, toKick.user.idLong, event.guild.idLong, event.author.idLong)
                                 }
                         ) { throwable -> onFailToInformUser(event, reason, privateChannel, toKick, throwable, kickRestAction) }
                     }

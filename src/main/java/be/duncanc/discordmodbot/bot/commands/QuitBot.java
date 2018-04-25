@@ -27,22 +27,25 @@ package be.duncanc.discordmodbot.bot.commands;
 
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by Duncan on 3/03/2017.
- * <p>
  * Quit command for the bot
  */
+@Component
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class QuitBot extends CommandModule {
     private static final String[] ALIASES = new String[]{"Quit", "Shutdown", "Disconnect"};
     private static final String DESCRIPTION = "Shuts down the bot.";
 
     private List<BeforeBotQuit> callBeforeBotQuit;
 
-    public QuitBot() {
+    private QuitBot() {
         super(ALIASES, null, DESCRIPTION, true, true);
         callBeforeBotQuit = new ArrayList<>();
     }

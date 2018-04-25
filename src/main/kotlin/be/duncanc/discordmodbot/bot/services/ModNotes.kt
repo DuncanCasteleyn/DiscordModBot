@@ -9,6 +9,7 @@ import net.dv8tion.jda.core.exceptions.PermissionException
 import org.json.JSONArray
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.OffsetDateTime
@@ -17,12 +18,16 @@ import java.util.concurrent.TimeUnit
 import kotlin.collections.HashMap
 import kotlin.collections.HashSet
 
-object ModNotes : CommandModule(arrayOf("AddNote"), "[user mention] [note text~]", "This command adds a note to the mentioned user for internal use.", requiredPermissions = *arrayOf(Permission.MANAGE_ROLES)) {
-    private val FILE_PATH = Paths.get("ModNotes.json")
-    private val LOG = LoggerFactory.getLogger(this::class.java)
-    private const val NOTE_LIMIT = 50
+@Component
+class ModNotes private constructor() : CommandModule(arrayOf("AddNote"), "[user mention] [note text~]", "This command adds a note to the mentioned user for internal use.", requiredPermissions = *arrayOf(Permission.MANAGE_ROLES)) {
 
-    private val notes = HashMap<Long, HashMap<Long, HashSet<Note>>>() //First map long are guild ids, second map long are user ids
+    companion object {
+        private val FILE_PATH = Paths.get("ModNotes.json")
+        private val LOG = LoggerFactory.getLogger(this::class.java)
+        private const val NOTE_LIMIT = 50
+
+        private val notes = HashMap<Long, HashMap<Long, HashSet<Note>>>() //First map long are guild ids, second map long are user ids
+    }
 
     enum class NoteType {
         NORMAL, WARN, MUTE, KICK
@@ -142,7 +147,7 @@ object ModNotes : CommandModule(arrayOf("AddNote"), "[user mention] [note text~]
     }
 
     override fun onReady(event: ReadyEvent) {
-        event.jda.addEventListener(ViewNotes)
+        event.jda.addEventListener(ViewNotes())
     }
 
     class Note(val note: String, val type: NoteType, val authorId: Long, val creationDate: OffsetDateTime = OffsetDateTime.now()) {
@@ -180,7 +185,7 @@ object ModNotes : CommandModule(arrayOf("AddNote"), "[user mention] [note text~]
 
     }
 
-    object ViewNotes : CommandModule(arrayOf("ViewNotes", "Notes"), "[user mention]", "This command show all the notes on a user. This will send to you by DM due to privacy reasons.", requiredPermissions = *arrayOf(Permission.MANAGE_ROLES)) {
+    inner class ViewNotes : CommandModule(arrayOf("ViewNotes", "Notes"), "[user mention]", "This command show all the notes on a user. This will send to you by DM due to privacy reasons.", requiredPermissions = *arrayOf(Permission.MANAGE_ROLES)) {
         override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
             synchronized(notes) {
                 try {

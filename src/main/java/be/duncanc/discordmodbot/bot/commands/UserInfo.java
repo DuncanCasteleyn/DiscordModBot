@@ -33,21 +33,21 @@ import net.dv8tion.jda.core.entities.MessageEmbed;
 import net.dv8tion.jda.core.entities.PrivateChannel;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.stereotype.Component;
 
 import java.time.format.DateTimeFormatter;
 
 /**
- * Created by Duncan on 3/03/2017.
- * <p>
  * User info command.
  */
+@Component
 public class UserInfo extends CommandModule {
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd-M-yyyy hh:mm:ss a O");
     private static final String[] ALIASES = new String[]{"UserInfo", "GetUserInfo"};
     private static final String ARGUMENTATION_SYNTAX = "[Username#Discriminator] (Without @)";
     private static final String DESCRIPTION = "Prints out user information of the user given as argument";
 
-    public UserInfo() {
+    private UserInfo() {
         super(ALIASES, ARGUMENTATION_SYNTAX, DESCRIPTION);
     }
 

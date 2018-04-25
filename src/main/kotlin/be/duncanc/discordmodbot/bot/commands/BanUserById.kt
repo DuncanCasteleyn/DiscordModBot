@@ -33,6 +33,7 @@ import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.ChannelType
 import net.dv8tion.jda.core.entities.PrivateChannel
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import org.springframework.stereotype.Component
 import java.awt.Color
 import java.util.concurrent.TimeUnit
 
@@ -44,12 +45,13 @@ import java.util.concurrent.TimeUnit
 /**
  * Constructor for abstract class
  */
-object BanUserById : CommandModule(arrayOf("BanByUserId", "BanById"), "[user id] [reason~]", "Will ban the user with the id, clear all message that where posted by the user the last 24 hours and log it to the log channel.", true, true) {
+@Component
+class BanUserById private constructor() : CommandModule(arrayOf("BanByUserId", "BanById"), "[user id] [reason~]", "Will ban the user with the id, clear all message that where posted by the user the last 24 hours and log it to the log channel.", true, true) {
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.author.openPrivateChannel().queue(
-                { privateChannel -> Ban.commandExec(event, arguments, privateChannel) }
-        ) { Ban.commandExec(event, arguments, null as PrivateChannel?) }
+                { privateChannel -> commandExec(event, arguments, privateChannel) }
+        ) { commandExec(event, arguments, null as PrivateChannel?) }
     }
 
     fun commandExec(event: MessageReceivedEvent, arguments: String?, privateChannel: PrivateChannel?) {

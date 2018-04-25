@@ -25,12 +25,15 @@
 
 package be.duncanc.discordmodbot.bot
 
-import be.duncanc.discordmodbot.bot.commands.*
-import be.duncanc.discordmodbot.bot.services.*
+import be.duncanc.discordmodbot.bot.commands.CommandModule
+import be.duncanc.discordmodbot.bot.services.GuildLogger
+import be.duncanc.discordmodbot.bot.services.IAmRoles
+import be.duncanc.discordmodbot.bot.services.MemberGate
 import be.duncanc.discordmodbot.bot.utils.ExecutorServiceEventManager
 import net.dv8tion.jda.core.AccountType
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.JDABuilder
+import net.dv8tion.jda.core.hooks.ListenerAdapter
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -40,8 +43,6 @@ import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
 import java.nio.file.Files
 import java.nio.file.Paths
-import java.util.concurrent.TimeUnit
-import javax.annotation.PreDestroy
 
 
 @Profile("production")
@@ -51,8 +52,6 @@ class RunBots : CommandLineRunner {
         private val configFile = Paths.get("Config.json")
         const val BOT_THREAD_POOL_SIZE = 3
         internal val LOG = LoggerFactory.getLogger(RunBots::class.java)
-        internal val generalCommands: Array<CommandModule>
-            get() = arrayOf(Ban, BanUserById, ChannelIds(), Info, Kick, Ping(), PurgeChannel, RoleIds(), SlowMode(), UserInfo(), Warn, Eval(), ReactionVote, NoMobile)
 
         fun loadConfig(): JSONObject {
             val configFileContent = StringBuilder()
@@ -74,23 +73,16 @@ class RunBots : CommandLineRunner {
             be.duncanc.discordmodbot.bot.utils.GoogleSearch.setup(configObject.getString("GoogleApi"))
 
             //Fairy tail bot
-            val fairyTailLogToChannel = LogToChannel()
-            val fairyTailGuildLogger = GuildLogger(fairyTailLogToChannel)
-            val fairyTailQuitBot = be.duncanc.discordmodbot.bot.commands.QuitBot()
 
             val fairyTailJDABuilder = JDABuilder(AccountType.BOT)
                     .setCorePoolSize(BOT_THREAD_POOL_SIZE)
                     .setEventManager(ExecutorServiceEventManager("Fairy tail"))
                     .setToken(configObject.getString("FairyTail"))
                     .setBulkDeleteSplittingEnabled(false)
-                    .addEventListener(fairyTailGuildLogger, Help, fairyTailQuitBot, GuildLogger.LogSettings, *generalCommands, MuteRoles, CreateEvent, ModNotes, CommandModule.CommandTextChannelsWhitelist, Quote)
+                    .addEventListener(*applicationContext.getBeansOfType(ListenerAdapter::class.java).values.toTypedArray(), IAmRoles.INSTANCE, CommandModule.CommandTextChannelsWhitelist, GuildLogger.LogSettings)
 
 
             //Re:Zero bot
-            val reZeroLogToChannel = LogToChannel()
-            val reZeroGuildLogger = GuildLogger(reZeroLogToChannel)
-            val reZeroQuitBot = be.duncanc.discordmodbot.bot.commands.QuitBot()
-            val iAmRoles: IAmRoles = IAmRoles.INSTANCE
 
             //todo Make configurable with LogSettings.
             val memberGate = MemberGate(175856762677624832L, 319590906523156481L, 175856762677624832L, 319623491970400268L, 218085411686318080L, arrayOf(MemberGate.WelcomeMessage("https://cafekuyer.files.wordpress.com/2016/04/subaru-ftw.gif", "Welcome to the /r/Re_Zero discord server!"), MemberGate.WelcomeMessage("https://static.tumblr.com/0549f3836351174ea8bba0306ebd2641/cqk1twd/DJcofpaji/tumblr_static_tumblr_static_j2yt5g46evscw4o0scs0co0k_640.gif", "Welcome to the /r/Re_Zero discord server!"), MemberGate.WelcomeMessage("http://pa1.narvii.com/6165/5e28d55b439501172d35f74bc8fe2ac1665af8cf_hq.gif", "Welcome to the /r/Re_Zero discord server I suppose!"), MemberGate.WelcomeMessage("https://i.imgur.com/6HhzYIL.gif", "Welcome to the /r/Re_Zero discord server!"), MemberGate.WelcomeMessage("https://68.media.tumblr.com/e100d53dc43d09f624a9bcb930ad6c8c/tumblr_ofs0sbPbS31uqt6z2o1_500.gif", "Welcome to the /r/Re_Zero discord server!"), MemberGate.WelcomeMessage("https://i.imgbox.com/674W2nGm.gif", "Welcome to the /r/Re_Zero discord server!"), MemberGate.WelcomeMessage("https://i.imgur.com/1zXLZ6E.gif", "Welcome to the /r/Re_Zero discord server!"), MemberGate.WelcomeMessage("https://68.media.tumblr.com/14273c92b69c96d4c71104ed5420b2c8/tumblr_o92199bqfv1qehrvso2_500.gif", "Hiya! Welcome to the /r/Re_Zero discord server nya!")))
@@ -100,8 +92,7 @@ class RunBots : CommandLineRunner {
                     .setToken(configObject.getString("ReZero"))
                     .setEventManager(ExecutorServiceEventManager("Re:Zero"))
                     .setBulkDeleteSplittingEnabled(false)
-                    .addEventListener(reZeroGuildLogger, Help, reZeroQuitBot, memberGate, Mute, RemoveMute, GuildLogger.LogSettings, EventsManager(), *generalCommands, iAmRoles, MuteRoles, CreateEvent, ModNotes, CommandModule.CommandTextChannelsWhitelist, Quote)
-                    .addEventListener(*applicationContext.getBeansOfType(CommandModule::class.java).values.toTypedArray())
+                    .addEventListener(*applicationContext.getBeansOfType(ListenerAdapter::class.java).values.toTypedArray(), IAmRoles.INSTANCE, CommandModule.CommandTextChannelsWhitelist, GuildLogger.LogSettings, memberGate)
 
             //TEMP EVENT BOT STARTS HERE
             /*val qAndA = QAndA(
@@ -117,28 +108,8 @@ class RunBots : CommandLineRunner {
 
             reZeroBot = reZeroJDABuilder.buildAsync()
             fairyTailBot = fairyTailJDABuilder.buildAsync()
-
-            MessageHistory.registerMessageHistory(reZeroBot)
-            MessageHistory.registerMessageHistory(fairyTailBot)
         } catch (e: Exception) {
             LOG.error("Exception while booting the bots", e)
         }
-    }
-
-    @PreDestroy
-    fun cleanUpBots() {
-        reZeroBot.registeredListeners.filter { it is MessageHistory }.forEach {
-            it as MessageHistory
-            it.cleanAttachmentCache()
-        }
-        fairyTailBot.registeredListeners.filter { it is MessageHistory }.forEach {
-            it as MessageHistory
-            it.cleanAttachmentCache()
-        }
-
-        reZeroBot.shutdown()
-        fairyTailBot.shutdown()
-
-        TimeUnit.SECONDS.sleep(5)
     }
 }

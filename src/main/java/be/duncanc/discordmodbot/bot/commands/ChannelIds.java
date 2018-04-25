@@ -32,6 +32,7 @@ import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.stereotype.Component;
 
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
@@ -41,11 +42,12 @@ import java.util.concurrent.TimeUnit;
  * <p>
  * Created by Duncan on 19/02/2017.
  */
+@Component
 public class ChannelIds extends CommandModule {
     private static final String[] ALIASES = new String[]{"ChannelIds", "GetChannelIds"};
     private static final String DESCRIPTION = "Returns all channel ids of the guild where executed.";
 
-    public ChannelIds() {
+    private ChannelIds() {
         super(ALIASES, null, DESCRIPTION);
     }
 

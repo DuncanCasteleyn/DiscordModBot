@@ -35,18 +35,14 @@ import net.dv8tion.jda.core.entities.Member
 import net.dv8tion.jda.core.entities.MessageEmbed
 import net.dv8tion.jda.core.entities.PrivateChannel
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import org.springframework.stereotype.Component
 import java.awt.Color
 
 /**
- * Created by Duncan on 24/02/2017.
- *
- *
  * This class creates an RemoveMute command that is logged.
  */
-/**
- * Constructor for abstract class
- */
-object RemoveMute : CommandModule(arrayOf("Unmute", "RemoveMute"), "[User mention] [Reason~]", "This command will remove a mute from a user and log it to the log channel.", true, true) {
+@Component
+class RemoveMute : CommandModule(arrayOf("Unmute", "RemoveMute"), "[User mention] [Reason~]", "This command will remove a mute from a user and log it to the log channel.", true, true) {
 
     /**
      * Do something with the event, command and arguments.

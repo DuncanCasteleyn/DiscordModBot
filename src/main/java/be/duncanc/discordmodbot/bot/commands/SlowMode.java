@@ -39,6 +39,9 @@ import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.core.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -47,9 +50,9 @@ import java.util.concurrent.*;
 
 /**
  * Slow mode command for channels.
- * <p>
- * Created by Duncan on 19/02/2017.
  */
+@Component
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class SlowMode extends CommandModule {
     private static final String[] ALIASES = new String[]{"SlowMode"};
     private static final String ARGUMENTATION_SYNTAX = "[Threshold message limit] [Threshold reset time] [Mute time when threshold hit]";
@@ -57,7 +60,7 @@ public class SlowMode extends CommandModule {
 
     private ArrayList<SlowModeOnChannel> slowedChannels;
 
-    public SlowMode() {
+    private SlowMode() {
         super(ALIASES, ARGUMENTATION_SYNTAX, DESCRIPTION, true, true);
         slowedChannels = new ArrayList<>();
     }
