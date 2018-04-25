@@ -27,7 +27,10 @@ package be.duncanc.discordmodbot.bot.commands;
 
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -44,10 +47,12 @@ public class QuitBot extends CommandModule {
     private static final String DESCRIPTION = "Shuts down the bot.";
 
     private List<BeforeBotQuit> callBeforeBotQuit;
+    private final ApplicationContext applicationContext;
 
-    private QuitBot() {
+    private QuitBot(ApplicationContext applicationContext) {
         super(ALIASES, null, DESCRIPTION, true, true);
         callBeforeBotQuit = new ArrayList<>();
+        this.applicationContext = applicationContext;
     }
 
     @Override
@@ -67,6 +72,7 @@ public class QuitBot extends CommandModule {
                 Thread.currentThread().interrupt();
             }*/
             event.getJDA().shutdown();
+            ((ConfigurableApplicationContext) applicationContext).close();
         } else {
             event.getChannel().sendMessage(event.getAuthor().getAsMention() + " you don't have permission to shutdown the bot!").queue();
         }
