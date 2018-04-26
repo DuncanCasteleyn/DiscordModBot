@@ -26,23 +26,24 @@ package be.duncanc.discordmodbot.bot.services
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.sequences.Sequence
+import be.duncanc.discordmodbot.data.entities.IAmRolesCategory
+import be.duncanc.discordmodbot.data.services.IAmRolesService
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
-import net.dv8tion.jda.core.entities.*
+import net.dv8tion.jda.core.entities.MessageChannel
+import net.dv8tion.jda.core.entities.Role
+import net.dv8tion.jda.core.entities.TextChannel
+import net.dv8tion.jda.core.entities.User
 import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.events.role.RoleDeleteEvent
 import net.dv8tion.jda.core.exceptions.PermissionException
-import org.json.JSONObject
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
-import java.util.*
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
-import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
 
-class IAmRoles : CommandModule {
+@Component
+class IAmRoles : CommandModule(ALIASES, null, DESCRIPTION) {
     companion object {
         private val ALIASES = arrayOf("IAmRoles")
         private const val DESCRIPTION = "Controller for IAmRoles."
@@ -51,55 +52,38 @@ class IAmRoles : CommandModule {
         private val ALIASES_I_AM = arrayOf("iam")
         private const val DESCRIPTION_I_AM = "Can be used to self assign a role, this will remove all existing roles except those requested."
 
-        val FILE_PATH: Path = Paths.get("IAmRoles.json")
-
-        val INSTANCE: IAmRoles = if (FILE_PATH.toFile().exists()) {
-            try {
-                val stringBuilder = StringBuilder()
-                synchronized(FILE_PATH) {
-                    Files.readAllLines(FILE_PATH).forEach { stringBuilder.append(it.toString()) }
-                }
-                IAmRoles(JSONObject(stringBuilder.toString()))
-            } catch (ise: IllegalStateException) {
-                IAmRoles()
-            }
-        } else {
-            IAmRoles()
-        }
+        //val FILE_PATH: Path = Paths.get("IAmRoles.json")
     }
 
-    private val iAmRoles: HashMap<Long, ArrayList<IAmRolesCategory>> = HashMap()
+    /*@Autowired
+    private lateinit var repo : IAmRolesRepository*/
+    @Autowired
+    private lateinit var iAmRolesService: IAmRolesService
     private val subCommands = arrayOf(IAm(), IAmNot())
 
-    private constructor() : super(ALIASES, null, DESCRIPTION)
-
-    private constructor(json: JSONObject) : this() {
-        val hashMap = HashMap<Long, ArrayList<IAmRolesCategory>>()
+    /*@PostConstruct
+    fun legacyLoadJson() {
+        val stringBuilder = StringBuilder()
+        synchronized(FILE_PATH) {
+            Files.readAllLines(FILE_PATH).forEach { stringBuilder.append(it.toString()) }
+        }
+        val json = JSONObject(stringBuilder.toString())
         json.toMap().forEach {
-            val arrayList = ArrayList<IAmRolesCategory>()
             (it.value as ArrayList<*>).forEach { arrayContent ->
                 arrayContent as HashMap<*, *>
-                val rolesList = ArrayList<Long>()
+                val rolesList = HashSet<Long>()
                 (arrayContent["roles"] as ArrayList<*>).forEach { rolesList.add(it as Long) }
-                arrayList.add(IAmRolesCategory(arrayContent["categoryName"].toString(), arrayContent["allowedRoles"] as Int, rolesList))
+                repo.save(IAmRolesCategory(IAmRolesCategory.IAmRoleId(it.key.toLong()), arrayContent["categoryName"] as String, arrayContent["allowedRoles"] as Int, rolesList))
             }
-            hashMap[it.key.toLong()] = arrayList
         }
-        iAmRoles.putAll(hashMap)
-    }
+    }*/
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.jda.addEventListener(IAmRolesSequence(event.author, event.channel))
     }
 
     override fun onRoleDelete(event: RoleDeleteEvent) {
-        iAmRoles[event.guild.idLong]?.forEach { roleCategory ->
-            ArrayList(roleCategory.roles).forEach {
-                if (it == event.role.idLong) {
-                    roleCategory.removeRole(it)
-                }
-            }
-        }
+        iAmRolesService.removeRole(event.guild.idLong, event.role.idLong)
     }
 
     inner class IAmRolesSequence internal constructor(user: User, channel: MessageChannel) : Sequence(user, channel) {
@@ -107,7 +91,7 @@ class IAmRoles : CommandModule {
         private var sequenceNumber: Byte = 1
         private var newCategoryName: String? = null
         private var iAmRolesCategory: IAmRolesCategory? = null
-        private val iAmRolesCategories: ArrayList<IAmRolesCategory>
+        private val iAmRolesCategories: List<IAmRolesCategory>
 
         init {
             if (channel !is TextChannel) {
@@ -117,7 +101,7 @@ class IAmRoles : CommandModule {
             if (!channel.guild.getMember(user).hasPermission(Permission.MANAGE_ROLES)) {
                 throw PermissionException("You do not have permission to modify IAmRoles categories.")
             }
-            iAmRolesCategories = getCategoriesForGuild(channel.guild)
+            iAmRolesCategories = iAmRolesService.getAllCategoriesForGuild(channel.guild.idLong)
             super.channel.sendMessage("Please select which action you want to perform:\n" +
                     "0. Add a new category\n" +
                     "1. Remove an existing category\n" +
@@ -156,8 +140,7 @@ class IAmRoles : CommandModule {
                     else -> channel.sendMessage("Wrong answer please answer with a valid number").queue { super.addMessageToCleaner(it) }
                 }
                 2.toByte() -> if (newCategoryName == null) {
-                    val existingCategoryNames = ArrayList<String>()
-                    iAmRoles[event.guild.idLong]?.forEach { iAmRolesCategory -> existingCategoryNames.add(iAmRolesCategory.categoryName) }
+                    val existingCategoryNames = iAmRolesService.getExistingCategoryNames(event.guild.idLong)
                     if (existingCategoryNames.contains(event.message.contentRaw)) {
                         throw IllegalArgumentException("The name you provided is already being used.")
                     }
@@ -165,22 +148,20 @@ class IAmRoles : CommandModule {
                     super.channel.sendMessage("Please enter how much roles a user can have from this category? Use 0 for unlimited.").queue { super.addMessageToCleaner(it) }
                 } else {
                     synchronized(iAmRolesCategories) {
-                        iAmRolesCategories.add(IAmRolesCategory(newCategoryName!!, event.message.contentRaw.toInt()))
+                        iAmRolesService.addNewCategory(event.guild.idLong, newCategoryName!!, event.message.contentRaw.toInt())
                     }
                     super.channel.sendMessage(user.asMention + " Successfully added new category.").queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
-                    saveIAmRoles()
                     super.destroy()
                 }
                 3.toByte() -> {
                     synchronized(iAmRolesCategories) {
-                        iAmRolesCategories.removeAt(Integer.parseInt(event.message.contentRaw))
+                        iAmRolesService.removeCategory(event.guild.idLong, iAmRolesCategories[event.message.contentRaw.toInt()].iAmRoleId!!.categoryUUID)
                     }
                     super.channel.sendMessage(user.asMention + " Successfully removed the category").queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
-                    saveIAmRoles()
                     super.destroy()
                 }
                 4.toByte() -> {
-                    iAmRolesCategory = iAmRolesCategories[Integer.parseInt(event.message.contentRaw)]
+                    iAmRolesCategory = iAmRolesCategories.elementAt(Integer.parseInt(event.message.contentRaw))
                     super.channel.sendMessage("Please enter the number of the action you'd like to perform.\n" +
                             "0. Modify the name. Current value: " + iAmRolesCategory!!.categoryName + "\n" +
                             "1. Change how much roles you can assign from the category. Current value: " + iAmRolesCategory!!.allowedRoles + "\n" +
@@ -202,9 +183,8 @@ class IAmRoles : CommandModule {
                     }
                 }
                 6.toByte() -> {
-                    iAmRolesCategory!!.categoryName = event.message.contentDisplay
+                    iAmRolesService.changeCategoryName(event.guild.idLong, iAmRolesCategory!!.iAmRoleId!!.categoryUUID, event.message.contentStripped)
                     super.channel.sendMessage("Name successfully changed.").queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
-                    saveIAmRoles()
                     super.destroy()
                 }
                 7.toByte() -> {
@@ -214,107 +194,25 @@ class IAmRoles : CommandModule {
                         matchedRoles.isEmpty() -> throw IllegalArgumentException("Could not find any roles with that name")
                         else -> {
                             val roleId = matchedRoles[0].idLong
-                            val removed: Boolean? = try {
-                                iAmRolesCategory!!.addRole(roleId)
-                                false
-                            } catch (illegalArgumentException: IllegalArgumentException) {
-                                try {
-                                    iAmRolesCategory!!.removeRole(roleId)
-                                    true
-                                } catch (illegalArgumentException2: IllegalArgumentException) {
-                                    illegalArgumentException2.addSuppressed(illegalArgumentException)
-                                    throw IllegalStateException("Something went wrong while trying to add and remove the role", illegalArgumentException2)
-                                }
+                            when (iAmRolesService.addOrRemoveRole(event.guild.idLong, iAmRolesCategory!!.iAmRoleId!!.categoryUUID, roleId)) {
+                                false -> super.channel.sendMessage(user.asMention + " The role was successfully removed form the category.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                                true -> super.channel.sendMessage(user.asMention + " The role was successfully added to the category.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                             }
-                            when (removed) {
-                                true -> super.channel.sendMessage(user.asMention + " The role was successfully removed form the category.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
-                                false -> super.channel.sendMessage(user.asMention + " The role was successfully added to the category.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
-                                else -> throw IllegalStateException("Boolean value removed should not be able to be null at this point.")
-                            }
-                            saveIAmRoles()
                             super.destroy()
                         }
                     }
                 }
                 8.toByte() -> {
-                    iAmRolesCategory!!.allowedRoles = event.message.contentRaw.toInt()
+                    iAmRolesService.changeAllowedRoles(event.guild.idLong, iAmRolesCategory!!.iAmRoleId!!.categoryUUID, event.message.contentRaw.toInt())
                     channel.sendMessage(user.asMention + " Allowed roles successfully changed.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
-                    saveIAmRoles()
                     super.destroy()
                 }
             }
         }
     }
 
-    private fun getCategoriesForGuild(guild: Guild): ArrayList<IAmRolesCategory> {
-        var arrayList: ArrayList<IAmRolesCategory> = ArrayList()
-        synchronized(iAmRoles) {
-            val key = guild.idLong
-            if (iAmRoles.containsKey(key)) {
-                arrayList = iAmRoles[guild.idLong]!!
-            } else {
-                iAmRoles.put(key, arrayList)
-            }
-        }
-        return arrayList
-    }
-
     override fun onReady(event: ReadyEvent) {
         event.jda.addEventListener(*subCommands)
-    }
-
-    private fun saveIAmRoles() {
-        synchronized(FILE_PATH) {
-            Files.write(FILE_PATH, Collections.singletonList(JSONObject(iAmRoles).toString()))
-        }
-    }
-
-    /**
-     * A role category
-     *
-     * This class is Thread safe.
-     */
-    internal inner class IAmRolesCategory
-    /**
-     * Constructor for a new IAmRolesCategory.
-     *
-     * @param categoryName The name of the category.
-     * @param allowedRoles The amount of roles you can have from the same category.
-     */
-    constructor(@get:Synchronized @set:Synchronized var categoryName: String, @get:Synchronized @set:Synchronized var allowedRoles: Int, @get:Synchronized val roles: List<Long> = ArrayList()) {
-
-        @Synchronized
-        fun removeRole(roleId: Long) {
-            if (!roles.contains(roleId)) {
-                throw IllegalArgumentException("The role is not part of this category")
-            }
-            (roles as ArrayList).remove(roleId)
-        }
-
-        @Synchronized
-        fun addRole(roleId: Long) {
-            if (roles.contains(roleId)) {
-                throw IllegalArgumentException("The role is already part of this category")
-            }
-            (roles as ArrayList).add(roleId)
-        }
-
-        @Synchronized
-        override fun equals(other: Any?): Boolean {
-            if (this === other) {
-                return true
-            }
-            if (other == null || javaClass != other.javaClass) {
-                return false
-            }
-
-            val that = other as IAmRolesCategory?
-
-            return categoryName == that!!.categoryName
-        }
-
-        @Synchronized
-        override fun hashCode(): Int = categoryName.hashCode()
     }
 
     /**
@@ -338,7 +236,7 @@ class IAmRoles : CommandModule {
     }
 
     internal inner class RoleModificationSequence(user: User, channel: MessageChannel, private val remove: Boolean) : Sequence(user, channel, cleanAfterSequence = true, informUser = true) {
-        private val iAmRolesCategories: ArrayList<IAmRolesCategory>
+        private val iAmRolesCategories: List<IAmRolesCategory>
         private var roles: ArrayList<Long>? = null
         private var assignedRoles: ArrayList<Role>? = null
         private var selectedCategory: Int = -1
@@ -348,7 +246,7 @@ class IAmRoles : CommandModule {
                 super.destroy()
                 throw UnsupportedOperationException("This command must be executed in a guild.")
             }
-            iAmRolesCategories = getCategoriesForGuild(channel.guild)
+            iAmRolesCategories = iAmRolesService.getAllCategoriesForGuild(channel.guild.idLong)
             val message = MessageBuilder()
             if (remove) {
                 message.append(user.asMention + " Please select from which category you'd like to remove roles.")
@@ -365,13 +263,14 @@ class IAmRoles : CommandModule {
             when (roles) {
                 null -> {
                     selectedCategory = event.message.contentRaw.toInt()
-                    roles = ArrayList(iAmRolesCategories[selectedCategory].roles)
+                    roles = ArrayList(iAmRolesService.getRoleIds(event.guild.idLong, iAmRolesCategories[selectedCategory].iAmRoleId!!.categoryUUID))
                     if (roles!!.isEmpty()) {
                         throw IllegalStateException("There are no roles in this category. Please contact a server admin.")
                     }
                     assignedRoles = ArrayList(event.member.roles)
+                    val notMutableRoles = roles!!
                     assignedRoles!!.removeIf { assignedRole ->
-                        iAmRolesCategories[selectedCategory].roles.none { it == assignedRole.idLong }
+                        notMutableRoles.none { it == assignedRole.idLong }
                     }
                     roles!!.removeIf { roleId -> assignedRoles!!.any { it.idLong == roleId } }
 
@@ -409,7 +308,7 @@ class IAmRoles : CommandModule {
                     if (!remove && requestedRoles.size > iAmRolesCategories[selectedCategory].allowedRoles - assignedRoles!!.size && iAmRolesCategories[selectedCategory].allowedRoles > 0) {
                         throw IllegalArgumentException("You listed more roles than allowed.")
                     }
-                    val rRoles = ArrayList<Role>()
+                    val rRoles = HashSet<Role>()
                     requestedRoles.forEach {
                         if (remove) {
                             rRoles.add(assignedRoles!![it.toInt()])

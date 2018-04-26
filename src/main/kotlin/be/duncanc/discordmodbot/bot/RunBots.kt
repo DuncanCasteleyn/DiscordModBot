@@ -27,7 +27,6 @@ package be.duncanc.discordmodbot.bot
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.services.GuildLogger
-import be.duncanc.discordmodbot.bot.services.IAmRoles
 import be.duncanc.discordmodbot.bot.services.MemberGate
 import be.duncanc.discordmodbot.bot.utils.ExecutorServiceEventManager
 import net.dv8tion.jda.core.AccountType
@@ -79,7 +78,7 @@ class RunBots : CommandLineRunner {
                     .setEventManager(ExecutorServiceEventManager("Fairy tail"))
                     .setToken(configObject.getString("FairyTail"))
                     .setBulkDeleteSplittingEnabled(false)
-                    .addEventListener(*applicationContext.getBeansOfType(ListenerAdapter::class.java).values.toTypedArray(), IAmRoles.INSTANCE, CommandModule.CommandTextChannelsWhitelist, GuildLogger.LogSettings)
+                    .addEventListener(*applicationContext.getBeansOfType(ListenerAdapter::class.java).values.toTypedArray(), CommandModule.CommandTextChannelsWhitelist, GuildLogger.LogSettings)
 
 
             //Re:Zero bot
@@ -92,7 +91,7 @@ class RunBots : CommandLineRunner {
                     .setToken(configObject.getString("ReZero"))
                     .setEventManager(ExecutorServiceEventManager("Re:Zero"))
                     .setBulkDeleteSplittingEnabled(false)
-                    .addEventListener(*applicationContext.getBeansOfType(ListenerAdapter::class.java).values.toTypedArray(), IAmRoles.INSTANCE, CommandModule.CommandTextChannelsWhitelist, GuildLogger.LogSettings, memberGate)
+                    .addEventListener(*applicationContext.getBeansOfType(ListenerAdapter::class.java).values.toTypedArray(), CommandModule.CommandTextChannelsWhitelist, GuildLogger.LogSettings, memberGate)
 
             //TEMP EVENT BOT STARTS HERE
             /*val qAndA = QAndA(

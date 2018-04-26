@@ -27,7 +27,6 @@ package be.duncanc.discordmodbot.bot
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.services.GuildLogger
-import be.duncanc.discordmodbot.bot.services.IAmRoles
 import net.dv8tion.jda.core.AccountType
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.JDABuilder
@@ -65,7 +64,7 @@ class TestBot : CommandLineRunner {
                     .setBulkDeleteSplittingEnabled(false)
                     .setCorePoolSize(RunBots.BOT_THREAD_POOL_SIZE)
                     .setToken(configObject.getString("Dev"))
-                    .addEventListener(GuildLogger.LogSettings, IAmRoles.INSTANCE, CommandModule.CommandTextChannelsWhitelist)
+                    .addEventListener(GuildLogger.LogSettings, CommandModule.CommandTextChannelsWhitelist)
                     .addEventListener(*applicationContext.getBeansOfType(ListenerAdapter::class.java).values.toTypedArray())
 
             devJDA = devJDABuilder.buildAsync()

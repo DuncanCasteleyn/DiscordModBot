@@ -27,7 +27,6 @@ package be.duncanc.discordmodbot.bot.commands;
 
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -45,9 +44,8 @@ import java.util.List;
 public class QuitBot extends CommandModule {
     private static final String[] ALIASES = new String[]{"Quit", "Shutdown", "Disconnect"};
     private static final String DESCRIPTION = "Shuts down the bot.";
-
-    private List<BeforeBotQuit> callBeforeBotQuit;
     private final ApplicationContext applicationContext;
+    private List<BeforeBotQuit> callBeforeBotQuit;
 
     private QuitBot(ApplicationContext applicationContext) {
         super(ALIASES, null, DESCRIPTION, true, true);

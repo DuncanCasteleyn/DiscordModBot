@@ -25,9 +25,29 @@
 
 package be.duncanc.discordmodbot.data.entities
 
-import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
+import javax.validation.constraints.NotNull
 
 @Entity
-data class ReportChannel constructor(@Id val guildId: Long? = null, @Column(nullable = false) val textChannelId: Long? = null)
+data class ReportChannel constructor(@Id val guildId: Long? = null, @NotNull val textChannelId: Long? = null) {
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) {
+            return true
+        }
+        if (other == null || javaClass != other.javaClass) {
+            return false
+        }
+
+        val that = other as ReportChannel
+
+        return guildId == that.guildId
+    }
+
+    override fun hashCode(): Int = guildId?.hashCode() ?: 0
+
+    override fun toString(): String {
+        return "ReportChannel(guildId=$guildId, textChannelId=$textChannelId)"
+    }
+}

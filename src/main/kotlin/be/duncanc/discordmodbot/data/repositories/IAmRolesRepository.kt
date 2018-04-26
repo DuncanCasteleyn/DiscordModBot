@@ -22,40 +22,14 @@
  * SOFTWARE.
  */
 
-package be.duncanc.discordmodbot.bot
+package be.duncanc.discordmodbot.data.repositories
 
-import be.duncanc.discordmodbot.bot.services.EventsManager
-import org.junit.Before
-import org.junit.Test
-import org.springframework.beans.factory.annotation.Autowired
-import java.time.OffsetDateTime
+import be.duncanc.discordmodbot.data.entities.IAmRolesCategory
+import org.springframework.data.repository.CrudRepository
 
-class EventsManagerTest {
+@Suppress("FunctionName")
+interface IAmRolesRepository : CrudRepository<IAmRolesCategory, IAmRolesCategory.IAmRoleId> {
+    fun findByIAmRoleId_GuildId(id: Long): List<IAmRolesCategory>
 
-    @Autowired
-    private lateinit var eventsManager: EventsManager
-
-    /**
-     * Required for TestInstance to work as junit test checks if all fields are initialized.
-     */
-    init {
-        eventsManager.events = HashMap()
-    }
-
-
-    @Test
-    @Before
-    fun testWrite() {
-        val eventsList = ArrayList<EventsManager.Event>()
-        val event = EventsManager.Event("Test")
-        event.eventDateTime = OffsetDateTime.now()
-        eventsList.add(event)
-        eventsManager.events[-1] = eventsList
-        eventsManager.writeEventsToFile()
-    }
-
-    @Test
-    fun testRead() {
-        eventsManager.readEventsFromFile()
-    }
+    fun findByIAmRoleId_GuildIdAndCategoryName(guildId: Long, categoryName: String): List<IAmRolesCategory>
 }

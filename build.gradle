@@ -25,7 +25,7 @@
 
 buildscript {
     ext {
-        kotlinVersion = '1.2.40'
+        kotlinVersion = '1.2.41'
         springBootVersion = '2.0.1.RELEASE'
     }
 
@@ -61,7 +61,7 @@ dependencies {
     compile("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     compile("org.jetbrains.kotlin:kotlin-reflect")
     testCompile('org.springframework.boot:spring-boot-starter-test')
-    testCompile('org.springframework.security:spring-security-test')
+    //testCompile('org.springframework.security:spring-security-test')
     compile('net.dv8tion:JDA:3.6.0_356')
     compile('org.apache.commons:commons-lang3:3.5')
 }
@@ -87,4 +87,4 @@ compileTestKotlin {
 }
 
 group = 'be.duncanc'
-version = '1.4.3'
+version = '1.4.4'
