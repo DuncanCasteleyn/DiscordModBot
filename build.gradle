@@ -64,6 +64,7 @@ dependencies {
     //testCompile('org.springframework.security:spring-security-test')
     compile('net.dv8tion:JDA:3.6.0_360')
     compile('org.apache.commons:commons-lang3:3.5')
+    compile('org.mariadb.jdbc:mariadb-java-client:2.2.3')
 }
 
 wrapper.gradleVersion = '4.6'
@@ -87,4 +88,4 @@ compileTestKotlin {
 }
 
 group = 'be.duncanc'
-version = '1.4.4'
+version = '1.4.5'

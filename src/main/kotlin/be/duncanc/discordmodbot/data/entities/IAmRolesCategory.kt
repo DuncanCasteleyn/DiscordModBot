@@ -95,7 +95,7 @@ data class IAmRolesCategory
 
         override fun hashCode(): Int {
             var result = guildId?.hashCode() ?: 0
-            result = 31 * result + (categoryUUID?.hashCode() ?: 0)
+            result = 31 * result + (categoryUUID.hashCode())
             return result
         }
 
