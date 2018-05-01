@@ -24,23 +24,21 @@
 
 package be.duncanc.discordmodbot.data.entities
 
-import org.hibernate.annotations.Type
 import java.io.Serializable
 import java.util.*
 import javax.persistence.*
 import javax.validation.constraints.NotNull
 
 @Entity
-data class IAmRolesCategory
-/**
- * Constructor for a new IAmRolesCategory.
- *
- * @param iAmRoleId The name of the category.
- * @param allowedRoles The amount of roles you can have from the same category.
- */
-(
-        @EmbeddedId
-        val iAmRoleId: IAmRoleId? = null,
+@IdClass(IAmRolesCategory.IAmRoleId::class)
+data class IAmRolesCategory(
+        @Id
+        val guildId: Long? = null,
+
+        @Id
+        @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "i_am_roles_category_id_seq")
+        @SequenceGenerator(name= "i_am_roles_category_id_seq", sequenceName = "i_am_roles_seq", allocationSize = 1)
+        val categoryId: Long? = null,
 
         @Column(unique = true, nullable = false)
         var categoryName: String? = null,
@@ -55,35 +53,32 @@ data class IAmRolesCategory
         val roles: MutableSet<Long> = HashSet()) {
 
     override fun equals(other: Any?): Boolean {
-        if (this === other) {
-            return true
-        }
-        if (other == null || javaClass != other.javaClass) {
-            return false
-        }
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
 
-        val that = other as IAmRolesCategory
+        other as IAmRolesCategory
 
-        return iAmRoleId == that.iAmRoleId
+        if (guildId != other.guildId) return false
+        if (categoryId != other.categoryId) return false
+
+        return true
     }
 
-    override fun hashCode(): Int = iAmRoleId?.hashCode() ?: 0
+    override fun hashCode(): Int {
+        var result = guildId?.hashCode() ?: 0
+        result = 31 * result + (categoryId?.hashCode() ?: 0)
+        return result
+    }
 
     override fun toString(): String {
-        return "IAmRolesCategory(iAmRoleId=$iAmRoleId, allowedRoles=$allowedRoles)"
+        return "IAmRolesCategory(guildId=$guildId, categoryId=$categoryId, categoryName=$categoryName, allowedRoles=$allowedRoles)"
     }
 
-    @Embeddable
+
     data class IAmRoleId(
-            @Column(nullable = false)
-            @NotNull
             val guildId: Long? = null,
 
-
-            @NotNull
-            @Column(nullable = false , columnDefinition = "CHAR(36)")
-            @Type(type = "uuid-char")
-            val categoryUUID: UUID = UUID.randomUUID()) : Serializable {
+            val categoryId: Long? = null) : Serializable {
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -92,19 +87,19 @@ data class IAmRolesCategory
             other as IAmRoleId
 
             if (guildId != other.guildId) return false
-            if (categoryUUID != other.categoryUUID) return false
+            if (categoryId != other.categoryId) return false
 
             return true
         }
 
         override fun hashCode(): Int {
             var result = guildId?.hashCode() ?: 0
-            result = 31 * result + (categoryUUID.hashCode())
+            result = 31 * result + (categoryId?.hashCode() ?: 0)
             return result
         }
 
         override fun toString(): String {
-            return "IAmRoleId(guildId=$guildId, iAmRoleId=$categoryUUID)"
+            return "IAmRoleId(guildId=$guildId, iAmRoleId=$categoryId)"
         }
     }
 }

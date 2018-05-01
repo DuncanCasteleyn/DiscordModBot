@@ -29,7 +29,5 @@ import org.springframework.data.repository.CrudRepository
 
 @Suppress("FunctionName")
 interface IAmRolesRepository : CrudRepository<IAmRolesCategory, IAmRolesCategory.IAmRoleId> {
-    fun findByIAmRoleId_GuildId(id: Long): List<IAmRolesCategory>
-
-    fun findByIAmRoleId_GuildIdAndCategoryName(guildId: Long, categoryName: String): List<IAmRolesCategory>
+    fun findByGuildId(guildId: Long): List<IAmRolesCategory>
 }

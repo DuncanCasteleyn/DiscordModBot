@@ -155,7 +155,7 @@ class IAmRoles : CommandModule(ALIASES, null, DESCRIPTION) {
                 }
                 3.toByte() -> {
                     synchronized(iAmRolesCategories) {
-                        iAmRolesService.removeCategory(event.guild.idLong, iAmRolesCategories[event.message.contentRaw.toInt()].iAmRoleId!!.categoryUUID)
+                        iAmRolesService.removeCategory(event.guild.idLong, iAmRolesCategories[event.message.contentRaw.toInt()].categoryId!!)
                     }
                     super.channel.sendMessage(user.asMention + " Successfully removed the category").queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
                     super.destroy()
@@ -183,7 +183,7 @@ class IAmRoles : CommandModule(ALIASES, null, DESCRIPTION) {
                     }
                 }
                 6.toByte() -> {
-                    iAmRolesService.changeCategoryName(event.guild.idLong, iAmRolesCategory!!.iAmRoleId!!.categoryUUID, event.message.contentStripped)
+                    iAmRolesService.changeCategoryName(event.guild.idLong, iAmRolesCategory!!.categoryId!!, event.message.contentStripped)
                     super.channel.sendMessage("Name successfully changed.").queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
                     super.destroy()
                 }
@@ -194,7 +194,7 @@ class IAmRoles : CommandModule(ALIASES, null, DESCRIPTION) {
                         matchedRoles.isEmpty() -> throw IllegalArgumentException("Could not find any roles with that name")
                         else -> {
                             val roleId = matchedRoles[0].idLong
-                            when (iAmRolesService.addOrRemoveRole(event.guild.idLong, iAmRolesCategory!!.iAmRoleId!!.categoryUUID, roleId)) {
+                            when (iAmRolesService.addOrRemoveRole(event.guild.idLong, iAmRolesCategory!!.categoryId!!, roleId)) {
                                 false -> super.channel.sendMessage(user.asMention + " The role was successfully removed form the category.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                                 true -> super.channel.sendMessage(user.asMention + " The role was successfully added to the category.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                             }
@@ -203,7 +203,7 @@ class IAmRoles : CommandModule(ALIASES, null, DESCRIPTION) {
                     }
                 }
                 8.toByte() -> {
-                    iAmRolesService.changeAllowedRoles(event.guild.idLong, iAmRolesCategory!!.iAmRoleId!!.categoryUUID, event.message.contentRaw.toInt())
+                    iAmRolesService.changeAllowedRoles(event.guild.idLong, iAmRolesCategory!!.categoryId!!, event.message.contentRaw.toInt())
                     channel.sendMessage(user.asMention + " Allowed roles successfully changed.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                     super.destroy()
                 }
@@ -263,7 +263,7 @@ class IAmRoles : CommandModule(ALIASES, null, DESCRIPTION) {
             when (roles) {
                 null -> {
                     selectedCategory = event.message.contentRaw.toInt()
-                    roles = ArrayList(iAmRolesService.getRoleIds(event.guild.idLong, iAmRolesCategories[selectedCategory].iAmRoleId!!.categoryUUID))
+                    roles = ArrayList(iAmRolesService.getRoleIds(event.guild.idLong, iAmRolesCategories[selectedCategory].categoryId!!))
                     if (roles!!.isEmpty()) {
                         throw IllegalStateException("There are no roles in this category. Please contact a server admin.")
                     }
