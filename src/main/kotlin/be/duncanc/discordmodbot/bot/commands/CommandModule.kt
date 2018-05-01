@@ -135,7 +135,7 @@ abstract class CommandModule @JvmOverloads protected constructor(internal val al
         }
     }
 
-    object CommandTextChannelsWhitelist : CommandModule(arrayOf("CommandWhitelistChannel"), null, "Whitelists the channel so commands can be used in it.", ignoreWhiteList = true, requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)) {
+    object CommandTextChannelsWhitelist : CommandModule(arrayOf("CommandWhitelistChannel", "WhitelistChannel"), null, "Whitelists the channel so commands can be used in it.", ignoreWhiteList = true, requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)) {
         private val whitelist = HashMap<Guild, HashSet<TextChannel>>()
         private val FILE_PATH: Path = Paths.get("CommandTextChannelsWhitelist.json")
 
@@ -213,7 +213,8 @@ abstract class CommandModule @JvmOverloads protected constructor(internal val al
                 { it.delete().queueAfter(1, TimeUnit.MINUTES) }
 
         fun isWhitelisted(textChannel: TextChannel): Boolean {
-            return whitelist[textChannel.guild]?.contains(textChannel) == true || whitelist.isEmpty()
+            val contains = whitelist[textChannel.guild]?.contains(textChannel)
+            return contains == true || contains == null || whitelist.isEmpty()
         }
 
         class IllegalTextChannelException : RuntimeException("You are not allowed to execute commands in this channel.")
