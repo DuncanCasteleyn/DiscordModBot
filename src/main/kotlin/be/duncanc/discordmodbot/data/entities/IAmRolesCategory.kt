@@ -24,6 +24,7 @@
 
 package be.duncanc.discordmodbot.data.entities
 
+import org.hibernate.annotations.Type
 import java.io.Serializable
 import java.util.*
 import javax.persistence.*
@@ -44,9 +45,11 @@ data class IAmRolesCategory
         @Column(unique = true, nullable = false)
         var categoryName: String? = null,
 
+        @Column(nullable = false)
         @NotNull
         var allowedRoles: Int = 0,
 
+        @Column(nullable = false)
         @NotNull
         @ElementCollection
         val roles: MutableSet<Long> = HashSet()) {
@@ -72,13 +75,14 @@ data class IAmRolesCategory
 
     @Embeddable
     data class IAmRoleId(
+            @Column(nullable = false)
             @NotNull
             val guildId: Long? = null,
 
 
             @NotNull
-            @Column(insertable = false)
-            @GeneratedValue(strategy = GenerationType.IDENTITY)
+            @Column(nullable = false , columnDefinition = "CHAR(36)")
+            @Type(type = "uuid-char")
             val categoryUUID: UUID = UUID.randomUUID()) : Serializable {
 
         override fun equals(other: Any?): Boolean {

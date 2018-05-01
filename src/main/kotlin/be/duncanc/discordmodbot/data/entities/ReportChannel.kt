@@ -25,12 +25,19 @@
 
 package be.duncanc.discordmodbot.data.entities
 
+import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
 import javax.validation.constraints.NotNull
 
 @Entity
-data class ReportChannel constructor(@Id val guildId: Long? = null, @NotNull val textChannelId: Long? = null) {
+data class ReportChannel constructor(
+        @Id
+        val guildId: Long? = null,
+
+        @Column(nullable = false)
+        @NotNull
+        val textChannelId: Long? = null) {
 
     override fun equals(other: Any?): Boolean {
         if (this === other) {
