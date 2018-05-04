@@ -36,8 +36,9 @@ data class IAmRolesCategory(
         val guildId: Long? = null,
 
         @Id
-        @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "i_am_roles_category_id_seq")
+        @GeneratedValue(generator = "i_am_roles_category_id_seq")
         @SequenceGenerator(name = "i_am_roles_category_id_seq", sequenceName = "i_am_roles_seq", allocationSize = 1)
+        @Column(insertable = false, updatable = false)
         val categoryId: Long? = null,
 
         @Column(unique = true, nullable = false)
