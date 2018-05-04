@@ -36,6 +36,7 @@ import net.dv8tion.jda.core.entities.MessageEmbed
 import net.dv8tion.jda.core.entities.PrivateChannel
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.exceptions.PermissionException
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Component
 import java.awt.Color
@@ -49,6 +50,7 @@ import java.awt.Color
 @Component
 class Warn : CommandModule(arrayOf("Warn"), "[User mention] [Reason~]", "Warns as user by sending the user mentioned a message and logs the warning to the log channel.", true, true) {
 
+    @Autowired
     private lateinit var applicationContext: ApplicationContext
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
