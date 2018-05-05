@@ -26,7 +26,7 @@ package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.services.GuildLogger
 import be.duncanc.discordmodbot.bot.services.ModNotes
-import be.duncanc.discordmodbot.bot.services.MuteRoles
+import be.duncanc.discordmodbot.bot.services.MuteRole
 import be.duncanc.discordmodbot.bot.utils.JDALibHelper
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.MessageBuilder
@@ -76,7 +76,7 @@ class Mute private constructor() : CommandModule(arrayOf("Mute"), "[User mention
             if (!event.member.canInteract(toMute)) {
                 throw PermissionException("You can't interact with this member")
             }
-            event.guild.controller.addRolesToMember(toMute, applicationContext.getBean(MuteRoles::class.java).getMuteRole(event.guild)).reason(reason).queue({
+            event.guild.controller.addRolesToMember(toMute, applicationContext.getBean(MuteRole::class.java).getMuteRole(event.guild)).reason(reason).queue({
                 val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
                 val logToChannel = guildLogger?.logger
                 if (logToChannel != null) {
