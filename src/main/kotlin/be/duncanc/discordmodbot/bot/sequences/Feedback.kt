@@ -1,6 +1,6 @@
-package be.duncanc.discordmodbot.bot.commands
+package be.duncanc.discordmodbot.bot.sequences
 
-import be.duncanc.discordmodbot.bot.sequences.Sequence
+import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.utils.JDALibHelper
 import be.duncanc.discordmodbot.data.entities.ReportChannel
 import be.duncanc.discordmodbot.data.repositories.ReportChannelRepository
