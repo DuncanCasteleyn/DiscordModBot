@@ -30,6 +30,7 @@ import javax.persistence.*
 import javax.validation.constraints.NotNull
 
 @Entity
+@Table(name = "i_am_roles_categories")
 @IdClass(IAmRolesCategory.IAmRoleId::class)
 data class IAmRolesCategory(
         @Id
@@ -50,6 +51,7 @@ data class IAmRolesCategory(
 
         @Column(nullable = false)
         @NotNull
+        @CollectionTable(name = "i_am_roles_category_roles")
         @ElementCollection
         val roles: MutableSet<Long> = HashSet()) {
 

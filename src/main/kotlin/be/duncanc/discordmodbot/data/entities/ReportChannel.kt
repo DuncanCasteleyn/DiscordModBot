@@ -28,9 +28,11 @@ package be.duncanc.discordmodbot.data.entities
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
+import javax.persistence.Table
 import javax.validation.constraints.NotNull
 
 @Entity
+@Table(name = "report_channels")
 data class ReportChannel constructor(
         @Id
         val guildId: Long? = null,
