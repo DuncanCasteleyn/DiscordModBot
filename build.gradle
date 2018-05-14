@@ -26,7 +26,7 @@
 buildscript {
     ext {
         kotlinVersion = '1.2.41'
-        springBootVersion = '2.0.1.RELEASE'
+        springBootVersion = '2.0.2.RELEASE'
     }
 
     repositories {
@@ -88,4 +88,4 @@ compileTestKotlin {
 }
 
 group = 'be.duncanc'
-version = '1.4.8'
+version = '1.4.9'

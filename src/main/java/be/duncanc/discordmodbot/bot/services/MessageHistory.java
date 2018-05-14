@@ -36,6 +36,8 @@ import net.dv8tion.jda.core.hooks.ListenerAdapter;
 import org.apache.commons.collections4.map.LinkedMap;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -48,9 +50,10 @@ import java.util.ArrayList;
  * @version 22 October 2016
  */
 @Component
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class MessageHistory extends ListenerAdapter implements QuitBot.BeforeBotQuit {
 
-    private static final int HISTORY_SIZE = 1000;
+    private static final int HISTORY_SIZE = 2000;
     private static final ArrayList<MessageHistory> MESSAGE_HISTORY_INSTANCES = new ArrayList<>();
 
     private final LinkedMap<Long, Message> messages;
@@ -124,6 +127,8 @@ public class MessageHistory extends ListenerAdapter implements QuitBot.BeforeBot
         if (quitBot != null) {
             quitBot.addCallBeforeQuit(this);
         }
+        // This class is going to be added as listener for beans but we don't want this
+        event.getJDA().removeEventListener(this);
     }
 
     /**

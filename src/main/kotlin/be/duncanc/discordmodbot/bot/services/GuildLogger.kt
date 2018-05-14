@@ -49,6 +49,7 @@ import net.dv8tion.jda.core.events.guild.member.GuildMemberNickChangeEvent
 import net.dv8tion.jda.core.events.message.MessageBulkDeleteEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.events.message.guild.GuildMessageDeleteEvent
+import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.core.events.message.guild.GuildMessageUpdateEvent
 import net.dv8tion.jda.core.events.user.update.UserUpdateDiscriminatorEvent
 import net.dv8tion.jda.core.events.user.update.UserUpdateNameEvent
@@ -108,6 +109,8 @@ class GuildLogger private constructor() : ListenerAdapter() {
 
     @Autowired
     lateinit var logger: LogToChannel
+    @Autowired
+    lateinit var messageHistory: MessageHistory
     private val guildLoggerExecutor: ScheduledExecutorService
     private val lastCheckedLogEntries: HashMap<Long, AuditLogEntry> //Long key is the guild id and the value is the last checked log entry.
 
@@ -119,6 +122,11 @@ class GuildLogger private constructor() : ListenerAdapter() {
             thread
         }
         this.lastCheckedLogEntries = HashMap()
+    }
+
+
+    override fun onGuildMessageReceived(event: GuildMessageReceivedEvent?) {
+        messageHistory.onGuildMessageReceived(event)
     }
 
     override fun onReady(event: ReadyEvent) {
@@ -140,6 +148,7 @@ class GuildLogger private constructor() : ListenerAdapter() {
 
     override fun onGuildMessageUpdate(event: GuildMessageUpdateEvent) {
         if (!LogSettings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMessageUpdate) {
+            messageHistory.onGuildMessageUpdate(event)
             return
         }
 
@@ -149,22 +158,8 @@ class GuildLogger private constructor() : ListenerAdapter() {
             return
         }
 
-        var history: MessageHistory? = null
-        for (messageHistory in MessageHistory.getInstanceList()) {
-            try {
-                if (event.jda === messageHistory.instance) {
-                    history = messageHistory
-                }
-            } catch (ignored: MessageHistory.EmptyCacheException) {
-            }
+        val oldMessage = messageHistory.getMessage(java.lang.Long.parseUnsignedLong(event.messageId), false)
 
-        }
-
-        if (history == null) {
-            return
-        }
-
-        val oldMessage = history.getMessage(java.lang.Long.parseUnsignedLong(event.messageId), false)
         if (oldMessage != null) {
             val name: String = try {
                 JDALibHelper.getEffectiveNameAndUsername(oldMessage.guild.getMember(oldMessage.author))
@@ -179,6 +174,7 @@ class GuildLogger private constructor() : ListenerAdapter() {
             linkEmotes(oldMessage.emotes, logEmbed)
             guildLoggerExecutor.execute { logger.log(logEmbed, oldMessage.author, guild, oldMessage.embeds, LogTypeAction.USER) }
         }
+        messageHistory.onGuildMessageUpdate(event)
     }
 
     /**
@@ -197,28 +193,9 @@ class GuildLogger private constructor() : ListenerAdapter() {
             return
         }
 
-        var history: MessageHistory? = null
-        for (messageHistory in MessageHistory.getInstanceList()) {
-            try {
-                if (event.jda === messageHistory.instance) {
-                    history = messageHistory
-                }
-            } catch (ignored: MessageHistory.EmptyCacheException) {
-            }
-
-        }
-
-        if (history == null) {
-            guildLoggerExecutor.execute {
-                val logEntry = event.guild.auditLogs.cache(false).limit(1).complete()[0]
-                lastCheckedLogEntries[event.guild.idLong] = logEntry
-            }
-            return
-        }
-
-        val oldMessage = history.getMessage(java.lang.Long.parseUnsignedLong(event.messageId))
+        val oldMessage = messageHistory.getMessage(java.lang.Long.parseUnsignedLong(event.messageId))
         if (oldMessage != null) {
-            val attachmentString = history.getAttachmentsString(java.lang.Long.parseUnsignedLong(event.messageId))
+            val attachmentString = messageHistory.getAttachmentsString(java.lang.Long.parseUnsignedLong(event.messageId))
 
             val name: String = try {
                 JDALibHelper.getEffectiveNameAndUsername(oldMessage.guild.getMember(oldMessage.author))
