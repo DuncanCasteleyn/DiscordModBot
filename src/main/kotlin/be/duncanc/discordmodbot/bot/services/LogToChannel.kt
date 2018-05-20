@@ -57,48 +57,49 @@ class LogToChannel private constructor() {
         private val LOG = LoggerFactory.getLogger(LogToChannel::class.java)
     }
 
-    internal val logChannels: MutableList<TextChannel>
+
+    private val _logChannels: MutableList<TextChannel>
+
+    val logChannels: List<TextChannel>
+        get() = Collections.unmodifiableList(_logChannels)
+
     private val userLogChannels: MutableList<TextChannel>
 
     /**
      * Find the the logging channels.
      */
     init {
-        logChannels = ArrayList()
+        _logChannels = ArrayList()
         userLogChannels = ArrayList()
     }
 
     internal fun initChannelList(jda: JDA) {
         if (jda.selfUser.idLong == 232853504404881418L) {
             //Re: Zero
-            logChannels.add(jda.getTextChannelById(205415791238184969L))
+            _logChannels.add(jda.getTextChannelById(205415791238184969L))
             userLogChannels.add(jda.getTextChannelById(375783695711207424L))
             //KoRn
             val kornLogChannel = jda.getTextChannelById(324994155480743936L)
-            logChannels.add(kornLogChannel)
+            _logChannels.add(kornLogChannel)
             userLogChannels.add(kornLogChannel)
         }
         if (jda.selfUser.idLong == 247032890024525825L) {
             val logChannel = jda.getTextChannelById(247081384110194688L)
-            logChannels.add(logChannel)
+            _logChannels.add(logChannel)
             userLogChannels.add(logChannel)
         }
 
         if (jda.selfUser.idLong == 235529232426598401L) {
             val logChannel = jda.getTextChannelById(318070708125171712L)
-            logChannels.add(logChannel)
+            _logChannels.add(logChannel)
             userLogChannels.add(logChannel)
         }
 
         if (jda.selfUser.idLong == 368811552960413696L) {
             val logChannel = jda.getTextChannelById(368820484139122688L)
-            logChannels.add(logChannel)
+            _logChannels.add(logChannel)
             userLogChannels.add(logChannel)
         }
-    }
-
-    fun getLogChannels(): List<TextChannel> {
-        return Collections.unmodifiableList(logChannels)
     }
 
     /**
@@ -109,7 +110,7 @@ class LogToChannel private constructor() {
      */
     internal fun userOnGuilds(user: User): List<Guild> {
         val guildList = ArrayList<Guild>()
-        for (logChannel in logChannels) {
+        for (logChannel in _logChannels) {
             if (logChannel.guild.getMember(user) != null) {
                 if (!guildList.contains(logChannel.guild)) {
                     guildList.add(logChannel.guild)
@@ -128,7 +129,7 @@ class LogToChannel private constructor() {
     @JvmOverloads
     fun log(logEmbed: EmbedBuilder, associatedUser: User?, guild: Guild, embeds: List<MessageEmbed>?, actionType: GuildLogger.LogTypeAction, bytes: ByteArray? = null) {
         val targetChannel: List<TextChannel> = if (actionType === GuildLogger.LogTypeAction.MODERATOR) {
-            logChannels
+            _logChannels
         } else {
             userLogChannels
         }
