@@ -41,6 +41,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Component
 import java.awt.Color
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 /**
@@ -106,7 +107,8 @@ class Kick private constructor() : CommandModule(arrayOf("Kick"), "[User mention
         if (logToChannel != null) {
             val logEmbed = EmbedBuilder()
                     .setColor(Color.RED)
-                    .setTitle("User kicked | Case: " + GuildLogger.getCaseNumberSerializable(event.guild.idLong))
+                    .setTitle("User kicked")
+                    .addField("UUID", UUID.randomUUID().toString(), false)
                     .addField("User", JDALibHelper.getEffectiveNameAndUsername(toKick), true)
                     .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
                     .addField("Reason", reason, false)

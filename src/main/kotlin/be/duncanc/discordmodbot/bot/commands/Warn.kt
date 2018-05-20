@@ -40,6 +40,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Component
 import java.awt.Color
+import java.util.*
 
 /**
  * Created by Duncan on 24/02/2017.
@@ -81,10 +82,10 @@ class Warn : CommandModule(arrayOf("Warn"), "[User mention] [Reason~]", "Warns a
             val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
             val logToChannel = guildLogger?.logger
             if (logToChannel != null) {
-                val serializableCaseResult = GuildLogger.getCaseNumberSerializable(event.guild.idLong)
                 val logEmbed = EmbedBuilder()
                         .setColor(Color.YELLOW)
-                        .setTitle("User warned | Case: $serializableCaseResult")
+                        .setTitle("User warned")
+                        .addField("UUID", UUID.randomUUID().toString(), false)
                         .addField("User", JDALibHelper.getEffectiveNameAndUsername(toWarn), true)
                         .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
                         .addField("Reason", reason, false)

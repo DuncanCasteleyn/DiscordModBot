@@ -35,6 +35,7 @@ import net.dv8tion.jda.core.entities.PrivateChannel
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 import java.awt.Color
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 
@@ -88,7 +89,8 @@ class BanUserById private constructor() : CommandModule(arrayOf("BanByUserId", "
                     if (logToChannel != null) {
                         val logEmbed = EmbedBuilder()
                                 .setColor(Color.RED)
-                                .setTitle("User banned by id  | Case: " + GuildLogger.getCaseNumberSerializable(event.guild.idLong))
+                                .setTitle("User banned by id")
+                                .addField("UUID", UUID.randomUUID().toString(), false)
                                 .addField("User", toBan.name, true)
                                 .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
                                 .addField("Reason", reason, false)

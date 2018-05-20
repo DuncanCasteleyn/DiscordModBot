@@ -61,8 +61,6 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory
 import org.springframework.context.annotation.Scope
 import org.springframework.stereotype.Component
 import java.awt.Color
-import java.io.IOException
-import java.io.Serializable
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
 import java.nio.file.Paths
@@ -95,16 +93,6 @@ class GuildLogger private constructor() : ListenerAdapter() {
         private val LOG = LoggerFactory.getLogger(GuildLogger::class.java)
         private val LIGHT_BLUE = Color(52, 152, 219)
         private const val LOG_ENTRY_CHECK_LIMIT = 5
-
-        fun getCaseNumberSerializable(guildId: Long): Serializable {
-            val caseNumber: Long = try {
-                CaseSystem(guildId).newCaseNumber
-            } catch (e: IOException) {
-                -1
-            }
-
-            return if (caseNumber != -1L) caseNumber else "IOException - failed retrieving number"
-        }
     }
 
     @Autowired
@@ -375,7 +363,8 @@ class GuildLogger private constructor() : ListenerAdapter() {
             val logEmbed = EmbedBuilder()
                     .setColor(Color.RED)
                     .addField("User", JDALibHelper.getEffectiveNameAndUsername(member), true)
-                    .setTitle("User kicked | Case: " + getCaseNumberSerializable(guild.idLong))
+                    .setTitle("User kicked")
+                    .addField("UUID", UUID.randomUUID().toString(), false)
                     .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(moderator), true)
             if (reason != null) {
                 logEmbed.addField("Reason", reason, false)
@@ -413,7 +402,8 @@ class GuildLogger private constructor() : ListenerAdapter() {
 
             val logEmbed = EmbedBuilder()
                     .setColor(Color.RED)
-                    .setTitle("User banned | Case: " + getCaseNumberSerializable(event.guild.idLong))
+                    .setTitle("User banned")
+                    .addField("UUID", UUID.randomUUID().toString(), false)
                     .addField("User", event.user.name, true)
             if (moderator != null) {
                 logEmbed.addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.guild.getMember(moderator)), true)

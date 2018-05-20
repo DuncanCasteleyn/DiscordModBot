@@ -41,6 +41,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Component
 import java.awt.Color
+import java.util.*
 
 /**
  * This class creates a mute command that will be logged.
@@ -80,10 +81,10 @@ class Mute private constructor() : CommandModule(arrayOf("Mute"), "[User mention
                 val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
                 val logToChannel = guildLogger?.logger
                 if (logToChannel != null) {
-                    val serializableCaseResult = GuildLogger.getCaseNumberSerializable(event.guild.idLong)
                     val logEmbed = EmbedBuilder()
                             .setColor(Color.YELLOW)
-                            .setTitle("User muted | Case: $serializableCaseResult")
+                            .setTitle("User muted")
+                            .addField("UUID", UUID.randomUUID().toString(), false)
                             .addField("User", JDALibHelper.getEffectiveNameAndUsername(toMute), true)
                             .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
                             .addField("Reason", reason, false)
