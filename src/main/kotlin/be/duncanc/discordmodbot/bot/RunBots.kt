@@ -69,8 +69,6 @@ class RunBots : CommandLineRunner {
         try {
             val configObject = loadConfig()
 
-            be.duncanc.discordmodbot.bot.utils.GoogleSearch.setup(configObject.getString("GoogleApi"))
-
             //Fairy tail bot
 
             val fairyTailJDABuilder = JDABuilder(AccountType.BOT)

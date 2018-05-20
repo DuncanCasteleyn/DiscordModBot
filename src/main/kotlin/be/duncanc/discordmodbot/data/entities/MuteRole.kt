@@ -14,7 +14,7 @@ data class MuteRole(
 
         @NotNull
         @Column(nullable = false)
-        val roleId: Long ? = null) {
+        val roleId: Long? = null) {
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

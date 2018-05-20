@@ -38,6 +38,7 @@ import net.dv8tion.jda.core.exceptions.PermissionException
 import net.dv8tion.jda.core.requests.RestAction
 import org.springframework.stereotype.Component
 import java.awt.Color
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 /**
@@ -106,7 +107,8 @@ class Ban private constructor() : CommandModule(arrayOf("Ban"), "[User mention] 
         if (logToChannel != null) {
             val logEmbed = EmbedBuilder()
                     .setColor(Color.RED)
-                    .setTitle("User banned | Case: " + GuildLogger.getCaseNumberSerializable(event.guild.idLong))
+                    .setTitle("User banned")
+                    .addField("UUID", UUID.randomUUID().toString(), false)
                     .addField("User", JDALibHelper.getEffectiveNameAndUsername(toBan), true)
                     .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
                     .addField("Reason", reason, false)
