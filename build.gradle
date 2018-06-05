@@ -67,7 +67,7 @@ dependencies {
     compile('org.mariadb.jdbc:mariadb-java-client:2.2.3')
 }
 
-wrapper.gradleVersion = '4.6'
+wrapper.gradleVersion = '4.8'
 
 compileJava.options.compilerArgs << '-Xlint:deprecation'
 compileJava.options.encoding = 'UTF-8'
