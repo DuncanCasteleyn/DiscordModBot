@@ -526,6 +526,7 @@ class GuildLogger private constructor() : ListenerAdapter() {
 
     object LogSettings : CommandModule(arrayOf("LogSettings"), null, "Adjust server settings.", requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)) {
 
+        @Deprecated("Moved to database")
         private val FILE_PATH = Paths.get("GuildSettings.json")
         private val exceptedFromLogging = ArrayList<Long>()
         private val guildSettings = HashSet<GuildSettings>()
@@ -644,7 +645,7 @@ class GuildLogger private constructor() : ListenerAdapter() {
             }
         }
 
-        class GuildSettings @JvmOverloads constructor(val guildId: Long, var logMessageDelete: Boolean = true, var logMessageUpdate: Boolean = true, var logMemberRemove: Boolean = true, var logMemberBan: Boolean = true, var logMemberAdd: Boolean = true, var logMemberRemoveBan: Boolean = true) {
+        data class GuildSettings @JvmOverloads constructor(val guildId: Long, var logMessageDelete: Boolean = true, var logMessageUpdate: Boolean = true, var logMemberRemove: Boolean = true, var logMemberBan: Boolean = true, var logMemberAdd: Boolean = true, var logMemberRemoveBan: Boolean = true) {
             override fun equals(other: Any?): Boolean {
                 if (this === other) return true
                 if (javaClass != other?.javaClass) return false
