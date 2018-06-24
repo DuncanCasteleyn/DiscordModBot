@@ -137,7 +137,7 @@ class SlowMode private constructor() : CommandModule(ALIASES, ARGUMENTATION_SYNT
      *
      * This class executed activate slow mode on a channel that will prevent people from posting message rapidly after each other to prevent spam and abuse.
      */
-    private inner class SlowModeOnChannel
+    internal inner class SlowModeOnChannel
     /**
      * Will create an object that is going to slow the channel messages.
      *
@@ -244,7 +244,7 @@ class SlowMode private constructor() : CommandModule(ALIASES, ARGUMENTATION_SYNT
         /**
          * This inner class provides the functionality to remove a person that was added to the slowed list so that he will not permanently remain slowed after posting a message.
          */
-        private inner class MemberSlowModeCleanerAndDataHolder
+        internal inner class MemberSlowModeCleanerAndDataHolder
         /**
          * Constructor
          *
