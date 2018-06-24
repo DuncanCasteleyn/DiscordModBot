@@ -80,7 +80,8 @@ public class SlowMode extends CommandModule {
             event.getAuthor().openPrivateChannel().queue(privateChannel -> privateChannel.sendMessage(noPermissionMessage).queue());
         } else {
             if (event.getGuild().getMember(event.getJDA().getSelfUser()).getPermissions().contains(Permission.MANAGE_PERMISSIONS)) {
-                LogToChannel logToChannel = (LogToChannel) event.getJDA().getRegisteredListeners().stream().filter(o -> o instanceof LogToChannel).findFirst().orElse(null);
+                GuildLogger guildLogger = (GuildLogger) event.getJDA().getRegisteredListeners().stream().filter(o -> o instanceof GuildLogger).findFirst().orElse(null);
+                LogToChannel logToChannel = guildLogger.getLogger();
                 boolean wasSlowed = false;
                 for (SlowModeOnChannel slowChannel : slowedChannels) {
                     if (slowChannel.getSlowChannel() == event.getChannel()) {
