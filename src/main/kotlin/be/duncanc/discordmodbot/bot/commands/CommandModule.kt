@@ -60,6 +60,7 @@ import kotlin.collections.HashSet
 abstract class CommandModule @JvmOverloads protected constructor(internal val aliases: Array<String>, internal val argumentationSyntax: String?, internal val description: String?, private val cleanCommandMessage: Boolean = true, private val ignoreWhiteList: Boolean = false, vararg val requiredPermissions: Permission) : ListenerAdapter() {
     companion object {
         const val COMMAND_SIGN = '!'
+        @JvmStatic
         protected val LOG: Logger = LoggerFactory.getLogger(CommandModule::class.java)
     }
 
