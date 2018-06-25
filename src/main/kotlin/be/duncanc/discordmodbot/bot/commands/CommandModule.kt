@@ -60,6 +60,7 @@ import kotlin.collections.HashSet
 abstract class CommandModule @JvmOverloads protected constructor(internal val aliases: Array<String>, internal val argumentationSyntax: String?, internal val description: String?, private val cleanCommandMessage: Boolean = true, private val ignoreWhiteList: Boolean = false, vararg val requiredPermissions: Permission) : ListenerAdapter() {
     companion object {
         const val COMMAND_SIGN = '!'
+        @JvmStatic
         protected val LOG: Logger = LoggerFactory.getLogger(CommandModule::class.java)
     }
 
@@ -117,7 +118,6 @@ abstract class CommandModule @JvmOverloads protected constructor(internal val al
                     LOG.warn("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " failed executing " + event.message.contentStripped + " command from user " + event.author.toString())
                     val exceptionMessage = MessageBuilder().append("Cannot complete action due to a permission issue; see the message below for details.").appendCodeBlock(pe.javaClass.simpleName + ": " + pe.message, "text").build()
                     event.channel.sendMessage(exceptionMessage).queue { it.delete().queueAfter(5, TimeUnit.MINUTES) }
-
                 } catch (t: Throwable) {
                     LOG.error("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " failed executing " + event.message.contentStripped + " command from user " + event.author.toString(), t)
                     val exceptionMessage = MessageBuilder().append("Cannot complete action due to an error; see the message below for details.").appendCodeBlock(t.javaClass.simpleName + ": " + t.message, "text").build()
