@@ -30,6 +30,8 @@ import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.sequences.Sequence
 import be.duncanc.discordmodbot.bot.utils.JDALibHelper
 import be.duncanc.discordmodbot.bot.utils.ThrowableSafeRunnable
+import be.duncanc.discordmodbot.data.entities.LoggingSettings
+import be.duncanc.discordmodbot.data.repositories.LoggingSettingsRepository
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
@@ -54,16 +56,13 @@ import net.dv8tion.jda.core.events.message.guild.GuildMessageUpdateEvent
 import net.dv8tion.jda.core.events.user.update.UserUpdateDiscriminatorEvent
 import net.dv8tion.jda.core.events.user.update.UserUpdateNameEvent
 import net.dv8tion.jda.core.hooks.ListenerAdapter
-import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.config.ConfigurableBeanFactory
 import org.springframework.context.annotation.Scope
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
 import java.awt.Color
-import java.nio.file.Files
-import java.nio.file.NoSuchFileException
-import java.nio.file.Paths
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
@@ -79,14 +78,18 @@ import java.util.concurrent.TimeUnit
  * IMPORTANT READ BEFORE MODIFYING CODE:
  * The modifying the lastCheckedLogEntries HashMap needs to happen using the guildLoggerExecutor because its
  * thread are executed sequentially there is no need to lock the object, however if you try to do this without using the
- * service the chances of hitting a ConcurrentModificationException are 100%.
+ * service the chances of hitting a ConcurrentModificationException is 100%.
  *
  * @author Duncan
  * @since 1.0
  */
 @Component
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-class GuildLogger private constructor() : ListenerAdapter() {
+class GuildLogger constructor(
+        val logger: LogToChannel,
+        val messageHistory: MessageHistory,
+        val loggingSettingsRepository: LoggingSettingsRepository
+) : ListenerAdapter() {
 
     companion object {
         private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd-M-yyyy hh:mm a O")
@@ -95,13 +98,9 @@ class GuildLogger private constructor() : ListenerAdapter() {
         private const val LOG_ENTRY_CHECK_LIMIT = 5
     }
 
-    @Autowired
-    lateinit var logger: LogToChannel
-    @Autowired
-    lateinit var messageHistory: MessageHistory
+
     private val guildLoggerExecutor: ScheduledExecutorService
     private val lastCheckedLogEntries: HashMap<Long, AuditLogEntry> //Long key is the guild id and the value is the last checked log entry.
-
 
     init {
         this.guildLoggerExecutor = Executors.newSingleThreadScheduledExecutor { r ->
@@ -134,15 +133,17 @@ class GuildLogger private constructor() : ListenerAdapter() {
         }
     }
 
+    @Transactional(readOnly = true)
     override fun onGuildMessageUpdate(event: GuildMessageUpdateEvent) {
-        if (!LogSettings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMessageUpdate) {
+        val loggingSettings = loggingSettingsRepository.findById(event.guild.idLong).orElse(LoggingSettings(event.guild.idLong))
+        if (!loggingSettings.logMessageUpdate) {
             messageHistory.onGuildMessageUpdate(event)
             return
         }
 
         val guild = event.guild
         val channel = event.channel
-        if (LogSettings.isExceptedFromLogging(channel.idLong)) {
+        if (loggingSettings.ignoredChannels.contains(channel.idLong)) {
             return
         }
 
@@ -172,12 +173,13 @@ class GuildLogger private constructor() : ListenerAdapter() {
      * @param event The event that trigger this method
      */
     override fun onGuildMessageDelete(event: GuildMessageDeleteEvent) {
-        if (!LogSettings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMessageDelete) {
+        val loggingSettings = loggingSettingsRepository.findById(event.guild.idLong).orElse(LoggingSettings(event.guild.idLong))
+        if (!loggingSettings.logMessageDelete) {
             return
         }
         val guild = event.guild
         val channel = event.channel
-        if (LogSettings.isExceptedFromLogging(channel.idLong)) {
+        if (loggingSettings.ignoredChannels.contains(channel.idLong)) {
             return
         }
 
@@ -251,12 +253,14 @@ class GuildLogger private constructor() : ListenerAdapter() {
         }
     }
 
+    @Transactional(readOnly = true)
     override fun onMessageBulkDelete(event: MessageBulkDeleteEvent) {
-        if (!LogSettings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMessageDelete) {
+        val loggingSettings = loggingSettingsRepository.findById(event.guild.idLong).orElse(LoggingSettings(event.guild.idLong))
+        if (!loggingSettings.logMessageDelete) {
             return
         }
         val channel = event.channel
-        if (LogSettings.isExceptedFromLogging(channel.idLong)) {
+        if (loggingSettings.ignoredChannels.contains(channel.idLong)) {
             return
         }
 
@@ -317,8 +321,9 @@ class GuildLogger private constructor() : ListenerAdapter() {
         guildLoggerExecutor.execute { logger.log(logEmbed, null, event.guild, null, LogTypeAction.USER, bytes) }
     }
 
+    @Transactional(readOnly = true)
     override fun onGuildMemberLeave(event: GuildMemberLeaveEvent) {
-        if (!LogSettings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMemberRemove) {
+        if (!loggingSettingsRepository.findById(event.guild.idLong).orElse(LoggingSettings(event.guild.idLong)).logMemberRemove) {
             return
         }
 
@@ -373,8 +378,9 @@ class GuildLogger private constructor() : ListenerAdapter() {
         }
     }
 
+    @Transactional(readOnly = true)
     override fun onGuildBan(event: GuildBanEvent) {
-        if (!LogSettings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMemberBan) {
+        if (!loggingSettingsRepository.findById(event.guild.idLong).orElse(LoggingSettings(event.guild.idLong)).logMemberBan) {
             return
         }
 
@@ -415,8 +421,9 @@ class GuildLogger private constructor() : ListenerAdapter() {
         }, 1, TimeUnit.SECONDS)
     }
 
+    @Transactional(readOnly = true)
     override fun onGuildMemberJoin(event: GuildMemberJoinEvent) {
-        if (!LogSettings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMemberAdd) {
+        if (!loggingSettingsRepository.findById(event.guild.idLong).orElse(LoggingSettings(event.guild.idLong)).logMemberAdd) {
             return
         }
 
@@ -428,9 +435,9 @@ class GuildLogger private constructor() : ListenerAdapter() {
         guildLoggerExecutor.execute { logger.log(logEmbed, event.member.user, event.guild, null, LogTypeAction.USER) }
     }
 
-
+    @Transactional(readOnly = true)
     override fun onGuildUnban(event: GuildUnbanEvent) {
-        if (!LogSettings.getGuildSettings().filter { it.guildId == event.guild.idLong }[0].logMemberRemoveBan) {
+        if (!loggingSettingsRepository.findById(event.guild.idLong).orElse(LoggingSettings(event.guild.idLong)).logMemberRemoveBan) {
             return
         }
 
@@ -524,139 +531,50 @@ class GuildLogger private constructor() : ListenerAdapter() {
         MODERATOR, USER
     }
 
-    object LogSettings : CommandModule(arrayOf("LogSettings"), null, "Adjust server settings.", requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)) {
+    @Component
+    class LogSettings @Autowired constructor(
+            private val loggingSettingsRepository: LoggingSettingsRepository
+    ) : CommandModule(arrayOf("LogSettings"), null, "Adjust server settings.", requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)) {
 
-        @Deprecated("Moved to database")
-        private val FILE_PATH = Paths.get("GuildSettings.json")
-        private val exceptedFromLogging = ArrayList<Long>()
-        private val guildSettings = HashSet<GuildSettings>()
-
-        init {
-            loadGuildSettingFromFile()
-        }
-
-        private fun writeGuildSettingToFile() {
-            synchronized(FILE_PATH) {
-                synchronized(exceptedFromLogging) {
-                    synchronized(guildSettings) {
-                        val jsonObject = JSONObject()
-                        jsonObject.put("exceptedFromLogging", exceptedFromLogging)
-                        jsonObject.put("guildSettings", guildSettings)
-                        Files.write(FILE_PATH, Collections.singletonList(jsonObject.toString()))
-                    }
-                }
-            }
-        }
-
-        private fun loadGuildSettingFromFile() {
-            synchronized(FILE_PATH) {
-                synchronized(exceptedFromLogging) {
-                    synchronized(guildSettings) {
-                        try {
-                            val stringBuilder = StringBuilder()
-                            Files.readAllLines(FILE_PATH).map { stringBuilder.append(it) }
-                            val jsonObject = JSONObject(stringBuilder.toString())
-                            jsonObject.getJSONArray("guildSettings").forEach {
-                                it as JSONObject
-                                guildSettings.add(GuildSettings(it.getLong("guildId"), it.getBoolean("logMessageDelete"), it.getBoolean("logMessageUpdate"), it.getBoolean("logMemberRemove"), it.getBoolean("logMemberBan"), it.getBoolean("logMemberAdd"), it.getBoolean("logMemberRemoveBan")))
-                            }
-                            jsonObject.getJSONArray("exceptedFromLogging").forEach {
-
-                                exceptedFromLogging.add(it.toString().toLong())
-                            }
-                        } catch (ignored: NoSuchFileException) {
-                        }
-                    }
-                }
-            }
-        }
-
-        init {
-            try {
-                loadGuildSettingFromFile()
-            } catch (e: NoSuchFileException) {
-                LoggerFactory.getLogger(CommandModule::class.java).warn("Loading config file failed", e)
-            }
-        }
-
-        fun isExceptedFromLogging(channelId: Long): Boolean {
-            synchronized(exceptedFromLogging) {
-                return exceptedFromLogging.contains(channelId)
-            }
-        }
-
-        fun getGuildSettings(): Set<GuildSettings> {
-            synchronized(guildSettings) {
-                return Collections.unmodifiableSet(guildSettings)
-            }
-        }
-
-        override fun onReady(event: ReadyEvent) {
-            synchronized(guildSettings) {
-                event.jda.guilds.forEach {
-                    val settings = GuildSettings(it.idLong)
-                    guildSettings.add(settings)
-                    if (it.idLong == 175856762677624832L) {
-                        settings.logMessageUpdate = false
-                    }
-                }
-            }
-            writeGuildSettingToFile()
-        }
-
+        @Transactional
         override fun onGuildJoin(event: GuildJoinEvent) {
-            synchronized(guildSettings) {
-                guildSettings.add(GuildSettings(event.guild.idLong))
-            }
+            loggingSettingsRepository.save(LoggingSettings(event.guild.idLong))
         }
 
+        @Transactional
         override fun onGuildLeave(event: GuildLeaveEvent) {
-            synchronized(guildSettings) {
-                guildSettings.removeIf { it.guildId == event.guild.idLong }
-            }
+            loggingSettingsRepository.deleteById(event.guild.idLong)
         }
 
         override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
             event.jda.addEventListener(SettingsSequence(event.author, event.channel))
         }
 
-        class SettingsSequence(user: User, channel: MessageChannel) : Sequence(user, channel) {
+        open inner class SettingsSequence(user: User, channel: MessageChannel) : Sequence(user, channel) {
             init {
-                val settingFields = GuildSettings::class.java.declaredFields.filter { it.type == Boolean::class.java }.map { it.name }
+                val settingFields = LoggingSettings::class.java.declaredFields.filter { it.type == Boolean::class.java }.map { it.name }
                 val messageBuilder = MessageBuilder().append("Enter the number of the boolean you'd like to invert.\nIf you don't want to invert anything type \"STOP\" (case sensitive).\n\n")
                 for (i in 0 until settingFields.size) {
+                    val channelId = (channel as TextChannel).guild.idLong
                     messageBuilder.append(i)
                             .append(". ")
                             .append(settingFields[i])
                             .append(" = ")
-                            .append(GuildSettings::class.java.getMethod("get" + settingFields[i].capitalize()).invoke(guildSettings.filter { it.guildId == (channel as TextChannel).guild.idLong }[0]))
+                            .append(LoggingSettings::class.java.getMethod("get" + settingFields[i].capitalize()).invoke(loggingSettingsRepository.findById(channelId).orElse(LoggingSettings(channelId))))
                             .append('\n')
                 }
                 channel.sendMessage(messageBuilder.build()).queue { addMessageToCleaner(it) }
             }
 
+            @Transactional
             override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
-                val settingField = GuildSettings::class.java.declaredFields.filter { it.type == Boolean::class.java }[event.message.contentRaw.toInt()].name.capitalize()
-                GuildSettings::class.java.getMethod("set" + settingField, Boolean::class.java)
-                        .invoke(guildSettings.filter { it.guildId == event.guild.idLong }[0], !(GuildSettings::class.java.getMethod("get" + settingField).invoke(guildSettings.filter { it.guildId == event.guild.idLong }[0]) as Boolean))
-                writeGuildSettingToFile()
+                val settingField = LoggingSettings::class.java.declaredFields.filter { it.type == Boolean::class.java }[event.message.contentRaw.toInt()].name.capitalize()
+                val guildLoggingSettings = loggingSettingsRepository.findById(event.guild.idLong).orElse(LoggingSettings(event.guild.idLong))
+                LoggingSettings::class.java.getMethod("set$settingField", Boolean::class.java)
+                        .invoke(guildLoggingSettings, !(LoggingSettings::class.java.getMethod("get$settingField").invoke(guildLoggingSettings) as Boolean))
+                loggingSettingsRepository.save(guildLoggingSettings)
                 channel.sendMessage("Successfully inverted " + settingField.decapitalize() + ".").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                 destroy()
-            }
-        }
-
-        data class GuildSettings @JvmOverloads constructor(val guildId: Long, var logMessageDelete: Boolean = true, var logMessageUpdate: Boolean = true, var logMemberRemove: Boolean = true, var logMemberBan: Boolean = true, var logMemberAdd: Boolean = true, var logMemberRemoveBan: Boolean = true) {
-            override fun equals(other: Any?): Boolean {
-                if (this === other) return true
-                if (javaClass != other?.javaClass) return false
-
-                other as GuildSettings
-
-                return guildId == other.guildId
-            }
-
-            override fun hashCode(): Int {
-                return guildId.hashCode()
             }
         }
     }

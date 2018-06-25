@@ -1,12 +1,10 @@
 package be.duncanc.discordmodbot.data.entities
 
-import javax.persistence.CollectionTable
-import javax.persistence.ElementCollection
-import javax.persistence.Entity
-import javax.persistence.Id
+import javax.persistence.*
 
 @Entity
-data class GuildSettings @JvmOverloads constructor(
+@Table(name = "logging_settings")
+data class LoggingSettings @JvmOverloads constructor(
         @Id
         val guildId: Long,
         var logMessageDelete: Boolean = true,
@@ -16,14 +14,15 @@ data class GuildSettings @JvmOverloads constructor(
         var logMemberAdd: Boolean = true,
         var logMemberRemoveBan: Boolean = true,
         @ElementCollection
-        @CollectionTable(name = "ignoredLogChannels")
-        val ignoredChannels: Set<Long> = HashSet<Long>()) {
+        @CollectionTable(name = "logging_ignored_channels")
+        val ignoredChannels: Set<Long> = HashSet<Long>()
+) {
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as GuildSettings
+        other as LoggingSettings
 
         return guildId == other.guildId
     }

@@ -26,7 +26,6 @@
 package be.duncanc.discordmodbot.bot
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
-import be.duncanc.discordmodbot.bot.services.GuildLogger
 import net.dv8tion.jda.core.AccountType
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.JDABuilder
@@ -45,10 +44,10 @@ import org.springframework.stereotype.Component
 @Suppress("unused")
 @Profile("testing")
 @Component
-class TestBot : CommandLineRunner {
+class TestBot @Autowired constructor(
+        private val applicationContext: ApplicationContext
+) : CommandLineRunner {
 
-    @Autowired
-    private lateinit var applicationContext: ApplicationContext
     private lateinit var devJDA: JDA
 
     companion object {
@@ -64,7 +63,7 @@ class TestBot : CommandLineRunner {
                     .setBulkDeleteSplittingEnabled(false)
                     .setCorePoolSize(RunBots.BOT_THREAD_POOL_SIZE)
                     .setToken(configObject.getString("Dev"))
-                    .addEventListener(GuildLogger.LogSettings, CommandModule.CommandTextChannelsWhitelist)
+                    .addEventListener(CommandModule.CommandTextChannelsWhitelist)
                     .addEventListener(*applicationContext.getBeansOfType(ListenerAdapter::class.java).values.toTypedArray())
 
             devJDA = devJDABuilder.buildAsync()

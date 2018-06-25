@@ -26,7 +26,6 @@
 package be.duncanc.discordmodbot.bot
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
-import be.duncanc.discordmodbot.bot.services.GuildLogger
 import be.duncanc.discordmodbot.bot.services.MemberGate
 import be.duncanc.discordmodbot.bot.utils.ExecutorServiceEventManager
 import net.dv8tion.jda.core.AccountType
@@ -46,7 +45,9 @@ import java.nio.file.Paths
 
 @Profile("production")
 @Component
-class RunBots : CommandLineRunner {
+class RunBots @Autowired constructor(
+        private val applicationContext: ApplicationContext
+) : CommandLineRunner {
     companion object {
         private val configFile = Paths.get("Config.json")
         const val BOT_THREAD_POOL_SIZE = 3
@@ -59,8 +60,6 @@ class RunBots : CommandLineRunner {
         }
     }
 
-    @Autowired
-    private lateinit var applicationContext: ApplicationContext
     private lateinit var reZeroBot: JDA
     private lateinit var fairyTailBot: JDA
 
@@ -76,7 +75,7 @@ class RunBots : CommandLineRunner {
                     .setEventManager(ExecutorServiceEventManager("Fairy tail"))
                     .setToken(configObject.getString("FairyTail"))
                     .setBulkDeleteSplittingEnabled(false)
-                    .addEventListener(*applicationContext.getBeansOfType(ListenerAdapter::class.java).values.toTypedArray(), CommandModule.CommandTextChannelsWhitelist, GuildLogger.LogSettings)
+                    .addEventListener(*applicationContext.getBeansOfType(ListenerAdapter::class.java).values.toTypedArray(), CommandModule.CommandTextChannelsWhitelist)
 
 
             //Re:Zero bot
@@ -89,7 +88,7 @@ class RunBots : CommandLineRunner {
                     .setToken(configObject.getString("ReZero"))
                     .setEventManager(ExecutorServiceEventManager("Re:Zero"))
                     .setBulkDeleteSplittingEnabled(false)
-                    .addEventListener(*applicationContext.getBeansOfType(ListenerAdapter::class.java).values.toTypedArray(), CommandModule.CommandTextChannelsWhitelist, GuildLogger.LogSettings, memberGate)
+                    .addEventListener(*applicationContext.getBeansOfType(ListenerAdapter::class.java).values.toTypedArray(), CommandModule.CommandTextChannelsWhitelist, memberGate)
 
             //TEMP EVENT BOT STARTS HERE
             /*val qAndA = QAndA(
