@@ -23,24 +23,24 @@
  *
  */
 
-package be.duncanc.discordmodbot.bot.commands;
+package be.duncanc.discordmodbot.bot.commands
 
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
-import org.jetbrains.annotations.NotNull;
-import org.springframework.stereotype.Component;
+import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import org.springframework.stereotype.Component
 
 @Component
-public class Ping extends CommandModule {
-    private static final String[] ALIASES = new String[]{"Ping"};
-    private static final String DESCRIPTION = "responds with \"pong!\".";
-
-    public Ping() {
-        super(ALIASES, null, DESCRIPTION);
+class Ping : CommandModule(
+        ALIASES,
+        null,
+        DESCRIPTION
+) {
+    companion object {
+        private val ALIASES = arrayOf("Ping")
+        private const val DESCRIPTION = "responds with \"pong!\"."
     }
 
-    @Override
-    public void commandExec(@NotNull MessageReceivedEvent event, @NotNull String command, String arguments) {
-        long millisBeforeRequest = System.currentTimeMillis();
-        event.getChannel().sendMessage("pong!\nIt took Discord " + event.getJDA().getPing() + " milliseconds to respond to our last heartbeat.").queue(message -> message.editMessage(message.getContentRaw() + "\nIt took Discord " + (System.currentTimeMillis() - millisBeforeRequest) + " milliseconds to process this message.").queue());
+    public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+        val millisBeforeRequest = System.currentTimeMillis()
+        event.channel.sendMessage("pong!\nIt took Discord " + event.jda.ping + " milliseconds to respond to our last heartbeat.").queue { message -> message.editMessage(message.contentRaw + "\nIt took Discord " + (System.currentTimeMillis() - millisBeforeRequest) + " milliseconds to process this message.").queue() }
     }
 }
