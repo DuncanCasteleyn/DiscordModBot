@@ -32,7 +32,11 @@ import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
 
 @Component
-class NoMobile private constructor() : CommandModule(arrayOf("NoMobile"), null, "This will assign the \"No mobile verification\" role to all mutual guilds that use this system.") {
+class NoMobile : CommandModule(
+        arrayOf("NoMobile"),
+        null,
+        "This will assign the \"No mobile verification\" role to all mutual guilds that use this system."
+) {
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         if (!event.isFromType(ChannelType.PRIVATE)) {

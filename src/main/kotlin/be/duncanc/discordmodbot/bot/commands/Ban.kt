@@ -48,7 +48,13 @@ import java.util.concurrent.TimeUnit
  * This class creates a command to ban users with logging.
  */
 @Component
-class Ban private constructor() : CommandModule(arrayOf("Ban"), "[User mention] [Reason~]", "Will ban the mentioned user, clear all message that where posted by the user in the last 24 hours and log it to the log channel.", true, true) {
+class Ban : CommandModule(
+        arrayOf("Ban"),
+        "[User mention] [Reason~]",
+        "Will ban the mentioned user, clear all message that where posted by the user in the last 24 hours and log it to the log channel.",
+        true,
+        true
+) {
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.author.openPrivateChannel().queue(

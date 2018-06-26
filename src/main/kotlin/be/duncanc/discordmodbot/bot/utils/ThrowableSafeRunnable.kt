@@ -37,7 +37,11 @@ import org.slf4j.Logger
  * @property logger A logger to log any throwable that we might catch so it be resolved later.
  * @since 1.1.0
  */
-class ThrowableSafeRunnable constructor(private val runnable: Runnable, private val logger: Logger) : Runnable {
+class ThrowableSafeRunnable
+constructor(
+        private val runnable: Runnable,
+        private val logger: Logger
+) : Runnable {
 
     /**
      * Runs the runnable given when this object was created and secures it against a `Throwable`.

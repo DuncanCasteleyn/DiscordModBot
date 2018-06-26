@@ -47,7 +47,7 @@ public class ChannelIds extends CommandModule {
     private static final String[] ALIASES = new String[]{"ChannelIds", "GetChannelIds"};
     private static final String DESCRIPTION = "Returns all channel ids of the guild where executed.";
 
-    private ChannelIds() {
+    public ChannelIds() {
         super(ALIASES, null, DESCRIPTION);
     }
 

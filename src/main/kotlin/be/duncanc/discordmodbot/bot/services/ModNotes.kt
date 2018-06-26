@@ -19,7 +19,12 @@ import kotlin.collections.HashMap
 import kotlin.collections.HashSet
 
 @Component
-class ModNotes private constructor() : CommandModule(arrayOf("AddNote"), "[user mention] [note text~]", "This command adds a note to the mentioned user for internal use.", requiredPermissions = *arrayOf(Permission.MANAGE_ROLES)) {
+class ModNotes : CommandModule(
+        arrayOf("AddNote"),
+        "[user mention] [note text~]",
+        "This command adds a note to the mentioned user for internal use.",
+        requiredPermissions = *arrayOf(Permission.MANAGE_ROLES)
+) {
 
     companion object {
         private val FILE_PATH = Paths.get("ModNotes.json")

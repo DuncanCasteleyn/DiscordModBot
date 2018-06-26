@@ -48,7 +48,13 @@ import java.util.concurrent.*
  */
 @Component
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-class SlowMode private constructor() : CommandModule(ALIASES, ARGUMENTATION_SYNTAX, DESCRIPTION, true, true) {
+class SlowMode : CommandModule(
+        ALIASES,
+        ARGUMENTATION_SYNTAX,
+        DESCRIPTION,
+        true,
+        true
+) {
     companion object {
         private val ALIASES = arrayOf("SlowMode")
         private const val ARGUMENTATION_SYNTAX = "[Threshold message limit] [Threshold reset time] [Mute time when threshold hit]"

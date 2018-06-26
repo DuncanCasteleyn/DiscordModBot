@@ -37,7 +37,12 @@ import java.awt.Color
  * @since 1.0.0
  */
 @Component
-class Info private constructor() : CommandModule(arrayOf("Info"), null, "Returns information about the bot.") {
+class Info : CommandModule(
+        arrayOf("Info"),
+        null,
+        "Returns information about the bot."
+) {
+
     companion object {
         private val INFO_MESSAGE: MessageEmbed = EmbedBuilder()
                 .setTitle("Discord bot", null)

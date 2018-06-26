@@ -47,7 +47,7 @@ public class QuitBot extends CommandModule {
     private final ApplicationContext applicationContext;
     private List<BeforeBotQuit> callBeforeBotQuit;
 
-    private QuitBot(ApplicationContext applicationContext) {
+    public QuitBot(ApplicationContext applicationContext) {
         super(ALIASES, null, DESCRIPTION, true, true);
         callBeforeBotQuit = new ArrayList<>();
         this.applicationContext = applicationContext;

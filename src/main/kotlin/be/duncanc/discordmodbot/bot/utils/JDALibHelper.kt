@@ -71,7 +71,7 @@ object JDALibHelper {
                 messagesStack.add(messages.removeAt(0))
                 if (messagesStack.size == 100) {
                     channel.deleteMessages(messagesStack).queue()
-                    messagesStack = ArrayList<Message>()
+                    messagesStack = ArrayList()
                 }
             }
             if (messagesStack.size >= 2) {

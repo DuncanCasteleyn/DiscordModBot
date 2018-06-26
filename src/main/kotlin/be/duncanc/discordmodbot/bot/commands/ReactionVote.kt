@@ -32,7 +32,13 @@ import org.springframework.stereotype.Component
 
 //todo make emotes not static
 @Component
-class ReactionVote private constructor() : CommandModule(arrayOf("ReactionVote", "Vote"), "[message id]", "Will put reactions to vote yes or no on a message.\nIf no message id is provided the message that contains the command will be used to vote.", cleanCommandMessage = false, ignoreWhiteList = true) {
+class ReactionVote : CommandModule(
+        arrayOf("ReactionVote", "Vote"),
+        "[message id]",
+        "Will put reactions to vote yes or no on a message.\nIf no message id is provided the message that contains the command will be used to vote.",
+        cleanCommandMessage = false,
+        ignoreWhiteList = true
+) {
 
     companion object {
         private const val EMOTE_SOURCE = 160450060436504578L

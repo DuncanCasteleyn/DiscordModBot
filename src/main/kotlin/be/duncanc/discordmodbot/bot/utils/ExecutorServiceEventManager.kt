@@ -37,7 +37,10 @@ import java.util.concurrent.Executors
  * @property executor provides the service to execute event handling.
  * @since 1.1.0
  */
-internal class ExecutorServiceEventManager(name: String) : InterfacedEventManager() {
+internal class ExecutorServiceEventManager
+constructor(
+        name: String
+) : InterfacedEventManager() {
 
     private val executor: ExecutorService
 

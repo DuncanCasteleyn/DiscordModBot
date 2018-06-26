@@ -34,7 +34,7 @@ public class Ping extends CommandModule {
     private static final String[] ALIASES = new String[]{"Ping"};
     private static final String DESCRIPTION = "responds with \"pong!\".";
 
-    private Ping() {
+    public Ping() {
         super(ALIASES, null, DESCRIPTION);
     }
 

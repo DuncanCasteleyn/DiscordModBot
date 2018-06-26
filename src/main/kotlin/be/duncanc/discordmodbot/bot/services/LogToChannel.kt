@@ -51,7 +51,7 @@ import java.util.*
 //todo add to settings class
 @Component
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-class LogToChannel private constructor() {
+class LogToChannel {
 
     companion object {
         private val LOG = LoggerFactory.getLogger(LogToChannel::class.java)

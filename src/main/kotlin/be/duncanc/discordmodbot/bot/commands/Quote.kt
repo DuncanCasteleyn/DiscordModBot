@@ -6,7 +6,12 @@ import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 
 @Component
-class Quote private constructor() : CommandModule(arrayOf("Quote"), "[message id to quote] [response text]", "Will quote text and put a response under it, response text is optional", ignoreWhiteList = true) {
+class Quote : CommandModule(
+        arrayOf("Quote"),
+        "[message id to quote] [response text]",
+        "Will quote text and put a response under it, response text is optional",
+        ignoreWhiteList = true
+) {
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         if (arguments == null) {

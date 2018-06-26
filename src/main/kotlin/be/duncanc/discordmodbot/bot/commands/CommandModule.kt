@@ -57,7 +57,16 @@ import kotlin.collections.HashSet
  * @property cleanCommandMessage Allows you to enable or disable cleaning up commands.
  * @since 1.0.0
  */
-abstract class CommandModule @JvmOverloads protected constructor(internal val aliases: Array<String>, internal val argumentationSyntax: String?, internal val description: String?, private val cleanCommandMessage: Boolean = true, private val ignoreWhiteList: Boolean = false, vararg val requiredPermissions: Permission) : ListenerAdapter() {
+abstract class CommandModule
+@JvmOverloads protected constructor(
+        internal val aliases: Array<String>,
+        internal val argumentationSyntax: String?,
+        internal val description: String?,
+        private val cleanCommandMessage: Boolean = true,
+        private val ignoreWhiteList: Boolean = false,
+        vararg val requiredPermissions: Permission
+) : ListenerAdapter() {
+
     companion object {
         const val COMMAND_SIGN = '!'
         @JvmStatic

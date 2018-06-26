@@ -47,10 +47,16 @@ import java.util.*
  * This class creates a mute command that will be logged.
  */
 @Component
-class Mute private constructor() : CommandModule(arrayOf("Mute"), "[User mention] [Reason~]", "This command will put a user in the muted group and log the mute to the log channel.", true, true) {
-
-    @Autowired
-    private lateinit var applicationContext: ApplicationContext
+class Mute
+@Autowired constructor(
+        private val applicationContext: ApplicationContext
+) : CommandModule(
+        arrayOf("Mute"),
+        "[User mention] [Reason~]",
+        "This command will put a user in the muted group and log the mute to the log channel.",
+        true,
+        true
+) {
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.author.openPrivateChannel().queue(

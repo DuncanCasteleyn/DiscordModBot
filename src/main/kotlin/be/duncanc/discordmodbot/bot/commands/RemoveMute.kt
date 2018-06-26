@@ -42,7 +42,13 @@ import java.awt.Color
  * This class creates an RemoveMute command that is logged.
  */
 @Component
-class RemoveMute : CommandModule(arrayOf("Unmute", "RemoveMute"), "[User mention] [Reason~]", "This command will remove a mute from a user and log it to the log channel.", true, true) {
+class RemoveMute : CommandModule(
+        arrayOf("Unmute", "RemoveMute"),
+        "[User mention] [Reason~]",
+        "This command will remove a mute from a user and log it to the log channel.",
+        true,
+        true
+) {
 
     /**
      * Do something with the event, command and arguments.

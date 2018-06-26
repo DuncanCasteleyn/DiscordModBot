@@ -49,10 +49,17 @@ import java.util.*
  * This class creates a command that allowed you to warn users by sending them a dm and logging.
  */
 @Component
-class Warn : CommandModule(arrayOf("Warn"), "[User mention] [Reason~]", "Warns as user by sending the user mentioned a message and logs the warning to the log channel.", true, true) {
+class Warn
+@Autowired constructor(
+        private val applicationContext: ApplicationContext
+) : CommandModule(
+        arrayOf("Warn"),
+        "[User mention] [Reason~]",
+        "Warns as user by sending the user mentioned a message and logs the warning to the log channel.",
+        true,
+        true
+) {
 
-    @Autowired
-    private lateinit var applicationContext: ApplicationContext
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.author.openPrivateChannel().queue(

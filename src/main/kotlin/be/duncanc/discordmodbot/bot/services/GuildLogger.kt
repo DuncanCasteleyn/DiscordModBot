@@ -532,9 +532,15 @@ class GuildLogger constructor(
     }
 
     @Component
-    class LogSettings @Autowired constructor(
+    class LogSettings
+    @Autowired constructor(
             private val loggingSettingsRepository: LoggingSettingsRepository
-    ) : CommandModule(arrayOf("LogSettings"), null, "Adjust server settings.", requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)) {
+    ) : CommandModule(
+            arrayOf("LogSettings"),
+            null,
+            "Adjust server settings.",
+            requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)
+    ) {
 
         @Transactional
         override fun onGuildJoin(event: GuildJoinEvent) {

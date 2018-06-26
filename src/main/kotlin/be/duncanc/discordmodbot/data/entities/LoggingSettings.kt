@@ -4,7 +4,8 @@ import javax.persistence.*
 
 @Entity
 @Table(name = "logging_settings")
-data class LoggingSettings @JvmOverloads constructor(
+data class LoggingSettings
+@JvmOverloads constructor(
         @Id
         val guildId: Long,
         var logMessageDelete: Boolean = true,

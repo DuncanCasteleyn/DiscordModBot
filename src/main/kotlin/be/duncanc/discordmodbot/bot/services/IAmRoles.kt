@@ -43,7 +43,14 @@ import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
 
 @Component
-class IAmRoles : CommandModule(ALIASES, null, DESCRIPTION) {
+class IAmRoles
+@Autowired constructor(
+        private val iAmRolesService: IAmRolesService
+) : CommandModule(
+        ALIASES,
+        null,
+        DESCRIPTION
+) {
     companion object {
         private val ALIASES = arrayOf("IAmRoles")
         private const val DESCRIPTION = "Controller for IAmRoles."
@@ -51,32 +58,9 @@ class IAmRoles : CommandModule(ALIASES, null, DESCRIPTION) {
         private const val DESCRIPTION_I_AM_NOT = "Can be used to remove all roles from a category from yourself."
         private val ALIASES_I_AM = arrayOf("iam")
         private const val DESCRIPTION_I_AM = "Can be used to self assign a role, this will remove all existing roles except those requested."
-
-        //val FILE_PATH: Path = Paths.get("IAmRoles.json")
     }
 
-    /*@Autowired
-    private lateinit var repo : IAmRolesRepository*/
-    @Autowired
-    private lateinit var iAmRolesService: IAmRolesService
     private val subCommands = arrayOf(IAm(), IAmNot())
-
-    /*@PostConstruct
-    fun legacyLoadJson() {
-        val stringBuilder = StringBuilder()
-        synchronized(FILE_PATH) {
-            Files.readAllLines(FILE_PATH).forEach { stringBuilder.append(it.toString()) }
-        }
-        val json = JSONObject(stringBuilder.toString())
-        json.toMap().forEach {
-            (it.value as ArrayList<*>).forEach { arrayContent ->
-                arrayContent as HashMap<*, *>
-                val rolesList = HashSet<Long>()
-                (arrayContent["roles"] as ArrayList<*>).forEach { rolesList.add(it as Long) }
-                repo.save(IAmRolesCategory(IAmRolesCategory.IAmRoleId(it.key.toLong()), arrayContent["categoryName"] as String, arrayContent["allowedRoles"] as Int, rolesList))
-            }
-        }
-    }*/
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.jda.addEventListener(IAmRolesSequence(event.author, event.channel))

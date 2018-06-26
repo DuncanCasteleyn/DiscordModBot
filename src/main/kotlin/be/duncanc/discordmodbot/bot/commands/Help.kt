@@ -40,7 +40,11 @@ import java.util.concurrent.TimeUnit
  */
 @Component
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-class Help private constructor() : CommandModule(arrayOf("Help"), null, "Show a list of commands") {
+class Help : CommandModule(
+        arrayOf("Help"),
+        null,
+        "Show a list of commands"
+) {
 
     /**
      * Sends an embed to the users containing help for the commands

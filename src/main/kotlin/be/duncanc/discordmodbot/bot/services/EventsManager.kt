@@ -49,7 +49,11 @@ import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
 @Component
-class EventsManager private constructor() : CommandModule(EVENTS_LIST_ALIASES, null, EVENTS_LIST_DESCRIPTION) {
+class EventsManager : CommandModule(
+        EVENTS_LIST_ALIASES,
+        null,
+        EVENTS_LIST_DESCRIPTION
+) {
     lateinit var events: HashMap<Long, ArrayList<Event>>
 
     companion object {

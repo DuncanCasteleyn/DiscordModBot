@@ -48,10 +48,16 @@ import java.util.concurrent.TimeUnit
  * This class create a kick command that will be logged.
  */
 @Component
-class Kick private constructor() : CommandModule(arrayOf("Kick"), "[User mention] [Reason~]", "This command will kick the mentioned users and log this to the log channel. A reason is required.", true, true) {
-
-    @Autowired
-    private lateinit var applicationContext: ApplicationContext
+class Kick
+@Autowired constructor(
+        private val applicationContext: ApplicationContext
+) : CommandModule(
+        arrayOf("Kick"),
+        "[User mention] [Reason~]",
+        "This command will kick the mentioned users and log this to the log channel. A reason is required.",
+        true,
+        true
+) {
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.author.openPrivateChannel().queue(

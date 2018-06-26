@@ -46,7 +46,13 @@ import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
 
 @Component
-class CreateEvent private constructor() : CommandModule(arrayOf("CreateEvent"), "<event id/name> <subscribers role> <emote to react to> <event text>", "Creates an event, including role and message to announce the event", requiredPermissions = *arrayOf(Permission.MANAGE_ROLES)) {
+class CreateEvent : CommandModule(
+        arrayOf("CreateEvent"),
+        "<event id/name> <subscribers role> <emote to react to> <event text>",
+        "Creates an event, including role and message to announce the event",
+        requiredPermissions = *arrayOf(Permission.MANAGE_ROLES)
+) {
+
     companion object {
         private val FILE = Paths.get("EventsTool.json")
         private val EVENTS = HashMap<Guild, ArrayList<EventRole>>()

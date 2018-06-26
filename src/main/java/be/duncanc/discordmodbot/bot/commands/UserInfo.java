@@ -47,7 +47,7 @@ public class UserInfo extends CommandModule {
     private static final String ARGUMENTATION_SYNTAX = "[Username#Discriminator] (Without @)";
     private static final String DESCRIPTION = "Prints out user information of the user given as argument";
 
-    private UserInfo() {
+    public UserInfo() {
         super(ALIASES, ARGUMENTATION_SYNTAX, DESCRIPTION);
     }
 

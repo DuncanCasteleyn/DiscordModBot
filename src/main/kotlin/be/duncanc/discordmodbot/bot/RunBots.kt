@@ -45,7 +45,8 @@ import java.nio.file.Paths
 
 @Profile("production")
 @Component
-class RunBots @Autowired constructor(
+class RunBots
+@Autowired constructor(
         private val applicationContext: ApplicationContext
 ) : CommandLineRunner {
     companion object {

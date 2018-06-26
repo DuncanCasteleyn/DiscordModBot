@@ -45,7 +45,7 @@ public class RoleIds extends CommandModule {
     private static final String[] ALIASES = new String[]{"RoleIds", "GetRoleIds"};
     private static final String DESCRIPTION = "Get all the role ids of the guild where executed.";
 
-    private RoleIds() {
+    public RoleIds() {
         super(ALIASES, null, DESCRIPTION);
     }
 

@@ -42,7 +42,12 @@ import javax.script.ScriptEngineManager
  */
 @Component
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-class Eval private constructor() : CommandModule(ALIASES, DESCRIPTION, ARGUMENTATION, false) {
+class Eval : CommandModule(
+        ALIASES,
+        DESCRIPTION,
+        ARGUMENTATION,
+        false
+) {
     companion object {
         private val ALIASES = arrayOf("Eval")
         private const val DESCRIPTION = "Allows you to evaluate code using the JDA library"

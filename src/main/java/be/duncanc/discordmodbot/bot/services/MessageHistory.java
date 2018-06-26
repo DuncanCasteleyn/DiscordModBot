@@ -65,7 +65,7 @@ public class MessageHistory extends ListenerAdapter implements QuitBot.BeforeBot
      * Default constructor
      */
     @Autowired
-    private MessageHistory(AttachmentProxyCreator attachmentProxyCreator) {
+    public MessageHistory(AttachmentProxyCreator attachmentProxyCreator) {
         messages = new LinkedMap<>();
         deleted = false;
         MESSAGE_HISTORY_INSTANCES.add(this);

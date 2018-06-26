@@ -33,13 +33,15 @@ import javax.validation.constraints.NotNull
 
 @Entity
 @Table(name = "report_channels")
-data class ReportChannel constructor(
+data class ReportChannel
+constructor(
         @Id
         val guildId: Long? = null,
 
         @Column(nullable = false)
         @NotNull
-        val textChannelId: Long? = null) {
+        val textChannelId: Long? = null
+) {
 
     override fun equals(other: Any?): Boolean {
         if (this === other) {

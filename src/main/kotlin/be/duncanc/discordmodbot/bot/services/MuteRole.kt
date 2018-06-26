@@ -14,10 +14,14 @@ import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
 
 @Component
-class MuteRole private constructor() : CommandModule(arrayOf("MuteRole"), "Name of the mute role or nothing to remove, the role", "This command allows you to set the mute role for a guild/server") {
-
-    @Autowired
-    private lateinit var muteRolesRepository: MuteRolesRepository
+class MuteRole
+@Autowired constructor(
+        private val muteRolesRepository: MuteRolesRepository
+) : CommandModule(
+        arrayOf("MuteRole"),
+        "Name of the mute role or nothing to remove, the role",
+        "This command allows you to set the mute role for a guild/server"
+) {
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         if (!event.member.hasPermission(Permission.MANAGE_ROLES)) {

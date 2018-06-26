@@ -21,10 +21,15 @@ import java.time.OffsetDateTime
 import java.util.concurrent.TimeUnit
 
 @Component
-class Feedback private constructor() : CommandModule(arrayOf("Feedback", "Report", "Complaint"), null, "This command allows users to give feedback to the server staff by posting it in a channel that is configured") {
+class Feedback
+@Autowired constructor(
+        private val reportChannelRepository: ReportChannelRepository
+) : CommandModule(
+        arrayOf("Feedback", "Report", "Complaint"),
+        null,
+        "This command allows users to give feedback to the server staff by posting it in a channel that is configured"
+) {
 
-    @Autowired
-    private lateinit var reportChannelRepository: ReportChannelRepository
     private val setFeedbackChannel = SetFeedbackChannel()
     private val disableFeedback = DisableFeedback()
 

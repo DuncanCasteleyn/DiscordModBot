@@ -33,9 +33,10 @@ import java.util.*
 
 @Transactional(readOnly = true)
 @Service
-class IAmRolesService {
-    @Autowired
-    private lateinit var iAmRolesRepository: IAmRolesRepository
+class IAmRolesService
+@Autowired constructor(
+        private val iAmRolesRepository: IAmRolesRepository
+) {
 
     fun getAllCategoriesForGuild(guildId: Long): List<IAmRolesCategory> {
         return iAmRolesRepository.findByGuildId(guildId)

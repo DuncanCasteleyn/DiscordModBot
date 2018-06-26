@@ -32,7 +32,8 @@ import javax.validation.constraints.NotNull
 @Entity
 @Table(name = "i_am_roles_categories")
 @IdClass(IAmRolesCategory.IAmRoleId::class)
-data class IAmRolesCategory(
+data class IAmRolesCategory
+constructor(
         @Id
         val guildId: Long? = null,
 
@@ -53,7 +54,8 @@ data class IAmRolesCategory(
         @NotNull
         @CollectionTable(name = "i_am_roles_category_roles")
         @ElementCollection
-        val roles: MutableSet<Long> = HashSet()) {
+        val roles: MutableSet<Long> = HashSet()
+) {
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
