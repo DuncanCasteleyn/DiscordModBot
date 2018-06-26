@@ -101,7 +101,7 @@ class GuildLogger constructor(
         this.lastCheckedLogEntries = HashMap()
     }
 
-
+    @Transactional(readOnly = true)
     override fun onGuildMessageReceived(event: GuildMessageReceivedEvent) {
         val loggingSettings = loggingSettingsRepository.findById(event.guild.idLong).orElse(LoggingSettings(event.guild.idLong))
         if (loggingSettings.ignoredChannels.contains(event.channel.idLong)) {
