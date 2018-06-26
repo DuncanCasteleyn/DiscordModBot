@@ -21,9 +21,9 @@ import javax.persistence.*
 @Entity
 @Table(name = "logging_settings")
 data class LoggingSettings
-@JvmOverloads constructor(
+constructor(
         @Id
-        val guildId: Long,
+        val guildId: Long? = null,
         var logMessageDelete: Boolean = true,
         var logMessageUpdate: Boolean = true,
         var logMemberRemove: Boolean = true,
@@ -45,6 +45,6 @@ data class LoggingSettings
     }
 
     override fun hashCode(): Int {
-        return guildId.hashCode()
+        return guildId?.hashCode() ?: 0
     }
 }
