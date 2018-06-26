@@ -534,11 +534,6 @@ class GuildLogger constructor(
     ) {
 
         @Transactional
-        override fun onGuildJoin(event: GuildJoinEvent) {
-            loggingSettingsRepository.save(LoggingSettings(event.guild.idLong))
-        }
-
-        @Transactional
         override fun onGuildLeave(event: GuildLeaveEvent) {
             loggingSettingsRepository.deleteById(event.guild.idLong)
         }
