@@ -270,7 +270,7 @@ class GuildLogger constructor(
                 .addField("Amount of deleted messages", event.messageIds.size.toString(), false)
 
         var history: MessageHistory? = null
-        for (messageHistory in MessageHistory.getInstanceList()) {
+        for (messageHistory in MessageHistory.instanceList) {
             try {
                 if (event.jda === messageHistory.instance) {
                     history = messageHistory

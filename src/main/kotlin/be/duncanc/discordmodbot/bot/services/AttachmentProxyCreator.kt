@@ -42,7 +42,7 @@ import java.util.*
  * This class duplicates embeds and links to images to keep them alive for logging.
  */
 @Component
-internal class AttachmentProxyCreator {
+class AttachmentProxyCreator {
     companion object {
         private const val CACHE_CHANNEL = 310006048595509248L
         private const val CACHE_SIZE = 500
