@@ -1,5 +1,5 @@
 /*
- * Copyright 2018.  Duncan Casteleyn
+ * Copyright 2018 Duncan Casteleyn
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,6 @@ import net.dv8tion.jda.core.entities.*
 import net.dv8tion.jda.core.entities.impl.GuildImpl
 import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.guild.GuildBanEvent
-import net.dv8tion.jda.core.events.guild.GuildJoinEvent
 import net.dv8tion.jda.core.events.guild.GuildLeaveEvent
 import net.dv8tion.jda.core.events.guild.GuildUnbanEvent
 import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent
@@ -103,8 +102,12 @@ class GuildLogger
         this.lastCheckedLogEntries = HashMap()
     }
 
-
-    override fun onGuildMessageReceived(event: GuildMessageReceivedEvent?) {
+    @Transactional(readOnly = true)
+    override fun onGuildMessageReceived(event: GuildMessageReceivedEvent) {
+        val loggingSettings = loggingSettingsRepository.findById(event.guild.idLong).orElse(LoggingSettings(event.guild.idLong))
+        if (loggingSettings.ignoredChannels.contains(event.channel.idLong)) {
+            return
+        }
         messageHistory.onGuildMessageReceived(event)
     }
 
@@ -164,6 +167,7 @@ class GuildLogger
      *
      * @param event The event that trigger this method
      */
+    @Transactional(readOnly = true)
     override fun onGuildMessageDelete(event: GuildMessageDeleteEvent) {
         val loggingSettings = loggingSettingsRepository.findById(event.guild.idLong).orElse(LoggingSettings(event.guild.idLong))
         if (!loggingSettings.logMessageDelete) {
