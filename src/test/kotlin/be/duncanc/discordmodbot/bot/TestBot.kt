@@ -54,7 +54,6 @@ class TestBot @Autowired constructor(
                     .setBulkDeleteSplittingEnabled(false)
                     .setCorePoolSize(RunBots.BOT_THREAD_POOL_SIZE)
                     .setToken(configObject.getString("Dev"))
-                    .addEventListener(CommandModule.CommandTextChannelsWhitelist)
                     .addEventListener(*applicationContext.getBeansOfType(ListenerAdapter::class.java).values.toTypedArray())
 
             devJDA = devJDABuilder.buildAsync()

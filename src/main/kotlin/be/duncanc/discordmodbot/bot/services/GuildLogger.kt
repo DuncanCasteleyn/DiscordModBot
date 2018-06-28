@@ -76,7 +76,8 @@ import java.util.concurrent.TimeUnit
  */
 @Component
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-class GuildLogger constructor(
+class GuildLogger
+@Autowired constructor(
         val logger: LogToChannel,
         val messageHistory: MessageHistory,
         val loggingSettingsRepository: LoggingSettingsRepository

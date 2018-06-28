@@ -1,5 +1,5 @@
 /*
- * Copyright 2018.  Duncan Casteleyn
+ * Copyright 2018 Duncan Casteleyn
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,27 +19,20 @@ package be.duncanc.discordmodbot.data.entities
 import javax.persistence.*
 
 @Entity
-@Table(name = "logging_settings")
-data class LoggingSettings
+@Table(name = "guild_command_channels")
+data class GuildCommandChannels
 constructor(
         @Id
-        val guildId: Long? = null,
-        var logMessageDelete: Boolean = true,
-        var logMessageUpdate: Boolean = true,
-        var logMemberRemove: Boolean = true,
-        var logMemberBan: Boolean = true,
-        var logMemberAdd: Boolean = true,
-        var logMemberRemoveBan: Boolean = true,
-        @ElementCollection
-        @CollectionTable(name = "logging_ignored_channels")
-        val ignoredChannels: MutableSet<Long> = HashSet<Long>()
-) {
-
+        val guildId : Long? = null,
+        @ElementCollection(fetch = FetchType.EAGER)
+        @CollectionTable(name = "command_channels_list")
+        val whitelistedChannels : MutableSet<Long> = HashSet()
+){
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as LoggingSettings
+        other as GuildCommandChannels
 
         return guildId == other.guildId
     }

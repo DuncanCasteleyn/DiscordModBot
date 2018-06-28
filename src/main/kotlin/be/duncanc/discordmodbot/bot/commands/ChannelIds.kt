@@ -38,7 +38,7 @@ class ChannelIds : CommandModule(
 ) {
     companion object {
         private val ALIASES = arrayOf("ChannelIds", "GetChannelIds")
-        private val DESCRIPTION = "Returns all channel ids of the guild where executed."
+        private const val DESCRIPTION = "Returns all channel ids of the guild where executed."
     }
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
