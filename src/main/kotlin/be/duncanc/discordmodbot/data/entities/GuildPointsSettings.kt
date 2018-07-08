@@ -30,13 +30,13 @@ data class GuildPointsSettings(
         val guildId: Long? = null,
         @Positive
         @Column(nullable = false)
-        val maxPointsPerReason: Int = 1,
+        var maxPointsPerReason: Int = 1,
         @Positive
         @Column(nullable = false)
-        val announcePointsSummaryLimit: Int = 3,
+        var announcePointsSummaryLimit: Int = 3,
         @NotNull
         @Column(nullable = false)
-        val announceChannelId: Long? = null
+        var announceChannelId: Long? = null
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
