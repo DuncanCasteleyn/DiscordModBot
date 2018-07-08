@@ -31,7 +31,7 @@ data class UserGuildPoints(
         val guildId: Long? = null,
         @ElementCollection(targetClass = UserPoints::class, fetch = FetchType.EAGER)
         @CollectionTable(name = "user_has_guild_points")
-        val points: MutableSet<UserPoints>
+        val points: MutableSet<UserPoints> = HashSet()
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
