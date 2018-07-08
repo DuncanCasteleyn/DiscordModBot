@@ -27,6 +27,7 @@ import javax.validation.constraints.NotNull
 data class IAmRolesCategory
 constructor(
         @Id
+        @Column(updatable = false)
         val guildId: Long? = null,
 
         @Id
