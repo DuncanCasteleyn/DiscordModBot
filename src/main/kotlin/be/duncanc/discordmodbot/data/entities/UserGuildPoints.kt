@@ -24,8 +24,10 @@ import javax.persistence.*
 @Table(name = "user_guild_points")
 data class UserGuildPoints(
         @Id
+        @Column(updatable = false)
         val userId: Long? = null,
         @Id
+        @Column(updatable = false)
         val guildId: Long? = null,
         @ElementCollection(targetClass = UserPoints::class, fetch = FetchType.EAGER)
         @CollectionTable(name = "user_has_guild_points")

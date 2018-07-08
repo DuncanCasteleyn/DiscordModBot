@@ -16,8 +16,10 @@
 
 package be.duncanc.discordmodbot.data.embeddables
 
+import java.util.*
 import javax.persistence.Column
 import javax.persistence.Embeddable
+import javax.validation.constraints.Future
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.NotNull
 import javax.validation.constraints.Positive
@@ -32,5 +34,8 @@ data class UserPoints(
         val creatorId: Long? = null,
         @NotBlank
         @Column(nullable = false, updatable = false)
-        val reason : String
+        val reason : String? = null,
+        @Future
+        @Column(nullable = false, updatable = false)
+        val expireDate: Calendar? = null
 )
