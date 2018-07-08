@@ -23,6 +23,7 @@ import javax.persistence.*
 data class LoggingSettings
 constructor(
         @Id
+        @Column(updatable = false)
         val guildId: Long? = null,
         var logMessageDelete: Boolean = true,
         var logMessageUpdate: Boolean = true,

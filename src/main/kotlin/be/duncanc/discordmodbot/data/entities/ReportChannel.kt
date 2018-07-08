@@ -27,6 +27,7 @@ import javax.validation.constraints.NotNull
 data class ReportChannel
 constructor(
         @Id
+        @Column(updatable = false)
         val guildId: Long? = null,
 
         @Column(nullable = false)

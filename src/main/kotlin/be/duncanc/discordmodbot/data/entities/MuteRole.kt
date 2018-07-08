@@ -27,6 +27,7 @@ import javax.validation.constraints.NotNull
 data class MuteRole
 constructor(
         @Id
+        @Column(updatable = false)
         val guildId: Long? = null,
 
         @NotNull

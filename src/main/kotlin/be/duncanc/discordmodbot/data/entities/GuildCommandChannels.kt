@@ -23,6 +23,7 @@ import javax.persistence.*
 data class GuildCommandChannels
 constructor(
         @Id
+        @Column(updatable = false)
         val guildId : Long? = null,
         @ElementCollection(fetch = FetchType.EAGER)
         @CollectionTable(name = "command_channels_list")
