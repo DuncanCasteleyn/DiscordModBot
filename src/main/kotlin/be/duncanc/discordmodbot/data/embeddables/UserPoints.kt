@@ -16,6 +16,7 @@
 
 package be.duncanc.discordmodbot.data.embeddables
 
+import org.springframework.data.annotation.CreatedDate
 import java.util.*
 import javax.persistence.Column
 import javax.persistence.Embeddable
@@ -34,8 +35,13 @@ data class UserPoints(
         val creatorId: Long? = null,
         @NotBlank
         @Column(nullable = false, updatable = false)
-        val reason : String? = null,
+        val reason: String? = null,
+        @CreatedDate
+        @NotNull
+        @Column(nullable = false, updatable = false)
+        val creationDate: Calendar? = null,
         @Future
+        @NotNull
         @Column(nullable = false, updatable = false)
         val expireDate: Calendar? = null
 )
