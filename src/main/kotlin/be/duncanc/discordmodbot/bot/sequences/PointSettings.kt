@@ -21,17 +21,19 @@ import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.MessageChannel
 import net.dv8tion.jda.core.entities.User
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import org.springframework.transaction.annotation.Transactional
 
 class PointSettings : CommandModule(
         arrayOf("PointSettings"),
         null,
         "This command allows you to modify the settings for the point system.",
-        requiredPermissions = *arrayOf(Permission.KICK_MEMBERS)
+        requiredPermissions = *arrayOf(Permission.ADMINISTRATOR)
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
+    @Transactional
     class PointSettingsSequence(
             user: User,
             channel: MessageChannel
@@ -39,6 +41,9 @@ class PointSettings : CommandModule(
             user,
             channel
     ) {
+        init {
+            channel.sendMessage("What would you like to do?")
+        }
 
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
             TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
