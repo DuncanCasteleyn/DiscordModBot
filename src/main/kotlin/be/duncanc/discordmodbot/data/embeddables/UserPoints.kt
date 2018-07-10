@@ -16,11 +16,11 @@
 
 package be.duncanc.discordmodbot.data.embeddables
 
-import org.springframework.data.annotation.CreatedDate
+import org.springframework.util.Assert
 import java.time.OffsetDateTime
-import java.util.*
 import javax.persistence.Column
 import javax.persistence.Embeddable
+import javax.validation.Valid
 import javax.validation.constraints.Future
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.NotNull
@@ -37,12 +37,23 @@ data class UserPoints(
         @NotBlank
         @Column(nullable = false, updatable = false)
         val reason: String? = null,
-        @CreatedDate
         @NotNull
         @Column(nullable = false, updatable = false)
-        val creationDate: OffsetDateTime? = null,
+        val creationDate: OffsetDateTime = OffsetDateTime.now(),
         @Future
         @NotNull
         @Column(nullable = false, updatable = false)
         val expireDate: OffsetDateTime? = null
-)
+) {
+    init {
+        if (points != null && points <= 0) {
+            throw IllegalArgumentException("Points need to be a positive number")
+        }
+        if (expireDate != null && expireDate.isBefore(creationDate)) {
+            throw IllegalArgumentException("UserPoints can't expire before the date it was created.")
+        }
+        if (reason != null) {
+            Assert.hasLength(reason, "The reason can not be empty.")
+        }
+    }
+}

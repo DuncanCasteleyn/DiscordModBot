@@ -24,11 +24,11 @@ data class GuildCommandChannels
 constructor(
         @Id
         @Column(updatable = false)
-        val guildId : Long? = null,
+        val guildId: Long? = null,
         @ElementCollection(fetch = FetchType.EAGER)
         @CollectionTable(name = "command_channels_list")
-        val whitelistedChannels : MutableSet<Long> = HashSet()
-){
+        val whitelistedChannels: MutableSet<Long> = HashSet()
+) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false

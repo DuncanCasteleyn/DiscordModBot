@@ -17,7 +17,9 @@
 package be.duncanc.discordmodbot.data.entities
 
 import be.duncanc.discordmodbot.data.embeddables.UserPoints
+import java.io.Serializable
 import javax.persistence.*
+import javax.validation.Valid
 
 @Entity
 @IdClass(UserGuildPoints.UserGuildPointsId::class)
@@ -29,6 +31,7 @@ data class UserGuildPoints(
         @Id
         @Column(updatable = false)
         val guildId: Long? = null,
+        @Valid
         @ElementCollection(targetClass = UserPoints::class, fetch = FetchType.EAGER)
         @CollectionTable(name = "user_has_guild_points")
         val points: MutableSet<UserPoints> = HashSet()
@@ -54,5 +57,5 @@ data class UserGuildPoints(
             val userId: Long? = null,
             @Id
             val guildId: Long? = null
-    )
+    ) : Serializable
 }
