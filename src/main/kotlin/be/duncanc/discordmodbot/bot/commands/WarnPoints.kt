@@ -70,6 +70,7 @@ class WarnPoints(
             warnPoints.points.forEach {
                 message.append("\n\n").append(it.points!!).append(" point(s)")
                         .append(" on ").append(it.creationDate.format(JDALibHelper.messageTimeFormat)).append(" by ").append(JDALibHelper.getEffectiveNameAndUsername(guild.getMemberById(it.creatorId!!)))
+                        .append("\n\nReason: ").append(it.reason)
             }
             message.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach {
                 privateChannel.sendMessage(it).queue()
