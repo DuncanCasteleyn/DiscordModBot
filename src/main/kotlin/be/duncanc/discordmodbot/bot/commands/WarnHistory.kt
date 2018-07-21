@@ -66,18 +66,18 @@ class WarnHistory(
     private fun informUserOfPoints(user: User, warnPoints: GuildWarnPoints, guild: Guild, moderator: Boolean) {
         user.openPrivateChannel().queue { privateChannel ->
             val message = MessageBuilder()
-            message.append("Warning history for ").append(user.asMention).append(':')
+            message.append("Warning history for ").append(user.jda.getUserById(warnPoints.userId!!)).append(':')
             warnPoints.points.forEach {
                 message.append("\n\n")
                 if (moderator) {
                     message.append(it.points!!).append(" point(s)")
                 } else {
-                    message.append("warned")
+                    message.append("Warned")
                 }
                 message.append(" on ").append(it.creationDate.format(JDALibHelper.messageTimeFormat)).append(" by ").append(JDALibHelper.getEffectiveNameAndUsername(guild.getMemberById(it.creatorId!!)))
                         .append("\n\nReason: ").append(it.reason)
                 if(moderator) {
-                    message.append("\nExpires: ").append(it.expireDate!!.format(JDALibHelper.messageTimeFormat))
+                    message.append("\n\nExpires: ").append(it.expireDate!!.format(JDALibHelper.messageTimeFormat))
                 }
             }
             message.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach {
