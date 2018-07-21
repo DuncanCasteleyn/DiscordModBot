@@ -76,7 +76,7 @@ class AddWarnPoints(
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
             val guildId = targetMember.guild.idLong
             val guildPointsSettings = guildWarnPointsSettingsRepository.findById(guildId).orElse(GuildWarnPointsSettings(guildId))
-            if (guildPointsSettings.announceChannelId == null) {
+            if (guildPointsSettings.announceChannelId == null || guildPointsSettings.announceChannelId?.let { event.guild.getTextChannelById(it) != null } == true) {
                 throw IllegalStateException("The announcement channel needs to be configured by a server administrator")
             }
             when {
@@ -106,7 +106,7 @@ class AddWarnPoints(
                     performChecks(userWarnPoints, guildPointsSettings, targetMember)
                     val moderator = targetMember.guild.getMember(user)
                     logAddPoints(moderator, targetMember, reason!!, points!!)
-                    informUserAndModerator(moderator, targetMember, reason!!, userWarnPoints.points.size, event.privateChannel)
+                    informUserAndModerator(moderator, targetMember, reason!!, userWarnPoints.points.filter { it.expireDate?.isAfter(OffsetDateTime.now()) == true }.size, event.privateChannel)
                     super.destroy()
                 }
             }
@@ -158,7 +158,7 @@ class AddWarnPoints(
         val noteMessage = if(amountOfWarnings <= 1) {
             "Please watch your behavior in our server."
         } else {
-            "This is your " + amountOfWarnings + "nd warning in recent history. Please watch your behavior in our server."
+            "You have received $amountOfWarnings warnings in recent history. Please watch your behaviour in our server."
         }
         val userWarning = EmbedBuilder()
                 .setColor(Color.YELLOW)

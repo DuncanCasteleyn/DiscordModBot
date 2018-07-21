@@ -30,7 +30,7 @@ object JDALibHelper {
     /**
      * When a time format has to be displayed generally this format will be used.
      */
-    val messageTimeFormat = DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm O")
+    val messageTimeFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm O")
 
     /**
      * Create a string that contains both the username and nickname of a member.
