@@ -155,7 +155,7 @@ class AddWarnPoints(
     }
 
     private fun informUserAndModerator(moderator: Member, toInform: Member, reason: String, amountOfWarnings: Int, moderatorPrivateChannel: PrivateChannel) {
-        val noteMessage = if(amountOfWarnings < 1) {
+        val noteMessage = if(amountOfWarnings <= 1) {
             "Please watch your behavior in our server."
         } else {
             "This is your " + amountOfWarnings + "nd warning in recent history. Please watch your behavior in our server."
