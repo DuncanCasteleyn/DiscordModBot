@@ -79,4 +79,4 @@ compileTestKotlin {
 }
 
 group = 'be.duncanc'
-version = '1.4.16'
+version = '1.5.0-RC1'

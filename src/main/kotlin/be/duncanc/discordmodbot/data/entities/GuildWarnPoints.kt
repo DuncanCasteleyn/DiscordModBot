@@ -33,7 +33,7 @@ data class GuildWarnPoints(
         val guildId: Long? = null,
         @Valid
         @ElementCollection(targetClass = UserWarnPoints::class, fetch = FetchType.EAGER)
-        @CollectionTable(name = "user_has_guild_points")
+        @CollectionTable(name = "user_has_warn_points")
         val points: MutableSet<UserWarnPoints> = HashSet()
 ) {
     override fun equals(other: Any?): Boolean {
