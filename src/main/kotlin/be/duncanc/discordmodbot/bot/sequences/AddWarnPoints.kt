@@ -25,6 +25,7 @@ import be.duncanc.discordmodbot.data.entities.GuildWarnPoints
 import be.duncanc.discordmodbot.data.repositories.GuildPointsSettingsRepository
 import be.duncanc.discordmodbot.data.repositories.UserGuildPointsRepository
 import net.dv8tion.jda.core.EmbedBuilder
+import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.*
@@ -116,9 +117,9 @@ class AddWarnPoints(
             activatePoints.forEach {
                 messageBuilder.append("\n\n").append(it.points).append(" point(s) added by ")
                         .append(JDALibHelper.getEffectiveNameAndUsername(guild.getMemberById(it.creatorId!!)))
-                        .append(" on ").append(it.creationDate).append('\n')
+                        .append(" on ").append(it.creationDate.format(JDALibHelper.messageTimeFormat)).append('\n')
                         .append("Reason: ").append(it.reason)
-                        .append("\nExpires on: ").append(it.expireDate)
+                        .append("\nExpires on: ").append(it.expireDate?.format(JDALibHelper.messageTimeFormat))
             }
             messageBuilder.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach {
                 guild.getTextChannelById(guildWarnPointsSettings.announceChannelId!!).sendMessage(it).queue()

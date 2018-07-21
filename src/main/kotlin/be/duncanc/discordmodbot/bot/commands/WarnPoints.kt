@@ -66,10 +66,10 @@ class WarnPoints(
     private fun informUserOfPoints(user: User, warnPoints: GuildWarnPoints, guild: Guild) {
         user.openPrivateChannel().queue { privateChannel ->
             val message = MessageBuilder()
-            message.append("Summary of points you received.")
+            message.append("Summary of points for ").append(user.asMention).append(':')
             warnPoints.points.forEach {
                 message.append("\n\n").append(it.points!!).append(" point(s)")
-                        .append(" on ").append(it.creationDate).append(" by ").append(JDALibHelper.getEffectiveNameAndUsername(guild.getMemberById(it.creatorId!!)))
+                        .append(" on ").append(it.creationDate.format(JDALibHelper.messageTimeFormat)).append(" by ").append(JDALibHelper.getEffectiveNameAndUsername(guild.getMemberById(it.creatorId!!)))
             }
             message.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach {
                 privateChannel.sendMessage(it).queue()

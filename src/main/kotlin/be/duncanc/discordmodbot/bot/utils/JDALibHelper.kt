@@ -19,12 +19,18 @@ package be.duncanc.discordmodbot.bot.utils
 import net.dv8tion.jda.core.entities.Member
 import net.dv8tion.jda.core.entities.Message
 import net.dv8tion.jda.core.entities.TextChannel
+import java.time.format.DateTimeFormatter
 import java.util.*
 
 /**
  * This object contains methods that can be used to improve the usage of JDA methods
  */
 object JDALibHelper {
+
+    /**
+     * When a time format has to be displayed generally this format will be used.
+     */
+    val messageTimeFormat = DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm O")
 
     /**
      * Create a string that contains both the username and nickname of a member.
