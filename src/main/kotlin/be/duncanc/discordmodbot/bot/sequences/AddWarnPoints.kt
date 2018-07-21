@@ -83,7 +83,12 @@ class AddWarnPoints(
             when {
                 reason == null -> {
                     reason = event.message.contentDisplay
-                    channel.sendMessage("Please enter the amount of points to assign. Your server administrator(s) has/have set a maximum of " + guildPointsSettings.maxPointsPerReason + " per reason").queue { super.addMessageToCleaner(it) }
+                    if(guildPointsSettings.maxPointsPerReason == 1) {
+                        points = guildPointsSettings.maxPointsPerReason
+                        channel.sendMessage("In how much days should these point(s) expire?").queue { super.addMessageToCleaner(it) }
+                    } else {
+                        channel.sendMessage("Please enter the amount of points to assign. Your server administrator(s) has/have set a maximum of " + guildPointsSettings.maxPointsPerReason + " per reason").queue { super.addMessageToCleaner(it) }
+                    }
                 }
                 points == null -> {
                     val inputPoints = event.message.contentRaw.toInt()
@@ -154,7 +159,7 @@ class AddWarnPoints(
         val userWarning = EmbedBuilder()
                 .setColor(Color.YELLOW)
                 .setAuthor(JDALibHelper.getEffectiveNameAndUsername(moderator), null, moderator.user.effectiveAvatarUrl)
-                .setTitle(moderator.guild.name + ": You have been given points by " + JDALibHelper.getEffectiveNameAndUsername(moderator), null)
+                .setTitle(moderator.guild.name + ": You have been given warning points by " + JDALibHelper.getEffectiveNameAndUsername(moderator), null)
                 .addField("Amount", amount.toString(), false)
                 .addField("Reason", reason, false)
 
