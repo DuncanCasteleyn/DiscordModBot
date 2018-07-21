@@ -22,10 +22,9 @@ import be.duncanc.discordmodbot.bot.utils.JDALibHelper
 import be.duncanc.discordmodbot.data.embeddables.UserWarnPoints
 import be.duncanc.discordmodbot.data.entities.GuildWarnPointsSettings
 import be.duncanc.discordmodbot.data.entities.GuildWarnPoints
-import be.duncanc.discordmodbot.data.repositories.GuildPointsSettingsRepository
-import be.duncanc.discordmodbot.data.repositories.UserGuildPointsRepository
+import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsSettingsRepository
+import be.duncanc.discordmodbot.data.repositories.UserWarnPointsRepository
 import net.dv8tion.jda.core.EmbedBuilder
-import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.*
@@ -38,8 +37,8 @@ import java.util.*
 
 @Component
 class AddWarnPoints(
-        val userGuildPointsRepository: UserGuildPointsRepository,
-        val guildPointsSettingsRepository: GuildPointsSettingsRepository
+        val userWarnPointsRepository: UserWarnPointsRepository,
+        val guildWarnPointsSettingsRepository: GuildWarnPointsSettingsRepository
 ) : CommandModule(
         arrayOf("AddWarnPoints", "AddPoints"),
         "Mention a user",
@@ -76,7 +75,7 @@ class AddWarnPoints(
 
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
             val guildId = targetMember.guild.idLong
-            val guildPointsSettings = guildPointsSettingsRepository.findById(guildId).orElse(GuildWarnPointsSettings(guildId))
+            val guildPointsSettings = guildWarnPointsSettingsRepository.findById(guildId).orElse(GuildWarnPointsSettings(guildId))
             if (guildPointsSettings.announceChannelId == null) {
                 throw IllegalStateException("The announcement channel needs to be configured by a server administrator")
             }
@@ -101,13 +100,13 @@ class AddWarnPoints(
                 else -> {
                     val days = event.message.contentRaw.toLong()
                     val date = OffsetDateTime.now().plusDays(days)
-                    val userGuildPoints = userGuildPointsRepository.findById(GuildWarnPoints.UserGuildPointsId(targetMember.user.idLong, targetMember.guild.idLong)).orElse(GuildWarnPoints(targetMember.user.idLong, targetMember.guild.idLong))
-                    userGuildPoints.points.add(UserWarnPoints(points, user.idLong, reason, expireDate = date))
-                    userGuildPointsRepository.save(userGuildPoints)
-                    performChecks(userGuildPoints, guildPointsSettings, targetMember)
+                    val userWarnPoints = userWarnPointsRepository.findById(GuildWarnPoints.UserGuildPointsId(targetMember.user.idLong, targetMember.guild.idLong)).orElse(GuildWarnPoints(targetMember.user.idLong, targetMember.guild.idLong))
+                    userWarnPoints.points.add(UserWarnPoints(points, user.idLong, reason, expireDate = date))
+                    userWarnPointsRepository.save(userWarnPoints)
+                    performChecks(userWarnPoints, guildPointsSettings, targetMember)
                     val moderator = targetMember.guild.getMember(user)
                     logAddPoints(moderator, targetMember, reason!!, points!!)
-                    informUserAndModerator(moderator, targetMember, reason!!, points!!, event.privateChannel)
+                    informUserAndModerator(moderator, targetMember, reason!!, userWarnPoints.points.size, event.privateChannel)
                     super.destroy()
                 }
             }
@@ -155,13 +154,18 @@ class AddWarnPoints(
         }
     }
 
-    private fun informUserAndModerator(moderator: Member, toInform: Member, reason: String, amount: Int, moderatorPrivateChannel: PrivateChannel) {
+    private fun informUserAndModerator(moderator: Member, toInform: Member, reason: String, amountOfWarnings: Int, moderatorPrivateChannel: PrivateChannel) {
+        val noteMessage = if(amountOfWarnings < 1) {
+            "Please watch your behavior in our server."
+        } else {
+            "This is your " + amountOfWarnings + "nd warning in recent history. Please watch your behavior in our server."
+        }
         val userWarning = EmbedBuilder()
                 .setColor(Color.YELLOW)
                 .setAuthor(JDALibHelper.getEffectiveNameAndUsername(moderator), null, moderator.user.effectiveAvatarUrl)
-                .setTitle(moderator.guild.name + ": You have been given warning points by " + JDALibHelper.getEffectiveNameAndUsername(moderator), null)
-                .addField("Amount", amount.toString(), false)
+                .setTitle(moderator.guild.name + ": You have been warned by " + JDALibHelper.getEffectiveNameAndUsername(moderator), null)
                 .addField("Reason", reason, false)
+                .addField("note", noteMessage, false)
 
         toInform.user.openPrivateChannel().queue(
                 { privateChannelUserToWarn ->

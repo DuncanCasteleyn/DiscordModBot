@@ -18,7 +18,7 @@ package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.utils.JDALibHelper
 import be.duncanc.discordmodbot.data.entities.GuildWarnPoints
-import be.duncanc.discordmodbot.data.repositories.UserGuildPointsRepository
+import be.duncanc.discordmodbot.data.repositories.UserWarnPointsRepository
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.ChannelType
@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit
 
 @Component
 class WarnHistory(
-        val userGuildPointsRepository: UserGuildPointsRepository
+        val userWarnPointsRepository: UserWarnPointsRepository
 ) : CommandModule(
         arrayOf("WarnHistory"),
         null,
@@ -42,7 +42,7 @@ class WarnHistory(
             throw IllegalArgumentException("This command can only be used in a guild/server channel.")
         }
         if (event.message.mentionedUsers.size == 1 && event.member.hasPermission(Permission.KICK_MEMBERS)) {
-            val requestedUserPoints = userGuildPointsRepository.findById(GuildWarnPoints.UserGuildPointsId(event.message.mentionedUsers[0].idLong, event.guild.idLong))
+            val requestedUserPoints = userWarnPointsRepository.findById(GuildWarnPoints.UserGuildPointsId(event.message.mentionedUsers[0].idLong, event.guild.idLong))
             if (requestedUserPoints.isPresent) {
                 informUserOfPoints(event.author, requestedUserPoints.get(), event.guild, true)
                 event.textChannel.sendMessage("The list of points the user collected has been send in a private message for privacy reason").queue(cleanUp())
@@ -50,7 +50,7 @@ class WarnHistory(
                 event.textChannel.sendMessage("The user has not received any points.").queue(cleanUp())
             }
         } else {
-            val userPoints = userGuildPointsRepository.findById(GuildWarnPoints.UserGuildPointsId(event.author.idLong, event.guild.idLong))
+            val userPoints = userWarnPointsRepository.findById(GuildWarnPoints.UserGuildPointsId(event.author.idLong, event.guild.idLong))
             if (userPoints.isPresent) {
                 informUserOfPoints(event.author, userPoints.get(), event.guild, false)
                 event.textChannel.sendMessage("Your list of points has been send in a private message to you for privacy reasons, if you didn't receive any messages make sure you have enabled dm from server members on this server before executing this command.").queue(cleanUp())

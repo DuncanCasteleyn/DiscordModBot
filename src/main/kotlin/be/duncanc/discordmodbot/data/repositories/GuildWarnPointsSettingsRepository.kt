@@ -19,4 +19,4 @@ package be.duncanc.discordmodbot.data.repositories
 import be.duncanc.discordmodbot.data.entities.GuildWarnPointsSettings
 import org.springframework.data.repository.CrudRepository
 
-interface GuildPointsSettingsRepository : CrudRepository<GuildWarnPointsSettings, Long>
+interface GuildWarnPointsSettingsRepository : CrudRepository<GuildWarnPointsSettings, Long>
