@@ -30,10 +30,10 @@ import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
 
 @Component
-class WarnPoints(
+class WarnHistory(
         val userGuildPointsRepository: UserGuildPointsRepository
 ) : CommandModule(
-        arrayOf("WarnPoints"),
+        arrayOf("WarnHistory"),
         null,
         null
 ) {
@@ -44,7 +44,7 @@ class WarnPoints(
         if (event.message.mentionedUsers.size == 1 && event.member.hasPermission(Permission.KICK_MEMBERS)) {
             val requestedUserPoints = userGuildPointsRepository.findById(GuildWarnPoints.UserGuildPointsId(event.message.mentionedUsers[0].idLong, event.guild.idLong))
             if (requestedUserPoints.isPresent) {
-                informUserOfPoints(event.author, requestedUserPoints.get(), event.guild)
+                informUserOfPoints(event.author, requestedUserPoints.get(), event.guild, true)
                 event.textChannel.sendMessage("The list of points the user collected has been send in a private message for privacy reason").queue(cleanUp())
             } else {
                 event.textChannel.sendMessage("The user has not received any points.").queue(cleanUp())
@@ -52,7 +52,7 @@ class WarnPoints(
         } else {
             val userPoints = userGuildPointsRepository.findById(GuildWarnPoints.UserGuildPointsId(event.author.idLong, event.guild.idLong))
             if (userPoints.isPresent) {
-                informUserOfPoints(event.author, userPoints.get(), event.guild)
+                informUserOfPoints(event.author, userPoints.get(), event.guild, false)
                 event.textChannel.sendMessage("Your list of points has been send in a private message to you for privacy reasons, if you didn't receive any messages make sure you have enabled dm from server members on this server before executing this command.").queue(cleanUp())
             } else {
                 event.textChannel.sendMessage("You haven't received any points. Good job!").queue(cleanUp())
@@ -63,14 +63,22 @@ class WarnPoints(
     private fun cleanUp(): (Message) -> Unit =
             { it.delete().queueAfter(1, TimeUnit.MINUTES) }
 
-    private fun informUserOfPoints(user: User, warnPoints: GuildWarnPoints, guild: Guild) {
+    private fun informUserOfPoints(user: User, warnPoints: GuildWarnPoints, guild: Guild, moderator: Boolean) {
         user.openPrivateChannel().queue { privateChannel ->
             val message = MessageBuilder()
-            message.append("Summary of points for ").append(user.asMention).append(':')
+            message.append("Warning history for ").append(user.asMention).append(':')
             warnPoints.points.forEach {
-                message.append("\n\n").append(it.points!!).append(" point(s)")
-                        .append(" on ").append(it.creationDate.format(JDALibHelper.messageTimeFormat)).append(" by ").append(JDALibHelper.getEffectiveNameAndUsername(guild.getMemberById(it.creatorId!!)))
+                message.append("\n\n")
+                if (moderator) {
+                    message.append(it.points!!).append(" point(s)")
+                } else {
+                    message.append("warned")
+                }
+                message.append(" on ").append(it.creationDate.format(JDALibHelper.messageTimeFormat)).append(" by ").append(JDALibHelper.getEffectiveNameAndUsername(guild.getMemberById(it.creatorId!!)))
                         .append("\n\nReason: ").append(it.reason)
+                if(moderator) {
+                    message.append("\nExpires: ").append(it.expireDate!!.format(JDALibHelper.messageTimeFormat))
+                }
             }
             message.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach {
                 privateChannel.sendMessage(it).queue()
