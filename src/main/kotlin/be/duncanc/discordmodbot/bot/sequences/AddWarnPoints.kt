@@ -76,7 +76,7 @@ class AddWarnPoints(
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
             val guildId = targetMember.guild.idLong
             val guildPointsSettings = guildWarnPointsSettingsRepository.findById(guildId).orElse(GuildWarnPointsSettings(guildId))
-            if (guildPointsSettings.announceChannelId == null || guildPointsSettings.announceChannelId?.let { event.guild.getTextChannelById(it) != null } == true) {
+            if (guildPointsSettings.announceChannelId == null || guildPointsSettings.announceChannelId?.let { event.jda.getTextChannelById(it) == null } == true) {
                 throw IllegalStateException("The announcement channel needs to be configured by a server administrator")
             }
             when {
