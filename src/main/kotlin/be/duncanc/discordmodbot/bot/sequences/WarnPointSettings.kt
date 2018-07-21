@@ -30,10 +30,10 @@ import org.springframework.transaction.annotation.Transactional
 import java.util.concurrent.TimeUnit
 
 @Component
-class PointSettings(
+class WarnPointSettings(
         val guildPointsSettingsRepository: GuildPointsSettingsRepository
 ) : CommandModule(
-        arrayOf("PointSettings"),
+        arrayOf("WarnPointSettings"),
         null,
         "This command allows you to modify the settings for the point system.",
         requiredPermissions = *arrayOf(Permission.ADMINISTRATOR)
