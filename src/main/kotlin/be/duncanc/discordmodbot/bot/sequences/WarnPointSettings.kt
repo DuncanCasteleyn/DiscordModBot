@@ -85,7 +85,7 @@ class WarnPointSettings(
                             sequenceNumber = 2
                         }
                         2.toByte() -> {
-                            channel.sendMessage("Please mention the channel where you want announcement to be made. (These summaries use an everyone ping so do not use a public channel)").queue { super.addMessageToCleaner(it) }
+                            channel.sendMessage("Please mention the channel where you want announcement to be made. (These summaries use an everyone ping so don't use a public channel)").queue { super.addMessageToCleaner(it) }
                             sequenceNumber = 3
                         }
                         else -> {
