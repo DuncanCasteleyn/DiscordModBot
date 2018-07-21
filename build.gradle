@@ -53,7 +53,7 @@ dependencies {
     compile("org.jetbrains.kotlin:kotlin-reflect")
     testCompile('org.springframework.boot:spring-boot-starter-test')
     testCompile('org.springframework.security:spring-security-test')
-    compile('net.dv8tion:JDA:3.6.0_376')
+    compile('net.dv8tion:JDA:3.7.1_385')
     compile('org.apache.commons:commons-lang3:3.5')
     compile('org.mariadb.jdbc:mariadb-java-client:2.2.3')
 }
