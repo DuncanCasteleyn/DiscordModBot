@@ -50,7 +50,12 @@ class AddWarnPoints(
         if (event.message.mentionedMembers.size != 1) {
             throw IllegalArgumentException("You need to mention 1 member.")
         }
-        event.jda.addEventListener(AddPointsSequence(event.author, event.author.openPrivateChannel().complete(), event.message.mentionedMembers[0]))
+        val member = event.message.mentionedMembers[0]
+        if(event.member.canInteract(member)) {
+            event.jda.addEventListener(AddPointsSequence(event.author, event.author.openPrivateChannel().complete(), member))
+        } else {
+            throw IllegalArgumentException("You can't interact with this member.")
+        }
     }
 
     @Transactional
