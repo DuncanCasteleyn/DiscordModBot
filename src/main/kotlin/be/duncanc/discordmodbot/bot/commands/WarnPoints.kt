@@ -17,7 +17,7 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.utils.JDALibHelper
-import be.duncanc.discordmodbot.data.entities.UserGuildPoints
+import be.duncanc.discordmodbot.data.entities.GuildWarnPoints
 import be.duncanc.discordmodbot.data.repositories.UserGuildPointsRepository
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
@@ -42,7 +42,7 @@ class WarnPoints(
             throw IllegalArgumentException("This command can only be used in a guild/server channel.")
         }
         if (event.message.mentionedUsers.size == 1 && event.member.hasPermission(Permission.KICK_MEMBERS)) {
-            val requestedUserPoints = userGuildPointsRepository.findById(UserGuildPoints.UserGuildPointsId(event.message.mentionedUsers[0].idLong, event.guild.idLong))
+            val requestedUserPoints = userGuildPointsRepository.findById(GuildWarnPoints.UserGuildPointsId(event.message.mentionedUsers[0].idLong, event.guild.idLong))
             if (requestedUserPoints.isPresent) {
                 informUserOfPoints(event.author, requestedUserPoints.get(), event.guild)
                 event.textChannel.sendMessage("The list of points the user collected has been send in a private message for privacy reason").queue(cleanUp())
@@ -50,7 +50,7 @@ class WarnPoints(
                 event.textChannel.sendMessage("The user has not received any points.").queue(cleanUp())
             }
         } else {
-            val userPoints = userGuildPointsRepository.findById(UserGuildPoints.UserGuildPointsId(event.author.idLong, event.guild.idLong))
+            val userPoints = userGuildPointsRepository.findById(GuildWarnPoints.UserGuildPointsId(event.author.idLong, event.guild.idLong))
             if (userPoints.isPresent) {
                 informUserOfPoints(event.author, userPoints.get(), event.guild)
                 event.textChannel.sendMessage("Your list of points has been send in a private message to you for privacy reasons, if you didn't receive any messages make sure you have enabled dm from server members on this server before executing this command.").queue(cleanUp())
@@ -63,11 +63,11 @@ class WarnPoints(
     private fun cleanUp(): (Message) -> Unit =
             { it.delete().queueAfter(1, TimeUnit.MINUTES) }
 
-    private fun informUserOfPoints(user: User, userPoints: UserGuildPoints, guild: Guild) {
+    private fun informUserOfPoints(user: User, warnPoints: GuildWarnPoints, guild: Guild) {
         user.openPrivateChannel().queue { privateChannel ->
             val message = MessageBuilder()
             message.append("Summary of points you received.")
-            userPoints.points.forEach {
+            warnPoints.points.forEach {
                 message.append("\n\n").append(it.points!!).append(" point(s)")
                         .append(" on ").append(it.creationDate).append(" by ").append(JDALibHelper.getEffectiveNameAndUsername(guild.getMemberById(it.creatorId!!)))
             }

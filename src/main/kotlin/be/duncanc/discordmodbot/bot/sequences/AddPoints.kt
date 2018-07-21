@@ -21,7 +21,7 @@ import be.duncanc.discordmodbot.bot.services.GuildLogger
 import be.duncanc.discordmodbot.bot.utils.JDALibHelper
 import be.duncanc.discordmodbot.data.embeddables.UserWarnPoints
 import be.duncanc.discordmodbot.data.entities.GuildPointsSettings
-import be.duncanc.discordmodbot.data.entities.UserGuildPoints
+import be.duncanc.discordmodbot.data.entities.GuildWarnPoints
 import be.duncanc.discordmodbot.data.repositories.GuildPointsSettingsRepository
 import be.duncanc.discordmodbot.data.repositories.UserGuildPointsRepository
 import net.dv8tion.jda.core.EmbedBuilder
@@ -90,7 +90,7 @@ class AddPoints(
                 else -> {
                     val days = event.message.contentRaw.toLong()
                     val date = OffsetDateTime.now().plusDays(days)
-                    val userGuildPoints = userGuildPointsRepository.findById(UserGuildPoints.UserGuildPointsId(targetMember.user.idLong, targetMember.guild.idLong)).orElse(UserGuildPoints(targetMember.user.idLong, targetMember.guild.idLong))
+                    val userGuildPoints = userGuildPointsRepository.findById(GuildWarnPoints.UserGuildPointsId(targetMember.user.idLong, targetMember.guild.idLong)).orElse(GuildWarnPoints(targetMember.user.idLong, targetMember.guild.idLong))
                     userGuildPoints.points.add(UserWarnPoints(points, user.idLong, reason, expireDate = date))
                     userGuildPointsRepository.save(userGuildPoints)
                     performChecks(userGuildPoints, guildPointsSettings, targetMember)
@@ -103,9 +103,9 @@ class AddPoints(
         }
     }
 
-    private fun performChecks(userGuildPoints: UserGuildPoints, guildPointsSettings: GuildPointsSettings, targetMember: Member) {
+    private fun performChecks(guildWarnPoints: GuildWarnPoints, guildPointsSettings: GuildPointsSettings, targetMember: Member) {
         var points = 0
-        val activatePoints = userGuildPoints.points.filter { it.expireDate?.isAfter(OffsetDateTime.now()) == true }.toCollection(mutableSetOf())
+        val activatePoints = guildWarnPoints.points.filter { it.expireDate?.isAfter(OffsetDateTime.now()) == true }.toCollection(mutableSetOf())
         activatePoints.forEach { points += it.points ?: 0 }
         if (points >= guildPointsSettings.announcePointsSummaryLimit) {
             val guild = targetMember.guild

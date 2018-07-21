@@ -22,9 +22,9 @@ import javax.persistence.*
 import javax.validation.Valid
 
 @Entity
-@IdClass(UserGuildPoints.UserGuildPointsId::class)
+@IdClass(GuildWarnPoints.UserGuildPointsId::class)
 @Table(name = "user_guild_points")
-data class UserGuildPoints(
+data class GuildWarnPoints(
         @Id
         @Column(updatable = false)
         val userId: Long? = null,
@@ -40,7 +40,7 @@ data class UserGuildPoints(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as UserGuildPoints
+        other as GuildWarnPoints
 
         if (userId != other.userId) return false
         return guildId == other.guildId
