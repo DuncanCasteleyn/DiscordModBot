@@ -19,7 +19,7 @@ package be.duncanc.discordmodbot.bot.sequences
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.services.GuildLogger
 import be.duncanc.discordmodbot.bot.utils.JDALibHelper
-import be.duncanc.discordmodbot.data.embeddables.UserPoints
+import be.duncanc.discordmodbot.data.embeddables.UserWarnPoints
 import be.duncanc.discordmodbot.data.entities.GuildPointsSettings
 import be.duncanc.discordmodbot.data.entities.UserGuildPoints
 import be.duncanc.discordmodbot.data.repositories.GuildPointsSettingsRepository
@@ -91,7 +91,7 @@ class AddPoints(
                     val days = event.message.contentRaw.toLong()
                     val date = OffsetDateTime.now().plusDays(days)
                     val userGuildPoints = userGuildPointsRepository.findById(UserGuildPoints.UserGuildPointsId(targetMember.user.idLong, targetMember.guild.idLong)).orElse(UserGuildPoints(targetMember.user.idLong, targetMember.guild.idLong))
-                    userGuildPoints.points.add(UserPoints(points, user.idLong, reason, expireDate = date))
+                    userGuildPoints.points.add(UserWarnPoints(points, user.idLong, reason, expireDate = date))
                     userGuildPointsRepository.save(userGuildPoints)
                     performChecks(userGuildPoints, guildPointsSettings, targetMember)
                     val moderator = targetMember.guild.getMember(user)

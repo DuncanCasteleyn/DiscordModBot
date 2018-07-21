@@ -27,7 +27,7 @@ import javax.validation.constraints.NotNull
 import javax.validation.constraints.Positive
 
 @Embeddable
-data class UserPoints(
+data class UserWarnPoints(
         @Positive
         @Column(nullable = false, updatable = false)
         val points: Int? = null,
@@ -50,7 +50,7 @@ data class UserPoints(
             throw IllegalArgumentException("Points need to be a positive number")
         }
         if (expireDate != null && expireDate.isBefore(creationDate)) {
-            throw IllegalArgumentException("UserPoints can't expire before the date it was created.")
+            throw IllegalArgumentException("UserWarnPoints can't expire before the date it was created.")
         }
         if (reason != null) {
             Assert.hasLength(reason, "The reason can not be empty.")

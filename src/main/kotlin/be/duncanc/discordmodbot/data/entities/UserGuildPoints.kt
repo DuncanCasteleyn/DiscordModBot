@@ -16,7 +16,7 @@
 
 package be.duncanc.discordmodbot.data.entities
 
-import be.duncanc.discordmodbot.data.embeddables.UserPoints
+import be.duncanc.discordmodbot.data.embeddables.UserWarnPoints
 import java.io.Serializable
 import javax.persistence.*
 import javax.validation.Valid
@@ -32,9 +32,9 @@ data class UserGuildPoints(
         @Column(updatable = false)
         val guildId: Long? = null,
         @Valid
-        @ElementCollection(targetClass = UserPoints::class, fetch = FetchType.EAGER)
+        @ElementCollection(targetClass = UserWarnPoints::class, fetch = FetchType.EAGER)
         @CollectionTable(name = "user_has_guild_points")
-        val points: MutableSet<UserPoints> = HashSet()
+        val points: MutableSet<UserWarnPoints> = HashSet()
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
