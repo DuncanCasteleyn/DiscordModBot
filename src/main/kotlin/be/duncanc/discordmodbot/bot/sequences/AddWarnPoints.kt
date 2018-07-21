@@ -36,11 +36,11 @@ import java.time.OffsetDateTime
 import java.util.*
 
 @Component
-class AddPoints(
+class AddWarnPoints(
         val userGuildPointsRepository: UserGuildPointsRepository,
         val guildPointsSettingsRepository: GuildPointsSettingsRepository
 ) : CommandModule(
-        arrayOf("AddPoints"),
+        arrayOf("AddWarnPoints", "AddPoints"),
         "Mention a user",
         "This command is used to add points to a user, the user will be informed about this",
         requiredPermissions = *arrayOf(Permission.KICK_MEMBERS)
