@@ -24,7 +24,7 @@ import javax.validation.constraints.NotNull
 import javax.validation.constraints.Positive
 
 @Entity
-@Table(name = "guild_settings")
+@Table(name = "guild_warn_point_settings")
 data class GuildWarnPointsSettings(
         @Id
         val guildId: Long? = null,

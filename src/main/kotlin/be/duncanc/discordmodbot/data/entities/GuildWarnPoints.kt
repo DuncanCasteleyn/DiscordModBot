@@ -23,7 +23,7 @@ import javax.validation.Valid
 
 @Entity
 @IdClass(GuildWarnPoints.UserGuildPointsId::class)
-@Table(name = "user_guild_points")
+@Table(name = "user_warn_points")
 data class GuildWarnPoints(
         @Id
         @Column(updatable = false)
