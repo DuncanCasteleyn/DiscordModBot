@@ -165,7 +165,7 @@ class AddWarnPoints(
                 .setAuthor(JDALibHelper.getEffectiveNameAndUsername(moderator), null, moderator.user.effectiveAvatarUrl)
                 .setTitle(moderator.guild.name + ": You have been warned by " + JDALibHelper.getEffectiveNameAndUsername(moderator), null)
                 .addField("Reason", reason, false)
-                .addField("note", noteMessage, false)
+                .addField("Note", noteMessage, false)
 
         toInform.user.openPrivateChannel().queue(
                 { privateChannelUserToWarn ->
