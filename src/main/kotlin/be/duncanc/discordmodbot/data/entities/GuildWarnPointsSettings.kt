@@ -25,7 +25,7 @@ import javax.validation.constraints.Positive
 
 @Entity
 @Table(name = "guild_settings")
-data class GuildPointsSettings(
+data class GuildWarnPointsSettings(
         @Id
         val guildId: Long? = null,
         @Positive
@@ -42,7 +42,7 @@ data class GuildPointsSettings(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as GuildPointsSettings
+        other as GuildWarnPointsSettings
 
         return guildId == other.guildId
     }

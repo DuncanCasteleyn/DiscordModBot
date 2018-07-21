@@ -17,7 +17,7 @@
 package be.duncanc.discordmodbot.bot.sequences
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
-import be.duncanc.discordmodbot.data.entities.GuildPointsSettings
+import be.duncanc.discordmodbot.data.entities.GuildWarnPointsSettings
 import be.duncanc.discordmodbot.data.repositories.GuildPointsSettingsRepository
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
@@ -55,7 +55,7 @@ class PointSettings(
         init {
             val guild = (channel as TextChannel).guild
             @Suppress("LeakingThis")
-            val guildSettings = guildPointsSettingsRepository.findById(guild.idLong).orElse(GuildPointsSettings(guild.idLong))
+            val guildSettings = guildPointsSettingsRepository.findById(guild.idLong).orElse(GuildWarnPointsSettings(guild.idLong))
 
             val announceChannelId = guildSettings.announceChannelId
             val announceChannel = if (announceChannelId != null) {
@@ -95,7 +95,7 @@ class PointSettings(
                 }
                 1.toByte() -> {
                     val guild = (channel as TextChannel).guild
-                    val guildSettings = guildPointsSettingsRepository.findById(guild.idLong).orElse(GuildPointsSettings(guild.idLong))
+                    val guildSettings = guildPointsSettingsRepository.findById(guild.idLong).orElse(GuildWarnPointsSettings(guild.idLong))
                     guildSettings.maxPointsPerReason = event.message.contentRaw.toInt()
                     guildPointsSettingsRepository.save(guildSettings)
                     channel.sendMessage("Successfully updated settings.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
@@ -103,7 +103,7 @@ class PointSettings(
                 }
                 2.toByte() -> {
                     val guild = (channel as TextChannel).guild
-                    val guildSettings = guildPointsSettingsRepository.findById(guild.idLong).orElse(GuildPointsSettings(guild.idLong))
+                    val guildSettings = guildPointsSettingsRepository.findById(guild.idLong).orElse(GuildWarnPointsSettings(guild.idLong))
                     guildSettings.announcePointsSummaryLimit = event.message.contentRaw.toInt()
                     guildPointsSettingsRepository.save(guildSettings)
                     channel.sendMessage("Successfully updated settings.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
@@ -111,7 +111,7 @@ class PointSettings(
                 }
                 3.toByte() -> {
                     val guild = (channel as TextChannel).guild
-                    val guildSettings = guildPointsSettingsRepository.findById(guild.idLong).orElse(GuildPointsSettings(guild.idLong))
+                    val guildSettings = guildPointsSettingsRepository.findById(guild.idLong).orElse(GuildWarnPointsSettings(guild.idLong))
                     guildSettings.announceChannelId = event.message.mentionedChannels[0].idLong
                     guildPointsSettingsRepository.save(guildSettings)
                     channel.sendMessage("Successfully updated settings.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }

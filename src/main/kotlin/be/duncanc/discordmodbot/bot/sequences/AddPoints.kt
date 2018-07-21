@@ -20,7 +20,7 @@ import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.services.GuildLogger
 import be.duncanc.discordmodbot.bot.utils.JDALibHelper
 import be.duncanc.discordmodbot.data.embeddables.UserWarnPoints
-import be.duncanc.discordmodbot.data.entities.GuildPointsSettings
+import be.duncanc.discordmodbot.data.entities.GuildWarnPointsSettings
 import be.duncanc.discordmodbot.data.entities.GuildWarnPoints
 import be.duncanc.discordmodbot.data.repositories.GuildPointsSettingsRepository
 import be.duncanc.discordmodbot.data.repositories.UserGuildPointsRepository
@@ -70,7 +70,7 @@ class AddPoints(
 
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
             val guildId = targetMember.guild.idLong
-            val guildPointsSettings = guildPointsSettingsRepository.findById(guildId).orElse(GuildPointsSettings(guildId))
+            val guildPointsSettings = guildPointsSettingsRepository.findById(guildId).orElse(GuildWarnPointsSettings(guildId))
             if (guildPointsSettings.announceChannelId == null) {
                 throw IllegalStateException("The announcement channel needs to be configured by a server administrator")
             }
@@ -103,11 +103,11 @@ class AddPoints(
         }
     }
 
-    private fun performChecks(guildWarnPoints: GuildWarnPoints, guildPointsSettings: GuildPointsSettings, targetMember: Member) {
+    private fun performChecks(guildWarnPoints: GuildWarnPoints, guildWarnPointsSettings: GuildWarnPointsSettings, targetMember: Member) {
         var points = 0
         val activatePoints = guildWarnPoints.points.filter { it.expireDate?.isAfter(OffsetDateTime.now()) == true }.toCollection(mutableSetOf())
         activatePoints.forEach { points += it.points ?: 0 }
-        if (points >= guildPointsSettings.announcePointsSummaryLimit) {
+        if (points >= guildWarnPointsSettings.announcePointsSummaryLimit) {
             val guild = targetMember.guild
             val messageBuilder = MessageBuilder().append("@everyone ")
                     .append(targetMember.asMention)
@@ -121,7 +121,7 @@ class AddPoints(
                         .append("\nExpires on: ").append(it.expireDate)
             }
             messageBuilder.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach {
-                guild.getTextChannelById(guildPointsSettings.announceChannelId!!).sendMessage(it).queue()
+                guild.getTextChannelById(guildWarnPointsSettings.announceChannelId!!).sendMessage(it).queue()
             }
         }
     }
