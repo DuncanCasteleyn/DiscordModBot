@@ -37,10 +37,11 @@ class WarnPointsList(
         userWarnPoints.removeIf { it.filterExpiredPoints().isEmpty() }
         val message = MessageBuilder()
         message.append("Summary of active points per user:\n")
-        userWarnPoints.forEachIndexed { index, guildWarnPoints ->
+        userWarnPoints.forEach {
+            val totalPoints = it.activePointsAmount()
             message.append("\n")
-                    .append(JDALibHelper.getEffectiveNameAndUsername(event.guild.getMemberById(guildWarnPoints.userId!!)))
-                    .append(" [$index]")
+                    .append(JDALibHelper.getEffectiveNameAndUsername(event.guild.getMemberById(it.userId!!)))
+                    .append(" [$totalPoints]")
         }
         message.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { event.channel.sendMessage(it).queue() }
     }
