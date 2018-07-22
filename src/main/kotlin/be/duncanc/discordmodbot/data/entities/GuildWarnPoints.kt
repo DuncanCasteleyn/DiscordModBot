@@ -40,23 +40,24 @@ data class GuildWarnPoints(
 
     /**
      * Compares the object so that the user with the most active points will be ordered first and those with no activate points last
+     * Alternatively if the users have the same amount of points the lowest userId will be ordered first and highest last.
      */
     override fun compareTo(other: GuildWarnPoints): Int {
-        val totalPoints = run {
-            var totalPoints = 0
-            filterExpiredPoints().forEach { totalPoints += it.points ?: 0 }
-            totalPoints
-        }
-        val totalPointsOther = run {
-            var totalPointsOther = 0
-            other.filterExpiredPoints().forEach { totalPointsOther += it.points ?: 0 }
-            totalPointsOther
-        }
+        val totalPoints = activePointsAmount()
+        val totalPointsOther = other.activePointsAmount()
         return when {
             totalPoints > totalPointsOther -> -1
             totalPoints < totalPointsOther -> +1
+            userId ?: 0 < other.userId ?: 0 -> +1
+            userId ?: 0 > other.userId ?: 0 -> -1
             else -> 0
         }
+    }
+
+    fun activePointsAmount(): Int {
+        var totalPoints = 0
+        filterExpiredPoints().forEach { totalPoints += it.points ?: 0 }
+        return totalPoints
     }
 
     fun filterExpiredPoints() = points.filter { it.expireDate?.isAfter(OffsetDateTime.now()) == true }
