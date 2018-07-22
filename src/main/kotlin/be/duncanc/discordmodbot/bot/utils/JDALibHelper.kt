@@ -81,4 +81,19 @@ object JDALibHelper {
         }
         messages.clear()
     }
+
+    fun rot13(input: String): String {
+        val sb = StringBuilder()
+        for (i in 0 until input.length) {
+            var c = input[i]
+            when (c) {
+                in 'a'..'m' -> c += 13
+                in 'A'..'M' -> c += 13
+                in 'n'..'z' -> c -= 13
+                in 'N'..'Z' -> c -= 13
+            }
+            sb.append(c)
+        }
+        return sb.toString()
+    }
 }
