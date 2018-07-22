@@ -16,7 +16,6 @@
 
 package be.duncanc.discordmodbot.bot.commands
 
-import be.duncanc.discordmodbot.bot.utils.JDALibHelper
 import be.duncanc.discordmodbot.data.repositories.UserWarnPointsRepository
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
@@ -40,7 +39,7 @@ class WarnPointsList(
         userWarnPoints.forEach {
             val totalPoints = it.activePointsAmount()
             message.append("\n")
-                    .append(JDALibHelper.getEffectiveNameAndUsername(event.guild.getMemberById(it.userId!!)))
+                    .append(event.jda.retrieveUserById(it.userId!!).complete().asMention)
                     .append(" [$totalPoints]")
         }
         message.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { event.channel.sendMessage(it).queue() }
