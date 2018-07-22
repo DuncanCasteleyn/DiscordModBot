@@ -106,7 +106,7 @@ class AddWarnPoints(
                     performChecks(userWarnPoints, guildPointsSettings, targetMember)
                     val moderator = targetMember.guild.getMember(user)
                     logAddPoints(moderator, targetMember, reason!!, points!!)
-                    informUserAndModerator(moderator, targetMember, reason!!, userWarnPoints.points.filter { it.expireDate?.isAfter(OffsetDateTime.now()) == true }.size, event.privateChannel)
+                    informUserAndModerator(moderator, targetMember, reason!!, userWarnPoints.filterExpiredPoints().size, event.privateChannel)
                     super.destroy()
                 }
             }

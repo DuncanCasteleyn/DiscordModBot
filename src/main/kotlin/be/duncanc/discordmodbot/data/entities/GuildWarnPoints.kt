@@ -18,6 +18,7 @@ package be.duncanc.discordmodbot.data.entities
 
 import be.duncanc.discordmodbot.data.embeddables.UserWarnPoints
 import java.io.Serializable
+import java.time.OffsetDateTime
 import javax.persistence.*
 import javax.validation.Valid
 
@@ -35,7 +36,31 @@ data class GuildWarnPoints(
         @ElementCollection(targetClass = UserWarnPoints::class, fetch = FetchType.EAGER)
         @CollectionTable(name = "user_has_warn_points")
         val points: MutableSet<UserWarnPoints> = HashSet()
-) {
+) : Comparable<GuildWarnPoints> {
+
+    /**
+     * Compares the object so that the user with the most active points will be ordered first and those with no activate points last
+     */
+    override fun compareTo(other: GuildWarnPoints): Int {
+        val totalPoints = run {
+            var totalPoints = 0
+            filterExpiredPoints().forEach { totalPoints += it.points ?: 0 }
+            totalPoints
+        }
+        val totalPointsOther = run {
+            var totalPointsOther = 0
+            other.filterExpiredPoints().forEach { totalPointsOther += it.points ?: 0 }
+            totalPointsOther
+        }
+        return when {
+            totalPoints > totalPointsOther -> -1
+            totalPoints < totalPointsOther -> +1
+            else -> 0
+        }
+    }
+
+    fun filterExpiredPoints() = points.filter { it.expireDate?.isAfter(OffsetDateTime.now()) == true }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
