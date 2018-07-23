@@ -58,7 +58,7 @@ dependencies {
     compile('org.apache.commons:commons-lang3:3.5')
 }
 
-wrapper.gradleVersion = '4.8'
+wrapper.gradleVersion = '4.9'
 
 compileJava.options.compilerArgs << '-Xlint:deprecation'
 compileJava.options.encoding = 'UTF-8'
