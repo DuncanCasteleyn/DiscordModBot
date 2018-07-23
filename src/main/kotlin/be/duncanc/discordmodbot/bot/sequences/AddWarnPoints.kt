@@ -40,12 +40,17 @@ class AddWarnPoints(
         val userWarnPointsRepository: UserWarnPointsRepository,
         val guildWarnPointsSettingsRepository: GuildWarnPointsSettingsRepository
 ) : CommandModule(
-        arrayOf("AddWarnPoints", "AddPoints"),
+        arrayOf("AddWarnPoints", "AddPoints", "Warn"),
         "Mention a user",
         "This command is used to add points to a user, the user will be informed about this",
         requiredPermissions = *arrayOf(Permission.KICK_MEMBERS)
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+        val guildId = event.guild.idLong
+        if(command.equals("Warn", true) && !guildWarnPointsSettingsRepository.findById(guildId).orElse(GuildWarnPointsSettings(guildId)).overrideWarnCommand) {
+            return
+        }
+
         if (event.message.mentionedMembers.size != 1) {
             throw IllegalArgumentException("You need to mention 1 member.")
         }
