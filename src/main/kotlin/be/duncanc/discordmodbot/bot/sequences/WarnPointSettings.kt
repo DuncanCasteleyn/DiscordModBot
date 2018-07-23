@@ -21,6 +21,7 @@ import be.duncanc.discordmodbot.data.entities.GuildWarnPointsSettings
 import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsSettingsRepository
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
+import net.dv8tion.jda.core.entities.Guild
 import net.dv8tion.jda.core.entities.MessageChannel
 import net.dv8tion.jda.core.entities.TextChannel
 import net.dv8tion.jda.core.entities.User
@@ -55,7 +56,7 @@ class WarnPointSettings(
         init {
             val guild = (channel as TextChannel).guild
             @Suppress("LeakingThis")
-            val guildSettings = guildWarnPointsSettingsRepository.findById(guild.idLong).orElse(GuildWarnPointsSettings(guild.idLong))
+            val guildSettings = guildWarnPointsSettings(guild)
 
             val announceChannelId = guildSettings.announceChannelId
             val announceChannel = if (announceChannelId != null) {
@@ -69,6 +70,7 @@ class WarnPointSettings(
                     .append("\n0. Change max points per reason. Current value: ").append(guildSettings.maxPointsPerReason)
                     .append("\n1. Change the limit before a summary is announced with the users collected points. Current value: ").append(guildSettings.announcePointsSummaryLimit)
                     .append("\n2. Change the channel to announce the summary in. Current channel: ").append(announceChannel)
+                    .append("\n3. Invert Warn command override by AddPoints command. Current value: ").append(guildSettings.overrideWarnCommand)
             channel.sendMessage(messageBuilder.build()).queue { super.addMessageToCleaner(it) }
         }
 
@@ -88,6 +90,13 @@ class WarnPointSettings(
                             channel.sendMessage("Please mention the channel where you want announcement to be made. (These summaries use an everyone ping so don't use a public channel)").queue { super.addMessageToCleaner(it) }
                             sequenceNumber = 3
                         }
+                        3.toByte() -> {
+                            val guildSettings = guildWarnPointsSettings(event.guild)
+                            guildSettings.overrideWarnCommand = !guildSettings.overrideWarnCommand
+                            guildWarnPointsSettingsRepository.save(guildSettings)
+                            saveSuccessMessage()
+                            super.destroy()
+                        }
                         else -> {
                             throw IllegalArgumentException("You must select a number between 0 and 2")
                         }
@@ -95,29 +104,36 @@ class WarnPointSettings(
                 }
                 1.toByte() -> {
                     val guild = (channel as TextChannel).guild
-                    val guildSettings = guildWarnPointsSettingsRepository.findById(guild.idLong).orElse(GuildWarnPointsSettings(guild.idLong))
+                    val guildSettings = guildWarnPointsSettings(guild)
                     guildSettings.maxPointsPerReason = event.message.contentRaw.toInt()
                     guildWarnPointsSettingsRepository.save(guildSettings)
-                    channel.sendMessage("Successfully updated settings.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                    saveSuccessMessage()
                     super.destroy()
                 }
                 2.toByte() -> {
                     val guild = (channel as TextChannel).guild
-                    val guildSettings = guildWarnPointsSettingsRepository.findById(guild.idLong).orElse(GuildWarnPointsSettings(guild.idLong))
+                    val guildSettings = guildWarnPointsSettings(guild)
                     guildSettings.announcePointsSummaryLimit = event.message.contentRaw.toInt()
                     guildWarnPointsSettingsRepository.save(guildSettings)
-                    channel.sendMessage("Successfully updated settings.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                    saveSuccessMessage()
                     super.destroy()
                 }
                 3.toByte() -> {
                     val guild = (channel as TextChannel).guild
-                    val guildSettings = guildWarnPointsSettingsRepository.findById(guild.idLong).orElse(GuildWarnPointsSettings(guild.idLong))
+                    val guildSettings = guildWarnPointsSettings(guild)
                     guildSettings.announceChannelId = event.message.mentionedChannels[0].idLong
                     guildWarnPointsSettingsRepository.save(guildSettings)
-                    channel.sendMessage("Successfully updated settings.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                    saveSuccessMessage()
                     super.destroy()
                 }
             }
         }
+
+        private fun saveSuccessMessage() {
+            channel.sendMessage("Successfully updated settings.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+        }
     }
+
+    private fun guildWarnPointsSettings(guild: Guild) =
+            guildWarnPointsSettingsRepository.findById(guild.idLong).orElse(GuildWarnPointsSettings(guild.idLong))
 }

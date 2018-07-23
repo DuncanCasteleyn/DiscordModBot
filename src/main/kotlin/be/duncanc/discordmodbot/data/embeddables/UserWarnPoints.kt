@@ -20,7 +20,6 @@ import org.springframework.util.Assert
 import java.time.OffsetDateTime
 import javax.persistence.Column
 import javax.persistence.Embeddable
-import javax.validation.Valid
 import javax.validation.constraints.Future
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.NotNull

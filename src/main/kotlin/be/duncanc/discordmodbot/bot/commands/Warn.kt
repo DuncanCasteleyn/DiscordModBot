@@ -19,6 +19,8 @@ package be.duncanc.discordmodbot.bot.commands
 import be.duncanc.discordmodbot.bot.services.GuildLogger
 import be.duncanc.discordmodbot.bot.services.ModNotes
 import be.duncanc.discordmodbot.bot.utils.JDALibHelper
+import be.duncanc.discordmodbot.data.entities.GuildWarnPointsSettings
+import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsSettingsRepository
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
@@ -43,7 +45,8 @@ import java.util.*
 @Component
 class Warn
 @Autowired constructor(
-        private val applicationContext: ApplicationContext
+        private val applicationContext: ApplicationContext,
+        private val guildWarnPointsSettingsRepository: GuildWarnPointsSettingsRepository
 ) : CommandModule(
         arrayOf("Warn"),
         "[User mention] [Reason~]",
@@ -54,6 +57,10 @@ class Warn
 
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+        val guildWarnPointsSettings = guildWarnPointsSettingsRepository.findById(event.guild.idLong).orElse(GuildWarnPointsSettings(event.guild.idLong))
+        if (guildWarnPointsSettings.overrideWarnCommand) {
+            return
+        }
         event.author.openPrivateChannel().queue(
                 { privateChannel -> commandExec(event, arguments, privateChannel) }
         ) { commandExec(event, arguments, null as PrivateChannel?) }

@@ -20,8 +20,8 @@ import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.services.GuildLogger
 import be.duncanc.discordmodbot.bot.utils.JDALibHelper
 import be.duncanc.discordmodbot.data.embeddables.UserWarnPoints
-import be.duncanc.discordmodbot.data.entities.GuildWarnPointsSettings
 import be.duncanc.discordmodbot.data.entities.GuildWarnPoints
+import be.duncanc.discordmodbot.data.entities.GuildWarnPointsSettings
 import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsSettingsRepository
 import be.duncanc.discordmodbot.data.repositories.UserWarnPointsRepository
 import net.dv8tion.jda.core.EmbedBuilder
@@ -40,17 +40,22 @@ class AddWarnPoints(
         val userWarnPointsRepository: UserWarnPointsRepository,
         val guildWarnPointsSettingsRepository: GuildWarnPointsSettingsRepository
 ) : CommandModule(
-        arrayOf("AddWarnPoints", "AddPoints"),
+        arrayOf("AddWarnPoints", "AddPoints", "Warn"),
         "Mention a user",
         "This command is used to add points to a user, the user will be informed about this",
         requiredPermissions = *arrayOf(Permission.KICK_MEMBERS)
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+        val guildId = event.guild.idLong
+        if (command.equals("Warn", true) && !guildWarnPointsSettingsRepository.findById(guildId).orElse(GuildWarnPointsSettings(guildId)).overrideWarnCommand) {
+            return
+        }
+
         if (event.message.mentionedMembers.size != 1) {
             throw IllegalArgumentException("You need to mention 1 member.")
         }
         val member = event.message.mentionedMembers[0]
-        if(event.member.canInteract(member)) {
+        if (event.member.canInteract(member)) {
             event.jda.addEventListener(AddPointsSequence(event.author, event.author.openPrivateChannel().complete(), member))
         } else {
             throw IllegalArgumentException("You can't interact with this member.")
@@ -82,7 +87,7 @@ class AddWarnPoints(
             when {
                 reason == null -> {
                     reason = event.message.contentDisplay
-                    if(guildPointsSettings.maxPointsPerReason == 1) {
+                    if (guildPointsSettings.maxPointsPerReason == 1) {
                         points = guildPointsSettings.maxPointsPerReason
                         channel.sendMessage("In how much days should these point(s) expire?").queue { super.addMessageToCleaner(it) }
                     } else {
@@ -155,7 +160,7 @@ class AddWarnPoints(
     }
 
     private fun informUserAndModerator(moderator: Member, toInform: Member, reason: String, amountOfWarnings: Int, moderatorPrivateChannel: PrivateChannel) {
-        val noteMessage = if(amountOfWarnings <= 1) {
+        val noteMessage = if (amountOfWarnings <= 1) {
             "Please watch your behavior in our server."
         } else {
             "You have received $amountOfWarnings warnings in recent history. Please watch your behaviour in our server."

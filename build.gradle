@@ -48,6 +48,7 @@ dependencies {
     compile('org.springframework.boot:spring-boot-starter-web')
     compile("org.springframework.boot:spring-boot-starter-data-jpa")
     runtime("com.h2database:h2")
+    runtime('org.mariadb.jdbc:mariadb-java-client:2.2.3')
     compile('com.fasterxml.jackson.module:jackson-module-kotlin')
     compile("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     compile("org.jetbrains.kotlin:kotlin-reflect")
@@ -55,10 +56,9 @@ dependencies {
     testCompile('org.springframework.security:spring-security-test')
     compile('net.dv8tion:JDA:3.7.1_385')
     compile('org.apache.commons:commons-lang3:3.5')
-    compile('org.mariadb.jdbc:mariadb-java-client:2.2.3')
 }
 
-wrapper.gradleVersion = '4.8'
+wrapper.gradleVersion = '4.9'
 
 compileJava.options.compilerArgs << '-Xlint:deprecation'
 compileJava.options.encoding = 'UTF-8'
@@ -79,4 +79,4 @@ compileTestKotlin {
 }
 
 group = 'be.duncanc'
-version = '1.5.0'
+version = '1.5.1'

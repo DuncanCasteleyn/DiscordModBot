@@ -36,7 +36,8 @@ data class GuildWarnPointsSettings(
         var announcePointsSummaryLimit: Int = 3,
         @NotNull
         @Column(nullable = false)
-        var announceChannelId: Long? = null
+        var announceChannelId: Long? = null,
+        var overrideWarnCommand: Boolean = false
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
