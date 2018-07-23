@@ -76,7 +76,7 @@ class WarnHistory(
                 }
                 message.append(" on ").append(it.creationDate.format(JDALibHelper.messageTimeFormat)).append(" by ").append(JDALibHelper.getEffectiveNameAndUsername(guild.getMemberById(it.creatorId!!)))
                         .append("\n\nReason: ").append(it.reason)
-                if(moderator) {
+                if (moderator) {
                     message.append("\n\nExpires: ").append(it.expireDate!!.format(JDALibHelper.messageTimeFormat))
                 }
             }
