@@ -14,19 +14,23 @@
  * limitations under the License.
  */
 
-package be.duncanc.discordmodbot.data.embeddables
+package be.duncanc.discordmodbot.data.entities
 
 import org.springframework.util.Assert
 import java.time.OffsetDateTime
-import javax.persistence.Column
-import javax.persistence.Embeddable
+import java.util.*
+import javax.persistence.*
 import javax.validation.constraints.Future
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.NotNull
 import javax.validation.constraints.Positive
 
-@Embeddable
+@Entity
+@Table(name = "user_warn_points")
 data class UserWarnPoints(
+        @Id
+        @Column(updatable = false, columnDefinition = "BINARY(16)")
+        val id: UUID = UUID.randomUUID(),
         @Positive
         @Column(nullable = false, updatable = false)
         val points: Int? = null,
@@ -34,7 +38,7 @@ data class UserWarnPoints(
         @Column(nullable = false, updatable = false)
         val creatorId: Long? = null,
         @NotBlank
-        @Column(nullable = false, updatable = false)
+        @Column(nullable = false, updatable = false, columnDefinition = "TEXT")
         val reason: String? = null,
         @NotNull
         @Column(nullable = false, updatable = false)
@@ -42,7 +46,9 @@ data class UserWarnPoints(
         @Future
         @NotNull
         @Column(nullable = false, updatable = false)
-        val expireDate: OffsetDateTime? = null
+        val expireDate: OffsetDateTime? = null,
+        @ManyToOne(optional = false)
+        val guildWarnPoints: GuildWarnPoints? = null
 ) {
     init {
         if (points != null && points <= 0) {

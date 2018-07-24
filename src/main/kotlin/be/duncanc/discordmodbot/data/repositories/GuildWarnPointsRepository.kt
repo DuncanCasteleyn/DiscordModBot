@@ -16,8 +16,7 @@
 
 package be.duncanc.discordmodbot.data.repositories
 
-import be.duncanc.discordmodbot.data.entities.UserWarnPoints
+import be.duncanc.discordmodbot.data.entities.GuildWarnPoints
 import org.springframework.data.repository.CrudRepository
-import java.util.*
 
-interface UserWarnPointsRepository : CrudRepository<UserWarnPoints, UUID>
+interface GuildWarnPointsRepository : CrudRepository<GuildWarnPoints, GuildWarnPoints.GuildWarnPointsId>

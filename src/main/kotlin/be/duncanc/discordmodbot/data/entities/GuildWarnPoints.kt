@@ -16,15 +16,14 @@
 
 package be.duncanc.discordmodbot.data.entities
 
-import be.duncanc.discordmodbot.data.embeddables.UserWarnPoints
 import java.io.Serializable
 import java.time.OffsetDateTime
 import javax.persistence.*
 import javax.validation.Valid
 
 @Entity
-@IdClass(GuildWarnPoints.UserGuildPointsId::class)
-@Table(name = "user_warn_points")
+@IdClass(GuildWarnPoints.GuildWarnPointsId::class)
+@Table(name = "guild_warn_points")
 data class GuildWarnPoints(
         @Id
         @Column(updatable = false)
@@ -33,8 +32,8 @@ data class GuildWarnPoints(
         @Column(updatable = false)
         val guildId: Long? = null,
         @Valid
-        @ElementCollection(targetClass = UserWarnPoints::class, fetch = FetchType.EAGER)
-        @CollectionTable(name = "user_has_warn_points")
+        @OneToMany(fetch = FetchType.EAGER, cascade = [(CascadeType.ALL)], orphanRemoval = true)
+        @JoinTable(name = "user_has_warn_points")
         val points: MutableSet<UserWarnPoints> = HashSet()
 ) : Comparable<GuildWarnPoints> {
 
@@ -78,7 +77,7 @@ data class GuildWarnPoints(
         return result
     }
 
-    data class UserGuildPointsId(
+    data class GuildWarnPointsId(
             @Id
             val userId: Long? = null,
             @Id

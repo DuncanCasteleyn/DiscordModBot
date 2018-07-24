@@ -19,11 +19,11 @@ package be.duncanc.discordmodbot.bot.sequences
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.services.GuildLogger
 import be.duncanc.discordmodbot.bot.utils.JDALibHelper
-import be.duncanc.discordmodbot.data.embeddables.UserWarnPoints
 import be.duncanc.discordmodbot.data.entities.GuildWarnPoints
 import be.duncanc.discordmodbot.data.entities.GuildWarnPointsSettings
+import be.duncanc.discordmodbot.data.entities.UserWarnPoints
 import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsSettingsRepository
-import be.duncanc.discordmodbot.data.repositories.UserWarnPointsRepository
+import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsRepository
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
@@ -37,7 +37,7 @@ import java.util.*
 
 @Component
 class AddWarnPoints(
-        val userWarnPointsRepository: UserWarnPointsRepository,
+        val guildWarnPointsRepository: GuildWarnPointsRepository,
         val guildWarnPointsSettingsRepository: GuildWarnPointsSettingsRepository
 ) : CommandModule(
         arrayOf("AddWarnPoints", "AddPoints", "Warn"),
@@ -105,13 +105,14 @@ class AddWarnPoints(
                 else -> {
                     val days = event.message.contentRaw.toLong()
                     val date = OffsetDateTime.now().plusDays(days)
-                    val userWarnPoints = userWarnPointsRepository.findById(GuildWarnPoints.UserGuildPointsId(targetMember.user.idLong, targetMember.guild.idLong)).orElse(GuildWarnPoints(targetMember.user.idLong, targetMember.guild.idLong))
-                    userWarnPoints.points.add(UserWarnPoints(points, user.idLong, reason, expireDate = date))
-                    userWarnPointsRepository.save(userWarnPoints)
-                    performChecks(userWarnPoints, guildPointsSettings, targetMember)
+                    val guildWarnPoints = guildWarnPointsRepository.findById(GuildWarnPoints.GuildWarnPointsId(targetMember.user.idLong, targetMember.guild.idLong)).orElse(GuildWarnPoints(targetMember.user.idLong, targetMember.guild.idLong))
+                    val userWarnPoints = UserWarnPoints(points =  points, creatorId =  user.idLong, reason =  reason, expireDate = date)
+                    guildWarnPoints.points.add(userWarnPoints)
+                    guildWarnPointsRepository.save(guildWarnPoints)
+                    performChecks(guildWarnPoints, guildPointsSettings, targetMember)
                     val moderator = targetMember.guild.getMember(user)
-                    logAddPoints(moderator, targetMember, reason!!, points!!)
-                    informUserAndModerator(moderator, targetMember, reason!!, userWarnPoints.filterExpiredPoints().size, event.privateChannel)
+                    logAddPoints(moderator, targetMember, reason!!, points!!, userWarnPoints.id)
+                    informUserAndModerator(moderator, targetMember, reason!!, guildWarnPoints.filterExpiredPoints().size, event.privateChannel)
                     super.destroy()
                 }
             }
@@ -141,14 +142,14 @@ class AddWarnPoints(
         }
     }
 
-    private fun logAddPoints(moderator: Member, toInform: Member, reason: String, amount: Int) {
+    private fun logAddPoints(moderator: Member, toInform: Member, reason: String, amount: Int, id: UUID) {
         val guildLogger = toInform.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
         val logToChannel = guildLogger?.logger
         if (logToChannel != null) {
             val logEmbed = EmbedBuilder()
                     .setColor(Color.YELLOW)
                     .setTitle("Points added to user")
-                    .addField("UUID", UUID.randomUUID().toString(), false)
+                    .addField("UUID", id.toString(), false)
                     .addField("User", JDALibHelper.getEffectiveNameAndUsername(toInform), true)
                     .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(moderator), true)
                     .addField("Amount", amount.toString(), false)
