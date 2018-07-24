@@ -32,8 +32,7 @@ data class GuildWarnPoints(
         @Column(updatable = false)
         val guildId: Long? = null,
         @Valid
-        @OneToMany(fetch = FetchType.EAGER, cascade = [(CascadeType.ALL)], orphanRemoval = true)
-        @JoinTable(name = "user_has_warn_points")
+        @OneToMany(fetch = FetchType.EAGER, cascade = [(CascadeType.ALL)], orphanRemoval = true, mappedBy = "guildWarnPoints")
         val points: MutableSet<UserWarnPoints> = HashSet()
 ) : Comparable<GuildWarnPoints> {
 

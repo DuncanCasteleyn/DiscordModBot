@@ -48,6 +48,7 @@ data class UserWarnPoints(
         @Column(nullable = false, updatable = false)
         val expireDate: OffsetDateTime? = null,
         @ManyToOne(optional = false)
+        @JoinTable(name = "user_has_warn_points")
         val guildWarnPoints: GuildWarnPoints? = null
 ) {
     init {

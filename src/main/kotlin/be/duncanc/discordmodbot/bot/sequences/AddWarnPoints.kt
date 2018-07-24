@@ -22,8 +22,8 @@ import be.duncanc.discordmodbot.bot.utils.JDALibHelper
 import be.duncanc.discordmodbot.data.entities.GuildWarnPoints
 import be.duncanc.discordmodbot.data.entities.GuildWarnPointsSettings
 import be.duncanc.discordmodbot.data.entities.UserWarnPoints
-import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsSettingsRepository
 import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsRepository
+import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsSettingsRepository
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
@@ -106,7 +106,7 @@ class AddWarnPoints(
                     val days = event.message.contentRaw.toLong()
                     val date = OffsetDateTime.now().plusDays(days)
                     val guildWarnPoints = guildWarnPointsRepository.findById(GuildWarnPoints.GuildWarnPointsId(targetMember.user.idLong, targetMember.guild.idLong)).orElse(GuildWarnPoints(targetMember.user.idLong, targetMember.guild.idLong))
-                    val userWarnPoints = UserWarnPoints(points =  points, creatorId =  user.idLong, reason =  reason, expireDate = date)
+                    val userWarnPoints = UserWarnPoints(points = points, creatorId = user.idLong, reason = reason, expireDate = date)
                     guildWarnPoints.points.add(userWarnPoints)
                     guildWarnPointsRepository.save(guildWarnPoints)
                     performChecks(guildWarnPoints, guildPointsSettings, targetMember)
