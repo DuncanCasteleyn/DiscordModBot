@@ -16,7 +16,7 @@
 
 package be.duncanc.discordmodbot.bot.commands
 
-import be.duncanc.discordmodbot.data.repositories.UserWarnPointsRepository
+import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsRepository
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component
 
 @Component
 class WarnPointsList(
-        private val userWarnPointsRepository: UserWarnPointsRepository
+        private val guildWarnPointsRepository: GuildWarnPointsRepository
 ) : CommandModule(
         arrayOf("WarnPointsList", "WarnList"),
         null,
@@ -32,7 +32,7 @@ class WarnPointsList(
         requiredPermissions = *arrayOf(Permission.KICK_MEMBERS)
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-        val userWarnPoints = userWarnPointsRepository.findAll().toSortedSet()
+        val userWarnPoints = guildWarnPointsRepository.findAll().toSortedSet()
         userWarnPoints.removeIf { it.filterExpiredPoints().isEmpty() }
         val message = MessageBuilder()
         message.append("Summary of active points per user:\n")
