@@ -35,7 +35,7 @@ class CommandTextChannelsWhitelist
         arrayOf("CommandWhitelistChannel", "WhitelistChannel"),
         null,
         "Whitelists the channel so commands can be used in it.",
-        ignoreWhiteList = true,
+        ignoreWhitelist = true,
         requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)
 ) {
 

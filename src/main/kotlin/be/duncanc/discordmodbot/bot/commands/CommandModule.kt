@@ -43,7 +43,7 @@ abstract class CommandModule
         internal val argumentationSyntax: String?,
         internal val description: String?,
         private val cleanCommandMessage: Boolean = true,
-        private val ignoreWhiteList: Boolean = false,
+        private val ignoreWhitelist: Boolean = false,
         vararg val requiredPermissions: Permission
 ) : ListenerAdapter() {
 
@@ -92,7 +92,7 @@ abstract class CommandModule
             }
             if (Arrays.stream(aliases).anyMatch { s -> s.equals(command, ignoreCase = true) }) {
                 try {
-                    if (event.isFromType(ChannelType.TEXT) && !ignoreWhiteList) {
+                    if (event.isFromType(ChannelType.TEXT) && !ignoreWhitelist) {
                         val commandTextChannelsWhitelist = event.jda.registeredListeners.find { it is CommandTextChannelsWhitelist } as CommandTextChannelsWhitelist?
                         if (commandTextChannelsWhitelist?.isWhitelisted(event.textChannel) == false) {
                             throw IllegalTextChannelException()

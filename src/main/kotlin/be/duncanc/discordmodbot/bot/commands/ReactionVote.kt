@@ -28,7 +28,7 @@ class ReactionVote : CommandModule(
         "[message id]",
         "Will put reactions to vote yes or no on a message.\nIf no message id is provided the message that contains the command will be used to vote.",
         cleanCommandMessage = false,
-        ignoreWhiteList = true
+        ignoreWhitelist = true
 ) {
 
     companion object {

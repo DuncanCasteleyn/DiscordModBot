@@ -28,7 +28,7 @@ import net.dv8tion.jda.core.events.message.guild.react.GuildMessageReactionAddEv
 import org.springframework.stereotype.Component
 
 @Component
-class Rot13 : CommandModule(arrayOf("Rot13"), null, "Encodes a message to rot 13", ignoreWhiteList = true) {
+class Rot13 : CommandModule(arrayOf("Rot13"), null, "Encodes a message to rot 13", ignoreWhitelist = true) {
     companion object {
         const val EMBED_TITLE = "Rot 13 message"
     }

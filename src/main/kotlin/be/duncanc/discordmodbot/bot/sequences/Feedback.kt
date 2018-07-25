@@ -100,14 +100,14 @@ class Feedback
         }
     }
 
-    inner class SetFeedbackChannel : CommandModule(arrayOf("SetFeedbackChannel"), null, "This command sets the feedback channel enabling this module for the server.", ignoreWhiteList = true, requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)) {
+    inner class SetFeedbackChannel : CommandModule(arrayOf("SetFeedbackChannel"), null, "This command sets the feedback channel enabling this module for the server.", ignoreWhitelist = true, requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)) {
         override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
             reportChannelRepository.save(ReportChannel(event.guild.idLong, event.textChannel.idLong))
             event.channel.sendMessage("This channel has been set for feedback.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
         }
     }
 
-    inner class DisableFeedback : CommandModule(arrayOf("DisableFeedback"), null, "This command disables the feedback system for the server.", ignoreWhiteList = true, requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)) {
+    inner class DisableFeedback : CommandModule(arrayOf("DisableFeedback"), null, "This command disables the feedback system for the server.", ignoreWhitelist = true, requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)) {
         override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
             reportChannelRepository.deleteById(event.guild.idLong)
             event.channel.sendMessage("Disabled feedback.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }

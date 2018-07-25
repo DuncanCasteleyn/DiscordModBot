@@ -60,7 +60,7 @@ internal constructor(
         ALIASES,
         null,
         null,
-        ignoreWhiteList = true
+        ignoreWhitelist = true
 ) {
     companion object {
         private val ALIASES = arrayOf("gateConfig", "join", "review")
