@@ -43,7 +43,8 @@ class AddWarnPoints(
         arrayOf("AddWarnPoints", "AddPoints", "Warn"),
         "Mention a user",
         "This command is used to add points to a user, the user will be informed about this",
-        requiredPermissions = *arrayOf(Permission.KICK_MEMBERS)
+        requiredPermissions = *arrayOf(Permission.KICK_MEMBERS),
+        ignoreWhiteList = true
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         val guildId = event.guild.idLong
