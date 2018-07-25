@@ -48,7 +48,7 @@ class Rot13 : CommandModule(arrayOf("Rot13"), null, "Encodes a message to rot 13
                 event.member.user.openPrivateChannel().queue {
                     it.sendMessage("Decoded message: " + JDALibHelper.rot13(message.embeds[0].description)).queue()
                 }
-                event.reaction.removeReaction().queue()
+                event.reaction.removeReaction(event.user).queue()
             }
         }
 
