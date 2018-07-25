@@ -20,6 +20,7 @@ import org.springframework.util.Assert
 import java.time.OffsetDateTime
 import java.util.*
 import javax.persistence.*
+import javax.validation.Valid
 import javax.validation.constraints.Future
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.NotNull
@@ -46,9 +47,7 @@ data class UserWarnPoints(
         @Future
         @NotNull
         @Column(nullable = false, updatable = false)
-        val expireDate: OffsetDateTime? = null,
-        @ManyToOne(optional = false)
-        val guildWarnPoints: GuildWarnPoints? = null
+        val expireDate: OffsetDateTime? = null
 ) {
     init {
         if (points != null && points <= 0) {

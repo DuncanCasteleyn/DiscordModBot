@@ -22,8 +22,8 @@ import be.duncanc.discordmodbot.bot.utils.JDALibHelper
 import be.duncanc.discordmodbot.data.entities.GuildWarnPoints
 import be.duncanc.discordmodbot.data.entities.GuildWarnPointsSettings
 import be.duncanc.discordmodbot.data.entities.UserWarnPoints
-import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsSettingsRepository
 import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsRepository
+import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsSettingsRepository
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
@@ -106,12 +106,12 @@ class AddWarnPoints(
                     val days = event.message.contentRaw.toLong()
                     val date = OffsetDateTime.now().plusDays(days)
                     val guildWarnPoints = guildWarnPointsRepository.findById(GuildWarnPoints.GuildWarnPointsId(targetMember.user.idLong, targetMember.guild.idLong)).orElse(GuildWarnPoints(targetMember.user.idLong, targetMember.guild.idLong))
-                    val userWarnPoints = UserWarnPoints(points =  points, creatorId =  user.idLong, reason =  reason, expireDate = date)
+                    val userWarnPoints = UserWarnPoints(points = points, creatorId = user.idLong, reason = reason, expireDate = date)
                     guildWarnPoints.points.add(userWarnPoints)
                     guildWarnPointsRepository.save(guildWarnPoints)
                     performChecks(guildWarnPoints, guildPointsSettings, targetMember)
                     val moderator = targetMember.guild.getMember(user)
-                    logAddPoints(moderator, targetMember, reason!!, points!!, userWarnPoints.id)
+                    logAddPoints(moderator, targetMember, reason!!, points!!, userWarnPoints.id, date)
                     informUserAndModerator(moderator, targetMember, reason!!, guildWarnPoints.filterExpiredPoints().size, event.privateChannel)
                     super.destroy()
                 }
@@ -142,18 +142,19 @@ class AddWarnPoints(
         }
     }
 
-    private fun logAddPoints(moderator: Member, toInform: Member, reason: String, amount: Int, id: UUID) {
+    private fun logAddPoints(moderator: Member, toInform: Member, reason: String, amount: Int, id: UUID, dateTime: OffsetDateTime) {
         val guildLogger = toInform.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
         val logToChannel = guildLogger?.logger
         if (logToChannel != null) {
             val logEmbed = EmbedBuilder()
                     .setColor(Color.YELLOW)
-                    .setTitle("Points added to user")
+                    .setTitle("Warn points added to user")
                     .addField("UUID", id.toString(), false)
                     .addField("User", JDALibHelper.getEffectiveNameAndUsername(toInform), true)
                     .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(moderator), true)
                     .addField("Amount", amount.toString(), false)
                     .addField("Reason", reason, false)
+                    .addField("Epires", dateTime.format(JDALibHelper.messageTimeFormat), false)
 
 
             logToChannel.log(logEmbed, toInform.user, toInform.guild, null, GuildLogger.LogTypeAction.MODERATOR)
