@@ -155,8 +155,7 @@ class AddWarnPoints(
                     .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(moderator), true)
                     .addField("Amount", amount.toString(), false)
                     .addField("Reason", reason, false)
-                    .addField("Epires", dateTime.format(JDALibHelper.messageTimeFormat), false)
-
+                    .addField("Expires", dateTime.format(JDALibHelper.messageTimeFormat), false)
 
             logToChannel.log(logEmbed, toInform.user, toInform.guild, null, GuildLogger.LogTypeAction.MODERATOR)
         }
