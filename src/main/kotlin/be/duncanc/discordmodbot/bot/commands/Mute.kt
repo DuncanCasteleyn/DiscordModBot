@@ -17,7 +17,6 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.services.GuildLogger
-import be.duncanc.discordmodbot.bot.services.ModNotes
 import be.duncanc.discordmodbot.bot.services.MuteRole
 import be.duncanc.discordmodbot.bot.utils.JDALibHelper
 import net.dv8tion.jda.core.EmbedBuilder
@@ -102,7 +101,6 @@ class Mute
                             ) { throwable -> onFailToInformUser(privateChannel, toMute, throwable) }
                         }
                 ) { throwable -> onFailToInformUser(privateChannel, toMute, throwable) }
-                applicationContext.getBean(ModNotes::class.java).addNote(reason, ModNotes.NoteType.MUTE, toMute.user.idLong, event.guild.idLong, event.author.idLong)
 
             }) { throwable ->
                 if (privateChannel == null) {

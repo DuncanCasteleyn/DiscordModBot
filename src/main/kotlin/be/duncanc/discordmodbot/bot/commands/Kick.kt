@@ -17,7 +17,6 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.services.GuildLogger
-import be.duncanc.discordmodbot.bot.services.ModNotes
 import be.duncanc.discordmodbot.bot.utils.JDALibHelper
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.MessageBuilder
@@ -91,7 +90,6 @@ class Kick
                         privateChannelUserToMute.sendMessage(userKickNotification).queue(
                                 { message: Message ->
                                     onSuccessfulInformUser(event, reason, privateChannel, toKick, message, kickRestAction)
-                                    applicationContext.getBean(ModNotes::class.java).addNote(reason, ModNotes.NoteType.WARN, toKick.user.idLong, event.guild.idLong, event.author.idLong)
                                 }
                         ) { throwable -> onFailToInformUser(event, reason, privateChannel, toKick, throwable, kickRestAction) }
                     }

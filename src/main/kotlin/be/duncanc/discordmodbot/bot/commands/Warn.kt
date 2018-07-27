@@ -17,7 +17,6 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.services.GuildLogger
-import be.duncanc.discordmodbot.bot.services.ModNotes
 import be.duncanc.discordmodbot.bot.utils.JDALibHelper
 import be.duncanc.discordmodbot.data.entities.GuildWarnPointsSettings
 import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsSettingsRepository
@@ -114,8 +113,6 @@ class Warn
                         ) { throwable -> onFailToWarnUser(privateChannel!!, toWarn, throwable) }
                     }
             ) { throwable -> onFailToWarnUser(privateChannel!!, toWarn, throwable) }
-
-            applicationContext.getBean(ModNotes::class.java).addNote(reason, ModNotes.NoteType.WARN, toWarn.user.idLong, event.guild.idLong, event.author.idLong)
         }
     }
 
