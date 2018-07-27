@@ -28,7 +28,12 @@ import net.dv8tion.jda.core.events.message.guild.react.GuildMessageReactionAddEv
 import org.springframework.stereotype.Component
 
 @Component
-class Rot13 : CommandModule(arrayOf("Rot13"), null, "Encodes a message to rot 13", ignoreWhitelist = true) {
+class Rot13 : CommandModule(
+        arrayOf("Rot13"),
+        null,
+        "Encodes a message to rot 13",
+        ignoreWhitelist = true
+) {
     companion object {
         const val EMBED_TITLE = "Rot 13 message"
     }
@@ -43,6 +48,9 @@ class Rot13 : CommandModule(arrayOf("Rot13"), null, "Encodes a message to rot 13
     }
 
     override fun onGuildMessageReactionAdd(event: GuildMessageReactionAddEvent) {
+        if (event.member.user.isBot) {
+            return
+        }
         event.channel.getMessageById(event.messageIdLong).queue { message ->
             if (message.author == event.jda.selfUser && message.embeds.size == 1 && message.embeds[0].title == EMBED_TITLE) {
                 event.member.user.openPrivateChannel().queue {
@@ -62,17 +70,26 @@ class Rot13 : CommandModule(arrayOf("Rot13"), null, "Encodes a message to rot 13
             user,
             channel
     ) {
+        private var rot13Message: String? = null
+
+
         init {
             channel.sendMessage("Please enter the text you want to encode into rot 13").queue()
         }
 
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
-            val embedBuilder = EmbedBuilder()
-            embedBuilder.setAuthor(JDALibHelper.getEffectiveNameAndUsername(targetChannel.guild.getMember(user)), null, user.effectiveAvatarUrl)
-            embedBuilder.setTitle(EMBED_TITLE)
-            embedBuilder.setDescription(JDALibHelper.rot13(event.message.contentRaw))
-            embedBuilder.setFooter("To decrypt the message simply react on it", null)
-            targetChannel.sendMessage(embedBuilder.build()).queue()
+            if (rot13Message == null) {
+                rot13Message = JDALibHelper.rot13(event.message.contentRaw)
+                channel.sendMessage("Please enter of what the spoilers in your message come from.\nExample: Re:Zero Novel Spoiler, Fairy Tail anime, None\nDon'ts: Re:Zero, I dunno").queue()
+            } else {
+                val embedBuilder = EmbedBuilder()
+                embedBuilder.setAuthor(JDALibHelper.getEffectiveNameAndUsername(targetChannel.guild.getMember(user)), "" ,user.effectiveAvatarUrl)
+                embedBuilder.setTitle(EMBED_TITLE)
+                embedBuilder.setDescription(rot13Message)
+                embedBuilder.addField("Contains spoilers for", event.message.contentRaw, false)
+                embedBuilder.setFooter("To decrypt the message simply react on it", null)
+                targetChannel.sendMessage(embedBuilder.build()).queue()
+            }
         }
     }
 }
