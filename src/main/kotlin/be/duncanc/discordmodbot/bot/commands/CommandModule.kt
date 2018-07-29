@@ -17,16 +17,20 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.sequences.Sequence
+import be.duncanc.discordmodbot.data.services.UserBlock
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.ChannelType
+import net.dv8tion.jda.core.entities.User
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.exceptions.PermissionException
 import net.dv8tion.jda.core.hooks.ListenerAdapter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.time.*
 import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.collections.HashMap
 
 /**
  * an abstract class that can be used to listen for commands.
@@ -44,14 +48,18 @@ abstract class CommandModule
         internal val description: String?,
         private val cleanCommandMessage: Boolean = true,
         private val ignoreWhitelist: Boolean = false,
+        protected val userBlock: UserBlock? = null,
         vararg val requiredPermissions: Permission
 ) : ListenerAdapter() {
 
     companion object {
         const val COMMAND_SIGN = '!'
+        private const val ANTI_SPAM_LIMIT = 5.toByte()
         @JvmStatic
         protected val LOG: Logger = LoggerFactory.getLogger(CommandModule::class.java)
         private val SPACE_TRIMMER = "\\s+".toRegex()
+        private val antiSpamMap = HashMap<Long, Byte>()
+        private var lastAntiSpamCountReset = Instant.now()
     }
 
     init {
@@ -77,7 +85,8 @@ abstract class CommandModule
     override fun onMessageReceived(event: MessageReceivedEvent) {
         val messageContent = event.message.contentRaw.trim().replace(SPACE_TRIMMER, " ")
 
-        if (event.author.isBot || messageContent == "" || event.jda.registeredListeners.stream().anyMatch { it is Sequence && it.user == event.author }) {
+        val authorId = event.author.idLong
+        if (event.author.isBot || messageContent == "" || userBlock?.isBlocked(authorId) == true || event.jda.registeredListeners.stream().anyMatch { it is Sequence && it.user == event.author }) {
             return
         }
 
@@ -124,6 +133,27 @@ abstract class CommandModule
                 } catch (e: Exception) {
                     LOG.warn("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " failed deleting " + event.message.contentStripped + " command from user " + event.author.toString(), e)
                 }
+                spamCheck(event.author)
+            }
+        }
+    }
+
+    protected fun spamCheck(user: User) {
+        if (userBlock != null) {
+            val userId = user.idLong
+            when {
+                Duration.between(lastAntiSpamCountReset, Instant.now()).seconds > 10 -> {
+                    antiSpamMap.clear()
+                    lastAntiSpamCountReset = Instant.now()
+                }
+                antiSpamMap.containsKey(userId) -> {
+                    var value = antiSpamMap[userId]!!
+                    if (value > ANTI_SPAM_LIMIT) {
+                        userBlock.blockUser(user)
+                    }
+                    antiSpamMap[userId] = ++value
+                }
+                else -> antiSpamMap[userId] = 1
             }
         }
     }

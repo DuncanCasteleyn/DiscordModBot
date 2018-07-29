@@ -17,16 +17,20 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.utils.JDALibHelper
+import be.duncanc.discordmodbot.data.services.UserBlock
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 
 @Component
-class Quote : CommandModule(
+class Quote(
+        userBlock: UserBlock
+) : CommandModule(
         arrayOf("Quote"),
         "[message id to quote] [response text]",
         "Will quote text and put a response under it, response text is optional",
-        ignoreWhitelist = true
+        ignoreWhitelist = true,
+        userBlock = userBlock
 ) {
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {

@@ -16,6 +16,7 @@
 
 package be.duncanc.discordmodbot.bot.commands
 
+import be.duncanc.discordmodbot.data.services.UserBlock
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import org.springframework.beans.factory.config.ConfigurableBeanFactory
@@ -31,10 +32,13 @@ import java.util.concurrent.TimeUnit
  */
 @Component
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-class Help : CommandModule(
+class Help(
+        userBlock: UserBlock
+) : CommandModule(
         arrayOf("Help"),
         null,
-        "Show a list of commands"
+        "Show a list of commands",
+        userBlock = userBlock
 ) {
 
     /**

@@ -20,6 +20,7 @@ import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.utils.JDALibHelper
 import be.duncanc.discordmodbot.data.entities.ReportChannel
 import be.duncanc.discordmodbot.data.repositories.ReportChannelRepository
+import be.duncanc.discordmodbot.data.services.UserBlock
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.MessageBuilder
@@ -39,11 +40,13 @@ import java.util.concurrent.TimeUnit
 @Component
 class Feedback
 @Autowired constructor(
-        private val reportChannelRepository: ReportChannelRepository
+        private val reportChannelRepository: ReportChannelRepository,
+        userBlock: UserBlock
 ) : CommandModule(
         arrayOf("Feedback", "Report", "Complaint"),
         null,
-        "This command allows users to give feedback to the server staff by posting it in a channel that is configured"
+        "This command allows users to give feedback to the server staff by posting it in a channel that is configured",
+        userBlock = userBlock
 ) {
 
     private val setFeedbackChannel = SetFeedbackChannel()
