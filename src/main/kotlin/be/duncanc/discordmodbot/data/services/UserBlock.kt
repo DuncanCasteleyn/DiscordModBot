@@ -29,7 +29,7 @@ class UserBlock(
         val blockedUser = BlockedUser(user.idLong)
         blockedUserRepository.save(blockedUser)
         user.openPrivateChannel().queue {
-            it.sendMessage("This is an automated message to inform you that you have been blocked by the bot due to spam.")
+            it.sendMessage("This is an automated message to inform you that you have been blocked by the bot due to spam.").queue()
         }
     }
 

@@ -18,6 +18,7 @@ package be.duncanc.discordmodbot.bot.sequences
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.utils.JDALibHelper
+import be.duncanc.discordmodbot.data.services.UserBlock
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.entities.ChannelType
 import net.dv8tion.jda.core.entities.MessageChannel
@@ -28,14 +29,17 @@ import net.dv8tion.jda.core.events.message.guild.react.GuildMessageReactionAddEv
 import org.springframework.stereotype.Component
 
 @Component
-class Rot13 : CommandModule(
+class Rot13(
+        userBlock: UserBlock
+) : CommandModule(
         arrayOf("Rot13"),
         null,
         "Encodes a message to rot 13",
-        ignoreWhitelist = true
+        ignoreWhitelist = true,
+        userBlock = userBlock
 ) {
     companion object {
-        const val EMBED_TITLE = "Rot 13 message"
+        const val EMBED_TITLE = "Contains spoilers for:"
     }
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
@@ -48,18 +52,17 @@ class Rot13 : CommandModule(
     }
 
     override fun onGuildMessageReactionAdd(event: GuildMessageReactionAddEvent) {
-        if (event.member.user.isBot) {
+        if (event.member.user.isBot || userBlock?.isBlocked(event.user.idLong) == true) {
             return
         }
         event.channel.getMessageById(event.messageIdLong).queue { message ->
-            if (message.author == event.jda.selfUser && message.embeds.size == 1 && message.embeds[0].title == EMBED_TITLE) {
+            if (message.author == event.jda.selfUser && message.embeds.size == 1 && message.embeds[0].title.split("\n")[0] == EMBED_TITLE) {
                 event.member.user.openPrivateChannel().queue {
                     it.sendMessage("Decoded message: " + JDALibHelper.rot13(message.embeds[0].description)).queue()
                 }
-                event.reaction.removeReaction(event.user).queue()
             }
         }
-
+        spamCheck(event.user)
     }
 
     inner class Rot13Sequence(
@@ -80,15 +83,14 @@ class Rot13 : CommandModule(
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
             if (rot13Message == null) {
                 rot13Message = JDALibHelper.rot13(event.message.contentRaw)
-                channel.sendMessage("Please enter of what the spoilers in your message come from.\nExample: Re:Zero Novel Spoiler, Fairy Tail anime, None\nDon'ts: Re:Zero, I dunno").queue()
+                channel.sendMessage("Please enter the source of your spoilers.\nExample: Re:Zero Novel, Fairy Tail anime, None\nDon'ts: Re:Zero, I dunno").queue()
             } else {
                 val embedBuilder = EmbedBuilder()
-                embedBuilder.setAuthor(JDALibHelper.getEffectiveNameAndUsername(targetChannel.guild.getMember(user)), "" ,user.effectiveAvatarUrl)
-                embedBuilder.setTitle(EMBED_TITLE)
+                embedBuilder.setAuthor(JDALibHelper.getEffectiveNameAndUsername(targetChannel.guild.getMember(user)), "https://discordapp.com/users/${event.author.id}" ,user.effectiveAvatarUrl)
+                embedBuilder.setTitle("$EMBED_TITLE\n${event.message.contentStripped}")
                 embedBuilder.setDescription(rot13Message)
-                embedBuilder.addField("Contains spoilers for", event.message.contentRaw, false)
                 embedBuilder.setFooter("To decrypt the message simply react on it", null)
-                targetChannel.sendMessage(embedBuilder.build()).queue()
+                targetChannel.sendMessage(embedBuilder.build()).queue { it.addReaction("\uD83D\uDDB1").queue() }
             }
         }
     }
