@@ -20,6 +20,7 @@ import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.sequences.Sequence
 import be.duncanc.discordmodbot.data.entities.IAmRolesCategory
 import be.duncanc.discordmodbot.data.services.IAmRolesService
+import be.duncanc.discordmodbot.data.services.UserBlock
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.MessageChannel
@@ -37,11 +38,13 @@ import java.util.concurrent.TimeUnit
 @Component
 class IAmRoles
 @Autowired constructor(
-        private val iAmRolesService: IAmRolesService
+        private val iAmRolesService: IAmRolesService,
+        userBlock: UserBlock
 ) : CommandModule(
         ALIASES,
         null,
-        DESCRIPTION
+        DESCRIPTION,
+        userBlock = userBlock
 ) {
     companion object {
         private val ALIASES = arrayOf("IAmRoles")

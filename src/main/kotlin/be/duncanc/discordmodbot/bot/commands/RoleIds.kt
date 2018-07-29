@@ -16,6 +16,7 @@
 
 package be.duncanc.discordmodbot.bot.commands
 
+import be.duncanc.discordmodbot.data.services.UserBlock
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.ChannelType
@@ -28,10 +29,13 @@ import java.util.concurrent.TimeUnit
  * Commands to get all role ids of the current guild where executed.
  */
 @Component
-class RoleIds : CommandModule(
+class RoleIds(
+        userBlock: UserBlock
+) : CommandModule(
         ALIASES,
         null,
-        DESCRIPTION
+        DESCRIPTION,
+        userBlock = userBlock
 ) {
     companion object {
         private val ALIASES = arrayOf("RoleIds", "GetRoleIds")

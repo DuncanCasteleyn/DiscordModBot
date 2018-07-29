@@ -19,6 +19,7 @@ package be.duncanc.discordmodbot.bot.commands
 import be.duncanc.discordmodbot.bot.utils.JDALibHelper
 import be.duncanc.discordmodbot.data.entities.GuildWarnPoints
 import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsRepository
+import be.duncanc.discordmodbot.data.services.UserBlock
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.ChannelType
@@ -31,11 +32,13 @@ import java.util.concurrent.TimeUnit
 
 @Component
 class WarnHistory(
-        val guildWarnPointsRepository: GuildWarnPointsRepository
+        val guildWarnPointsRepository: GuildWarnPointsRepository,
+        userBlock: UserBlock
 ) : CommandModule(
         arrayOf("WarnHistory"),
         null,
-        null
+        null,
+        userBlock = userBlock
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         if (!event.isFromType(ChannelType.TEXT)) {
