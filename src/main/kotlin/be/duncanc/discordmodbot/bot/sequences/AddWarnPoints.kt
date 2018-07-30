@@ -109,7 +109,13 @@ class AddWarnPoints(
                 expireDate == null -> {
                     val days = event.message.contentRaw.toLong()
                     expireDate = OffsetDateTime.now().plusDays(days)
-                    channel.sendMessage("Should an action be performed with this warn?\n0. None\n1. Mute\n2. Kick").queue()
+                    val muteText = try {
+                        muteRole.getMuteRole(targetMember.guild)
+                        ""
+                    }catch(e: java.lang.IllegalStateException) {
+                        " (Not configured)"
+                    }
+                    channel.sendMessage("Should an action be performed with this warn?\n0. None\n1. Mute$muteText\n2. Kick").queue()
                 }
                 else -> {
                     val action = event.message.contentRaw.toByte()
