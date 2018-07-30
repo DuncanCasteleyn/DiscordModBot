@@ -112,7 +112,7 @@ class AddWarnPoints(
                     val muteText = try {
                         muteRole.getMuteRole(targetMember.guild)
                         ""
-                    }catch(e: java.lang.IllegalStateException) {
+                    } catch (e: java.lang.IllegalStateException) {
                         " (Not configured)"
                     }
                     channel.sendMessage("Should an action be performed with this warn?\n0. None\n1. Mute$muteText\n2. Kick").queue()
@@ -126,7 +126,7 @@ class AddWarnPoints(
                     performChecks(guildWarnPoints, guildPointsSettings, targetMember)
                     val moderator = targetMember.guild.getMember(user)
                     logAddPoints(moderator, targetMember, reason!!, points!!, userWarnPoints.id, expireDate!!, action)
-                    informUserAndModerator(moderator, targetMember, reason!!, guildWarnPoints.filterExpiredPoints().size, event.privateChannel)
+                    informUserAndModerator(moderator, targetMember, reason!!, guildWarnPoints.filterExpiredPoints().size, event.privateChannel, action)
                     val guild = targetMember.guild
                     when (action) {
                         1.toByte() -> guild.controller.addSingleRoleToMember(targetMember, muteRole.getMuteRole(guild)).reason(reason).queue()
@@ -183,7 +183,7 @@ class AddWarnPoints(
         }
     }
 
-    private fun informUserAndModerator(moderator: Member, toInform: Member, reason: String, amountOfWarnings: Int, moderatorPrivateChannel: PrivateChannel) {
+    private fun informUserAndModerator(moderator: Member, toInform: Member, reason: String, amountOfWarnings: Int, moderatorPrivateChannel: PrivateChannel, action: Byte) {
         val noteMessage = if (amountOfWarnings <= 1) {
             "Please watch your behavior in our server."
         } else {
@@ -195,6 +195,10 @@ class AddWarnPoints(
                 .setTitle(moderator.guild.name + ": You have been warned by " + JDALibHelper.getEffectiveNameAndUsername(moderator), null)
                 .addField("Reason", reason, false)
                 .addField("Note", noteMessage, false)
+        when (action) {
+            1.toByte() -> userWarning.addField("Punishment", "Mute", false)
+            2.toByte() -> userWarning.addField("Punishment", "Kick", false)
+        }
 
         toInform.user.openPrivateChannel().queue(
                 { privateChannelUserToWarn ->
