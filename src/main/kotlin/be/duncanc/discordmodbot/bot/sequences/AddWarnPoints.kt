@@ -18,6 +18,7 @@ package be.duncanc.discordmodbot.bot.sequences
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.services.GuildLogger
+import be.duncanc.discordmodbot.bot.services.MuteRole
 import be.duncanc.discordmodbot.bot.utils.JDALibHelper
 import be.duncanc.discordmodbot.data.entities.GuildWarnPoints
 import be.duncanc.discordmodbot.data.entities.GuildWarnPointsSettings
@@ -38,7 +39,8 @@ import java.util.*
 @Component
 class AddWarnPoints(
         val guildWarnPointsRepository: GuildWarnPointsRepository,
-        val guildWarnPointsSettingsRepository: GuildWarnPointsSettingsRepository
+        val guildWarnPointsSettingsRepository: GuildWarnPointsSettingsRepository,
+        val muteRole: MuteRole
 ) : CommandModule(
         arrayOf("AddWarnPoints", "AddPoints", "Warn"),
         "Mention a user",
@@ -74,9 +76,10 @@ class AddWarnPoints(
     ) {
         private var reason: String? = null
         private var points: Int? = null
+        private var expireDate: OffsetDateTime? = null
 
         init {
-            channel.sendMessage("Please enter the reason for giving the user points.").queue { super.addMessageToCleaner(it) }
+            channel.sendMessage("Please enter the reason for giving the user points.").queue()
         }
 
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
@@ -90,7 +93,7 @@ class AddWarnPoints(
                     reason = event.message.contentDisplay
                     if (guildPointsSettings.maxPointsPerReason == 1) {
                         points = guildPointsSettings.maxPointsPerReason
-                        channel.sendMessage("In how much days should these point(s) expire?").queue { super.addMessageToCleaner(it) }
+                        channel.sendMessage("In how much days should these point(s) expire?").queue()
                     } else {
                         channel.sendMessage("Please enter the amount of points to assign. Your server administrator(s) has/have set a maximum of " + guildPointsSettings.maxPointsPerReason + " per reason").queue { super.addMessageToCleaner(it) }
                     }
@@ -101,19 +104,28 @@ class AddWarnPoints(
                         throw IllegalArgumentException("This amount is above the maximum per reason")
                     }
                     points = inputPoints
-                    channel.sendMessage("In how much days should these point(s) expire?").queue { super.addMessageToCleaner(it) }
+                    channel.sendMessage("In how much days should these point(s) expire?").queue()
+                }
+                expireDate == null -> {
+                    val days = event.message.contentRaw.toLong()
+                    expireDate = OffsetDateTime.now().plusDays(days)
+                    channel.sendMessage("Should an action be performed with this warn?\n0. None\n1. Mute\n2. Kick").queue()
                 }
                 else -> {
-                    val days = event.message.contentRaw.toLong()
-                    val date = OffsetDateTime.now().plusDays(days)
+                    val action = event.message.contentRaw.toByte()
                     val guildWarnPoints = guildWarnPointsRepository.findById(GuildWarnPoints.GuildWarnPointsId(targetMember.user.idLong, targetMember.guild.idLong)).orElse(GuildWarnPoints(targetMember.user.idLong, targetMember.guild.idLong))
-                    val userWarnPoints = UserWarnPoints(points = points, creatorId = user.idLong, reason = reason, expireDate = date)
+                    val userWarnPoints = UserWarnPoints(points = points, creatorId = user.idLong, reason = reason, expireDate = expireDate)
                     guildWarnPoints.points.add(userWarnPoints)
                     guildWarnPointsRepository.save(guildWarnPoints)
                     performChecks(guildWarnPoints, guildPointsSettings, targetMember)
                     val moderator = targetMember.guild.getMember(user)
-                    logAddPoints(moderator, targetMember, reason!!, points!!, userWarnPoints.id, date)
+                    logAddPoints(moderator, targetMember, reason!!, points!!, userWarnPoints.id, expireDate!!, action)
                     informUserAndModerator(moderator, targetMember, reason!!, guildWarnPoints.filterExpiredPoints().size, event.privateChannel)
+                    val guild = targetMember.guild
+                    when (action) {
+                        1.toByte() -> guild.controller.addSingleRoleToMember(targetMember, muteRole.getMuteRole(guild)).reason(reason).queue()
+                        2.toByte() -> guild.controller.kick(targetMember).reason(reason).queue()
+                    }
                     super.destroy()
                 }
             }
@@ -143,7 +155,7 @@ class AddWarnPoints(
         }
     }
 
-    private fun logAddPoints(moderator: Member, toInform: Member, reason: String, amount: Int, id: UUID, dateTime: OffsetDateTime) {
+    private fun logAddPoints(moderator: Member, toInform: Member, reason: String, amount: Int, id: UUID, dateTime: OffsetDateTime, action: Byte) {
         val guildLogger = toInform.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
         val logToChannel = guildLogger?.logger
         if (logToChannel != null) {
@@ -156,6 +168,10 @@ class AddWarnPoints(
                     .addField("Amount", amount.toString(), false)
                     .addField("Reason", reason, false)
                     .addField("Expires", dateTime.format(JDALibHelper.messageTimeFormat), false)
+            when (action) {
+                1.toByte() -> logEmbed.addField("Punishment", "Mute", false)
+                2.toByte() -> logEmbed.addField("Punishment", "Kick", false)
+            }
 
             logToChannel.log(logEmbed, toInform.user, toInform.guild, null, GuildLogger.LogTypeAction.MODERATOR)
         }
@@ -185,7 +201,7 @@ class AddWarnPoints(
 
     private fun onSuccessfulInformUser(privateChannel: PrivateChannel, toInform: Member, informationMessage: MessageEmbed) {
         val creatorMessage = MessageBuilder()
-                .append("Informed ").append(toInform.toString()).append(".\n\nThe following message was sent to the user:")
+                .append("Added warn points to ").append(toInform.toString()).append(".\n\nThe following message was sent to the user:")
                 .setEmbed(informationMessage)
                 .build()
         privateChannel.sendMessage(creatorMessage).queue()
@@ -193,7 +209,7 @@ class AddWarnPoints(
 
     private fun onFailToInformUser(privateChannel: PrivateChannel, toInform: Member, throwable: Throwable) {
         val creatorMessage = MessageBuilder()
-                .append("Informed ").append(toInform.toString()).append(".\n\nWas unable to send a DM to the user please inform the user manually.\n")
+                .append("Added warn points to ").append(toInform.toString()).append(".\n\nWas unable to send a DM to the user please inform the user manually.\n")
                 .append(throwable.javaClass.simpleName).append(": ").append(throwable.message)
                 .build()
         privateChannel.sendMessage(creatorMessage).queue()
