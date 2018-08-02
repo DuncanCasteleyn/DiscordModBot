@@ -21,8 +21,8 @@ import javax.persistence.Id
 import javax.persistence.Table
 
 @Entity
-@Table(name="blocked_users")
+@Table(name = "blocked_users")
 data class BlockedUser(
         @Id
-        val userId : Long? = null
+        val userId: Long? = null
 )

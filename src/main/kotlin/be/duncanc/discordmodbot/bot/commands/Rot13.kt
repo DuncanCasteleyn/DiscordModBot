@@ -45,13 +45,13 @@ class Rot13(
             throw IllegalArgumentException("This command can only be used in a server/guild")
         }
         val split = arguments?.split('|') ?: throw IllegalArgumentException("Arguments are required for this command")
-        if(split.size != 2) {
+        if (split.size != 2) {
             throw IllegalArgumentException("Exactly one \'|\' is required. Example: Re:Zero anime | Some Re:Zero anime spoiler")
         }
         val spoilerSource = split[0].trim()
         val spoilerContent = split[1].trim()
         val embedBuilder = EmbedBuilder()
-        embedBuilder.setAuthor(JDALibHelper.getEffectiveNameAndUsername(event.member), "https://discordapp.com/users/${event.author.id}" ,event.author.effectiveAvatarUrl)
+        embedBuilder.setAuthor(JDALibHelper.getEffectiveNameAndUsername(event.member), "https://discordapp.com/users/${event.author.id}", event.author.effectiveAvatarUrl)
         embedBuilder.setTitle("$EMBED_TITLE\n$spoilerSource")
         embedBuilder.setDescription(JDALibHelper.rot13(spoilerContent))
         embedBuilder.setFooter("To decrypt the message simply react on it", null)

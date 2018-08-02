@@ -4,9 +4,9 @@ group: stable
 
 matrix:
   include:
-    - os: linux
-      jdk: oraclejdk9
-#    - os: osx
-#      osx_image: xcode9.1
+  - os: linux
+    jdk: oraclejdk9
+  #    - os: osx
+  #      osx_image: xcode9.1
   allow_failures:
   - os: osx

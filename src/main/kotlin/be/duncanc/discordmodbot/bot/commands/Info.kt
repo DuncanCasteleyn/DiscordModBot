@@ -29,7 +29,7 @@ import java.awt.Color
  * @since 1.0.0
  */
 @Component
-class Info (
+class Info(
         userBlock: UserBlock
 ) : CommandModule(
         arrayOf("Info"),

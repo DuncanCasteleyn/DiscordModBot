@@ -33,7 +33,7 @@ class UserBlock(
         }
     }
 
-    fun isBlocked(userId: Long) : Boolean {
+    fun isBlocked(userId: Long): Boolean {
         return blockedUserRepository.existsById(userId)
     }
 }

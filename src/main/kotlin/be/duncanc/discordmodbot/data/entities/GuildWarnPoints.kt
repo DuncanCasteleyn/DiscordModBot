@@ -19,7 +19,6 @@ package be.duncanc.discordmodbot.data.entities
 import java.io.Serializable
 import java.time.OffsetDateTime
 import javax.persistence.*
-import javax.validation.Valid
 
 @Entity
 @IdClass(GuildWarnPoints.GuildWarnPointsId::class)
