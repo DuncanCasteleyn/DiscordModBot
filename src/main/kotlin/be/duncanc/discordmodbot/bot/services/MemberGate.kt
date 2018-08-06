@@ -19,7 +19,8 @@ package be.duncanc.discordmodbot.bot.services
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.sequences.Sequence
 import be.duncanc.discordmodbot.bot.utils.JDALibHelper
-import net.dv8tion.jda.core.EmbedBuilder
+import be.duncanc.discordmodbot.data.entities.GuildMemberGate
+import be.duncanc.discordmodbot.data.repositories.GuildMemberGateRepository
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.*
@@ -28,18 +29,12 @@ import net.dv8tion.jda.core.events.guild.member.GuildMemberLeaveEvent
 import net.dv8tion.jda.core.events.guild.member.GuildMemberRoleAddEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import org.apache.commons.collections4.map.LinkedMap
-import org.json.JSONArray
-import org.json.JSONException
-import org.json.JSONObject
 import org.slf4j.LoggerFactory
-import java.awt.Color
-import java.io.IOException
-import java.nio.charset.Charset
-import java.nio.file.Files
+import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
 import java.nio.file.Paths
 import java.util.*
 import java.util.concurrent.TimeUnit
-import java.util.function.Consumer
 import kotlin.collections.ArrayList
 
 
@@ -48,90 +43,42 @@ import kotlin.collections.ArrayList
  * <p>
  * Welcomes users when the join, get accepted and makes them answer questions before they get accepted.
  */
-open class MemberGate
+@Component
+@Transactional(readOnly = true)
+class MemberGate
 internal constructor(
-        private val guildId: Long,
-        private val memberRole: Long,
-        private val rulesTextChannel: Long,
-        private val gateTextChannel: Long,
-        private val welcomeTextChannel: Long,
-        private val welcomeMessages: Array<WelcomeMessage>
+        private val guildMemberGateRepository: GuildMemberGateRepository
 ) : CommandModule(
-        ALIASES,
+        arrayOf("gateConfig", "join", "review"),
         null,
         null,
         ignoreWhitelist = true
 ) {
-    companion object {
-        private val ALIASES = arrayOf("gateConfig", "join", "review")
-        private val FILE_PATH = Paths.get("MemberGate.json")
-        private val LOG = LoggerFactory.getLogger(MemberGate::class.java)
-    }
-
-    internal val questions: ArrayList<Question>
     private val needManualApproval = LinkedMap<Long, String?>()
     private val informUserMessageIds = HashMap<Long, Long>()
-
-    /**
-     * Loads up the existing questions
-     */
-    init {
-        var tempQuestions = ArrayList<Question>()
-        if (FILE_PATH.toFile().exists()) {
-            try {
-                val stringBuilder = StringBuilder()
-                Files.readAllLines(FILE_PATH).map { stringBuilder.append(it) }
-                val jsonObject = JSONObject(stringBuilder.toString())
-                jsonObject.getJSONArray("questions").forEach {
-                    if (it is JSONObject) {
-                        val question = Question(it.getString("question"))
-                        it.getJSONArray("keywordsList").forEach {
-                            if (it is JSONArray) {
-                                val stringArray: ArrayList<String> = ArrayList()
-                                it.mapTo(stringArray) { it.toString() }
-                                question.addKeywords(stringArray)
-                            } else {
-                                throw JSONException("JSON file contains unexpected object in JSONArray \"keywordsList\".")
-                            }
-                        }
-                        tempQuestions.add(question)
-                    } else {
-                        throw JSONException("JSON file contains unexpected object in JSONArray \"questions\".")
-                    }
-                }
-            } catch (ioE: IOException) {
-                tempQuestions = ArrayList()
-                LOG.error("Initialization failed", ioE)
-            } catch (jE: JSONException) {
-                tempQuestions = ArrayList()
-                LOG.error("Initialization failed", jE)
-            }
-        }
-        questions = tempQuestions
-    }
 
     /**
      * Check if a user was added to the approved role.
      */
     override fun onGuildMemberRoleAdd(event: GuildMemberRoleAddEvent) {
         val guild = event.guild
-        if (guild.idLong != guildId || event.user.isBot || guild.getRoleById(memberRole) !in event.roles) {
+        val guildMemberGate = guildMemberGateRepository.findById(guild.idLong)
+        if (!guildMemberGate.isPresent || event.user.isBot || guild.getRoleById(guildMemberGate.get().memberRole!!) !in event.roles) {
             return
         }
-
+        val welcomeMessages = guildMemberGate.get().welcomeMessages.toTypedArray()
         val welcomeMessage = welcomeMessages[Random().nextInt(welcomeMessages.size)].getWelcomeMessage(event.user)
-        guild.getTextChannelById(welcomeTextChannel).sendMessage(welcomeMessage).queue()
+        guild.getTextChannelById(guildMemberGate.get().welcomeTextChannel!!).sendMessage(welcomeMessage).queue()
         synchronized(needManualApproval) {
             needManualApproval.remove(event.user.idLong)
         }
-        cleanMessagesFromUser(guild, event.user)
+        cleanMessagesFromUser(event.guild.getTextChannelById(guildMemberGate.get().gateTextChannel!!), event.user)
     }
 
     /**
      * Cleans the messages from the users and messages containing mentions to the users from the member gate channel.
      */
-    private fun cleanMessagesFromUser(guild: Guild, user: User) {
-        val gateTextChannel: TextChannel = guild.getTextChannelById(this.gateTextChannel)
+    private fun cleanMessagesFromUser(gateTextChannel: TextChannel, user: User) {
         val userMessages: ArrayList<Message> = ArrayList()
         gateTextChannel.iterableHistory.map {
             if (it.author == user || it.contentRaw.contains(user.id)) {
@@ -145,19 +92,21 @@ internal constructor(
      * Welcomes a new member that joins and informs them about the member gate system.
      */
     override fun onGuildMemberJoin(event: GuildMemberJoinEvent) {
-        if (event.guild.idLong != guildId || event.user.isBot) {
+        val guildMemberGate = guildMemberGateRepository.findById(event.guild.idLong)
+        if (!guildMemberGate.isPresent || event.user.isBot) {
             return
         }
+        val gateTextChannel = event.guild.getTextChannelById( guildMemberGate.get().gateTextChannel!!)
         if (event.guild.verificationLevel == Guild.VerificationLevel.VERY_HIGH) {
-            event.jda.getTextChannelById(gateTextChannel).sendMessage("Welcome " + event.member.asMention + ", this server uses phone verification.\n" +
+            gateTextChannel.sendMessage("Welcome " + event.member.asMention + ", this server uses phone verification.\n" +
                     "If you have verified your phone and are able to chat in this channel, you can simply type ``!join`` to join the server.\n" +
                     "If you can't use phone verification, send " + event.jda.selfUser.asMention + " a dm and type ``!nomobile``. You will be granted a special role! After that, return to this channel and type ``!join`` and follow the instructions.\n" +
                     "\n" +
-                    "**Warning: Users that are not mobile verified will be punished much more severely and faster when breaking the rules or when suspected of bypassing a ban.**").queue({ message -> message.delete().queueAfter(5, TimeUnit.MINUTES) })
+                    "**Warning: Users that are not mobile verified will be punished much more severely and faster when breaking the rules or when suspected of bypassing a ban.**").queue { message -> message.delete().queueAfter(5, TimeUnit.MINUTES) }
         } else {
-            event.jda.getTextChannelById(gateTextChannel).sendMessage("Welcome " + event.member.asMention + ", this server requires you to read the " + event.guild.getTextChannelById(rulesTextChannel).asMention + " and answer a question regarding those before you gain full access.\n\n" +
+            gateTextChannel.sendMessage("Welcome " + event.member.asMention + ", this server requires you to read the " + event.guild.getTextChannelById(guildMemberGate.get().rulesTextChannel!!).asMention + " and answer a question regarding those before you gain full access.\n\n" +
                     "If you have read the rules and are ready to answer the question, type ``!" + super.aliases[1] + "`` and follow the instructions from the bot.\n\n" +
-                    "Please read the pinned message for more information.").queue({ message -> message.delete().queueAfter(5, TimeUnit.MINUTES) })
+                    "Please read the pinned message for more information.").queue { message -> message.delete().queueAfter(5, TimeUnit.MINUTES) }
         }
     }
 
@@ -165,7 +114,8 @@ internal constructor(
      * Automatically handles unapproved users that leave the server.
      */
     override fun onGuildMemberLeave(event: GuildMemberLeaveEvent) {
-        if (event.member.roles.contains(event.guild.getRoleById(memberRole))) {
+        val guildMemberGate = guildMemberGateRepository.findById(event.guild.idLong)
+        if (!guildMemberGate.isPresent ||  event.member.roles.contains(event.guild.getRoleById(guildMemberGate.get().memberRole!!))) {
             return
         }
         val userId = event.user.idLong
@@ -177,39 +127,33 @@ internal constructor(
         synchronized(informUserMessageIds) {
             val messageToRemove = informUserMessageIds.remove(userId)
             if (messageToRemove != null) {
-                event.jda.getTextChannelById(gateTextChannel).getMessageById(messageToRemove).queue { it.delete().queue() }
+                event.jda.getTextChannelById(guildMemberGate.get().gateTextChannel!!).getMessageById(messageToRemove).queue { it.delete().queue() }
             }
         }
-        cleanMessagesFromUser(event.guild, event.user)
+        cleanMessagesFromUser(event.guild.getTextChannelById(guildMemberGate.get().gateTextChannel!!), event.user)
 
     }
 
-    /**
-     * Do something with the event, command and arguments.
-     *
-     * @param event A MessageReceivedEvent that came with the command
-     * @param command The command alias that was used to trigger this commandExec
-     * @param arguments The arguments that where entered after the command alias
-     */
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-        if (event.author.isBot) {
+        val guildMemberGate = guildMemberGateRepository.findById(event.guild.idLong)
+        if (!guildMemberGate.isPresent || event.author.isBot) { //todo When no settings are present the configuration sequence should be reachable
             return
         }
 
         when (command.toLowerCase()) {
             super.aliases[0].toLowerCase() -> {
-                if (event.jda.getGuildById(guildId).getMember(event.author).hasPermission(Permission.MANAGE_ROLES)) {
-                    event.jda.addEventListener(ConfigureSequence(event.author, event.channel))
+                if (event.guild.getMember(event.author).hasPermission(Permission.MANAGE_ROLES)) {
+                    event.jda.addEventListener(ConfigureSequence(event.author, event.channel, guildMemberGate.get()))
                 }
             }
 
             super.aliases[1].toLowerCase() -> {
-                if (event.jda.getGuildById(guildId).getMember(event.author).roles.any { it.idLong == memberRole }) {
+                if (event.guild.getMember(event.author).roles.any { it.idLong == guildMemberGate.get().memberRole!! }) {
                     return
                 }
 
-                if (event.guild.verificationLevel == Guild.VerificationLevel.VERY_HIGH && event.jda.getGuildById(guildId).getMember(event.author).roles.stream().noneMatch { it.name.toLowerCase() == "no mobile verification" }) {
-                    accept(event.jda.getGuildById(guildId).getMember(event.author))
+                if (event.guild.verificationLevel == Guild.VerificationLevel.VERY_HIGH && event.guild.getMember(event.author).roles.stream().noneMatch { it.name.toLowerCase() == "no mobile verification" }) {
+                    accept(event.guild.getMember(event.author))
                     return
                 }
 
@@ -219,12 +163,12 @@ internal constructor(
                         return
                     }
                 }
-
+                val questions = guildMemberGate.get().questions.toList()
                 event.jda.addEventListener(QuestionSequence(event.author, event.channel, questions[Random().nextInt(questions.size)]))
             }
             super.aliases[2].toLowerCase() -> {
-                if (event.jda.getGuildById(guildId).getMember(event.author).hasPermission(Permission.MANAGE_ROLES)) {
-                    event.jda.addEventListener(ReviewSequence(event.author, event.channel, arguments!!.toLong()))
+                if (event.guild.getMember(event.author).hasPermission(Permission.MANAGE_ROLES)) {
+                    event.jda.addEventListener(ReviewSequence(event.author, event.channel, arguments!!.toLong(), guildMemberGate.get()))
                 }
             }
         }
@@ -235,15 +179,14 @@ internal constructor(
      */
     private fun accept(member: Member) {
         val guild = member.guild
-        guild.controller.addRolesToMember(member, guild.getRoleById(memberRole)).queue()
+        val guildMemberGate = guildMemberGateRepository.findById(guild.idLong).orElseThrow{ IllegalArgumentException("The guild of which this member originates has no member gate configuration") }
+        guild.controller.addSingleRoleToMember(member, guild.getRoleById(guildMemberGate.memberRole!!)).queue()
     }
 
     /**
      * Starts the manual review procedure.
      */
-    private fun failedQuestion(member: Member, question: String, answer: String) {
-        val guild = member.guild
-        val textChannel = guild.getTextChannelById(gateTextChannel)
+    private fun failedQuestion(member: Member, question: String, answer: String, textChannel: TextChannel) {
         textChannel.sendMessage(member.asMention + " Sorry, it appears the answer provided is incorrect. Please wait while a moderator manually checks your answer, or asks another question.\n\n" +
                 "A moderator can use ``!" + super.aliases[2] + " " + member.user.idLong + "``").queue {
             synchronized(informUserMessageIds) {
@@ -257,7 +200,7 @@ internal constructor(
                 synchronized(informUserMessageIds) {
                     val messageToRemove = informUserMessageIds.remove(userId)
                     if (messageToRemove != null) {
-                        member.jda.getTextChannelById(gateTextChannel).getMessageById(messageToRemove).queue { it.delete().queue() }
+                        textChannel.getMessageById(messageToRemove).queue { it.delete().queue() }
                     }
                 }
             }
@@ -266,38 +209,9 @@ internal constructor(
     }
 
     /**
-     * Saves all the questions and keywords to a JSON file.
-     */
-    internal fun saveQuestions() {
-        val jsonObject = JSONObject()
-        val questionsJsonList: ArrayList<JSONObject> = ArrayList()
-        questions.forEach(Consumer { questionsJsonList.add(it.toJsonObject()) })
-        jsonObject.put("questions", questionsJsonList)
-        Files.write(FILE_PATH, Collections.singletonList(jsonObject.toString()), Charset.defaultCharset())
-    }
-
-    /**
-     * Immutable class containing a welcome message and url for an image to be used in an embed.
-     */
-    internal class WelcomeMessage(private val imageUrl: String, private val message: String) {
-
-        fun getWelcomeMessage(user: User): Message {
-            val joinEmbed = EmbedBuilder()
-                    .setDescription(this.message)
-                    .setImage(imageUrl)
-                    .setColor(Color.GREEN)
-                    .build()
-            return MessageBuilder()
-                    .append(user.asMention)
-                    .setEmbed(joinEmbed)
-                    .build()
-        }
-    }
-
-    /**
      * This sequences questions a user.
      */
-    private inner class QuestionSequence internal constructor(user: User, channel: MessageChannel, private val question: Question) : Sequence(user, channel, informUser = false) {
+    private inner class QuestionSequence internal constructor(user: User, channel: MessageChannel, private val question: GuildMemberGate.Question) : Sequence(user, channel, informUser = false) {
         private var sequenceNumber: Byte = 0
 
         /**
@@ -353,11 +267,11 @@ internal constructor(
                 }
                 else -> {
                     destroy()
-                    val member = event.jda.getGuildById(guildId).getMemberById(user.idLong)
+                    val member = event.guild.getMemberById(user.idLong)
                     if (question.checkAnswer(event)) {
                         accept(member)
                     } else {
-                        failedQuestion(member = member, question = question.question, answer = event.message.contentDisplay)
+                        failedQuestion(member = member, question = question.question, answer = event.message.contentDisplay, textChannel = event.textChannel)
                     }
                 }
             }
@@ -367,8 +281,11 @@ internal constructor(
     /**
      * This sequences allows to configure questions.
      */
-    private inner class ConfigureSequence internal constructor(user: User, channel: MessageChannel) : Sequence(user, channel) {
+    @Transactional
+    private inner class ConfigureSequence internal constructor(user: User, channel: MessageChannel, val guildMemberGate: GuildMemberGate) : Sequence(user, channel) {
         private var sequenceNumber: Byte = 0
+        @Suppress("LeakingThis")
+        private val questions = guildMemberGate.questions.toList()
 
         /**
          * Asks first question
@@ -418,19 +335,20 @@ internal constructor(
                     if (inputQuestionList.size < 2) {
                         super.channel.sendMessage("Syntax mismatch.").queue { super.addMessageToCleaner(it) }
                     }
-                    val question = Question(inputQuestionList[0])
+                    val question = GuildMemberGate.Question(inputQuestionList[0])
                     for (i in 1 until inputQuestionList.size) {
                         question.addKeywords(ArrayList(inputQuestionList[i].split(',')))
                     }
-                    questions.add(question)
-                    saveQuestions()
+                    guildMemberGate.questions.add(question)
+                    guildMemberGateRepository.save(guildMemberGate)
                     super.destroy()
                     super.channel.sendMessage(super.user.asMention + " Question and keywords added.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                 }
                 else -> {
                     val number: Int = event.message.contentDisplay.toInt()
-                    val removedQuestion: Question = questions.removeAt(number)
-                    saveQuestions()
+                    val removedQuestion: GuildMemberGate.Question = questions[number]
+                    guildMemberGate.questions.remove(removedQuestion)
+                    guildMemberGateRepository.save(guildMemberGate)
                     destroy()
                     channel.sendMessage("The question \"" + removedQuestion.question + "\" was removed.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                 }
@@ -439,39 +357,9 @@ internal constructor(
     }
 
     /**
-     * Container class containing questions and the keyword checks.
-     */
-    internal inner class Question internal constructor(internal val question: String) {
-        private val keywordList: ArrayList<ArrayList<String>> = ArrayList()
-
-        /**
-         * @param event the event containing the message that came from the sequences to answer the question.
-         * @return true when the answer is correct, false otherwise.
-         */
-        internal fun checkAnswer(event: MessageReceivedEvent): Boolean = keywordList.all { it.any { it.toLowerCase() in event.message.contentDisplay.toLowerCase() } }
-
-        /**
-         * Adds more keywords to a question.
-         */
-        internal fun addKeywords(keywords: ArrayList<String>) {
-            keywordList.add(keywords)
-        }
-
-        /**
-         * Converts this object into a JSONObject.
-         */
-        internal fun toJsonObject(): JSONObject {
-            val jsonObject = JSONObject()
-            jsonObject.put("question", question)
-            jsonObject.put("keywordsList", keywordList)
-            return jsonObject
-        }
-    }
-
-    /**
      * Allows answers to be manually reviewed, if keyword checking fails.
      */
-    private inner class ReviewSequence internal constructor(user: User, channel: MessageChannel, private val userId: Long) : Sequence(user, channel) {
+    private inner class ReviewSequence internal constructor(user: User, channel: MessageChannel, private val userId: Long, val guildMemberGate: GuildMemberGate) : Sequence(user, channel) {
 
         /**
          * Asks the first question and checks if the user is in the review list.
@@ -516,7 +404,7 @@ internal constructor(
                         synchronized(informUserMessageIds) {
                             val messageToRemove = informUserMessageIds.remove(userId)
                             if (messageToRemove != null) {
-                                event.jda.getTextChannelById(gateTextChannel).getMessageById(messageToRemove).queue { it.delete().queue() }
+                                event.jda.getTextChannelById(guildMemberGate.gateTextChannel!!).getMessageById(messageToRemove).queue { it.delete().queue() }
                             }
                         }
                         destroy()
@@ -532,7 +420,7 @@ internal constructor(
                         synchronized(informUserMessageIds) {
                             val messageToRemove = informUserMessageIds.remove(userId)
                             if (messageToRemove != null) {
-                                event.jda.getTextChannelById(gateTextChannel).getMessageById(messageToRemove).queue { it.delete().queue() }
+                                event.jda.getTextChannelById(guildMemberGate.gateTextChannel!!).getMessageById(messageToRemove).queue { it.delete().queue() }
                             }
                         }
                         destroy()
