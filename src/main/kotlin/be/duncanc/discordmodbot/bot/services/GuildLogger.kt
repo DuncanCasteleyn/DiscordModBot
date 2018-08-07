@@ -363,9 +363,9 @@ class GuildLogger
         guildLoggerExecutor.execute {
             val logEmbed = EmbedBuilder()
                     .setColor(Color.RED)
-                    .addField("User", JDALibHelper.getEffectiveNameAndUsername(member), true)
                     .setTitle("User kicked")
                     .addField("UUID", UUID.randomUUID().toString(), false)
+                    .addField("User", JDALibHelper.getEffectiveNameAndUsername(member), true)
                     .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(moderator), true)
             if (reason != null) {
                 logEmbed.addField("Reason", reason, false)
