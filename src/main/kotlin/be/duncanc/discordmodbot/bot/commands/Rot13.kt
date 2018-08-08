@@ -52,8 +52,8 @@ class Rot13(
         val spoilerContent = split[1].trim()
         val embedBuilder = EmbedBuilder()
         embedBuilder.setAuthor(JDALibHelper.getEffectiveNameAndUsername(event.member), "https://discordapp.com/users/${event.author.id}", event.author.effectiveAvatarUrl)
-        embedBuilder.setTitle("$EMBED_TITLE\n$spoilerSource")
-        embedBuilder.setDescription(JDALibHelper.rot13(spoilerContent))
+        embedBuilder.setTitle("$EMBED_TITLE\n***$spoilerSource***")
+        embedBuilder.setDescription("``${JDALibHelper.rot13(spoilerContent)}``")
         embedBuilder.setFooter("To decrypt the message simply react on it", null)
         event.textChannel.sendMessage(embedBuilder.build()).queue { it.addReaction("\uD83D\uDDB1").queue() }
     }
