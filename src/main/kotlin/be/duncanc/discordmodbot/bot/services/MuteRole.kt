@@ -27,9 +27,11 @@ import net.dv8tion.jda.core.events.role.RoleDeleteEvent
 import net.dv8tion.jda.core.exceptions.PermissionException
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
 import java.util.concurrent.TimeUnit
 
 @Component
+@Transactional
 class MuteRole
 @Autowired constructor(
         private val muteRolesRepository: MuteRolesRepository
@@ -62,6 +64,7 @@ class MuteRole
         muteRolesRepository.deleteByRoleIdAndGuildId(event.role.idLong, event.guild.idLong)
     }
 
+    @Transactional(readOnly = true)
     fun getMuteRole(guild: Guild): Role {
         val roleId = muteRolesRepository.findById(guild.idLong).orElseThrow { throw IllegalStateException("This guild does not have a mute role set up.") }.roleId!!
 
