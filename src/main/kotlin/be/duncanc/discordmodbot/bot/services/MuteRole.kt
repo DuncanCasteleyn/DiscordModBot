@@ -59,7 +59,7 @@ class MuteRole
     }
 
     override fun onRoleDelete(event: RoleDeleteEvent) {
-        muteRolesRepository.delete(MuteRole(event.guild.idLong, event.role.idLong))
+        muteRolesRepository.deleteByRoleIdAndGuildId(event.role.idLong, event.guild.idLong)
     }
 
     fun getMuteRole(guild: Guild): Role {
