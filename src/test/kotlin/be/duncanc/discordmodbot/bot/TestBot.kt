@@ -55,7 +55,7 @@ class TestBot @Autowired constructor(
                     .setToken(configObject.getString("Dev"))
                     .addEventListener(*applicationContext.getBeansOfType(ListenerAdapter::class.java).values.toTypedArray())
 
-            devJDA = devJDABuilder.buildAsync()
+            devJDA = devJDABuilder.build()
         } catch (e: Exception) {
             log.error("An error occurred while starting the test bot", e)
         }
