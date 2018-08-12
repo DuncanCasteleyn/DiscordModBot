@@ -271,7 +271,7 @@ internal constructor(
                     if (question.checkAnswer(event)) {
                         accept(member)
                     } else {
-                        failedQuestion(member = member, question = question.question, answer = event.message.contentDisplay, textChannel = event.textChannel)
+                        failedQuestion(member = member, question = question.question!!, answer = event.message.contentDisplay, textChannel = event.textChannel)
                     }
                 }
             }
@@ -335,9 +335,9 @@ internal constructor(
                     if (inputQuestionList.size < 2) {
                         super.channel.sendMessage("Syntax mismatch.").queue { super.addMessageToCleaner(it) }
                     }
-                    val question = GuildMemberGate.Question(inputQuestionList[0])
+                    val question = GuildMemberGate.Question(question = inputQuestionList[0])
                     for (i in 1 until inputQuestionList.size) {
-                        question.addKeywords(ArrayList(inputQuestionList[i].split(',')))
+                        question.addKeywords(inputQuestionList[i])
                     }
                     guildMemberGate.questions.add(question)
                     guildMemberGateRepository.save(guildMemberGate)

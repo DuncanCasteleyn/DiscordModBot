@@ -36,9 +36,9 @@ class GuildMemberGate(
         val gateTextChannel: Long? = null,
         @Column(nullable = false)
         val welcomeTextChannel: Long? = null,
-        @ElementCollection(targetClass = WelcomeMessage::class)
+        @ElementCollection
         val welcomeMessages: MutableSet<WelcomeMessage> = HashSet(),
-        @ElementCollection(targetClass = Question::class)
+        @OneToMany(orphanRemoval = true, cascade = [CascadeType.ALL])
         val questions: MutableSet<Question> = HashSet()
 
 ) {
@@ -47,7 +47,7 @@ class GuildMemberGate(
      * Immutable class containing a welcome message and url for an image to be used in an embed.
      */
     @Embeddable
-    data class WelcomeMessage(private val imageUrl: String, private val message: String) {
+    data class WelcomeMessage(private var imageUrl: String, private var message: String) {
 
         fun getWelcomeMessage(user: User): Message {
             val joinEmbed = EmbedBuilder()
@@ -65,20 +65,29 @@ class GuildMemberGate(
     /**
      * Container class containing questions and the keyword checks.
      */
-    @Embeddable
-    class Question internal constructor(val question: String) {
-        private val keywordList: ArrayList<ArrayList<String>> = ArrayList()
+    @Entity
+    class Question internal constructor(
+            @Id
+            @GeneratedValue(generator = "question_id_seq")
+            @SequenceGenerator(name = "question_id_seq", sequenceName = "question_seq", allocationSize = 1)
+            val id: Long? = null,
+            @Column(nullable = false)
+            val question: String? = null,
+            @ElementCollection
+            private val keywordList: MutableSet<String> = HashSet()
+    ) {
 
         /**
          * @param event the event containing the message that came from the sequences to answer the question.
          * @return true when the answer is correct, false otherwise.
          */
-        internal fun checkAnswer(event: MessageReceivedEvent): Boolean = keywordList.all { it.any { it.toLowerCase() in event.message.contentDisplay.toLowerCase() } }
+        internal fun checkAnswer(event: MessageReceivedEvent): Boolean = keywordList.all { string -> string.split(',').any { it.toLowerCase() in event.message.contentDisplay.toLowerCase() } }
 
         /**
          * Adds more keywords to a question.
          */
-        internal fun addKeywords(keywords: ArrayList<String>) {
+        internal fun addKeywords(keywords: String) {
+            keywords.replace(" ", "")
             keywordList.add(keywords)
         }
     }
