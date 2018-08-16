@@ -312,7 +312,7 @@ internal constructor(
                             sequenceNumber = 1
                             val addAQuestionMessage: MessageBuilder = MessageBuilder()
                                     .append("Please send the question and keywordlists in the following format:\n")
-                                    .appendCodeBlock("Question?\nKeyword list (each keyword separated by ',' **without spaces**\nKeyword list\n...", "text")
+                                    .appendCodeBlock("Question?\nKeyword list (each keyword separated by ',' \nKeyword list\n...", "text")
                                     .append("Example with explanations:\n")
                                     .appendCodeBlock("Why did you answer this question? <- This question will be print exactly the same way as you gave it make sure it's right\n" +
                                             "I <- Meaning at least I must be present in the answer\n" +
