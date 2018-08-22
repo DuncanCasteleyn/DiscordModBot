@@ -90,8 +90,8 @@ class RunBots
                     .buildAsync()*/
             //TEMP EVENT BOT ENDS HERE
 
-            reZeroBot = reZeroJDABuilder.buildAsync()
-            fairyTailBot = fairyTailJDABuilder.buildAsync()
+            reZeroBot = reZeroJDABuilder.build()
+            fairyTailBot = fairyTailJDABuilder.build()
         } catch (e: Exception) {
             LOG.error("Exception while booting the bots", e)
         }

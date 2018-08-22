@@ -31,7 +31,7 @@ class IAmRolesService
 ) {
 
     fun getAllCategoriesForGuild(guildId: Long): List<IAmRolesCategory> {
-        return iAmRolesRepository.findByGuildId(guildId)
+        return iAmRolesRepository.findByGuildId(guildId).toList()
     }
 
 
