@@ -46,7 +46,12 @@ class GuildMemberGate(
      * Immutable class containing a welcome message and url for an image to be used in an embed.
      */
     @Embeddable
-    data class WelcomeMessage(private var imageUrl: String, private var message: String) {
+    data class WelcomeMessage(
+            @Column(nullable = false)
+            private var imageUrl: String? = null,
+            @Column(nullable = false)
+            private var message: String? = null
+    ) {
 
         fun getWelcomeMessage(user: User): Message {
             val joinEmbed = EmbedBuilder()
