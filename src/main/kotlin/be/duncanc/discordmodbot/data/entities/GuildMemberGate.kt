@@ -20,7 +20,6 @@ import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.entities.Message
 import net.dv8tion.jda.core.entities.User
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import java.awt.Color
 import javax.persistence.*
 
@@ -36,11 +35,10 @@ class GuildMemberGate(
         val gateTextChannel: Long? = null,
         @Column(nullable = false)
         val welcomeTextChannel: Long? = null,
-        @ElementCollection
+        @ElementCollection(targetClass = WelcomeMessage::class)
         val welcomeMessages: MutableSet<WelcomeMessage> = HashSet(),
-        @OneToMany(orphanRemoval = true, cascade = [CascadeType.ALL])
-        val questions: MutableSet<Question> = HashSet()
-
+        @ElementCollection
+        val questions: MutableSet<String> = HashSet()
 ) {
 
     /**
@@ -60,48 +58,5 @@ class GuildMemberGate(
                     .setEmbed(joinEmbed)
                     .build()
         }
-    }
-
-    /**
-     * Container class containing questions and the keyword checks.
-     */
-    @Entity
-    class Question internal constructor(
-            @Id
-            @GeneratedValue(generator = "question_id_seq")
-            @SequenceGenerator(name = "question_id_seq", sequenceName = "question_seq", allocationSize = 1)
-            val id: Long? = null,
-            @Column(nullable = false)
-            val question: String? = null,
-            @ElementCollection
-            private val keywordList: MutableSet<String> = HashSet()
-    ) {
-
-        /**
-         * @param event the event containing the message that came from the sequences to answer the question.
-         * @return true when the answer is correct, false otherwise.
-         */
-        internal fun checkAnswer(event: MessageReceivedEvent): Boolean = keywordList.all { string -> string.split(',').any { it.toLowerCase() in event.message.contentDisplay.toLowerCase() } }
-
-        /**
-         * Adds more keywords to a question.
-         */
-        internal fun addKeywords(keywords: String) {
-            keywords.replace(" ", "")
-            keywordList.add(keywords)
-        }
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as GuildMemberGate
-
-        return guildId == other.guildId
-    }
-
-    override fun hashCode(): Int {
-        return guildId?.hashCode() ?: 0
     }
 }
