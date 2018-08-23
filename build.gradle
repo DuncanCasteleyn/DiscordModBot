@@ -16,7 +16,7 @@
 
 buildscript {
     ext {
-        kotlinVersion = '1.2.60'
+        kotlinVersion = '1.2.61'
         springBootVersion = '2.0.3.RELEASE'
     }
 
@@ -54,7 +54,7 @@ dependencies {
     compile("org.jetbrains.kotlin:kotlin-reflect")
     testCompile('org.springframework.boot:spring-boot-starter-test')
     testCompile('org.springframework.security:spring-security-test')
-    compile('net.dv8tion:JDA:3.7.1_392')
+    compile('net.dv8tion:JDA:3.7.1_397')
     compile('org.apache.commons:commons-lang3:3.5')
     compile('javax.xml.bind:jaxb-api:2.3.0')
 }
