@@ -82,7 +82,7 @@ class Ban : CommandModule(
                         .append("If you'd like to appeal the ban, please use this form: https://goo.gl/forms/SpWg49gaQlMt4lSG3")
                 //todo make this configurable per guild.
             }
-            val userKickNotification = EmbedBuilder()
+            val userBanNotification = EmbedBuilder()
                     .setColor(Color.red)
                     .setAuthor(JDALibHelper.getEffectiveNameAndUsername(event.member), null, event.author.effectiveAvatarUrl)
                     .setTitle(event.guild.name + ": You have been banned by " + JDALibHelper.getEffectiveNameAndUsername(event.member), null)
@@ -91,7 +91,7 @@ class Ban : CommandModule(
 
             toBan.user.openPrivateChannel().queue(
                     { privateChannelUserToMute ->
-                        privateChannelUserToMute.sendMessage(userKickNotification).queue(
+                        privateChannelUserToMute.sendMessage(userBanNotification).queue(
                                 { message -> onSuccessfulInformUser(event, reason, privateChannel, toBan, message, banRestAction) }
                         ) { throwable -> onFailToInformUser(event, reason, privateChannel, toBan, throwable, banRestAction) }
                     }
