@@ -56,6 +56,7 @@ dependencies {
     testCompile('org.springframework.security:spring-security-test')
     compile('net.dv8tion:JDA:3.7.1_392')
     compile('org.apache.commons:commons-lang3:3.5')
+    compile('javax.xml.bind:jaxb-api:2.3.0')
 }
 
 wrapper.gradleVersion = '4.9'
