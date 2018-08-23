@@ -38,6 +38,7 @@ class GuildMemberGate(
         @ElementCollection(targetClass = WelcomeMessage::class)
         val welcomeMessages: MutableSet<WelcomeMessage> = HashSet(),
         @ElementCollection
+        @Column(name = "question")
         val questions: MutableSet<String> = HashSet()
 ) {
 
