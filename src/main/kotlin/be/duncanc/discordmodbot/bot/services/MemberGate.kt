@@ -134,7 +134,7 @@ internal constructor(
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         val guildMemberGate = guildMemberGateRepository.findById(event.guild.idLong)
-        if (!guildMemberGate.isPresent || event.author.isBot) { //todo When no settings are present the configuration sequence should be reachable
+        if (!guildMemberGate.isPresent && !command.equals(super.aliases[0], true) || event.author.isBot) {
             return
         }
 
@@ -294,7 +294,7 @@ internal constructor(
         /**
          * Logic to handle configuration questions.
          */
-        override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
+        override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) { //todo add options to add welcome messages and remove them
             if (super.user != user || super.channel != channel) {
                 return
             }
