@@ -44,7 +44,7 @@ class RunBots
             discordModBotConfigurationProperties.botTokens.forEach {
                 JDABuilder(AccountType.BOT)
                         .setCorePoolSize(BOT_THREAD_POOL_SIZE)
-                        .setEventManager(ExecutorServiceEventManager("Fairy tail"))
+                        .setEventManager(ExecutorServiceEventManager(it.substring(30)))
                         .setToken(it)
                         .setBulkDeleteSplittingEnabled(false)
                         .addEventListener(*applicationContext.getBeansOfType(ListenerAdapter::class.java).values.toTypedArray())
