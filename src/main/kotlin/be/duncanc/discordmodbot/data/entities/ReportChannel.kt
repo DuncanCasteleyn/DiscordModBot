@@ -31,7 +31,7 @@ constructor(
         val guildId: Long? = null,
 
         @Column(nullable = false)
-        @NotNull
+        @field:NotNull
         val textChannelId: Long? = null
 ) {
 

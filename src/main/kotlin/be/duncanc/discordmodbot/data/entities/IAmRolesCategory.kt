@@ -44,7 +44,7 @@ constructor(
         var allowedRoles: Int = 0,
 
         @Column(nullable = false)
-        @NotNull
+        @field:NotNull
         @CollectionTable(name = "i_am_roles_category_roles")
         @ElementCollection
         val roles: MutableSet<Long> = HashSet()
