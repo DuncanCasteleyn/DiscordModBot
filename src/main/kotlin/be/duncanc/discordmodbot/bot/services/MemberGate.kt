@@ -141,7 +141,11 @@ internal constructor(
         when (command.toLowerCase()) {
             super.aliases[0].toLowerCase() -> {
                 if (event.guild.getMember(event.author).hasPermission(Permission.MANAGE_ROLES)) {
-                    event.jda.addEventListener(ConfigureSequence(event.author, event.channel, guildMemberGate.get()))
+                    if (guildMemberGate.isPresent) {
+                        event.jda.addEventListener(ConfigureSequence(event.author, event.channel, guildMemberGate.get()))
+                    } else {
+                        TODO("first time setup sequence not finished")
+                    }
                 }
             }
 
@@ -273,13 +277,14 @@ internal constructor(
     }
 
     /**
-     * This sequences allows to configure questions.
+     * This sequences allows to configure the gate
      */
     @Transactional
     private inner class ConfigureSequence internal constructor(user: User, channel: MessageChannel, val guildMemberGate: GuildMemberGate) : Sequence(user, channel) {
         private var sequenceNumber: Byte = 0
-        @Suppress("LeakingThis")
-        private val questions = guildMemberGate.questions.toList()
+        private lateinit var questions: List<String>
+        private lateinit var welcomeMessages: List<GuildMemberGate.WelcomeMessage>
+        private lateinit var welcomeMessage: GuildMemberGate.WelcomeMessage
 
         /**
          * Asks first question
@@ -288,13 +293,15 @@ internal constructor(
             channel.sendMessage(user.asMention + " Welcome to the member gate configuration sequences.\n\n" +
                     "Select an action to perform:\n" +
                     "0. add a question\n" +
-                    "1. remove a question").queue { super.addMessageToCleaner(it) }
+                    "1. remove a question\n" +
+                    "2. Add welcome message\n" +
+                    "3. Remove welcome message").queue { super.addMessageToCleaner(it) }
         }
 
         /**
          * Logic to handle configuration questions.
          */
-        override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) { //todo add options to add welcome messages and remove them
+        override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
             if (super.user != user || super.channel != channel) {
                 return
             }
@@ -311,11 +318,26 @@ internal constructor(
                         1.toByte() -> {
                             sequenceNumber = 2
                             val questionListMessage = MessageBuilder()
+                            questions = guildMemberGate.questions.toList()
                             for (i in 0 until questions.size) {
                                 questionListMessage.append(i.toString()).append(". ").append(questions[i]).append('\n')
                             }
                             questionListMessage.append('\n').append("Respond with the question number to remove it.")
                             channel.sendMessage(questionListMessage.build()).queue { super.addMessageToCleaner(it) }
+                        }
+                        2.toByte() -> {
+                            sequenceNumber = 3
+                            channel.sendMessage("Please send a url (that will stay online) to an image to be used as welcome image.").queue { addMessageToCleaner(it) }
+                        }
+                        3.toByte() -> {
+                            sequenceNumber = 5
+                            val welcomeMessageList = MessageBuilder()
+                            for (i in 0 until welcomeMessages.size) {
+                                welcomeMessageList.append(i.toString()).append(". ").append(questions[i]).append('\n')
+                            }
+                            welcomeMessageList.append('\n').append("Respond with the question number to remove it.")
+                            channel.sendMessage(welcomeMessageList.build()).queue { super.addMessageToCleaner(it) }
+
                         }
                     }
                 }
@@ -325,12 +347,30 @@ internal constructor(
                     super.destroy()
                     super.channel.sendMessage(super.user.asMention + " Question added.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                 }
-                else -> {
+                2.toByte() -> {
                     val number: Int = event.message.contentDisplay.toInt()
                     guildMemberGate.questions.remove(questions[number])
                     guildMemberGateRepository.save(guildMemberGate)
                     destroy()
                     channel.sendMessage("The question \"" + questions[number] + "\" was removed.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                }
+                3.toByte() -> {
+                    welcomeMessage = GuildMemberGate.WelcomeMessage(event.message.contentRaw)
+                    channel.sendMessage("Please enter a welcome message.").queue { addMessageToCleaner(it) }
+                    sequenceNumber = 4
+                }
+                4.toByte() -> {
+                    welcomeMessage = welcomeMessage.copy(message = event.message.contentRaw)
+                    guildMemberGate.welcomeMessages.add(welcomeMessage)
+                    guildMemberGateRepository.save(guildMemberGate)
+                    destroy()
+                    channel.sendMessage("The new welcome message has been added.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                }
+                5.toByte() -> {
+                    val welcomeMessageToDelete = welcomeMessages[event.message.contentRaw.toInt()]
+                    guildMemberGate.welcomeMessages.remove(welcomeMessages[event.message.contentRaw.toInt()])
+                    guildMemberGateRepository.save(guildMemberGate)
+                    channel.sendMessage("$welcomeMessageToDelete has been deleted.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                 }
             }
         }

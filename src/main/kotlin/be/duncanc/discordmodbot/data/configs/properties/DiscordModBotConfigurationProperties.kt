@@ -20,7 +20,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.stereotype.Component
 import org.springframework.validation.annotation.Validated
 import javax.validation.constraints.NotEmpty
-import javax.validation.constraints.Positive
 
 @Component
 @ConfigurationProperties("discord-mod-bot")

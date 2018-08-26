@@ -43,7 +43,7 @@ class GuildMemberGate(
 ) {
 
     /**
-     * Immutable class containing a welcome message and url for an image to be used in an embed.
+     * class containing a welcome message and url for an image to be used in an embed.
      */
     @Embeddable
     data class WelcomeMessage(
