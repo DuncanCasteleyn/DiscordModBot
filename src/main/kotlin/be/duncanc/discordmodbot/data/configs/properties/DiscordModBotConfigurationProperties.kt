@@ -20,12 +20,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.stereotype.Component
 import org.springframework.validation.annotation.Validated
 import javax.validation.constraints.NotEmpty
+import javax.validation.constraints.NotNull
 
 @Component
 @ConfigurationProperties("discord-mod-bot")
 @Validated
 class DiscordModBotConfigurationProperties(
-        var ownerId: Long = null,
+        @field:NotNull
+        var ownerId: Long? = null,
         @field:NotEmpty
         var botTokens: HashSet<String> = HashSet()
 )
