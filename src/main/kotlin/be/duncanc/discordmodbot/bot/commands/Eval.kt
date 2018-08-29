@@ -69,7 +69,7 @@ class Eval(
     }
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-        if (event.author.idLong != discordModBotConfigurationProperties.ownderId) {
+        if (event.author.idLong != discordModBotConfigurationProperties.ownerId) {
             event.channel.sendMessage("Sorry, this command is for the bot owner only!").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
             return
         }
