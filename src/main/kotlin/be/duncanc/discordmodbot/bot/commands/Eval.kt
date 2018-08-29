@@ -16,6 +16,7 @@
 
 package be.duncanc.discordmodbot.bot.commands
 
+import be.duncanc.discordmodbot.data.configs.properties.DiscordModBotConfigurationProperties
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.entities.ChannelType
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
@@ -33,7 +34,9 @@ import javax.script.ScriptEngineManager
  */
 @Component
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-class Eval : CommandModule(
+class Eval(
+        val discordModBotConfigurationProperties: DiscordModBotConfigurationProperties
+) : CommandModule(
         ALIASES,
         DESCRIPTION,
         ARGUMENTATION,
@@ -66,7 +69,7 @@ class Eval : CommandModule(
     }
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-        if (event.author.idLong != 159419654148718593L) {
+        if (event.author.idLong != discordModBotConfigurationProperties.ownderId) {
             event.channel.sendMessage("Sorry, this command is for the bot owner only!").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
             return
         }
