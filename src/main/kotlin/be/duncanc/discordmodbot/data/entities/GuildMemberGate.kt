@@ -31,9 +31,9 @@ data class GuildMemberGate(
         var rulesTextChannel: Long? = null,
         var gateTextChannel: Long? = null,
         var welcomeTextChannel: Long? = null,
-        @ElementCollection(targetClass = WelcomeMessage::class)
+        @ElementCollection(targetClass = WelcomeMessage::class, fetch = FetchType.EAGER)
         val welcomeMessages: MutableSet<WelcomeMessage> = HashSet(),
-        @ElementCollection
+        @ElementCollection(fetch = FetchType.EAGER)
         @Column(name = "question")
         val questions: MutableSet<String> = HashSet()
 ) {
