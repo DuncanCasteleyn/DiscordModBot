@@ -153,7 +153,7 @@ internal constructor(
         when (command.toLowerCase()) {
             super.aliases[0].toLowerCase() -> {
                 if (event.guild.getMember(event.author).hasPermission(Permission.MANAGE_ROLES)) {
-                    event.jda.addEventListener(ConfigureSequence(event.author, event.channel, guildMemberGate.orElseGet { GuildMemberGate() }))
+                    event.jda.addEventListener(ConfigureSequence(event.author, event.channel, guildMemberGate.orElseGet { GuildMemberGate(event.guild.idLong) }))
                 }
             }
 
