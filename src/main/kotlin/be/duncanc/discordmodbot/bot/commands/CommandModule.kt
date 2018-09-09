@@ -87,11 +87,14 @@ abstract class CommandModule
         val messageContent = event.message.contentRaw.trim().replace(SPACE_TRIMMER, " ")
 
         val authorId = event.author.idLong
-        if (event.author.isBot || messageContent == "" || userBlock?.isBlocked(authorId) == true || event.jda.registeredListeners.stream().anyMatch { it is Sequence && it.user == event.author }) {
+        if (event.author.isBot || messageContent == "" || event.jda.registeredListeners.stream().anyMatch { it is Sequence && it.user == event.author }) {
             return
         }
 
         if (messageContent[0] == COMMAND_SIGN) {
+            if (userBlock?.isBlocked(authorId) == true) {
+                return
+            }
             val argumentsArray = messageContent.split(" ")//.dropLastWhile { it.isEmpty() }.toTypedArray()
             val command = argumentsArray[0].substring(1)
             val arguments: String?
