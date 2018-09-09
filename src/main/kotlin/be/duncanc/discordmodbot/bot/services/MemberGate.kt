@@ -61,16 +61,16 @@ internal constructor(
     override fun onGuildMemberRoleAdd(event: GuildMemberRoleAddEvent) {
         val guild = event.guild
         val guildMemberGate = guildMemberGateRepository.findById(guild.idLong)
-        if (!guildMemberGate.isPresent || event.user.isBot || guild.getRoleById(guildMemberGate.get().memberRole!!) !in event.roles) {
+        if (!guildMemberGate.isPresent || event.user.isBot || guildMemberGate.get().memberRole?.let { guild.getRoleById(it) } !in event.roles) {
             return
         }
         val welcomeMessages = guildMemberGate.get().welcomeMessages.toTypedArray()
         val welcomeMessage = welcomeMessages[Random().nextInt(welcomeMessages.size)].getWelcomeMessage(event.user)
-        guild.getTextChannelById(guildMemberGate.get().welcomeTextChannel!!).sendMessage(welcomeMessage).queue()
+        guildMemberGate.get().welcomeTextChannel?.let { guild.getTextChannelById(it).sendMessage(welcomeMessage).queue() }
         synchronized(approvalQueue) {
             approvalQueue.remove(event.user.idLong)
         }
-        cleanMessagesFromUser(event.guild.getTextChannelById(guildMemberGate.get().gateTextChannel!!), event.user)
+        guildMemberGate.get().gateTextChannel?.let { cleanMessagesFromUser(event.guild.getTextChannelById(it), event.user) }
     }
 
     /**
@@ -94,17 +94,18 @@ internal constructor(
         if (!guildMemberGate.isPresent || event.user.isBot) {
             return
         }
-        val gateTextChannel = event.guild.getTextChannelById(guildMemberGate.get().gateTextChannel!!)
+        val gateTextChannel = guildMemberGate.get().gateTextChannel?.let { event.guild.getTextChannelById(it) }
         if (event.guild.verificationLevel == Guild.VerificationLevel.VERY_HIGH) {
-            gateTextChannel.sendMessage("Welcome " + event.member.asMention + ", this server uses phone verification.\n" +
+            gateTextChannel?.sendMessage("Welcome " + event.member.asMention + ", this server uses phone verification.\n" +
                     "If you have verified your phone and are able to chat in this channel, you can simply type ``!join`` to join the server.\n" +
                     "If you can't use phone verification, send " + event.jda.selfUser.asMention + " a dm and type ``!nomobile``. You will be granted a special role! After that, return to this channel and type ``!join`` and follow the instructions.\n" +
                     "\n" +
-                    "**Warning: Users that are not mobile verified will be punished much more severely and faster when breaking the rules or when suspected of bypassing a ban.**").queue { message -> message.delete().queueAfter(5, TimeUnit.MINUTES) }
+                    "**Warning: Users that are not mobile verified will be punished much more severely and faster when breaking the rules or when suspected of bypassing a ban.**")?.queue { message -> message.delete().queueAfter(5, TimeUnit.MINUTES) }
         } else {
-            gateTextChannel.sendMessage("Welcome " + event.member.asMention + ", this server requires you to read the " + event.guild.getTextChannelById(guildMemberGate.get().rulesTextChannel!!).asMention + " and answer a question regarding those before you gain full access.\n\n" +
+            gateTextChannel?.sendMessage("Welcome " + event.member.asMention + ", this server requires you to read the " + (guildMemberGate.get().rulesTextChannel?.let { event.guild.getTextChannelById(it).asMention }
+                    ?: "rules") + " and answer a question regarding those before you gain full access.\n\n" +
                     "If you have read the rules and are ready to answer the question, type ``!" + super.aliases[1] + "`` and follow the instructions from the bot.\n\n" +
-                    "Please read the pinned message for more information.").queue { message -> message.delete().queueAfter(5, TimeUnit.MINUTES) }
+                    "Please read the pinned message for more information.")?.queue { message -> message.delete().queueAfter(5, TimeUnit.MINUTES) }
         }
     }
 
@@ -113,7 +114,7 @@ internal constructor(
      */
     override fun onGuildMemberLeave(event: GuildMemberLeaveEvent) {
         val guildMemberGate = guildMemberGateRepository.findById(event.guild.idLong)
-        if (!guildMemberGate.isPresent || event.member.roles.contains(event.guild.getRoleById(guildMemberGate.get().memberRole!!))) {
+        if (!guildMemberGate.isPresent || event.member.roles.contains(guildMemberGate.get().memberRole?.let { event.guild.getRoleById(it) })) {
             return
         }
         val userId = event.user.idLong
@@ -125,14 +126,19 @@ internal constructor(
         synchronized(informUserMessageIds) {
             val messageToRemove = informUserMessageIds.remove(userId)
             if (messageToRemove != null) {
-                event.jda.getTextChannelById(guildMemberGate.get().gateTextChannel!!).getMessageById(messageToRemove).queue { it.delete().queue() }
+                guildMemberGate.get().gateTextChannel?.let { gateTextChannelId -> event.jda.getTextChannelById(gateTextChannelId).getMessageById(messageToRemove).queue { it.delete().queue() } }
             }
         }
-        cleanMessagesFromUser(event.guild.getTextChannelById(guildMemberGate.get().gateTextChannel!!), event.user)
+        guildMemberGate.get().gateTextChannel?.let {
+            cleanMessagesFromUser(event.guild.getTextChannelById(it), event.user)
+        }
 
     }
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+        if (!event.isFromType(ChannelType.TEXT)) {
+            throw IllegalStateException("This command cannot be executed outside a text channel.")
+        }
         val guildMemberGate = guildMemberGateRepository.findById(event.guild.idLong)
         if (!guildMemberGate.isPresent && !command.equals(super.aliases[0], true) || event.author.isBot) {
             return
@@ -141,16 +147,12 @@ internal constructor(
         when (command.toLowerCase()) {
             super.aliases[0].toLowerCase() -> {
                 if (event.guild.getMember(event.author).hasPermission(Permission.MANAGE_ROLES)) {
-                    if (guildMemberGate.isPresent) {
-                        event.jda.addEventListener(ConfigureSequence(event.author, event.channel, guildMemberGate.get()))
-                    } else {
-                        TODO("first time setup sequence not finished")
-                    }
+                    event.jda.addEventListener(ConfigureSequence(event.author, event.channel, guildMemberGate.orElseGet { GuildMemberGate() }))
                 }
             }
 
             super.aliases[1].toLowerCase() -> {
-                if (event.guild.getMember(event.author).roles.any { it.idLong == guildMemberGate.get().memberRole!! }) {
+                if (guildMemberGate.get().memberRole == null || event.guild.getMember(event.author).roles.any { it.idLong == guildMemberGate.get().memberRole }) {
                     return
                 }
 
@@ -182,7 +184,7 @@ internal constructor(
     private fun accept(member: Member) {
         val guild = member.guild
         val guildMemberGate = guildMemberGateRepository.findById(guild.idLong).orElseThrow { IllegalArgumentException("The guild of which this member originates has no member gate configuration") }
-        guild.controller.addSingleRoleToMember(member, guild.getRoleById(guildMemberGate.memberRole!!)).queue()
+        guildMemberGate.memberRole?.let { guild.controller.addSingleRoleToMember(member, guild.getRoleById(it)).queue() }
     }
 
     /**
@@ -295,11 +297,20 @@ internal constructor(
                     "0. add a question\n" +
                     "1. remove a question\n" +
                     "2. Add welcome message\n" +
-                    "3. Remove welcome message").queue { super.addMessageToCleaner(it) }
+                    "3. Remove welcome message\n" +
+                    "4. Change welcome channel\n" +
+                    "5. Change member gate chanel\n" +
+                    "6. Change member role\n" +
+                    "7. Change rules channel\n" +
+                    "8. Disable member approval gate (wipes your questions, member role, gate channel and rule channel settings)\n" +
+                    "9. Disable welcome messages (wipes your welcomes message and channel settings)\n" +
+                    "10. Wipe member gate module settings\n\n" +
+                    "To enable the member gate you need to set at least a question, the member gate channel and the member role\n" +
+                    "To enable welcome messages you need to set at least a welcome message and the welcome channel").queue { super.addMessageToCleaner(it) }
         }
 
         /**
-         * Logic to handle configuration questions.
+         * Logic to handle configuration.
          */
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
             if (super.user != user || super.channel != channel) {
@@ -339,18 +350,59 @@ internal constructor(
                             channel.sendMessage(welcomeMessageList.build()).queue { super.addMessageToCleaner(it) }
 
                         }
+                        4.toByte() -> {
+                            channel.sendMessage("Please mention the channel you want to set.").queue { addMessageToCleaner(it) }
+                            sequenceNumber = 6
+                        }
+                        5.toByte() -> {
+                            channel.sendMessage("Please mention the channel you want to set.").queue { addMessageToCleaner(it) }
+                            sequenceNumber = 7
+                        }
+                        6.toByte() -> {
+                            channel.sendMessage("Please type the exact role name you want to set (please make sure the role name is unique).").queue { addMessageToCleaner(it) }
+                            sequenceNumber = 8
+                        }
+                        7.toByte() -> {
+                            channel.sendMessage("Please mention the channel you want to set.").queue { addMessageToCleaner(it) }
+                            sequenceNumber = 9
+                        }
+                        8.toByte() -> {
+                            guildMemberGate.questions.clear()
+                            guildMemberGate.gateTextChannel = null
+                            guildMemberGate.memberRole = null
+                            guildMemberGate.rulesTextChannel = null
+                            guildMemberGateRepository.save(guildMemberGate)
+                            event.channel.sendMessage("Member approval gate settings wiped and disabled.").queue {
+                                it.delete().queueAfter(1, TimeUnit.MINUTES)
+                            }
+                        }
+                        9.toByte() -> {
+                            guildMemberGate.welcomeMessages.clear()
+                            guildMemberGate.welcomeTextChannel = null
+                            guildMemberGateRepository.save(guildMemberGate)
+                            event.channel.sendMessage("Welcome settings wiped and disabled.").queue {
+                                it.delete().queueAfter(1, TimeUnit.MINUTES)
+                            }
+                        }
+                        10.toByte() -> {
+                            guildMemberGateRepository.deleteById(event.guild.idLong)
+                            event.channel.sendMessage("Member gate module settings wiped and disabled.").queue {
+                                it.delete().queueAfter(1, TimeUnit.MINUTES)
+                            }
+                            destroy()
+                        }
                     }
                 }
                 1.toByte() -> {
                     guildMemberGate.questions.add(event.message.contentRaw)
-                    guildMemberGateRepository.save(guildMemberGate)
+                    guildMemberGate.let { guildMemberGateRepository.save(it) }
                     super.destroy()
                     super.channel.sendMessage(super.user.asMention + " Question added.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                 }
                 2.toByte() -> {
                     val number: Int = event.message.contentDisplay.toInt()
                     guildMemberGate.questions.remove(questions[number])
-                    guildMemberGateRepository.save(guildMemberGate)
+                    guildMemberGate.let { guildMemberGateRepository.save(it) }
                     destroy()
                     channel.sendMessage("The question \"" + questions[number] + "\" was removed.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                 }
@@ -370,14 +422,61 @@ internal constructor(
                     val welcomeMessageToDelete = welcomeMessages[event.message.contentRaw.toInt()]
                     guildMemberGate.welcomeMessages.remove(welcomeMessages[event.message.contentRaw.toInt()])
                     guildMemberGateRepository.save(guildMemberGate)
-                    channel.sendMessage("$welcomeMessageToDelete has been deleted.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                    channel.sendMessage("\"$welcomeMessageToDelete\" has been deleted.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                }
+                6.toByte() -> {
+                    val mentionedChannels = event.message.getMentions(Message.MentionType.CHANNEL)
+                    if (mentionedChannels.isNotEmpty()) {
+                        guildMemberGate.welcomeTextChannel = (mentionedChannels[0] as TextChannel).idLong
+                        guildMemberGateRepository.save(guildMemberGate)
+                        channel.sendMessage("Channel set").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                        destroy()
+                    } else {
+                        throw IllegalArgumentException("A channel needs to be mentioned.")
+                    }
+                }
+                7.toByte() -> {
+                    val mentionedChannels = event.message.getMentions(Message.MentionType.CHANNEL)
+                    if (mentionedChannels.isNotEmpty()) {
+                        guildMemberGate.gateTextChannel = (mentionedChannels[0] as TextChannel).idLong
+                        guildMemberGateRepository.save(guildMemberGate)
+                        channel.sendMessage("Channel set").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                        destroy()
+                    } else {
+                        throw IllegalArgumentException("A channel needs to be mentioned.")
+                    }
+                }
+                8.toByte() -> {
+                    val targetRoles = event.guild.getRolesByName(event.message.contentRaw, true)
+                    when {
+                        targetRoles.size == 1 -> {
+                            guildMemberGate.memberRole = targetRoles[0].idLong
+                            guildMemberGateRepository.save(guildMemberGate)
+                            channel.sendMessage("Role set").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                            destroy()
+                        }
+                        targetRoles.isEmpty() -> throw IllegalArgumentException("Couldn't find any roles with that name.")
+                        else -> throw IllegalArgumentException("More then 1 match, please rename the role temporary.")
+                    }
+
+                }
+                9.toByte() -> {
+                    val mentionedChannels = event.message.getMentions(Message.MentionType.CHANNEL)
+                    if (mentionedChannels.isNotEmpty()) {
+                        guildMemberGate.rulesTextChannel = (mentionedChannels[0] as TextChannel).idLong
+                        guildMemberGateRepository.save(guildMemberGate)
+                        channel.sendMessage("Channel set").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                        destroy()
+                    } else {
+                        throw IllegalArgumentException("A channel needs to be mentioned.")
+                    }
                 }
             }
         }
     }
 
     /**
-     * Allows answers to be manually reviewed, if keyword checking fails.
+     * Sequence to review user answers
      */
     private inner class ReviewSequence internal constructor(user: User, channel: MessageChannel, private val userId: Long, val guildMemberGate: GuildMemberGate) : Sequence(user, channel) {
 
@@ -424,7 +523,7 @@ internal constructor(
                         synchronized(informUserMessageIds) {
                             val messageToRemove = informUserMessageIds.remove(userId)
                             if (messageToRemove != null) {
-                                event.jda.getTextChannelById(guildMemberGate.gateTextChannel!!).getMessageById(messageToRemove).queue { it.delete().queue() }
+                                guildMemberGate.gateTextChannel?.let { gateTextChannelId -> event.jda.getTextChannelById(gateTextChannelId).getMessageById(messageToRemove).queue { it.delete().queue() } }
                             }
                         }
                         destroy()
@@ -440,7 +539,7 @@ internal constructor(
                         synchronized(informUserMessageIds) {
                             val messageToRemove = informUserMessageIds.remove(userId)
                             if (messageToRemove != null) {
-                                event.jda.getTextChannelById(guildMemberGate.gateTextChannel!!).getMessageById(messageToRemove).queue { it.delete().queue() }
+                                guildMemberGate.gateTextChannel?.let { gateTextChannelId -> event.jda.getTextChannelById(gateTextChannelId).getMessageById(messageToRemove).queue { it.delete().queue() } }
                             }
                         }
                         destroy()
