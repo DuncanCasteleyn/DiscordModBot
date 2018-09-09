@@ -44,13 +44,13 @@ import kotlin.collections.HashMap
  */
 abstract class CommandModule
 @JvmOverloads protected constructor(
-        internal val aliases: Array<String>,
-        internal val argumentationSyntax: String?,
-        internal val description: String?,
+        internal open val aliases: Array<String>,
+        internal open val argumentationSyntax: String?,
+        internal open val description: String?,
         private val cleanCommandMessage: Boolean = true,
         private val ignoreWhitelist: Boolean = false,
-        protected val userBlock: UserBlock? = null,
-        vararg val requiredPermissions: Permission
+        protected open val userBlock: UserBlock? = null,
+        internal open vararg val requiredPermissions: Permission
 ) : ListenerAdapter() {
 
     companion object {
@@ -142,7 +142,7 @@ abstract class CommandModule
         }
     }
 
-    protected fun spamCheck(user: User) {
+    protected open fun spamCheck(user: User) {
         if (userBlock != null) {
             val userId = user.idLong
             when {
@@ -153,7 +153,7 @@ abstract class CommandModule
                 antiSpamMap.containsKey(userId) -> {
                     var value = antiSpamMap[userId]!!
                     if (value > ANTI_SPAM_LIMIT) {
-                        userBlock.blockUser(user)
+                        userBlock?.blockUser(user)
                     }
                     antiSpamMap[userId] = ++value
                 }
