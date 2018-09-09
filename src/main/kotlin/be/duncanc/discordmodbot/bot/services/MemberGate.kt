@@ -95,17 +95,23 @@ internal constructor(
             return
         }
         val gateTextChannel = guildMemberGate.get().gateTextChannel?.let { event.guild.getTextChannelById(it) }
-        if (event.guild.verificationLevel == Guild.VerificationLevel.VERY_HIGH) {
-            gateTextChannel?.sendMessage("Welcome " + event.member.asMention + ", this server uses phone verification.\n" +
-                    "If you have verified your phone and are able to chat in this channel, you can simply type ``!join`` to join the server.\n" +
-                    "If you can't use phone verification, send " + event.jda.selfUser.asMention + " a dm and type ``!nomobile``. You will be granted a special role! After that, return to this channel and type ``!join`` and follow the instructions.\n" +
-                    "\n" +
-                    "**Warning: Users that are not mobile verified will be punished much more severely and faster when breaking the rules or when suspected of bypassing a ban.**")?.queue { message -> message.delete().queueAfter(5, TimeUnit.MINUTES) }
-        } else {
-            gateTextChannel?.sendMessage("Welcome " + event.member.asMention + ", this server requires you to read the " + (guildMemberGate.get().rulesTextChannel?.let { event.guild.getTextChannelById(it).asMention }
-                    ?: "rules") + " and answer a question regarding those before you gain full access.\n\n" +
-                    "If you have read the rules and are ready to answer the question, type ``!" + super.aliases[1] + "`` and follow the instructions from the bot.\n\n" +
-                    "Please read the pinned message for more information.")?.queue { message -> message.delete().queueAfter(5, TimeUnit.MINUTES) }
+        if(gateTextChannel != null) {
+            if (event.guild.verificationLevel == Guild.VerificationLevel.VERY_HIGH) {
+                gateTextChannel.sendMessage("Welcome " + event.member.asMention + ", this server uses phone verification.\n" +
+                        "If you have verified your phone and are able to chat in this channel, you can simply type ``!join`` to join the server.\n" +
+                        "If you can't use phone verification, send " + event.jda.selfUser.asMention + " a dm and type ``!nomobile``. You will be granted a special role! After that, return to this channel and type ``!join`` and follow the instructions.\n" +
+                        "\n" +
+                        "**Warning: Users that are not mobile verified will be punished much more severely and faster when breaking the rules or when suspected of bypassing a ban.**")?.queue { message -> message.delete().queueAfter(5, TimeUnit.MINUTES) }
+            } else {
+                gateTextChannel.sendMessage("Welcome " + event.member.asMention + ", this server requires you to read the " + (guildMemberGate.get().rulesTextChannel?.let { event.guild.getTextChannelById(it).asMention }
+                        ?: "rules") + " and answer a question regarding those before you gain full access.\n\n" +
+                        "If you have read the rules and are ready to answer the question, type ``!" + super.aliases[1] + "`` and follow the instructions from the bot.\n\n" +
+                        "Please read the pinned message for more information.")?.queue { message -> message.delete().queueAfter(5, TimeUnit.MINUTES) }
+            }
+        } else if(guildMemberGate.get().welcomeTextChannel != null) {
+            val welcomeMessages = guildMemberGate.get().welcomeMessages.toTypedArray()
+            val welcomeMessage = welcomeMessages[Random().nextInt(welcomeMessages.size)].getWelcomeMessage(event.user)
+            guildMemberGate.get().welcomeTextChannel?.let { event.guild.getTextChannelById(it).sendMessage(welcomeMessage).queue() }
         }
     }
 
