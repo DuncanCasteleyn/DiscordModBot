@@ -24,7 +24,7 @@ import java.awt.Color
 import javax.persistence.*
 
 @Entity
-class GuildMemberGate(
+data class GuildMemberGate(
         @Id
         val guildId: Long? = null,
         var memberRole: Long? = null,
