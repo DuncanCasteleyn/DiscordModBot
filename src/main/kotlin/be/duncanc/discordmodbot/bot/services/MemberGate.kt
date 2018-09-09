@@ -95,7 +95,7 @@ internal constructor(
             return
         }
         val gateTextChannel = guildMemberGate.get().gateTextChannel?.let { event.guild.getTextChannelById(it) }
-        if(gateTextChannel != null) {
+        if (gateTextChannel != null) {
             if (event.guild.verificationLevel == Guild.VerificationLevel.VERY_HIGH) {
                 gateTextChannel.sendMessage("Welcome " + event.member.asMention + ", this server uses phone verification.\n" +
                         "If you have verified your phone and are able to chat in this channel, you can simply type ``!join`` to join the server.\n" +
@@ -108,7 +108,7 @@ internal constructor(
                         "If you have read the rules and are ready to answer the question, type ``!" + super.aliases[1] + "`` and follow the instructions from the bot.\n\n" +
                         "Please read the pinned message for more information.")?.queue { message -> message.delete().queueAfter(5, TimeUnit.MINUTES) }
             }
-        } else if(guildMemberGate.get().welcomeTextChannel != null) {
+        } else if (guildMemberGate.get().welcomeTextChannel != null) {
             val welcomeMessages = guildMemberGate.get().welcomeMessages.toTypedArray()
             val welcomeMessage = welcomeMessages[Random().nextInt(welcomeMessages.size)].getWelcomeMessage(event.user)
             guildMemberGate.get().welcomeTextChannel?.let { event.guild.getTextChannelById(it).sendMessage(welcomeMessage).queue() }
@@ -349,8 +349,9 @@ internal constructor(
                         3.toByte() -> {
                             sequenceNumber = 5
                             val welcomeMessageList = MessageBuilder()
+                            welcomeMessages = guildMemberGate.welcomeMessages.toList()
                             for (i in 0 until welcomeMessages.size) {
-                                welcomeMessageList.append(i.toString()).append(". ").append(questions[i]).append('\n')
+                                welcomeMessageList.append(i.toString()).append(". ").append(welcomeMessages[i]).append('\n')
                             }
                             welcomeMessageList.append('\n').append("Respond with the question number to remove it.")
                             channel.sendMessage(welcomeMessageList.build()).queue { super.addMessageToCleaner(it) }
@@ -402,15 +403,15 @@ internal constructor(
                 1.toByte() -> {
                     guildMemberGate.questions.add(event.message.contentRaw)
                     guildMemberGate.let { guildMemberGateRepository.save(it) }
-                    super.destroy()
-                    super.channel.sendMessage(super.user.asMention + " Question added.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                    channel.sendMessage(super.user.asMention + " Question added.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                    destroy()
                 }
                 2.toByte() -> {
                     val number: Int = event.message.contentDisplay.toInt()
                     guildMemberGate.questions.remove(questions[number])
                     guildMemberGate.let { guildMemberGateRepository.save(it) }
-                    destroy()
                     channel.sendMessage("The question \"" + questions[number] + "\" was removed.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                    destroy()
                 }
                 3.toByte() -> {
                     welcomeMessage = GuildMemberGate.WelcomeMessage(event.message.contentRaw)
@@ -421,14 +422,15 @@ internal constructor(
                     welcomeMessage = welcomeMessage.copy(message = event.message.contentRaw)
                     guildMemberGate.welcomeMessages.add(welcomeMessage)
                     guildMemberGateRepository.save(guildMemberGate)
-                    destroy()
                     channel.sendMessage("The new welcome message has been added.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                    destroy()
                 }
                 5.toByte() -> {
                     val welcomeMessageToDelete = welcomeMessages[event.message.contentRaw.toInt()]
                     guildMemberGate.welcomeMessages.remove(welcomeMessages[event.message.contentRaw.toInt()])
                     guildMemberGateRepository.save(guildMemberGate)
                     channel.sendMessage("\"$welcomeMessageToDelete\" has been deleted.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                    destroy()
                 }
                 6.toByte() -> {
                     val mentionedChannels = event.message.getMentions(Message.MentionType.CHANNEL)
