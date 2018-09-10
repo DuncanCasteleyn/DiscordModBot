@@ -34,20 +34,20 @@ data class UserWarnPoints(
         @Id
         @Column(updatable = false, columnDefinition = "BINARY(16)")
         val id: UUID = UUID.randomUUID(),
-        @Positive
+        @field:Positive
         @Column(nullable = false, updatable = false)
         val points: Int? = null,
-        @NotNull
+        @field:NotNull
         @Column(nullable = false, updatable = false)
         val creatorId: Long? = null,
-        @NotBlank
+        @field:NotBlank
         @Column(nullable = false, updatable = false, columnDefinition = "TEXT")
         val reason: String? = null,
-        @NotNull
+        @field:NotNull
         @Column(nullable = false, updatable = false)
         val creationDate: OffsetDateTime = OffsetDateTime.now(),
         @Future
-        @NotNull
+        @field:NotNull
         @Column(nullable = false, updatable = false)
         val expireDate: OffsetDateTime? = null
 ) {

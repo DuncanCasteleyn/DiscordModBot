@@ -33,7 +33,7 @@ constructor(
         var logMemberRemoveBan: Boolean = true,
         @ElementCollection
         @CollectionTable(name = "logging_ignored_channels")
-        val ignoredChannels: MutableSet<Long> = HashSet<Long>()
+        val ignoredChannels: MutableSet<Long> = HashSet()
 ) {
 
     override fun equals(other: Any?): Boolean {

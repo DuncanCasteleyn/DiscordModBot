@@ -30,7 +30,7 @@ constructor(
         @Column(updatable = false)
         val guildId: Long? = null,
 
-        @NotNull
+        @field:NotNull
         @Column(nullable = false)
         val roleId: Long? = null
 ) {
