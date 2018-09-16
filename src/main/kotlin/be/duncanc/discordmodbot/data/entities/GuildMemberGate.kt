@@ -20,6 +20,7 @@ import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.entities.Message
 import net.dv8tion.jda.core.entities.User
+import org.springframework.lang.Nullable
 import java.awt.Color
 import javax.persistence.*
 
@@ -31,9 +32,9 @@ data class GuildMemberGate(
         var rulesTextChannel: Long? = null,
         var gateTextChannel: Long? = null,
         var welcomeTextChannel: Long? = null,
-        @ElementCollection(targetClass = WelcomeMessage::class, fetch = FetchType.EAGER)
+        @ElementCollection(targetClass = WelcomeMessage::class)
         val welcomeMessages: MutableSet<WelcomeMessage> = HashSet(),
-        @ElementCollection(fetch = FetchType.EAGER)
+        @ElementCollection
         @Column(name = "question")
         val questions: MutableSet<String> = HashSet()
 ) {
