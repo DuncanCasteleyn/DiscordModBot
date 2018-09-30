@@ -20,7 +20,6 @@ package be.duncanc.discordmodbot.bot.services
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.sequences.Sequence
 import be.duncanc.discordmodbot.bot.utils.JDALibHelper
-import be.duncanc.discordmodbot.bot.utils.ThrowableSafeRunnable
 import be.duncanc.discordmodbot.data.entities.LoggingSettings
 import be.duncanc.discordmodbot.data.repositories.LoggingSettingsRepository
 import net.dv8tion.jda.core.EmbedBuilder
@@ -95,7 +94,7 @@ class GuildLogger
 
     init {
         this.guildLoggerExecutor = Executors.newSingleThreadScheduledExecutor { r ->
-            val thread = Thread(ThrowableSafeRunnable(r, LOG), GuildLogger::class.java.simpleName)
+            val thread = Thread(r, GuildLogger::class.java.simpleName)
             thread.isDaemon = true
             thread
         }

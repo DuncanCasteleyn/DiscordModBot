@@ -18,7 +18,6 @@ package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.services.GuildLogger
 import be.duncanc.discordmodbot.bot.utils.JDALibHelper
-import be.duncanc.discordmodbot.bot.utils.ThrowableSafeRunnable
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.ChannelType
@@ -156,7 +155,7 @@ class SlowMode : CommandModule(
         init {
             this.removeThreads.isDaemon = false
             this.removeThreadsPool = Executors.newScheduledThreadPool(5) { r ->
-                val thread = Thread(removeThreads, ThrowableSafeRunnable(r, CommandModule.LOG), this.toString())
+                val thread = Thread(removeThreads, r, this.toString())
                 thread.isDaemon = true
                 thread
             }
