@@ -107,7 +107,6 @@ class MemberGateService(
         guildMemberGateRepository.save(memberGate)
     }
 
-    @Transactional(readOnly = true)
     fun getQuestions(guildId: Long): Set<String> {
         val memberGate = guildMemberGateRepository.findById(guildId).orElse(null)
         memberGate.questions.size

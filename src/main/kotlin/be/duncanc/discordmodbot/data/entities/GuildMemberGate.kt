@@ -20,7 +20,6 @@ import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.entities.Message
 import net.dv8tion.jda.core.entities.User
-import org.springframework.lang.Nullable
 import java.awt.Color
 import javax.persistence.*
 
