@@ -46,7 +46,7 @@ data class UserWarnPoints(
         @field:NotNull
         @Column(nullable = false, updatable = false)
         val creationDate: OffsetDateTime = OffsetDateTime.now(),
-        @Future
+        @field:Future
         @field:NotNull
         @Column(nullable = false, updatable = false)
         val expireDate: OffsetDateTime? = null
