@@ -30,7 +30,6 @@ import net.dv8tion.jda.core.entities.PrivateChannel
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.exceptions.PermissionException
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Component
 import java.awt.Color
 import java.util.*
@@ -44,7 +43,6 @@ import java.util.*
 @Component
 class Warn
 @Autowired constructor(
-        private val applicationContext: ApplicationContext,
         private val guildWarnPointsSettingsRepository: GuildWarnPointsSettingsRepository
 ) : CommandModule(
         arrayOf("Warn"),
