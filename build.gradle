@@ -59,7 +59,7 @@ dependencies {
     compile('javax.xml.bind:jaxb-api:2.3.0')
 }
 
-wrapper.gradleVersion = '4.9'
+wrapper.gradleVersion = '4.10.2'
 
 compileJava.options.compilerArgs << '-Xlint:deprecation'
 compileJava.options.encoding = 'UTF-8'
