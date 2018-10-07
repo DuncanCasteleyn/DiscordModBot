@@ -135,13 +135,7 @@ class AttachmentProxyCreator {
                     LOG.info("An exception occurred when retrieving one of the attachments", e)
                     addToCache(event.message.idLong, null)
                 } finally {
-                    if (inputStream != null) {
-                        try {
-                            inputStream.close()
-                        } catch (ignored: Exception) {
-                        }
-
-                    }
+                    inputStream?.close()
                 }
             } else {
                 LOG.warn("The file was larger than 8MB.")
