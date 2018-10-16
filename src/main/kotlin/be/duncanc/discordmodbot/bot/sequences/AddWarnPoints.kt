@@ -140,7 +140,7 @@ class AddWarnPoints(
 
     private fun performChecks(guildWarnPoints: GuildWarnPoints, guildWarnPointsSettings: GuildWarnPointsSettings, targetMember: Member) {
         var points = 0
-        val activatePoints = guildWarnPoints.points.filter { it.expireDate?.isAfter(OffsetDateTime.now()) == true }.toCollection(mutableSetOf())
+        val activatePoints = guildWarnPoints.points.asSequence().filter { it.expireDate?.isAfter(OffsetDateTime.now()) == true }.toCollection(mutableSetOf())
         activatePoints.forEach { points += it.points ?: 0 }
         if (points >= guildWarnPointsSettings.announcePointsSummaryLimit) {
             val guild = targetMember.guild
