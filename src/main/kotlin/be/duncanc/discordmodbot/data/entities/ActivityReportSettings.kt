@@ -24,9 +24,8 @@ import javax.validation.constraints.NotEmpty
 data class ActivityReportSettings(
         @Id
         val guildId: Long? = null,
-        val reportChannel: Long? = null,
-        @ElementCollection
+        var reportChannel: Long? = null,
+        @ElementCollection(fetch = FetchType.EAGER)
         @Column(name = "tracked")
-        @field:NotEmpty
-        val trackedRoleOrMember: Set<Long>
+        val trackedRoleOrMember: MutableSet<Long> = HashSet()
 )
