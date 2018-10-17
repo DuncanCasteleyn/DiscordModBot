@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package be.duncanc.discordmodbot.data.services
+package be.duncanc.discordmodbot.bot.services
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.utils.JDALibHelper
