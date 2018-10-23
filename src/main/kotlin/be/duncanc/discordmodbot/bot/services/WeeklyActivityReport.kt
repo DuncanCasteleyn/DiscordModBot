@@ -47,7 +47,7 @@ class WeeklyActivityReport(
 ) : CommandModule(
         arrayOf("WeeklyActivitySettings"),
         null,
-        "Allows you to configure weekly reports"
+        "Allows you to configure weekly reports on ammount of message per channel for certain users (in a role)"
 ) {
     companion object {
         val LOG: Logger = LoggerFactory.getLogger(WeeklyActivityReport::class.java)

@@ -45,7 +45,7 @@ class Feedback
 ) : CommandModule(
         arrayOf("Feedback", "Report", "Complaint"),
         null,
-        "This command allows users to give feedback to the server staff by posting it in a channel that is configured",
+        "This command allows users to give feedback to the server staff by posting it in a channel that is configured. This command must be executed in a private channel",
         userBlock = userBlock
 ) {
 
@@ -103,14 +103,14 @@ class Feedback
         }
     }
 
-    inner class SetFeedbackChannel : CommandModule(arrayOf("SetFeedbackChannel"), null, "This command sets the feedback channel enabling this module for the server.", ignoreWhitelist = true, requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)) {
+    inner class SetFeedbackChannel : CommandModule(arrayOf("SetFeedbackChannel"), null, "This command sets the current channel as feedback channel enabling the !feedback command for the server.", ignoreWhitelist = true, requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)) {
         override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
             reportChannelRepository.save(ReportChannel(event.guild.idLong, event.textChannel.idLong))
             event.channel.sendMessage("This channel has been set for feedback.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
         }
     }
 
-    inner class DisableFeedback : CommandModule(arrayOf("DisableFeedback"), null, "This command disables the feedback system for the server.", ignoreWhitelist = true, requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)) {
+    inner class DisableFeedback : CommandModule(arrayOf("DisableFeedback"), null, "This command disables the feedback system for the server where executed.", ignoreWhitelist = true, requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)) {
         override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
             reportChannelRepository.deleteById(event.guild.idLong)
             event.channel.sendMessage("Disabled feedback.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }

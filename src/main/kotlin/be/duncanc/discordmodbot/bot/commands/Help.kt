@@ -55,8 +55,9 @@ class Help(
             if (helpEmbeds[helpEmbeds.lastIndex].fields.count() >= 25) {
                 helpEmbeds.add(EmbedBuilder().setTitle("Help part ${helpEmbeds.size + 1}"))
             }
-            helpEmbeds[helpEmbeds.lastIndex].addField(Arrays.toString(it.aliases).replace("[", "").replace("]", "").replace(",", ", ") + if (it.argumentationSyntax != null) " " + it.argumentationSyntax else "", it.description
-                    ?: "No description available.", false)
+            helpEmbeds[helpEmbeds.lastIndex].addField(Arrays.toString(it.aliases).replace("[", "").replace("]", "") + (if (it.argumentationSyntax != null) " " + it.argumentationSyntax else ""), (it.description
+                    ?: "No description available.") +
+                    (if (it.requiredPermissions.isNotEmpty()) "Requires server permissions: ${Arrays.toString(it.requiredPermissions)}" else ""), false)
         }
 
         helpEmbeds.forEach { embedBuilder ->

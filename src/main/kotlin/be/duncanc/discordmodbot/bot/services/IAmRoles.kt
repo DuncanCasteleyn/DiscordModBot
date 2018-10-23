@@ -50,9 +50,9 @@ class IAmRoles
         private val ALIASES = arrayOf("IAmRoles")
         private const val DESCRIPTION = "Controller for IAmRoles."
         private val ALIASES_I_AM_NOT = arrayOf("IAmNot")
-        private const val DESCRIPTION_I_AM_NOT = "Can be used to remove all roles from a category from yourself."
-        private val ALIASES_I_AM = arrayOf("iam")
-        private const val DESCRIPTION_I_AM = "Can be used to self assign a role, this will remove all existing roles except those requested."
+        private const val DESCRIPTION_I_AM_NOT = "Will start a sequence that allows you to remove roles from yourself."
+        private val ALIASES_I_AM = arrayOf("IAm")
+        private const val DESCRIPTION_I_AM = "Will start a sequence that allows you to assign yourself roles."
     }
 
     private val subCommands = arrayOf(IAm(), IAmNot())
