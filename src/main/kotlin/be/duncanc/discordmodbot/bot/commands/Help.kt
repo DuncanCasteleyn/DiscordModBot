@@ -18,12 +18,13 @@ package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.data.services.UserBlock
 import net.dv8tion.jda.core.EmbedBuilder
+import net.dv8tion.jda.core.Permission
+import net.dv8tion.jda.core.entities.ChannelType
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import org.springframework.beans.factory.config.ConfigurableBeanFactory
 import org.springframework.context.annotation.Scope
 import org.springframework.stereotype.Component
 import java.util.*
-import java.util.concurrent.TimeUnit
 
 /**
  * Will create a help command containing information about commands.
@@ -45,13 +46,21 @@ class Help(
      * Sends an embed to the users containing help for the commands
      */
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-        val helpEmbed: EmbedBuilder = EmbedBuilder().setTitle("Help")
+        if (!event.isFromType(ChannelType.PRIVATE) && (event.isFromType(ChannelType.TEXT) && !event.member.hasPermission(Permission.MESSAGE_MANAGE))) {
+            throw UnsupportedOperationException("The help command should be executed in private chat")
+        }
+        val helpEmbeds: MutableList<EmbedBuilder> = mutableListOf(EmbedBuilder().setTitle("Help"))
         event.jda.registeredListeners.filter { it is CommandModule }.forEach {
             it as CommandModule
-            helpEmbed.addField(Arrays.toString(it.aliases).replace("[", "").replace("]", "").replace(",", ", ") + if (it.argumentationSyntax != null) " " + it.argumentationSyntax else "", it.description
+            if (helpEmbeds[helpEmbeds.lastIndex].fields.count() >= 25) {
+                helpEmbeds.add(EmbedBuilder().setTitle("Help part ${helpEmbeds.size + 1}"))
+            }
+            helpEmbeds[helpEmbeds.lastIndex].addField(Arrays.toString(it.aliases).replace("[", "").replace("]", "").replace(",", ", ") + if (it.argumentationSyntax != null) " " + it.argumentationSyntax else "", it.description
                     ?: "No description available.", false)
         }
 
-        event.channel.sendMessage(helpEmbed.build()).queue { it.delete().queueAfter(2, TimeUnit.MINUTES) }
+        helpEmbeds.forEach { embedBuilder ->
+            event.channel.sendMessage(embedBuilder.build()).queue()
+        }
     }
 }
