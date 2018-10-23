@@ -25,9 +25,9 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath("org.springframework.boot", "spring-boot-gradle-plugin", springBootVersion)
-        classpath("org.jetbrains.kotlin", "kotlin-gradle-plugin", kotlinVersion)
-        classpath("org.jetbrains.kotlin", "kotlin-allopen", kotlinVersion)
+        classpath(group = "org.springframework.boot", name = "spring-boot-gradle-plugin", version = springBootVersion)
+        classpath(group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version = kotlinVersion)
+        classpath(group = "org.jetbrains.kotlin", name = "kotlin-allopen", version = kotlinVersion)
     }
 }
 
@@ -44,22 +44,22 @@ plugins {
 
 
 dependencies {
-    compile("org.springframework.boot:spring-boot-starter-security")
-    compile("org.springframework.boot:spring-boot-starter-web")
-    compile("org.springframework.boot:spring-boot-starter-data-jpa")
-    runtime("com.h2database:h2")
-    runtime("org.mariadb.jdbc:mariadb-java-client:2.2.3")
-    compile("com.fasterxml.jackson.module:jackson-module-kotlin")
-    compile("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    compile("org.jetbrains.kotlin:kotlin-reflect")
-    testCompile("org.springframework.boot:spring-boot-starter-test")
-    testCompile("org.springframework.security:spring-security-test")
-    compile("net.dv8tion:JDA:3.8.1_439") {
+    compile(group = "org.springframework.boot", name = "spring-boot-starter-security")
+    compile(group = "org.springframework.boot", name = "spring-boot-starter-web")
+    compile(group = "org.springframework.boot", name = "spring-boot-starter-data-jpa")
+    runtime(group = "com.h2database", name = "h2")
+    runtime(group = "org.mariadb.jdbc", name = "mariadb-java-client", version = "2.2.3")
+    compile(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin")
+    compile(group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8")
+    compile(group = "org.jetbrains.kotlin", name = "kotlin-reflect")
+    testCompile(group = "org.springframework.boot", name = "spring-boot-starter-test")
+    testCompile(group = "org.springframework.security", name = "spring-security-test")
+    compile(group = "net.dv8tion", name = "JDA", version = "3.8.1_439") {
         exclude(group = "club.minnced", module = "opus-java")
     }
-    compile("club.minnced:opus-java:1.0.4")
-    compile("org.apache.commons:commons-lang3:3.5")
-    compile("javax.xml.bind:jaxb-api:2.3.0")
+    compile(group = "club.minnced", name = "opus-java", version = "1.0.4")
+    compile(group = "org.apache.commons", name = "commons-lang3", version = "3.5")
+    compile(group = "javax.xml.bind", name = "jaxb-api", version = "2.3.0")
 }
 
 repositories {
