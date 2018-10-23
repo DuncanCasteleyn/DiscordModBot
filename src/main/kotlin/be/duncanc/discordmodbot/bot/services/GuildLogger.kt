@@ -23,6 +23,7 @@ import be.duncanc.discordmodbot.bot.utils.JDALibHelper
 import be.duncanc.discordmodbot.data.entities.LoggingSettings
 import be.duncanc.discordmodbot.data.repositories.LoggingSettingsRepository
 import net.dv8tion.jda.core.EmbedBuilder
+import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.audit.ActionType
@@ -44,6 +45,7 @@ import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.core.events.message.guild.GuildMessageUpdateEvent
 import net.dv8tion.jda.core.events.user.update.UserUpdateDiscriminatorEvent
 import net.dv8tion.jda.core.events.user.update.UserUpdateNameEvent
+import net.dv8tion.jda.core.exceptions.PermissionException
 import net.dv8tion.jda.core.hooks.ListenerAdapter
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -76,7 +78,6 @@ import java.util.concurrent.TimeUnit
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 class GuildLogger
 @Autowired constructor(
-        val logger: LogToChannel,
         val messageHistory: MessageHistory,
         val loggingSettingsRepository: LoggingSettingsRepository
 ) : ListenerAdapter() {
@@ -111,11 +112,11 @@ class GuildLogger
     }
 
     override fun onReady(event: ReadyEvent) {
-        logger.initChannelList(event.jda)
-        logger.logChannels.forEach { textChannel ->
-            textChannel.guild.auditLogs.limit(1).cache(false).queue { auditLogEntries ->
+        val guilds = loggingSettingsRepository.findAll().map { it.guildId?.let { id -> event.jda.getGuildById(id) } }.toHashSet()
+        guilds.forEach { guild ->
+            guild?.auditLogs?.limit(1)?.cache(false)?.queue { auditLogEntries ->
                 val auditLogEntry = if (auditLogEntries.isEmpty()) {
-                    AuditLogEntry(ActionType.MESSAGE_DELETE, -1, -1, textChannel.guild as GuildImpl, null, null, null, null, null)
+                    AuditLogEntry(ActionType.MESSAGE_DELETE, -1, -1, guild as GuildImpl, null, null, null, null, null)
                     //Creating a dummy
                 } else {
                     auditLogEntries[0]
@@ -155,7 +156,7 @@ class GuildLogger
                     .setColor(LIGHT_BLUE)
                     .addField("Author", name, true)
             linkEmotes(oldMessage.emotes, logEmbed)
-            guildLoggerExecutor.execute { logger.log(logEmbed, oldMessage.author, guild, oldMessage.embeds, LogTypeAction.USER) }
+            guildLoggerExecutor.execute { log(logEmbed, oldMessage.author, guild, oldMessage.embeds, LogTypeAction.USER) }
         }
         messageHistory.onGuildMessageUpdate(event)
     }
@@ -233,7 +234,7 @@ class GuildLogger
                     logEmbed.setColor(LIGHT_BLUE)
                 }
                 linkEmotes(oldMessage.emotes, logEmbed)
-                logger.log(logEmbed, oldMessage.author, guild, oldMessage.embeds, if (moderator == null) LogTypeAction.USER else LogTypeAction.MODERATOR)
+                log(logEmbed, oldMessage.author, guild, oldMessage.embeds, if (moderator == null) LogTypeAction.USER else LogTypeAction.MODERATOR)
             }, 1, TimeUnit.SECONDS)
         }
     }
@@ -313,12 +314,12 @@ class GuildLogger
     }
 
     private fun logBulkDelete(event: MessageBulkDeleteEvent, logEmbed: EmbedBuilder, bytes: ByteArray) {
-        guildLoggerExecutor.execute { logger.log(logEmbed, null, event.guild, null, LogTypeAction.USER, bytes) }
+        guildLoggerExecutor.execute { log(logEmbed, null, event.guild, null, LogTypeAction.USER, bytes) }
     }
 
     @Transactional(readOnly = true)
     override fun onGuildMemberLeave(event: GuildMemberLeaveEvent) {
-        if (!loggingSettingsRepository.findById(event.guild.idLong).orElse(LoggingSettings(event.guild.idLong)).logMemberRemove) {
+        if (!loggingSettingsRepository.findById(event.guild.idLong).orElse(LoggingSettings(event.guild.idLong)).logMemberLeave) {
             return
         }
 
@@ -350,7 +351,7 @@ class GuildLogger
                         .setColor(Color.RED)
                         .addField("User", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
                         .setTitle("User left")
-                logger.log(logEmbed, event.member.user, event.guild, null, if (moderator == null) LogTypeAction.USER else LogTypeAction.MODERATOR)
+                log(logEmbed, event.member.user, event.guild, null, if (moderator == null) LogTypeAction.USER else LogTypeAction.MODERATOR)
             } else {
                 logKick(event.member, event.guild, event.guild.getMember(moderator), reason)
             }
@@ -369,7 +370,7 @@ class GuildLogger
             if (reason != null) {
                 logEmbed.addField("Reason", reason, false)
             }
-            logger.log(logEmbed, member.user, guild, null, LogTypeAction.MODERATOR)
+            log(logEmbed, member.user, guild, null, LogTypeAction.MODERATOR)
         }
     }
 
@@ -412,13 +413,13 @@ class GuildLogger
                     logEmbed.addField("Reason", reason, false)
                 }
             }
-            logger.log(logEmbed, event.user, event.guild, null, LogTypeAction.MODERATOR)
+            log(logEmbed, event.user, event.guild, null, LogTypeAction.MODERATOR)
         }, 1, TimeUnit.SECONDS)
     }
 
     @Transactional(readOnly = true)
     override fun onGuildMemberJoin(event: GuildMemberJoinEvent) {
-        if (!loggingSettingsRepository.findById(event.guild.idLong).orElse(LoggingSettings(event.guild.idLong)).logMemberAdd) {
+        if (!loggingSettingsRepository.findById(event.guild.idLong).orElse(LoggingSettings(event.guild.idLong)).logMemberJoin) {
             return
         }
 
@@ -427,7 +428,7 @@ class GuildLogger
                 .setTitle("User joined", null)
                 .addField("User", event.member.user.name, false)
                 .addField("Account created", event.member.user.creationTime.format(DATE_TIME_FORMATTER), false)
-        guildLoggerExecutor.execute { logger.log(logEmbed, event.member.user, event.guild, null, LogTypeAction.USER) }
+        guildLoggerExecutor.execute { log(logEmbed, event.member.user, event.guild, null, LogTypeAction.USER) }
     }
 
     @Transactional(readOnly = true)
@@ -464,31 +465,36 @@ class GuildLogger
             if (moderator != null) {
                 logEmbed.addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.guild.getMember(moderator)), true)
             }
-            logger.log(logEmbed, event.user, event.guild, null, LogTypeAction.MODERATOR)
+            log(logEmbed, event.user, event.guild, null, LogTypeAction.MODERATOR)
         }, 1, TimeUnit.SECONDS)
     }
 
     override fun onUserUpdateName(event: UserUpdateNameEvent) {
-        for (guild in logger.userOnGuilds(event.user)) {
+        for (guild in getGuildsWithLogging(event.jda)) {
+            guild ?: continue
             val logEmbed = EmbedBuilder()
                     .setColor(LIGHT_BLUE)
                     .setTitle("User has changed username")
                     .addField("Old username", event.oldName, false)
                     .addField("New username", event.newName, false)
-            guildLoggerExecutor.execute { logger.log(logEmbed, event.user, guild, null, LogTypeAction.USER) }
+            guildLoggerExecutor.execute { log(logEmbed, event.user, guild, null, LogTypeAction.USER) }
         }
     }
 
     override fun onUserUpdateDiscriminator(event: UserUpdateDiscriminatorEvent) {
-        for (guild in logger.userOnGuilds(event.user)) {
+        for (guild in getGuildsWithLogging(event.jda)) {
+            guild ?: continue
             val logEmbed = EmbedBuilder()
                     .setColor(LIGHT_BLUE)
                     .setTitle("User's discriminator changed")
                     .addField("Old discriminator", event.oldDiscriminator, false)
                     .addField("New discriminator", event.newDiscriminator, false)
-            guildLoggerExecutor.execute { logger.log(logEmbed, event.user, guild, null, LogTypeAction.USER) }
+            guildLoggerExecutor.execute { log(logEmbed, event.user, guild, null, LogTypeAction.USER) }
         }
     }
+
+    private fun getGuildsWithLogging(jda: JDA): Set<Guild?> =
+            loggingSettingsRepository.findAll().map { it.guildId?.let { id -> jda.getGuildById(id) } }.toHashSet()
 
     override fun onGuildMemberNickChange(event: GuildMemberNickChangeEvent) {
         guildLoggerExecutor.schedule({
@@ -518,7 +524,7 @@ class GuildLogger
                 logEmbed.setTitle("Moderator has changed nickname")
                         .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.guild.getMember(moderator)), false)
             }
-            logger.log(logEmbed, event.member.user, event.guild, null, if (moderator == null || moderator == event.member.user) LogTypeAction.USER else LogTypeAction.MODERATOR)
+            log(logEmbed, event.member.user, event.guild, null, if (moderator == null || moderator == event.member.user) LogTypeAction.USER else LogTypeAction.MODERATOR)
         }, 1, TimeUnit.SECONDS)
     }
 
@@ -547,31 +553,114 @@ class GuildLogger
         }
 
         open inner class SettingsSequence(user: User, channel: MessageChannel) : Sequence(user, channel) {
+            private var sequenceNumber: Byte = 0
+
             init {
-                val settingFields = LoggingSettings::class.java.declaredFields.filter { it.type == Boolean::class.java }.map { it.name }
-                val messageBuilder = MessageBuilder().append("Enter the number of the boolean you'd like to invert.\nIf you don't want to invert anything type \"STOP\" (case sensitive).\n\n")
-                for (i in 0 until settingFields.size) {
-                    val channelId = (channel as TextChannel).guild.idLong
-                    messageBuilder.append(i)
-                            .append(". ")
-                            .append(settingFields[i])
-                            .append(" = ")
-                            .append(LoggingSettings::class.java.getMethod("get" + settingFields[i].capitalize()).invoke(loggingSettingsRepository.findById(channelId).orElse(LoggingSettings(channelId))))
-                            .append('\n')
+                if (channel !is TextChannel) {
+                    throw UnsupportedOperationException("Command needs to be executed in a TextChannel")
                 }
-                channel.sendMessage(messageBuilder.build()).queue { addMessageToCleaner(it) }
+                val guildId = channel.guild.idLong
+                val logSettings = loggingSettingsRepository.findById(guildId).orElse(LoggingSettings(guildId))
+                channel.sendMessage("Enter number of the action you'd like to perform:\n\n" +
+                        "0. Set the mod logging channel. Currently: ${logSettings.modLogChannel?.let { "<#$it>" }
+                                ?: "None (Required to set before setting/changing other setting)"}\n" +
+                        "1. Set the user logging channel. Currently: ${logSettings.userLogChannel?.let { "<#$it>" }
+                                ?: "Using same channel as mod logging"}\n" +
+                        "2. " + (if (logSettings.logMessageUpdate) "Disable" else "Enable ") + " logging for edited messages.\n" +
+                        "3. " + (if (logSettings.logMessageDelete) "Disable" else "Enable ") + " logging for deleted messages.\n" +
+                        "4. " + (if (logSettings.logMemberJoin) "Disable" else "Enable ") + " logging for members joining.\n" +
+                        "5. " + (if (logSettings.logMemberLeave) "Disable" else "Enable ") + " logging for members leaving (includes kicks).\n" +
+                        "6. " + (if (logSettings.logMemberBan) "Disable" else "Enable ") + " logging for banning members.\n" +
+                        "7. " + (if (logSettings.logMemberBan) "Disable" else "Enable ") + " logging for removing bans.").queue { addMessageToCleaner(it) }
             }
 
             @Transactional
             override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
-                val settingField = LoggingSettings::class.java.declaredFields.filter { it.type == Boolean::class.java }[event.message.contentRaw.toInt()].name.capitalize()
-                val guildLoggingSettings = loggingSettingsRepository.findById(event.guild.idLong).orElse(LoggingSettings(event.guild.idLong))
-                LoggingSettings::class.java.getMethod("set$settingField", Boolean::class.java)
-                        .invoke(guildLoggingSettings, !(LoggingSettings::class.java.getMethod("get$settingField").invoke(guildLoggingSettings) as Boolean))
-                loggingSettingsRepository.save(guildLoggingSettings)
-                channel.sendMessage("Successfully inverted " + settingField.decapitalize() + ".").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                channel as TextChannel
+                val guildId = channel.guild.idLong
+                val logSettings = loggingSettingsRepository.findById(guildId).orElse(LoggingSettings(guildId))
+                when (sequenceNumber) {
+                    0.toByte() -> {
+                        when (event.message.contentRaw.toByte()) {
+                            0.toByte() -> {
+                                sequenceNumber = 1
+                                channel.sendMessage("${user.asMention} Please mention the channel you want to be used as moderator log.").queue { addMessageToCleaner(it) }
+                                return
+                            }
+                            1.toByte() -> {
+                                sequenceNumber = 2
+                                channel.sendMessage("${user.asMention} Please mention the channel you want to be used as user log.").queue { addMessageToCleaner(it) }
+                                return
+                            }
+                            2.toByte() -> {
+                                logSettings.logMessageUpdate = !logSettings.logMessageUpdate
+                            }
+                            3.toByte() -> {
+                                logSettings.logMessageDelete = !logSettings.logMessageDelete
+                            }
+                            4.toByte() -> {
+                                logSettings.logMemberJoin = !logSettings.logMemberJoin
+                            }
+                            5.toByte() -> {
+                                logSettings.logMemberLeave = !logSettings.logMemberLeave
+                            }
+                            6.toByte() -> {
+                                logSettings.logMemberBan = !logSettings.logMemberBan
+                            }
+                            7.toByte() -> {
+                                logSettings.logMemberRemoveBan = !logSettings.logMemberRemoveBan
+                            }
+                        }
+                    }
+                    1.toByte() -> {
+                        logSettings.modLogChannel = event.message.mentionedChannels[0].idLong
+                    }
+                    2.toByte() -> {
+                        logSettings.userLogChannel = event.message.mentionedChannels[0].idLong
+                    }
+                }
+                loggingSettingsRepository.save(logSettings)
+                channel.sendMessage("${user.asMention} Settings successfully saved.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                 destroy()
             }
+        }
+    }
+
+    /**
+     * Logs to the log channel
+     *
+     * @param logEmbed An embed to be used as log message a time stamp will be added to the footer and
+     * @param guild    The guild where the message needs to be logged to
+     */
+    fun log(logEmbed: EmbedBuilder, associatedUser: User?, guild: Guild, embeds: List<MessageEmbed>?, actionType: GuildLogger.LogTypeAction, bytes: ByteArray? = null) {
+        val logSettings = loggingSettingsRepository.findById(guild.idLong).orElse(null)
+                ?: return
+
+        val targetChannel: TextChannel = if (actionType === GuildLogger.LogTypeAction.MODERATOR) {
+            logSettings.modLogChannel?.let { guild.getTextChannelById(it) }
+        } else {
+            logSettings.userLogChannel?.let { guild.getTextChannelById(it) }
+                    ?: logSettings.modLogChannel?.let { guild.getTextChannelById(it) }
+        } ?: return
+
+        try {
+            logEmbed.setTimestamp(OffsetDateTime.now())
+            if (associatedUser != null) {
+                logEmbed.setFooter(associatedUser.id, associatedUser.effectiveAvatarUrl)
+            }
+            if (bytes == null) {
+                targetChannel.sendMessage(logEmbed.build()).queue()
+            } else {
+                targetChannel.sendFile(bytes, "chat.log", MessageBuilder().setEmbed(logEmbed.build()).build()).queue()
+            }
+            if (embeds != null) {
+                for (embed in embeds) {
+                    targetChannel.sendMessage(MessageBuilder().setEmbed(embed).append("The embed below was deleted with the previous message").build()).queue()
+                }
+            }
+        } catch (e: PermissionException) {
+            LOG.warn(e.javaClass.simpleName + ": " + e.message + "\n" +
+                    "Guild: " + guild.toString())
         }
     }
 }

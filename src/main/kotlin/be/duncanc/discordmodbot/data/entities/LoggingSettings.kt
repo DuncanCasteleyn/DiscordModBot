@@ -17,19 +17,24 @@
 package be.duncanc.discordmodbot.data.entities
 
 import javax.persistence.*
+import javax.validation.constraints.NotNull
 
 @Entity
 @Table(name = "logging_settings")
 data class LoggingSettings
-constructor(
+(
         @Id
         @Column(updatable = false)
         val guildId: Long? = null,
-        var logMessageDelete: Boolean = true,
+        @Column(nullable = false)
+        @field:NotNull
+        var modLogChannel: Long? = null,
+        var userLogChannel: Long? = null,
         var logMessageUpdate: Boolean = true,
-        var logMemberRemove: Boolean = true,
+        var logMessageDelete: Boolean = true,
+        var logMemberJoin: Boolean = true,
+        var logMemberLeave: Boolean = true,
         var logMemberBan: Boolean = true,
-        var logMemberAdd: Boolean = true,
         var logMemberRemoveBan: Boolean = true,
         @ElementCollection
         @CollectionTable(name = "logging_ignored_channels")

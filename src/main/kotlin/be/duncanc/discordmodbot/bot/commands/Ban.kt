@@ -101,8 +101,7 @@ class Ban : CommandModule(
 
     private fun logBan(event: MessageReceivedEvent, reason: String, toBan: Member) {
         val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
-        val logToChannel = guildLogger?.logger
-        if (logToChannel != null) {
+        if (guildLogger != null) {
             val logEmbed = EmbedBuilder()
                     .setColor(Color.RED)
                     .setTitle("User banned")
@@ -112,7 +111,7 @@ class Ban : CommandModule(
                     .addField("Reason", reason, false)
 
 
-            logToChannel.log(logEmbed, toBan.user, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
+            guildLogger.log(logEmbed, toBan.user, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
         }
     }
 

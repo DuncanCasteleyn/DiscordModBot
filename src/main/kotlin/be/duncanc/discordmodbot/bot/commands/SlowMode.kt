@@ -64,7 +64,6 @@ class SlowMode : CommandModule(
         } else {
             if (event.guild.getMember(event.jda.selfUser).permissions.contains(Permission.MANAGE_PERMISSIONS)) {
                 val guildLogger = event.jda.registeredListeners.stream().filter { o -> o is GuildLogger }.findFirst().orElse(null) as GuildLogger
-                val logToChannel = guildLogger.logger
                 var wasSlowed = false
                 for (slowChannel in slowedChannels) {
                     if (slowChannel.slowChannel === event.channel) {
@@ -76,7 +75,7 @@ class SlowMode : CommandModule(
                                 .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
                                 .addField("Channel", event.textChannel.name, true)
 
-                        logToChannel.log(logEmbed, event.author, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
+                        guildLogger.log(logEmbed, event.author, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
 
                         //logger.log("Slow mode on #" + event.getTextChannel().getName() + " disabled", "toggled by " + JDALibHelper.getEffectiveNameAndUsername(event.getMember()), event.getGuild(), event.getAuthor().getId(), event.getAuthor().getEffectiveAvatarUrl());
                         wasSlowed = true
@@ -97,7 +96,7 @@ class SlowMode : CommandModule(
                                     .addField("Threshold time", args[1], true)
                                     .addField("Mute time", args[2], true)
 
-                            logToChannel.log(logEmbed, event.author, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
+                            guildLogger.log(logEmbed, event.author, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
                         } catch (e: NumberFormatException) {
                             val privateChannel: PrivateChannel = event.author.openPrivateChannel().complete()
                             privateChannel.sendMessage("The provided argument for the command !slowmode was incorrect. Provide integer numbers.").queue()
@@ -118,7 +117,7 @@ class SlowMode : CommandModule(
                                 .addField("Threshold time", thresholdTime.toString(), true)
                                 .addField("Mute time", muteTime.toString(), true)
 
-                        logToChannel.log(logEmbed, event.author, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
+                        guildLogger.log(logEmbed, event.author, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
                     }
                 }
             } else {

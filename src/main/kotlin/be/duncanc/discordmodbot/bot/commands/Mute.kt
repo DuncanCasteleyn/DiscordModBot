@@ -76,8 +76,7 @@ class Mute
             }
             event.guild.controller.addRolesToMember(toMute, applicationContext.getBean(MuteRole::class.java).getMuteRole(event.guild)).reason(reason).queue({
                 val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
-                val logToChannel = guildLogger?.logger
-                if (logToChannel != null) {
+                if (guildLogger != null) {
                     val logEmbed = EmbedBuilder()
                             .setColor(Color.YELLOW)
                             .setTitle("User muted")
@@ -86,7 +85,7 @@ class Mute
                             .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
                             .addField("Reason", reason, false)
 
-                    logToChannel.log(logEmbed, toMute.user, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
+                    guildLogger.log(logEmbed, toMute.user, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
                 }
                 val userMuteWarning = EmbedBuilder()
                         .setColor(Color.YELLOW)

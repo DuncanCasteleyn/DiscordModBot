@@ -99,8 +99,7 @@ class Kick
 
     private fun logKick(event: MessageReceivedEvent, reason: String, toKick: Member) {
         val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
-        val logToChannel = guildLogger?.logger
-        if (logToChannel != null) {
+        if (guildLogger != null) {
             val logEmbed = EmbedBuilder()
                     .setColor(Color.RED)
                     .setTitle("User kicked")
@@ -109,7 +108,7 @@ class Kick
                     .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
                     .addField("Reason", reason, false)
 
-            logToChannel.log(logEmbed, toKick.user, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
+            guildLogger.log(logEmbed, toKick.user, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
         }
     }
 

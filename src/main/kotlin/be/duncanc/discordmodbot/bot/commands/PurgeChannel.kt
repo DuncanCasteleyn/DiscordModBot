@@ -17,7 +17,6 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.services.GuildLogger
-import be.duncanc.discordmodbot.bot.services.LogToChannel
 import be.duncanc.discordmodbot.bot.utils.JDALibHelper
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.Permission
@@ -89,7 +88,7 @@ class PurgeChannel : CommandModule(
             event.channel.sendMessage(stringBuilder.toString()).queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
 
 
-            val logToChannel = event.jda.registeredListeners.firstOrNull { it is LogToChannel } as LogToChannel?
+            val logToChannel = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
             if (logToChannel != null) {
                 val filterString = StringBuilder()
                 targetUsers.forEach { user -> filterString.append(user.asMention).append("\n") }
@@ -128,15 +127,15 @@ class PurgeChannel : CommandModule(
             JDALibHelper.limitLessBulkDelete(textChannel, messageList)
             textChannel.sendMessage(event.author.asMention + " deleted " + amountDeleted + " most recent messages not older than 2 weeks.").queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
 
-            val logToChannel = event.jda.registeredListeners.firstOrNull { it is LogToChannel } as LogToChannel?
-            if (logToChannel != null) {
+            val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
+            if (guildLogger != null) {
                 val logEmbed = EmbedBuilder()
                         .setColor(Color.YELLOW)
                         .setTitle("Channel purge", null)
                         .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
                         .addField("Channel", textChannel.name, true)
 
-                logToChannel.log(logEmbed, event.author, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
+                guildLogger.log(logEmbed, event.author, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
             }
         }
     }

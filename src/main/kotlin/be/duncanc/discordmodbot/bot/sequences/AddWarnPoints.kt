@@ -163,8 +163,7 @@ class AddWarnPoints(
 
     private fun logAddPoints(moderator: Member, toInform: Member, reason: String, amount: Int, id: UUID, dateTime: OffsetDateTime, action: Byte) {
         val guildLogger = toInform.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
-        val logToChannel = guildLogger?.logger
-        if (logToChannel != null) {
+        if (guildLogger != null) {
             val logEmbed = EmbedBuilder()
                     .setColor(Color.YELLOW)
                     .setTitle("Warn points added to user")
@@ -179,7 +178,7 @@ class AddWarnPoints(
                 2.toByte() -> logEmbed.addField("Punishment", "Kick", false)
             }
 
-            logToChannel.log(logEmbed, toInform.user, toInform.guild, null, GuildLogger.LogTypeAction.MODERATOR)
+            guildLogger.log(logEmbed, toInform.user, toInform.guild, null, GuildLogger.LogTypeAction.MODERATOR)
         }
     }
 

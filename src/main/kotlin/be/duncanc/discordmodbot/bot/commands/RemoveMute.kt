@@ -73,10 +73,9 @@ class RemoveMute : CommandModule(
             if (!toRemoveMute.roles.contains(event.guild.getRoleById("221678882342830090"))) {
                 throw UnsupportedOperationException("Can't remove a mute from a user that is not muted.")
             }
-            event.guild.controller.removeRolesFromMember(toRemoveMute, event.guild.getRoleById("221678882342830090")).reason(reason).queue({
+            event.guild.controller.removeRolesFromMember(toRemoveMute, event.guild.getRoleById("221678882342830090")).reason(reason).queue({ _ ->
                 val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
-                val logToChannel = guildLogger?.logger
-                if (logToChannel != null) {
+                if (guildLogger != null) {
                     val logEmbed = EmbedBuilder()
                             .setColor(Color.GREEN)
                             .setTitle("User's mute was removed", null)
@@ -84,7 +83,7 @@ class RemoveMute : CommandModule(
                             .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
                             .addField("Reason", reason, false)
 
-                    logToChannel.log(logEmbed, toRemoveMute.user, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
+                    guildLogger.log(logEmbed, toRemoveMute.user, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
                 }
                 val muteRemoveNotification = EmbedBuilder()
                         .setColor(Color.green)

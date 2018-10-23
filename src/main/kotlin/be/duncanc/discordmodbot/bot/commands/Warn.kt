@@ -83,8 +83,7 @@ class Warn
                 throw PermissionException("You can't interact with this member")
             }
             val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
-            val logToChannel = guildLogger?.logger
-            if (logToChannel != null) {
+            if (guildLogger != null) {
                 val logEmbed = EmbedBuilder()
                         .setColor(Color.YELLOW)
                         .setTitle("User warned")
@@ -93,7 +92,7 @@ class Warn
                         .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
                         .addField("Reason", reason, false)
 
-                logToChannel.log(logEmbed, toWarn.user, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
+                guildLogger.log(logEmbed, toWarn.user, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
 
                 //runBots.getLogToChannel().log(JDALibHelper.getEffectiveNameAndUsername(event.getMember()) + " warned " + JDALibHelper.getEffectiveNameAndUsername(toWarn), "Reason: " + arguments, event.getGuild(), toWarn.getUser().getId(), toWarn.getUser().getEffectiveAvatarUrl(), true);
             }

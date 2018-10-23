@@ -82,8 +82,7 @@ class BanUserById : CommandModule(
                 }
                 event.guild.controller.ban(userId, 1, reason).queue(banQue@{
                     val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
-                    val logToChannel = guildLogger?.logger
-                    if (logToChannel != null) {
+                    if (guildLogger != null) {
                         val logEmbed = EmbedBuilder()
                                 .setColor(Color.RED)
                                 .setTitle("User banned by id")
@@ -92,7 +91,7 @@ class BanUserById : CommandModule(
                                 .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
                                 .addField("Reason", reason, false)
 
-                        logToChannel.log(logEmbed, toBan, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
+                        guildLogger.log(logEmbed, toBan, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
                     }
 
                     if (privateChannel == null) {
