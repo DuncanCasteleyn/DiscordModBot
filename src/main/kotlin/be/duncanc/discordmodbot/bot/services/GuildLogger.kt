@@ -49,8 +49,6 @@ import net.dv8tion.jda.core.exceptions.PermissionException
 import net.dv8tion.jda.core.hooks.ListenerAdapter
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.config.ConfigurableBeanFactory
-import org.springframework.context.annotation.Scope
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.awt.Color
@@ -67,15 +65,14 @@ import java.util.concurrent.TimeUnit
  *
  *
  * IMPORTANT READ BEFORE MODIFYING CODE:
- * The modifying the lastCheckedLogEntries HashMap needs to happen using the guildLoggerExecutor because its
- * thread are executed sequentially there is no need to lock the object, however if you try to do this without using the
+ * Modifying the lastCheckedLogEntries HashMap needs to happen using the guildLoggerExecutor because it's
+ * single-threaded and executed sequentially there is no need to lock the object, however if you try to do this without using the
  * service the chances of hitting a ConcurrentModificationException is 100%.
  *
  * @author Duncan
  * @since 1.0
  */
 @Component
-@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 class GuildLogger
 @Autowired constructor(
         val messageHistory: MessageHistory,
@@ -108,21 +105,27 @@ class GuildLogger
         if (loggingSettings.ignoredChannels.contains(event.channel.idLong)) {
             return
         }
-        messageHistory.onGuildMessageReceived(event)
+        messageHistory.storeMessage(event)
     }
 
     override fun onReady(event: ReadyEvent) {
         val guilds = loggingSettingsRepository.findAll().map { it.guildId?.let { id -> event.jda.getGuildById(id) } }.toHashSet()
-        guilds.forEach { guild ->
-            guild?.auditLogs?.limit(1)?.cache(false)?.queue { auditLogEntries ->
-                val auditLogEntry = if (auditLogEntries.isEmpty()) {
-                    AuditLogEntry(ActionType.MESSAGE_DELETE, -1, -1, guild as GuildImpl, null, null, null, null, null)
-                    //Creating a dummy
-                } else {
-                    auditLogEntries[0]
+        guildLoggerExecutor.execute {
+            guilds.forEach { guild ->
+                guild ?: return@forEach
+                guild.auditLogs.limit(1).cache(false).queue { auditLogEntries ->
+                    val auditLogEntry = if (auditLogEntries.isEmpty()) {
+                        AuditLogEntry(ActionType.MESSAGE_DELETE, -1, -1, guild as GuildImpl, null, null, null, null, null)
+                        //Creating a dummy
+                    } else {
+                        auditLogEntries[0]
+                    }
+                    guildLoggerExecutor.execute {
+                        lastCheckedLogEntries[auditLogEntry.guild.idLong] = auditLogEntry
+                    }
                 }
-                guildLoggerExecutor.execute {
-                    lastCheckedLogEntries[auditLogEntry.guild.idLong] = auditLogEntry
+                guild.textChannels.forEach { textChannel ->
+                    messageHistory.cacheHistoryOfChannel(textChannel)
                 }
             }
         }
@@ -132,7 +135,7 @@ class GuildLogger
     override fun onGuildMessageUpdate(event: GuildMessageUpdateEvent) {
         val loggingSettings = loggingSettingsRepository.findById(event.guild.idLong).orElse(LoggingSettings(event.guild.idLong))
         if (!loggingSettings.logMessageUpdate) {
-            messageHistory.onGuildMessageUpdate(event)
+            messageHistory.updateMessage(event)
             return
         }
 
@@ -142,7 +145,7 @@ class GuildLogger
             return
         }
 
-        val oldMessage = messageHistory.getMessage(java.lang.Long.parseUnsignedLong(event.messageId), false)
+        val oldMessage = messageHistory.getMessage(event.channel.idLong, event.messageIdLong, false)
 
         if (oldMessage != null) {
             val name: String = try {
@@ -158,7 +161,7 @@ class GuildLogger
             linkEmotes(oldMessage.emotes, logEmbed)
             guildLoggerExecutor.execute { log(logEmbed, oldMessage.author, guild, oldMessage.embeds, LogTypeAction.USER) }
         }
-        messageHistory.onGuildMessageUpdate(event)
+        messageHistory.updateMessage(event)
     }
 
     /**
@@ -179,9 +182,9 @@ class GuildLogger
             return
         }
 
-        val oldMessage = messageHistory.getMessage(java.lang.Long.parseUnsignedLong(event.messageId))
+        val oldMessage = messageHistory.getMessage(event.channel.idLong, event.messageIdLong)
         if (oldMessage != null) {
-            val attachmentString = messageHistory.getAttachmentsString(java.lang.Long.parseUnsignedLong(event.messageId))
+            val attachmentString = messageHistory.getAttachmentsString(event.messageIdLong)
 
             val name: String = try {
                 JDALibHelper.getEffectiveNameAndUsername(oldMessage.guild.getMember(oldMessage.author))
@@ -265,30 +268,16 @@ class GuildLogger
                 .setTitle("#" + event.channel.name + ": Bulk delete")
                 .addField("Amount of deleted messages", event.messageIds.size.toString(), false)
 
-        var history: MessageHistory? = null
-        for (messageHistory in MessageHistory.instanceList) {
-            try {
-                if (event.jda === messageHistory.instance) {
-                    history = messageHistory
-                }
-            } catch (ignored: MessageHistory.EmptyCacheException) {
-            }
-        }
-
-        if (history == null) {
-            //logBulkDelete(event, logEmbed)
-            return
-        }
-
         val logWriter = StringBuilder(event.channel.toString()).append("\n")
 
         var messageLogged = false
         event.messageIds.forEach { id ->
-            val message = history.getMessage(java.lang.Long.parseUnsignedLong(id))
+            val idLong = java.lang.Long.parseUnsignedLong(id)
+            val message = messageHistory.getMessage(event.channel.idLong, idLong)
             if (message != null) {
                 messageLogged = true
                 logWriter.append(message.author.toString()).append(":\n").append(message.contentDisplay).append("\n\n")
-                val attachmentString = history.getAttachmentsString(java.lang.Long.parseUnsignedLong(id))
+                val attachmentString = messageHistory.getAttachmentsString(idLong)
                 if (attachmentString != null) {
                     logWriter.append("Attachment(s):\n").append(attachmentString).append("\n")
                 } else {
@@ -307,9 +296,7 @@ class GuildLogger
         if (messageLogged) {
             logWriter.append("Logged on ").append(OffsetDateTime.now().toString())
             logBulkDelete(event, logEmbed, logWriter.toString().toByteArray())
-        } /*else {
-            logBulkDelete(event, logEmbed)
-        }*/
+        }
 
     }
 
