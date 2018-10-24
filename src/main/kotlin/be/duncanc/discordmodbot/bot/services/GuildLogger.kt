@@ -58,6 +58,7 @@ import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import kotlin.concurrent.thread
 
 /**
  * This file will create the listeners and the appropriate action to be taken
@@ -92,9 +93,9 @@ class GuildLogger
 
     init {
         this.guildLoggerExecutor = Executors.newSingleThreadScheduledExecutor { r ->
-            val thread = Thread(r, GuildLogger::class.java.simpleName)
-            thread.isDaemon = true
-            thread
+            thread(name = GuildLogger::class.java.simpleName, start = false, isDaemon = false) {
+                r.run()
+            }
         }
         this.lastCheckedLogEntries = HashMap()
     }
@@ -110,22 +111,23 @@ class GuildLogger
 
     override fun onReady(event: ReadyEvent) {
         val guilds = loggingSettingsRepository.findAll().map { it.guildId?.let { id -> event.jda.getGuildById(id) } }.toHashSet()
-        guildLoggerExecutor.execute {
-            guilds.forEach { guild ->
-                guild ?: return@forEach
-                guild.auditLogs.limit(1).cache(false).queue { auditLogEntries ->
-                    val auditLogEntry = if (auditLogEntries.isEmpty()) {
-                        AuditLogEntry(ActionType.MESSAGE_DELETE, -1, -1, guild as GuildImpl, null, null, null, null, null)
-                        //Creating a dummy
-                    } else {
-                        auditLogEntries[0]
-                    }
-                    guildLoggerExecutor.execute {
-                        lastCheckedLogEntries[auditLogEntry.guild.idLong] = auditLogEntry
-                    }
+        guilds.forEach { guild ->
+            guild ?: return@forEach
+            guild.auditLogs.limit(1).cache(false).queue { auditLogEntries ->
+                val auditLogEntry = if (auditLogEntries.isEmpty()) {
+                    AuditLogEntry(ActionType.MESSAGE_DELETE, -1, -1, guild as GuildImpl, null, null, null, null, null)
+                    //Creating a dummy
+                } else {
+                    auditLogEntries[0]
                 }
-                guild.textChannels.forEach { textChannel ->
+                guildLoggerExecutor.execute {
+                    lastCheckedLogEntries[auditLogEntry.guild.idLong] = auditLogEntry
+                }
+            }
+            guild.textChannels.forEach { textChannel ->
+                try {
                     messageHistory.cacheHistoryOfChannel(textChannel)
+                } catch (ignored: PermissionException) {
                 }
             }
         }

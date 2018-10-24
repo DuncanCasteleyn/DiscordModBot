@@ -22,6 +22,7 @@ import net.dv8tion.jda.core.entities.TextChannel
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.core.events.message.guild.GuildMessageUpdateEvent
 import org.apache.commons.collections4.map.LinkedMap
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -43,6 +44,8 @@ constructor(
 ) {
     companion object {
         private const val HISTORY_SIZE_PER_CHANNEL = 2000
+
+        private val LOG = LoggerFactory.getLogger(MessageHistory::class.java)
     }
 
     /**
@@ -50,18 +53,20 @@ constructor(
      */
     private val channels: HashMap<Long, LinkedMap<Long, Message>> = HashMap()
 
-    @Synchronized
     fun cacheHistoryOfChannel(textChannel: TextChannel) {
         val channelId = textChannel.idLong
         val messages = channels[channelId] ?: LinkedMap()
         if (channels[channelId] == null) {
             channels[channelId] = messages
         }
-        for (message in textChannel.iterableHistory) {
-            messages[message.idLong] = message
-            if(messages.size >= HISTORY_SIZE_PER_CHANNEL) {
-                return
+        LOG.info("Caching channel $textChannel")
+        textChannel.iterableHistory.takeAsync(HISTORY_SIZE_PER_CHANNEL).thenAccept { retrieveMessages ->
+            synchronized(this) {
+                retrieveMessages.forEach { message ->
+                    messages[message.idLong] = message
+                }
             }
+            LOG.info("Cached channel $textChannel")
         }
     }
 
