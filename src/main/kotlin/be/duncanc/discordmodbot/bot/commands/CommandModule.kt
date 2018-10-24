@@ -113,20 +113,20 @@ abstract class CommandModule
                     }
                     if (requiredPermissions.isNotEmpty()) {
                         if (event.isFromType(ChannelType.TEXT) && !event.member.permissions.containsAll(requiredPermissions.asList())) {
-                            throw PermissionException("You do not have sufficient permissions to use this command.\nYou need the following permissions: " + requiredPermissions.contentToString())
+                            throw PermissionException("You do not have sufficient permissions to use this command.\nYou need the following permissions: ${requiredPermissions.contentToString()}")
                         } else if (!event.isFromType(ChannelType.TEXT)) {
                             throw PermissionException("This command requires permissions, which means it has to be executed from a text channel on a guild/server.")
                         }
                     }
                     commandExec(event, command, arguments)
-                    LOG.info("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " completed executing " + event.message.contentStripped + " command from user " + event.author.toString())
+                    LOG.info("Bot ${event.jda.selfUser} on channel ${if (event.guild != null) "${event.guild} " else ""}${event.channel.name} completed executing ${event.message.contentStripped} command from user ${event.author}")
                 } catch (pe: PermissionException) {
-                    LOG.warn("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " failed executing " + event.message.contentStripped + " command from user " + event.author.toString())
-                    val exceptionMessage = MessageBuilder().append("Cannot complete action due to a permission issue; see the message below for details.").appendCodeBlock(pe.javaClass.simpleName + ": " + pe.message, "text").build()
+                    LOG.warn("Bot ${event.jda.selfUser} on channel ${if (event.guild != null) "${event.guild} " else ""}${event.channel.name} failed executing ${event.message.contentStripped} command from user ${event.author}")
+                    val exceptionMessage = MessageBuilder().append("${event.author.asMention} Cannot complete action due to a permission issue; see the message below for details.").appendCodeBlock(pe.javaClass.simpleName + ": " + pe.message, "text").build()
                     event.channel.sendMessage(exceptionMessage).queue { it.delete().queueAfter(5, TimeUnit.MINUTES) }
                 } catch (t: Throwable) {
                     LOG.error("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " failed executing " + event.message.contentStripped + " command from user " + event.author.toString(), t)
-                    val exceptionMessage = MessageBuilder().append("Cannot complete action due to an error; see the message below for details.").appendCodeBlock(t.javaClass.simpleName + ": " + t.message, "text").build()
+                    val exceptionMessage = MessageBuilder().append("${event.author.asMention} Cannot complete action due to an error; see the message below for details.").appendCodeBlock(t.javaClass.simpleName + ": " + t.message, "text").build()
                     event.channel.sendMessage(exceptionMessage).queue { it.delete().queueAfter(5, TimeUnit.MINUTES) }
                 }
 
@@ -135,7 +135,7 @@ abstract class CommandModule
                         event.message.delete().queue()
                     }
                 } catch (e: Exception) {
-                    LOG.warn("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " failed deleting " + event.message.contentStripped + " command from user " + event.author.toString(), e)
+                    LOG.warn("Bot ${event.jda.selfUser} on channel ${if (event.guild != null) "${event.guild} " else ""}${event.channel.name} failed deleting ${event.message.contentStripped} command from user ${event.author}", e)
                 }
                 spamCheck(event.author)
             }
