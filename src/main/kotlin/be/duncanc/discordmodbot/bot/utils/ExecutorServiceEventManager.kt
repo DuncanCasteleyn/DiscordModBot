@@ -17,8 +17,11 @@ package be.duncanc.discordmodbot.bot.utils
 
 import net.dv8tion.jda.core.events.Event
 import net.dv8tion.jda.core.hooks.InterfacedEventManager
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.concurrent.thread
 
 /**
  * This event manager uses a single thread executor service.
@@ -32,17 +35,13 @@ internal class ExecutorServiceEventManager
 constructor(
         name: String
 ) : InterfacedEventManager() {
+    companion object {
+        val LOG: Logger = LoggerFactory.getLogger(ExecutorServiceEventManager::class.java)
+    }
 
-    private val executor: ExecutorService
-
-    /**
-     * Creates a single thread executor service.
-     */
-    init {
-        executor = Executors.newSingleThreadExecutor {
-            val t = Thread(it, ExecutorServiceEventManager::class.java.simpleName + ": " + name)
-            t.isDaemon = true
-            t
+    private val executor: ExecutorService = Executors.newSingleThreadExecutor {
+        thread(name = "${ExecutorServiceEventManager::class.java.simpleName}: $name", start = false, isDaemon = true) {
+            it.run()
         }
     }
 
@@ -52,6 +51,15 @@ constructor(
      * @see InterfacedEventManager.handle
      */
     override fun handle(event: Event) {
-        executor.submit { super.handle(event) }
+        executor.submit {
+            try {
+                super.handle(event)
+            } catch (e: Exception) {
+                LOG.error("One of the EventListeners had an uncaught exception", e)
+            } catch(e: Error) {
+                LOG.error("One of the EventListeners encountered an error", e)
+                throw e
+            }
+        }
     }
 }
