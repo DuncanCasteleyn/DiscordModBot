@@ -59,14 +59,12 @@ constructor(
         if (channels[channelId] == null) {
             channels[channelId] = messages
         }
-        LOG.info("Caching channel $textChannel")
         textChannel.iterableHistory.takeAsync(HISTORY_SIZE_PER_CHANNEL).thenAccept { retrieveMessages ->
             synchronized(this) {
                 retrieveMessages.forEach { message ->
                     messages[message.idLong] = message
                 }
             }
-            LOG.info("Cached channel $textChannel")
         }
     }
 
