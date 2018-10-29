@@ -18,7 +18,7 @@ import org.gradle.kotlin.dsl.extra
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 buildscript {
-    val kotlinVersion = "1.2.71"
+    val kotlinVersion = "1.3.0"
     val springBootVersion = "2.0.6.RELEASE"
 
     repositories {
@@ -39,7 +39,7 @@ plugins {
     java
     idea
     eclipse
-    kotlin("jvm").version("1.2.71")
+    kotlin("jvm").version("1.3.0")
 }
 
 
