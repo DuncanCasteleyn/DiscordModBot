@@ -17,13 +17,15 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.data.configs.properties.DiscordModBotConfigurationProperties
+import kotlinx.coroutines.*
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.entities.ChannelType
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import org.springframework.beans.factory.config.ConfigurableBeanFactory
 import org.springframework.context.annotation.Scope
 import org.springframework.stereotype.Component
-import java.util.concurrent.*
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.TimeUnit
 import javax.script.ScriptEngine
 import javax.script.ScriptEngineManager
 
@@ -48,7 +50,6 @@ class Eval(
         private const val ARGUMENTATION = "<Javascript or Java code>\n" +
                 "    Example: `!eval return \"5 + 5 is: \" + (5 + 5);\n" +
                 "    This will print: 5 + 5 is: 10"
-        private val scriptExecutorService: ExecutorService = Executors.newCachedThreadPool()
     }
 
     private val engine: ScriptEngine = ScriptEngineManager().getEngineByName("nashorn")!!
@@ -75,36 +76,46 @@ class Eval(
         }
 
         val messageBuilder = MessageBuilder()
-
-        try {
-            engine.put("event", event)
-            engine.put("message", event.message)
-            engine.put("channel", event.channel)
-            engine.put("arguments", arguments)
-            engine.put("api", event.jda)
-            if (event.isFromType(ChannelType.TEXT)) {
-                engine.put("guild", event.guild)
-                engine.put("member", event.member)
-            }
-            val future: Future<*> = scriptExecutorService.submit(Callable {
-                engine.eval("(function() {with (imports) {\n" +
-                        "$arguments\n" +
-                        "}})();")
-            })
-            val out: Any? = future.get(10, TimeUnit.SECONDS);
-            if (!future.isDone) {
-                future.cancel(true);
-                return
-            }
-            messageBuilder.appendCodeBlock(out?.toString() ?: "Executed without error.", "text")
-        } catch (executionException: ExecutionException) {
-            val throwable: Throwable? = executionException.cause
-            messageBuilder.appendCodeBlock("${throwable?.javaClass?.simpleName
-                    ?: executionException.javaClass.simpleName}: ${throwable?.message
-                    ?: executionException.message}", "text")
-        } catch (throwable: Throwable) {
-            messageBuilder.appendCodeBlock("${throwable.javaClass.simpleName}: ${throwable.message}", "text")
+        engine.put("event", event)
+        engine.put("message", event.message)
+        engine.put("channel", event.channel)
+        engine.put("arguments", arguments)
+        engine.put("api", event.jda)
+        if (event.isFromType(ChannelType.TEXT)) {
+            engine.put("guild", event.guild)
+            engine.put("member", event.member)
         }
-        event.channel.sendMessage(messageBuilder.build()).queue()
+        GlobalScope.launch {
+            try {
+                val future = GlobalScope.async {
+                    engine.eval("(function() {with (imports) {\n" +
+                            "$arguments\n" +
+                            "}})();")
+                }
+                val out: Any? = GlobalScope.async {
+                    delay(TimeUnit.SECONDS.toMillis(10))
+                    var count = 0
+                    while (future.isActive && count < 10) {
+                        delay(TimeUnit.SECONDS.toMillis(1))
+                        count++
+                    }
+                    if (future.isCompleted) {
+                        future.await()
+                    } else {
+                        future.cancel()
+                        "The execution failed"
+                    }
+                }.await()
+                messageBuilder.appendCodeBlock(out?.toString() ?: "Executed without error.", "text")
+            } catch (executionException: ExecutionException) {
+                val throwable: Throwable? = executionException.cause
+                messageBuilder.appendCodeBlock("${throwable?.javaClass?.simpleName
+                        ?: executionException.javaClass.simpleName}: ${throwable?.message
+                        ?: executionException.message}", "text")
+            } catch (throwable: Throwable) {
+                messageBuilder.appendCodeBlock("${throwable.javaClass.simpleName}: ${throwable.message}", "text")
+            }
+            event.channel.sendMessage(messageBuilder.build()).queue()
+        }
     }
 }
