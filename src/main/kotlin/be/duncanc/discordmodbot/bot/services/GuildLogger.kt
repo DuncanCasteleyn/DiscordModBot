@@ -22,6 +22,8 @@ import be.duncanc.discordmodbot.bot.sequences.Sequence
 import be.duncanc.discordmodbot.bot.utils.JDALibHelper
 import be.duncanc.discordmodbot.data.entities.LoggingSettings
 import be.duncanc.discordmodbot.data.repositories.LoggingSettingsRepository
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.MessageBuilder
@@ -124,10 +126,12 @@ class GuildLogger
                     lastCheckedLogEntries[auditLogEntry.guild.idLong] = auditLogEntry
                 }
             }
-            guild.textChannels.forEach { textChannel ->
-                try {
-                    messageHistory.cacheHistoryOfChannel(textChannel)
-                } catch (ignored: PermissionException) {
+            GlobalScope.launch {
+                guild.textChannels.forEach { textChannel ->
+                    try {
+                        messageHistory.cacheHistoryOfChannel(textChannel)
+                    } catch (ignored: PermissionException) {
+                    }
                 }
             }
         }

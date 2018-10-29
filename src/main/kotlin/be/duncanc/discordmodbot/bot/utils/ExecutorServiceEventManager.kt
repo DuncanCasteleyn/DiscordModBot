@@ -15,11 +15,14 @@
  */
 package be.duncanc.discordmodbot.bot.utils
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.asCoroutineDispatcher
 import net.dv8tion.jda.core.events.Event
 import net.dv8tion.jda.core.hooks.InterfacedEventManager
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.concurrent.thread
 
@@ -39,11 +42,11 @@ constructor(
         val LOG: Logger = LoggerFactory.getLogger(ExecutorServiceEventManager::class.java)
     }
 
-    private val executor: ExecutorService = Executors.newSingleThreadExecutor {
+    private val executor = Executors.newSingleThreadExecutor {
         thread(name = "${ExecutorServiceEventManager::class.java.simpleName}: $name", start = false, isDaemon = true) {
             it.run()
         }
-    }
+    }.asCoroutineDispatcher()
 
     /**
      * Executes the handle function of the super class using the ExecutorService.
@@ -51,12 +54,12 @@ constructor(
      * @see InterfacedEventManager.handle
      */
     override fun handle(event: Event) {
-        executor.submit {
+        GlobalScope.launch(executor) {
             try {
                 super.handle(event)
             } catch (e: Exception) {
                 LOG.error("One of the EventListeners had an uncaught exception", e)
-            } catch(e: Error) {
+            } catch (e: Error) {
                 LOG.error("One of the EventListeners encountered an error", e)
                 throw e
             }
