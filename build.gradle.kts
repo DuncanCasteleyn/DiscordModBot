@@ -59,6 +59,7 @@ dependencies {
     compile(group = "club.minnced", name = "opus-java", version = "1.0.4")
     compile(group = "org.apache.commons", name = "commons-lang3", version = "3.5")
     compile(group = "javax.xml.bind", name = "jaxb-api", version = "2.3.0")
+    implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.0.0")
 }
 
 repositories {
