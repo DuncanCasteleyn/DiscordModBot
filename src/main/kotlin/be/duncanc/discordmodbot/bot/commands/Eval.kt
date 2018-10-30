@@ -17,7 +17,10 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.data.configs.properties.DiscordModBotConfigurationProperties
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import org.jetbrains.kotlin.cli.common.environment.setIdeaIoUseFallback
@@ -27,7 +30,6 @@ import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
 import javax.script.ScriptEngineManager
 import javax.script.ScriptException
-import kotlin.coroutines.CoroutineContext
 
 /**
  * This class provides the ability to evaluate code while running.
@@ -42,7 +44,8 @@ class Eval(
         ALIASES,
         DESCRIPTION,
         ARGUMENTATION,
-        false
+        false,
+        true
 ) {
     companion object {
         private val ALIASES = arrayOf("Eval")
