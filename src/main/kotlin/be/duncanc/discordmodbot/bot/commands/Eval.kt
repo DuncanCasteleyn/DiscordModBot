@@ -19,15 +19,15 @@ package be.duncanc.discordmodbot.bot.commands
 import be.duncanc.discordmodbot.data.configs.properties.DiscordModBotConfigurationProperties
 import kotlinx.coroutines.*
 import net.dv8tion.jda.core.MessageBuilder
-import net.dv8tion.jda.core.entities.ChannelType
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import org.jetbrains.kotlin.cli.common.environment.setIdeaIoUseFallback
 import org.springframework.beans.factory.config.ConfigurableBeanFactory
 import org.springframework.context.annotation.Scope
 import org.springframework.stereotype.Component
-import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
-import javax.script.ScriptEngine
 import javax.script.ScriptEngineManager
+import javax.script.ScriptException
+import kotlin.coroutines.CoroutineContext
 
 /**
  * This class provides the ability to evaluate code while running.
@@ -52,21 +52,8 @@ class Eval(
                 "    This will print: 5 + 5 is: 10"
     }
 
-    private val engine: ScriptEngine = ScriptEngineManager().getEngineByName("nashorn")!!
-
     init {
-        engine.eval("var imports = new JavaImporter(" +
-                "java.io," +
-                "java.lang," +
-                "java.util," +
-                "Packages.net.dv8tion.jda.core," +
-                "Packages.net.dv8tion.jda.core.entities," +
-                "Packages.net.dv8tion.jda.core.entities.impl," +
-                "Packages.net.dv8tion.jda.core.managers," +
-                "Packages.net.dv8tion.jda.core.managers.impl," +
-                "Packages.net.dv8tion.jda.core.utils," +
-                "Packages.be.duncanc.discordmodbot);")
-
+        setIdeaIoUseFallback()
     }
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
@@ -76,44 +63,28 @@ class Eval(
         }
 
         val messageBuilder = MessageBuilder()
-        engine.put("event", event)
-        engine.put("message", event.message)
-        engine.put("channel", event.channel)
-        engine.put("arguments", arguments)
-        engine.put("api", event.jda)
-        if (event.isFromType(ChannelType.TEXT)) {
-            engine.put("guild", event.guild)
-            engine.put("member", event.member)
-        }
-        GlobalScope.launch {
+        CoroutineScope(Dispatchers.IO).launch {
             try {
-                val future = GlobalScope.async {
-                    engine.eval("(function() {with (imports) {\n" +
-                            "$arguments\n" +
-                            "}})();")
+                val engine = ScriptEngineManager().getEngineByExtension("kts")!!
+                engine.put("event", event)
+                engine.put("coroutineContext", coroutineContext)
+                engine.eval("import net.dv8tion.jda.core.utils.*\n" +
+                        "import net.dv8tion.jda.core.events.message.MessageReceivedEvent\n" +
+                        "val event = bindings[\"event\"] as MessageReceivedEvent")
+                val future = async {
+                    engine.eval(arguments)
                 }
-                val out: Any? = GlobalScope.async {
-                    delay(TimeUnit.SECONDS.toMillis(10))
-                    var count = 0
-                    while (future.isActive && count < 10) {
-                        delay(TimeUnit.SECONDS.toMillis(1))
-                        count++
-                    }
-                    if (future.isCompleted) {
-                        future.await()
-                    } else {
-                        future.cancel()
-                        "The execution failed"
-                    }
-                }.await()
+
+                val out: Any? = future.await()
                 messageBuilder.appendCodeBlock(out?.toString() ?: "Executed without error.", "text")
-            } catch (executionException: ExecutionException) {
-                val throwable: Throwable? = executionException.cause
-                messageBuilder.appendCodeBlock("${throwable?.javaClass?.simpleName
-                        ?: executionException.javaClass.simpleName}: ${throwable?.message
-                        ?: executionException.message}", "text")
+            } catch (scriptException: ScriptException) {
+                messageBuilder.appendCodeBlock("${scriptException.javaClass.simpleName
+                        ?: scriptException.javaClass.simpleName}: ${scriptException.message
+                        ?: scriptException.message}", "text")
             } catch (throwable: Throwable) {
                 messageBuilder.appendCodeBlock("${throwable.javaClass.simpleName}: ${throwable.message}", "text")
+                event.channel.sendMessage(messageBuilder.build()).queue()
+                throw throwable
             }
             event.channel.sendMessage(messageBuilder.build()).queue()
         }
