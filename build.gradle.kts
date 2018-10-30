@@ -16,6 +16,7 @@
 
 import org.gradle.kotlin.dsl.extra
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 buildscript {
     val kotlinVersion = "1.3.0"
@@ -84,6 +85,10 @@ tasks {
         sourceCompatibility = "1.8"
         options.encoding = "UTF-8"
         options.compilerArgs.add("-Xlint:deprecation")
+    }
+    withType<BootJar> {
+        requiresUnpack("**/*.jar")
+        launchScript()
     }
 }
 
