@@ -75,7 +75,7 @@ class Eval(
                         "import net.dv8tion.jda.core.events.message.MessageReceivedEvent\n" +
                         "val event = bindings[\"event\"] as MessageReceivedEvent")
                 val future = async {
-                    engine.eval(arguments)
+                    engine.eval(event.message.contentRaw.substring(command.length + 2))
                 }
 
                 val out: Any? = future.await()
