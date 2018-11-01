@@ -15,10 +15,7 @@
  */
 package be.duncanc.discordmodbot.bot.utils
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.*
 import net.dv8tion.jda.core.events.Event
 import net.dv8tion.jda.core.hooks.InterfacedEventManager
 import org.slf4j.Logger
@@ -54,7 +51,7 @@ constructor(
      * @see InterfacedEventManager.handle
      */
     override fun handle(event: Event) {
-        GlobalScope.launch(executor) {
+        CoroutineScope(executor).launch {
             try {
                 super.handle(event)
             } catch (e: Exception) {
