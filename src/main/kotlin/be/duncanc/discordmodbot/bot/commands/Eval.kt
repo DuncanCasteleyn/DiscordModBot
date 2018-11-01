@@ -17,10 +17,7 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.data.configs.properties.DiscordModBotConfigurationProperties
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import org.jetbrains.kotlin.cli.common.environment.setIdeaIoUseFallback
@@ -77,7 +74,14 @@ class Eval(
                     engine.eval(event.message.contentRaw.substring(command.length + 2))
                 }
 
-                val out: Any? = future.await()
+                val out: Any? = try {
+                    withTimeout(TimeUnit.SECONDS.toMillis(10)) {
+                        future.await()
+                    }
+                } catch (tce: TimeoutCancellationException) {
+                    coroutineContext.cancelChildren()
+                    throw tce
+                }
                 messageBuilder.appendCodeBlock(out?.toString() ?: "Executed without error.", "text")
             } catch (scriptException: ScriptException) {
                 messageBuilder.appendCodeBlock("${scriptException.javaClass.simpleName
