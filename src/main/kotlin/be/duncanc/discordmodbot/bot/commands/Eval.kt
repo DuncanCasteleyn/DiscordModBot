@@ -70,7 +70,6 @@ class Eval(
             try {
                 val engine = ScriptEngineManager().getEngineByExtension("kts")!!
                 engine.put("event", event)
-                engine.put("coroutineContext", coroutineContext)
                 engine.eval("import net.dv8tion.jda.core.utils.*\n" +
                         "import net.dv8tion.jda.core.events.message.MessageReceivedEvent\n" +
                         "val event = bindings[\"event\"] as MessageReceivedEvent")
