@@ -16,6 +16,7 @@
 
 package be.duncanc.discordmodbot
 
+import kotlinx.coroutines.runBlocking
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 
@@ -23,7 +24,7 @@ import org.springframework.boot.runApplication
 class TestApplication {
     companion object {
         @JvmStatic
-        fun main(args: Array<String>) {
+        fun main(args: Array<String>) = runBlocking<Unit> {
             runApplication<TestApplication>(*args)
         }
     }
