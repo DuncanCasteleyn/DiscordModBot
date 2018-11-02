@@ -24,9 +24,11 @@ import org.jetbrains.kotlin.cli.common.environment.setIdeaIoUseFallback
 import org.springframework.beans.factory.config.ConfigurableBeanFactory
 import org.springframework.context.annotation.Scope
 import org.springframework.stereotype.Component
+import java.lang.Thread.sleep
 import java.util.concurrent.TimeUnit
 import javax.script.ScriptEngineManager
 import javax.script.ScriptException
+import kotlin.coroutines.CoroutineContext
 
 /**
  * This class provides the ability to evaluate code while running.
@@ -63,7 +65,7 @@ class Eval(
         }
 
         val messageBuilder = MessageBuilder()
-        CoroutineScope(Dispatchers.IO).launch {
+        ScriptCoroutineScope().launch {
             try {
                 val engine = ScriptEngineManager().getEngineByExtension("kts")!!
                 engine.put("event", event)
@@ -93,6 +95,27 @@ class Eval(
                 throw throwable
             }
             event.channel.sendMessage(messageBuilder.build()).queue()
+        }
+    }
+
+    private class ScriptCoroutineScope : CoroutineScope {
+        private val job = Job()
+        override val coroutineContext: CoroutineContext
+            get() = Dispatchers.IO + job
+
+        init {
+            CoroutineScope(Dispatchers.Default).launch{
+                val killer = async {
+                    sleep(TimeUnit.MINUTES.toMillis(1))
+                    finalize()
+                }
+                job.invokeOnCompletion { killer.cancel() }
+            }
+        }
+
+        @Suppress("ProtectedInFinal", "unused")
+        protected fun finalize() {
+           job.cancel()
         }
     }
 }
