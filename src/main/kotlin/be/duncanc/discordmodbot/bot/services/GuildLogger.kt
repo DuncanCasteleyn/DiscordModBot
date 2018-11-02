@@ -19,7 +19,7 @@ package be.duncanc.discordmodbot.bot.services
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.sequences.Sequence
-import be.duncanc.discordmodbot.bot.utils.JDALibHelper
+import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.entities.LoggingSettings
 import be.duncanc.discordmodbot.data.repositories.LoggingSettingsRepository
 import kotlinx.coroutines.GlobalScope
@@ -155,7 +155,7 @@ class GuildLogger
 
         if (oldMessage != null) {
             val name: String = try {
-                JDALibHelper.getEffectiveNameAndUsername(oldMessage.guild.getMember(oldMessage.author))
+                oldMessage.guild.getMember(oldMessage.author).nicknameAndUsername
             } catch (e: IllegalArgumentException) {
                 oldMessage.author.name
             }
@@ -193,7 +193,7 @@ class GuildLogger
             val attachmentString = messageHistory.getAttachmentsString(event.messageIdLong)
 
             val name: String = try {
-                JDALibHelper.getEffectiveNameAndUsername(oldMessage.guild.getMember(oldMessage.author))
+                oldMessage.guild.getMember(oldMessage.author).nicknameAndUsername
             } catch (e: IllegalArgumentException) {
                 oldMessage.author.name
             }
@@ -237,7 +237,7 @@ class GuildLogger
                 }
                 logEmbed.addField("Author", name, true)
                 if (moderator != null) {
-                    logEmbed.addField("Deleted by", JDALibHelper.getEffectiveNameAndUsername(event.guild.getMember(moderator)), true)
+                    logEmbed.addField("Deleted by", event.guild.getMember(moderator).nicknameAndUsername, true)
                             .setColor(Color.YELLOW)
                 } else {
                     logEmbed.setColor(LIGHT_BLUE)
@@ -342,7 +342,7 @@ class GuildLogger
             if (moderator == null) {
                 val logEmbed = EmbedBuilder()
                         .setColor(Color.RED)
-                        .addField("User", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
+                        .addField("User", event.member.nicknameAndUsername, true)
                         .setTitle("User left")
                 log(logEmbed, event.member.user, event.guild, null, if (moderator == null) LogTypeAction.USER else LogTypeAction.MODERATOR)
             } else {
@@ -358,11 +358,9 @@ class GuildLogger
                     .setColor(Color.RED)
                     .setTitle("User kicked")
                     .addField("UUID", UUID.randomUUID().toString(), false)
-                    .addField("User", JDALibHelper.getEffectiveNameAndUsername(member), true)
-                    .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(moderator), true)
-            if (reason != null) {
-                logEmbed.addField("Reason", reason, false)
-            }
+                    .addField("User", member.nicknameAndUsername, true)
+            moderator?.let { logEmbed.addField("Moderator", it.nicknameAndUsername, true) }
+            reason?.let { logEmbed.addField("Reason", it, false) }
             log(logEmbed, member.user, guild, null, LogTypeAction.MODERATOR)
         }
     }
@@ -401,7 +399,7 @@ class GuildLogger
                     .addField("UUID", UUID.randomUUID().toString(), false)
                     .addField("User", event.user.name, true)
             if (moderator != null) {
-                logEmbed.addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.guild.getMember(moderator)), true)
+                logEmbed.addField("Moderator", event.guild.getMember(moderator).nicknameAndUsername, true)
                 if (reason != null) {
                     logEmbed.addField("Reason", reason, false)
                 }
@@ -456,7 +454,7 @@ class GuildLogger
                     .setTitle("User ban revoked", null)
                     .addField("User", event.user.name, true)
             if (moderator != null) {
-                logEmbed.addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.guild.getMember(moderator)), true)
+                logEmbed.addField("Moderator", event.guild.getMember(moderator).nicknameAndUsername, true)
             }
             log(logEmbed, event.user, event.guild, null, LogTypeAction.MODERATOR)
         }, 1, TimeUnit.SECONDS)
@@ -515,7 +513,7 @@ class GuildLogger
                 logEmbed.setTitle("User has changed nickname")
             } else {
                 logEmbed.setTitle("Moderator has changed nickname")
-                        .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.guild.getMember(moderator)), false)
+                        .addField("Moderator", event.guild.getMember(moderator).nicknameAndUsername, false)
             }
             log(logEmbed, event.member.user, event.guild, null, if (moderator == null || moderator == event.member.user) LogTypeAction.USER else LogTypeAction.MODERATOR)
         }, 1, TimeUnit.SECONDS)

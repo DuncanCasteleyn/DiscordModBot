@@ -16,7 +16,8 @@
 
 package be.duncanc.discordmodbot.bot.commands
 
-import be.duncanc.discordmodbot.bot.utils.JDALibHelper
+import be.duncanc.discordmodbot.bot.utils.messageTimeFormat
+import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.entities.GuildWarnPoints
 import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsRepository
 import be.duncanc.discordmodbot.data.services.UserBlock
@@ -77,10 +78,10 @@ class WarnHistory(
                 } else {
                     message.append("Warned")
                 }
-                message.append(" on ").append(it.creationDate.format(JDALibHelper.messageTimeFormat)).append(" by ").append(JDALibHelper.getEffectiveNameAndUsername(guild.getMemberById(it.creatorId!!)))
+                message.append(" on ").append(it.creationDate.format(messageTimeFormat)).append(" by ").append(guild.getMemberById(it.creatorId!!).nicknameAndUsername)
                         .append("\n\nReason: ").append(it.reason)
                 if (moderator) {
-                    message.append("\n\nExpires: ").append(it.expireDate!!.format(JDALibHelper.messageTimeFormat))
+                    message.append("\n\nExpires: ").append(it.expireDate!!.format(messageTimeFormat))
                 }
             }
             message.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach {

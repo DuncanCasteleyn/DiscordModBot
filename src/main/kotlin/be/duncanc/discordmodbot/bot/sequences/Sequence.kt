@@ -16,7 +16,7 @@
 
 package be.duncanc.discordmodbot.bot.sequences
 
-import be.duncanc.discordmodbot.bot.utils.JDALibHelper
+import be.duncanc.discordmodbot.bot.utils.limitLessBulkDelete
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.entities.Message
 import net.dv8tion.jda.core.entities.MessageChannel
@@ -141,7 +141,7 @@ abstract class Sequence
         cleanAfterSequence?.let {
             synchronized(it) {
                 if (it.isNotEmpty()) {
-                    JDALibHelper.limitLessBulkDelete(it[0].textChannel, it)
+                    it[0].textChannel.limitLessBulkDelete(it)
                 }
             }
         }

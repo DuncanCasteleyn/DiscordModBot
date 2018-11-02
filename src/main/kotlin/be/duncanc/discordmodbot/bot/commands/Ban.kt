@@ -17,7 +17,7 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.services.GuildLogger
-import be.duncanc.discordmodbot.bot.utils.JDALibHelper
+import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
@@ -84,8 +84,8 @@ class Ban : CommandModule(
             }
             val userBanNotification = EmbedBuilder()
                     .setColor(Color.red)
-                    .setAuthor(JDALibHelper.getEffectiveNameAndUsername(event.member), null, event.author.effectiveAvatarUrl)
-                    .setTitle(event.guild.name + ": You have been banned by " + JDALibHelper.getEffectiveNameAndUsername(event.member), null)
+                    .setAuthor(event.member?.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
+                    .setTitle(event.guild.name + ": You have been banned by " + event.member.nicknameAndUsername, null)
                     .setDescription(description.toString())
                     .build()
 
@@ -106,8 +106,8 @@ class Ban : CommandModule(
                     .setColor(Color.RED)
                     .setTitle("User banned")
                     .addField("UUID", UUID.randomUUID().toString(), false)
-                    .addField("User", JDALibHelper.getEffectiveNameAndUsername(toBan), true)
-                    .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
+                    .addField("User", toBan.nicknameAndUsername, true)
+                    .addField("Moderator", event.member.nicknameAndUsername, true)
                     .addField("Reason", reason, false)
 
 

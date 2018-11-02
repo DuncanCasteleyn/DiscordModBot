@@ -23,77 +23,66 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 
 /**
- * This object contains methods that can be used to improve the usage of JDA methods
+ * When a time format has to be displayed generally this format will be used.
  */
-object JDALibHelper {
+val messageTimeFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm O")
 
-    /**
-     * When a time format has to be displayed generally this format will be used.
-     */
-    val messageTimeFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm O")
-
-    /**
-     * Create a string that contains both the username and nickname of a member.
-     *
-     * @param member the member object to creat the string from.
-     * @return A string containing both the nickname and username in form of nickname(username).
-     */
-    fun getEffectiveNameAndUsername(member: Member?): String {
-        if (member == null) {
-            throw IllegalArgumentException("Member may not be null")
-        }
-        return if (member.nickname != null) {
-            member.nickname + "(" + member.user.name + ")"
-        } else {
-            member.user.name
-        }
+/**
+ * Retrieves a string that contains both the nickname and username of a member.
+ */
+val Member.nicknameAndUsername: String
+    get() = if (this.nickname != null) {
+        "${this.nickname}(${this.user.name})"
+    } else {
+        this.user.name
     }
 
-    /**
-     * Deletes multiple messages at once, unlike the default method this one will split the ArrayList messages in stacks of 100 messages each automatically
-     *
-     * @param channel  channel to deletes the messages from.
-     * @param messages Messages to deleted. The list you give will be emptied for you.
-     */
-    fun limitLessBulkDelete(channel: TextChannel, messages: ArrayList<Message>) {
-        if (messages.size in 2..100) {
-            channel.deleteMessages(messages).queue()
-        } else if (messages.size < 2) {
-            for (message in messages) {
+/**
+ * Applies the rot13 function on the String
+ */
+fun String.rot13(): String {
+    val sb = StringBuilder()
+    for (i in 0 until this.length) {
+        var c = this[i]
+        when (c) {
+            in 'a'..'m' -> c += 13
+            in 'A'..'M' -> c += 13
+            in 'n'..'z' -> c -= 13
+            in 'N'..'Z' -> c -= 13
+        }
+        sb.append(c)
+    }
+    return sb.toString()
+}
+
+/**
+ * Deletes multiple messages at once, unlike the default method this one will split the ArrayList messages in stacks of 100 messages each automatically
+ *
+ * @param messages Messages to deleted. The list you give will be emptied for you.
+ */
+fun TextChannel.limitLessBulkDelete(messages: ArrayList<Message>) {
+    if (messages.size in 2..100) {
+        this.deleteMessages(messages).queue()
+    } else if (messages.size < 2) {
+        for (message in messages) {
+            message.delete().queue()
+        }
+    } else {
+        var messagesStack = ArrayList<Message>()
+        while (messages.size > 0) {
+            messagesStack.add(messages.removeAt(0))
+            if (messagesStack.size == 100) {
+                this.deleteMessages(messagesStack).queue()
+                messagesStack = ArrayList()
+            }
+        }
+        if (messagesStack.size >= 2) {
+            this.deleteMessages(messagesStack).queue()
+        } else {
+            for (message in messagesStack) {
                 message.delete().queue()
             }
-        } else {
-            var messagesStack = ArrayList<Message>()
-            while (messages.size > 0) {
-                messagesStack.add(messages.removeAt(0))
-                if (messagesStack.size == 100) {
-                    channel.deleteMessages(messagesStack).queue()
-                    messagesStack = ArrayList()
-                }
-            }
-            if (messagesStack.size >= 2) {
-                channel.deleteMessages(messagesStack).queue()
-            } else {
-                for (message in messagesStack) {
-                    message.delete().queue()
-                }
-            }
         }
-        messages.clear()
     }
-
-    fun rot13(input: String): String {
-        val sb = StringBuilder()
-        for (i in 0 until input.length) {
-            var c = input[i]
-            when (c) {
-                in 'a'..'m' -> c += 13
-                in 'A'..'M' -> c += 13
-                in 'n'..'z' -> c -= 13
-                in 'N'..'Z' -> c -= 13
-            }
-            sb.append(c)
-        }
-        return sb.toString()
-    }
+    messages.clear()
 }

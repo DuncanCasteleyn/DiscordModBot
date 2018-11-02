@@ -17,7 +17,7 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.services.GuildLogger
-import be.duncanc.discordmodbot.bot.utils.JDALibHelper
+import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
@@ -88,7 +88,7 @@ class BanUserById : CommandModule(
                                 .setTitle("User banned by id")
                                 .addField("UUID", UUID.randomUUID().toString(), false)
                                 .addField("User", toBan.name, true)
-                                .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
+                                .addField("Moderator", event.member.nicknameAndUsername, true)
                                 .addField("Reason", reason, false)
 
                         guildLogger.log(logEmbed, toBan, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)

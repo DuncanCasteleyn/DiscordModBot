@@ -17,7 +17,8 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.services.GuildLogger
-import be.duncanc.discordmodbot.bot.utils.JDALibHelper
+import be.duncanc.discordmodbot.bot.utils.limitLessBulkDelete
+import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.ChannelType
@@ -75,7 +76,7 @@ class PurgeChannel : CommandModule(
                 }
             }
             val amountDeleted = messageList.size
-            JDALibHelper.limitLessBulkDelete(textChannel, messageList)
+            textChannel.limitLessBulkDelete(messageList)
             val stringBuilder = StringBuilder(event.author.asMention).append(" deleted ").append(amountDeleted).append(" most recent messages from ")
             for (i in targetUsers.indices) {
                 stringBuilder.append(targetUsers[i].asMention)
@@ -95,7 +96,7 @@ class PurgeChannel : CommandModule(
                 val logEmbed = EmbedBuilder()
                         .setColor(Color.YELLOW)
                         .setTitle("Filtered channel purge", null)
-                        .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
+                        .addField("Moderator", event.member.nicknameAndUsername, true)
                         .addField("Channel", textChannel.name, true)
                         .addField("Filter", filterString.toString(), true)
 
@@ -124,7 +125,7 @@ class PurgeChannel : CommandModule(
                 }
             }
             val amountDeleted = messageList.size
-            JDALibHelper.limitLessBulkDelete(textChannel, messageList)
+            textChannel.limitLessBulkDelete(messageList)
             textChannel.sendMessage(event.author.asMention + " deleted " + amountDeleted + " most recent messages not older than 2 weeks.").queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
 
             val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
@@ -132,7 +133,7 @@ class PurgeChannel : CommandModule(
                 val logEmbed = EmbedBuilder()
                         .setColor(Color.YELLOW)
                         .setTitle("Channel purge", null)
-                        .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
+                        .addField("Moderator", event.member.nicknameAndUsername, true)
                         .addField("Channel", textChannel.name, true)
 
                 guildLogger.log(logEmbed, event.author, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)

@@ -16,7 +16,7 @@
 
 package be.duncanc.discordmodbot.bot.services
 
-import be.duncanc.discordmodbot.bot.utils.JDALibHelper
+import be.duncanc.discordmodbot.bot.utils.limitLessBulkDelete
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.entities.Message
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent
@@ -147,7 +147,7 @@ class AttachmentProxyCreator {
     @Synchronized
     fun cleanCache() {
         if (attachmentCache.size > 0) {
-            JDALibHelper.limitLessBulkDelete(attachmentCache[attachmentCache.firstKey()]!!.jda.getTextChannelById(CACHE_CHANNEL), ArrayList(attachmentCache.values))
+            attachmentCache[attachmentCache.firstKey()]!!.jda.getTextChannelById(CACHE_CHANNEL).limitLessBulkDelete(ArrayList(attachmentCache.values))
         }
     }
 }

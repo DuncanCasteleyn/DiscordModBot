@@ -18,7 +18,7 @@ package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.services.GuildLogger
 import be.duncanc.discordmodbot.bot.services.MuteRole
-import be.duncanc.discordmodbot.bot.utils.JDALibHelper
+import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
@@ -81,16 +81,16 @@ class Mute
                             .setColor(Color.YELLOW)
                             .setTitle("User muted")
                             .addField("UUID", UUID.randomUUID().toString(), false)
-                            .addField("User", JDALibHelper.getEffectiveNameAndUsername(toMute), true)
-                            .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
+                            .addField("User", toMute.nicknameAndUsername, true)
+                            .addField("Moderator", event.member.nicknameAndUsername, true)
                             .addField("Reason", reason, false)
 
                     guildLogger.log(logEmbed, toMute.user, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
                 }
                 val userMuteWarning = EmbedBuilder()
                         .setColor(Color.YELLOW)
-                        .setAuthor(JDALibHelper.getEffectiveNameAndUsername(event.member), null, event.author.effectiveAvatarUrl)
-                        .setTitle(event.guild.name + ": You have been muted by " + JDALibHelper.getEffectiveNameAndUsername(event.member))
+                        .setAuthor(event.member.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
+                        .setTitle("${event.guild.name}: You have been muted by ${event.member.nicknameAndUsername}")
                         .addField("Reason", reason, false)
 
                 toMute.user.openPrivateChannel().queue(

@@ -102,20 +102,21 @@ class Eval(
         private val job = Job()
         override val coroutineContext: CoroutineContext
             get() = Dispatchers.IO + job
+        private val killer = CoroutineScope(Dispatchers.Default).launch {
+            async {
+                sleep(TimeUnit.MINUTES.toMillis(1))
+                finalize()
+            }
+        }
 
         init {
-            CoroutineScope(Dispatchers.Default).launch{
-                val killer = async {
-                    sleep(TimeUnit.MINUTES.toMillis(1))
-                    finalize()
-                }
-                job.invokeOnCompletion { killer.cancel() }
-            }
+            job.invokeOnCompletion { killer.cancel() }
         }
 
         @Suppress("ProtectedInFinal", "unused")
         protected fun finalize() {
-           job.cancel()
+            job.cancel()
+            killer.cancel()
         }
     }
 }

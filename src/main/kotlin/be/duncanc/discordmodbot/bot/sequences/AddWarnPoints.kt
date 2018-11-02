@@ -19,7 +19,8 @@ package be.duncanc.discordmodbot.bot.sequences
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.services.GuildLogger
 import be.duncanc.discordmodbot.bot.services.MuteRole
-import be.duncanc.discordmodbot.bot.utils.JDALibHelper
+import be.duncanc.discordmodbot.bot.utils.messageTimeFormat
+import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.entities.GuildWarnPoints
 import be.duncanc.discordmodbot.data.entities.GuildWarnPointsSettings
 import be.duncanc.discordmodbot.data.entities.UserWarnPoints
@@ -150,10 +151,10 @@ class AddWarnPoints(
                     .append("Summary of active points:")
             activatePoints.forEach {
                 messageBuilder.append("\n\n").append(it.points).append(" point(s) added by ")
-                        .append(JDALibHelper.getEffectiveNameAndUsername(guild.getMemberById(it.creatorId!!)))
-                        .append(" on ").append(it.creationDate.format(JDALibHelper.messageTimeFormat)).append('\n')
+                        .append(guild.getMemberById(it.creatorId!!).nicknameAndUsername)
+                        .append(" on ").append(it.creationDate.format(messageTimeFormat)).append('\n')
                         .append("Reason: ").append(it.reason)
-                        .append("\nExpires on: ").append(it.expireDate?.format(JDALibHelper.messageTimeFormat))
+                        .append("\nExpires on: ").append(it.expireDate?.format(messageTimeFormat))
             }
             messageBuilder.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach {
                 guild.getTextChannelById(guildWarnPointsSettings.announceChannelId!!).sendMessage(it).queue()
@@ -168,11 +169,11 @@ class AddWarnPoints(
                     .setColor(Color.YELLOW)
                     .setTitle("Warn points added to user")
                     .addField("UUID", id.toString(), false)
-                    .addField("User", JDALibHelper.getEffectiveNameAndUsername(toInform), true)
-                    .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(moderator), true)
+                    .addField("User", toInform.nicknameAndUsername, true)
+                    .addField("Moderator", moderator.nicknameAndUsername, true)
                     .addField("Amount", amount.toString(), false)
                     .addField("Reason", reason, false)
-                    .addField("Expires", dateTime.format(JDALibHelper.messageTimeFormat), false)
+                    .addField("Expires", dateTime.format(messageTimeFormat), false)
             when (action) {
                 1.toByte() -> logEmbed.addField("Punishment", "Mute", false)
                 2.toByte() -> logEmbed.addField("Punishment", "Kick", false)
@@ -190,8 +191,8 @@ class AddWarnPoints(
         }
         val userWarning = EmbedBuilder()
                 .setColor(Color.YELLOW)
-                .setAuthor(JDALibHelper.getEffectiveNameAndUsername(moderator), null, moderator.user.effectiveAvatarUrl)
-                .setTitle(moderator.guild.name + ": You have been warned by " + JDALibHelper.getEffectiveNameAndUsername(moderator), null)
+                .setAuthor(moderator.nicknameAndUsername, null, moderator.user.effectiveAvatarUrl)
+                .setTitle("${moderator.guild.name}: You have been warned by ${moderator.nicknameAndUsername}", null)
                 .addField("Reason", reason, false)
                 .addField("Note", noteMessage, false)
         when (action) {

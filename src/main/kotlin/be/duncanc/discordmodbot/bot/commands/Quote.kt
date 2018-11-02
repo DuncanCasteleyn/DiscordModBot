@@ -16,7 +16,7 @@
 
 package be.duncanc.discordmodbot.bot.commands
 
-import be.duncanc.discordmodbot.bot.utils.JDALibHelper
+import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.services.UserBlock
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
@@ -43,7 +43,7 @@ class Quote(
             throw IllegalArgumentException("The message you want to quote has no content to quote.")
         }
         val quoteEmbed = EmbedBuilder()
-                .setAuthor(JDALibHelper.getEffectiveNameAndUsername(messageToQuote.member), null, messageToQuote.author.effectiveAvatarUrl)
+                .setAuthor(messageToQuote.member.nicknameAndUsername, null, messageToQuote.author.effectiveAvatarUrl)
                 .setDescription(messageToQuote.contentDisplay)
                 .setFooter(event.author.id, null)
         val response = arguments.substring(channelId.length)
@@ -51,7 +51,7 @@ class Quote(
             null
         } else {
             EmbedBuilder()
-                    .setAuthor(JDALibHelper.getEffectiveNameAndUsername(event.member), null, event.author.effectiveAvatarUrl)
+                    .setAuthor(event.member.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
                     .setDescription(response)
                     .setFooter(event.author.id, null)
         }

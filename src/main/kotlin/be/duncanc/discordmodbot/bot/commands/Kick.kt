@@ -17,7 +17,7 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.services.GuildLogger
-import be.duncanc.discordmodbot.bot.utils.JDALibHelper
+import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
@@ -80,8 +80,8 @@ class Kick
 
             val userKickNotification = EmbedBuilder()
                     .setColor(Color.RED)
-                    .setAuthor(JDALibHelper.getEffectiveNameAndUsername(event.member), null, event.author.effectiveAvatarUrl)
-                    .setTitle(event.guild.name + ": You have been kicked by " + JDALibHelper.getEffectiveNameAndUsername(event.member), null)
+                    .setAuthor(event.member.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
+                    .setTitle("${event.guild.name}: You have been kicked by ${event.member.nicknameAndUsername}", null)
                     .setDescription("Reason: $reason")
                     .build()
 
@@ -104,8 +104,8 @@ class Kick
                     .setColor(Color.RED)
                     .setTitle("User kicked")
                     .addField("UUID", UUID.randomUUID().toString(), false)
-                    .addField("User", JDALibHelper.getEffectiveNameAndUsername(toKick), true)
-                    .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
+                    .addField("User", toKick.nicknameAndUsername, true)
+                    .addField("Moderator", event.member.nicknameAndUsername, true)
                     .addField("Reason", reason, false)
 
             guildLogger.log(logEmbed, toKick.user, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)

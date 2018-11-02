@@ -16,7 +16,8 @@
 
 package be.duncanc.discordmodbot.bot.commands
 
-import be.duncanc.discordmodbot.bot.utils.JDALibHelper
+import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
+import be.duncanc.discordmodbot.bot.utils.rot13
 import be.duncanc.discordmodbot.data.services.UserBlock
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.entities.ChannelType
@@ -51,9 +52,9 @@ class Rot13(
         val spoilerSource = split[0].trim()
         val spoilerContent = split[1].trim()
         val embedBuilder = EmbedBuilder()
-        embedBuilder.setAuthor(JDALibHelper.getEffectiveNameAndUsername(event.member), "https://discordapp.com/users/${event.author.id}", event.author.effectiveAvatarUrl)
+        embedBuilder.setAuthor(event.member.nicknameAndUsername, "https://discordapp.com/users/${event.author.id}", event.author.effectiveAvatarUrl)
         embedBuilder.setTitle("$EMBED_TITLE\n***$spoilerSource***")
-        embedBuilder.setDescription("``${JDALibHelper.rot13(spoilerContent)}``")
+        embedBuilder.setDescription("``${spoilerContent.rot13()}``")
         embedBuilder.setFooter("To decrypt the message simply react on it", null)
         event.textChannel.sendMessage(embedBuilder.build()).queue { it.addReaction("\uD83D\uDDB1").queue() }
     }
@@ -66,7 +67,7 @@ class Rot13(
             if (message.author == event.jda.selfUser && message.embeds.size == 1 && message.embeds[0].title.split("\n")[0] == EMBED_TITLE) {
                 event.member.user.openPrivateChannel().queue {
                     event.jda.retrieveUserById(message.embeds[0].author.url.removePrefix("https://discordapp.com/users/")).queue { user ->
-                        it.sendMessage("${user.asMention}'s spoiler message from ${event.channel.asMention}:\n\n" + JDALibHelper.rot13(message.embeds[0].description)).queue()
+                        it.sendMessage("${user.asMention}'s spoiler message from ${event.channel.asMention}:\n\n" + message.embeds[0].description.rot13()).queue()
                     }
                 }
                 spamCheck(event.user)

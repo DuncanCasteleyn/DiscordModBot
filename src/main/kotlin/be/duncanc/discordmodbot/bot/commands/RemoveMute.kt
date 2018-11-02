@@ -17,7 +17,7 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.services.GuildLogger
-import be.duncanc.discordmodbot.bot.utils.JDALibHelper
+import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
@@ -79,16 +79,16 @@ class RemoveMute : CommandModule(
                     val logEmbed = EmbedBuilder()
                             .setColor(Color.GREEN)
                             .setTitle("User's mute was removed", null)
-                            .addField("User", JDALibHelper.getEffectiveNameAndUsername(toRemoveMute), true)
-                            .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
+                            .addField("User", toRemoveMute.nicknameAndUsername, true)
+                            .addField("Moderator", event.member.nicknameAndUsername, true)
                             .addField("Reason", reason, false)
 
                     guildLogger.log(logEmbed, toRemoveMute.user, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
                 }
                 val muteRemoveNotification = EmbedBuilder()
                         .setColor(Color.green)
-                        .setAuthor(JDALibHelper.getEffectiveNameAndUsername(event.member), null, event.author.effectiveAvatarUrl)
-                        .setTitle(event.guild.name + ": Your mute has been removed by " + JDALibHelper.getEffectiveNameAndUsername(event.member), null)
+                        .setAuthor(event.member.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
+                        .setTitle(event.guild.name + ": Your mute has been removed by " + event.member.nicknameAndUsername, null)
                         .addField("Reason", reason, false)
                         .build()
 

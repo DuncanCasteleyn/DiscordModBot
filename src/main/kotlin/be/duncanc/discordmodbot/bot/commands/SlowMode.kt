@@ -17,7 +17,7 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.services.GuildLogger
-import be.duncanc.discordmodbot.bot.utils.JDALibHelper
+import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.ChannelType
@@ -72,7 +72,7 @@ class SlowMode : CommandModule(
                         val logEmbed = EmbedBuilder()
                                 .setColor(Color.GREEN)
                                 .setTitle("Slow mode disabled", null)
-                                .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
+                                .addField("Moderator", event.member.nicknameAndUsername, true)
                                 .addField("Channel", event.textChannel.name, true)
 
                         guildLogger.log(logEmbed, event.author, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
@@ -89,7 +89,7 @@ class SlowMode : CommandModule(
                             val logEmbed = EmbedBuilder()
                                     .setColor(Color.YELLOW)
                                     .setTitle("Slow mode enabled", null)
-                                    .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
+                                    .addField("Moderator", event.member.nicknameAndUsername, true)
                                     .addField("Channel", event.textChannel.name, true)
                                     .addBlankField(false)
                                     .addField("Threshold", args[0], true)
@@ -110,7 +110,7 @@ class SlowMode : CommandModule(
                         val logEmbed = EmbedBuilder()
                                 .setColor(Color.YELLOW)
                                 .setTitle("Slow mode enabled", null)
-                                .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
+                                .addField("Moderator", event.member.nicknameAndUsername, true)
                                 .addField("Channel", event.textChannel.name, true)
                                 .addBlankField(false)
                                 .addField("Threshold", threshold.toString(), true)

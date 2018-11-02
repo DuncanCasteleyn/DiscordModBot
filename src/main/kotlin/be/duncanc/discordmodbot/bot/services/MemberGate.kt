@@ -18,7 +18,7 @@ package be.duncanc.discordmodbot.bot.services
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.sequences.Sequence
-import be.duncanc.discordmodbot.bot.utils.JDALibHelper
+import be.duncanc.discordmodbot.bot.utils.limitLessBulkDelete
 import be.duncanc.discordmodbot.data.entities.GuildMemberGate
 import be.duncanc.discordmodbot.data.services.MemberGateService
 import net.dv8tion.jda.core.MessageBuilder
@@ -82,7 +82,7 @@ internal constructor(
                 userMessages.add(it)
             }
         }
-        JDALibHelper.limitLessBulkDelete(gateTextChannel, userMessages)
+        gateTextChannel.limitLessBulkDelete(userMessages)
     }
 
     /**

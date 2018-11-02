@@ -16,7 +16,7 @@
 
 package be.duncanc.discordmodbot.bot.commands
 
-import be.duncanc.discordmodbot.bot.utils.JDALibHelper
+import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.services.UserBlock
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.entities.ChannelType
@@ -67,7 +67,7 @@ class UserInfo(
                         //                                        "Guild join date: " + member.getJoinDate().format(DATE_TIME_FORMATTER) + "\n" +
                         //                                        "Account creation date: " + member.getUser().getCreationTime().format(DATE_TIME_FORMATTER)).queue();
                         val userDateMessage = EmbedBuilder()
-                                .setAuthor(JDALibHelper.getEffectiveNameAndUsername(member), null, member.user.effectiveAvatarUrl)
+                                .setAuthor(member.nicknameAndUsername, null, member.user.effectiveAvatarUrl)
                                 .setThumbnail(member.user.effectiveAvatarUrl)
                                 .setTitle("Guild: " + member.guild.name, null)
                                 .addField("User id", member.user.id, false)

@@ -17,7 +17,7 @@
 package be.duncanc.discordmodbot.bot.sequences
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
-import be.duncanc.discordmodbot.bot.utils.JDALibHelper
+import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.entities.ReportChannel
 import be.duncanc.discordmodbot.data.repositories.ReportChannelRepository
 import be.duncanc.discordmodbot.data.services.UserBlock
@@ -91,7 +91,7 @@ class Feedback
             } else {
                 val feedbackChannel = reportChannelRepository.findById(guild!!.idLong).orElseThrow { throw RuntimeException("The feedback feature was disabled during runtime") }.textChannelId!!
                 val embedBuilder = EmbedBuilder()
-                        .setAuthor(JDALibHelper.getEffectiveNameAndUsername(guild!!.getMember(user)), null, user.effectiveAvatarUrl)
+                        .setAuthor(guild!!.getMember(user).nicknameAndUsername, null, user.effectiveAvatarUrl)
                         .setDescription(event.message.contentStripped)
                         .setFooter(user.id, null)
                         .setTimestamp(OffsetDateTime.now())

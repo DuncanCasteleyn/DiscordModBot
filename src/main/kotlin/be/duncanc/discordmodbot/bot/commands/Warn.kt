@@ -17,7 +17,7 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.services.GuildLogger
-import be.duncanc.discordmodbot.bot.utils.JDALibHelper
+import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.entities.GuildWarnPointsSettings
 import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsSettingsRepository
 import net.dv8tion.jda.core.EmbedBuilder
@@ -88,8 +88,8 @@ class Warn
                         .setColor(Color.YELLOW)
                         .setTitle("User warned")
                         .addField("UUID", UUID.randomUUID().toString(), false)
-                        .addField("User", JDALibHelper.getEffectiveNameAndUsername(toWarn), true)
-                        .addField("Moderator", JDALibHelper.getEffectiveNameAndUsername(event.member), true)
+                        .addField("User", toWarn.nicknameAndUsername, true)
+                        .addField("Moderator", event.member.nicknameAndUsername, true)
                         .addField("Reason", reason, false)
 
                 guildLogger.log(logEmbed, toWarn.user, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
@@ -99,8 +99,8 @@ class Warn
 
             val userWarning = EmbedBuilder()
                     .setColor(Color.YELLOW)
-                    .setAuthor(JDALibHelper.getEffectiveNameAndUsername(event.member), null, event.author.effectiveAvatarUrl)
-                    .setTitle(event.guild.name + ": You have been warned by " + JDALibHelper.getEffectiveNameAndUsername(event.member), null)
+                    .setAuthor(event.member.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
+                    .setTitle(event.guild.name + ": You have been warned by " + event.member.nicknameAndUsername, null)
                     .addField("Reason", reason, false)
 
             toWarn.user.openPrivateChannel().queue(
