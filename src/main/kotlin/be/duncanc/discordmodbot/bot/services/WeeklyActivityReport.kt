@@ -18,7 +18,6 @@ package be.duncanc.discordmodbot.bot.services
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.sequences.Sequence
-import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.entities.ActivityReportSettings
 import be.duncanc.discordmodbot.data.repositories.ActivityReportSettingsRepository
 import net.dv8tion.jda.core.JDA
@@ -121,7 +120,7 @@ class WeeklyActivityReport(
                     stats.forEach { channel, channelStats ->
                         message.append("\n***${channel.asMention}***\n\n")
                         channelStats.forEach { member, count ->
-                            message.append("${member.nicknameAndUsername}: $count\n")
+                            message.append("${member.user.name}: $count\n")
                         }
                     }
                     message.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach {
