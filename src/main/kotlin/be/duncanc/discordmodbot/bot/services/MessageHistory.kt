@@ -61,7 +61,7 @@ constructor(
         }
         textChannel.iterableHistory.takeAsync(HISTORY_SIZE_PER_CHANNEL).thenAccept { retrieveMessages ->
             synchronized(this) {
-                retrieveMessages.forEach { message ->
+                retrieveMessages.reversed().forEach { message ->
                     messages[message.idLong] = message
                 }
             }
