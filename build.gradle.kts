@@ -93,4 +93,4 @@ tasks {
 }
 
 project.group = "be.duncanc"
-project.version = "1.11.2"
+project.version = "1.11.3"
