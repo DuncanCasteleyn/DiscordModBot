@@ -463,6 +463,7 @@ class GuildLogger
     override fun onUserUpdateName(event: UserUpdateNameEvent) {
         for (guild in getGuildsWithLogging(event.jda)) {
             guild ?: continue
+            guild.getMember(event.user) ?: continue
             val logEmbed = EmbedBuilder()
                     .setColor(LIGHT_BLUE)
                     .setTitle("User has changed username")
@@ -475,6 +476,7 @@ class GuildLogger
     override fun onUserUpdateDiscriminator(event: UserUpdateDiscriminatorEvent) {
         for (guild in getGuildsWithLogging(event.jda)) {
             guild ?: continue
+            guild.getMember(event.user) ?: continue
             val logEmbed = EmbedBuilder()
                     .setColor(LIGHT_BLUE)
                     .setTitle("User's discriminator changed")
