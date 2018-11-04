@@ -79,7 +79,7 @@ tasks {
         }
     }
     withType<Wrapper> {
-        version = "4.10.2"
+        gradleVersion = "4.10.2"
     }
     withType<JavaCompile> {
         sourceCompatibility = "1.8"
