@@ -44,26 +44,26 @@ plugins {
 
 
 dependencies {
-    compile(group = "org.springframework.boot", name = "spring-boot-starter-security")
-    compile(group = "org.springframework.boot", name = "spring-boot-starter-web")
-    compile(group = "org.springframework.boot", name = "spring-boot-starter-data-jpa")
+    implementation(group = "org.springframework.boot", name = "spring-boot-starter-security")
+    implementation(group = "org.springframework.boot", name = "spring-boot-starter-web")
+    implementation(group = "org.springframework.boot", name = "spring-boot-starter-data-jpa")
     runtime(group = "com.h2database", name = "h2")
     runtime(group = "org.mariadb.jdbc", name = "mariadb-java-client", version = "2.2.3")
-    compile(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin")
-    compile(group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8")
-    compile(group = "org.jetbrains.kotlin", name = "kotlin-reflect")
-    testCompile(group = "org.springframework.boot", name = "spring-boot-starter-test")
-    testCompile(group = "org.springframework.security", name = "spring-security-test")
-    compile(group = "net.dv8tion", name = "JDA", version = "3.8.1_439") {
+    implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin")
+    implementation(group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8")
+    implementation(group = "org.jetbrains.kotlin", name = "kotlin-reflect")
+    testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-test")
+    testImplementation(group = "org.springframework.security", name = "spring-security-test")
+    implementation(group = "net.dv8tion", name = "JDA", version = "3.8.1_439") {
         exclude(group = "club.minnced", module = "opus-java")
     }
-    compile(group = "club.minnced", name = "opus-java", version = "1.0.4")
-    compile(group = "org.apache.commons", name = "commons-lang3", version = "3.5")
-    compile(group = "javax.xml.bind", name = "jaxb-api", version = "2.3.0")
+    implementation(group = "club.minnced", name = "opus-java", version = "1.0.4")
+    implementation(group = "org.apache.commons", name = "commons-lang3", version = "3.5")
+    implementation(group = "javax.xml.bind", name = "jaxb-api", version = "2.3.0")
     implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.0.0")
-    compile(group = "org.jetbrains.kotlin", name= "kotlin-script-runtime")
-    compile(group = "org.jetbrains.kotlin", name= "kotlin-compiler-embeddable")
-    compile(group = "org.jetbrains.kotlin", name= "kotlin-script-util")
+    implementation(group = "org.jetbrains.kotlin", name= "kotlin-script-runtime")
+    implementation(group = "org.jetbrains.kotlin", name= "kotlin-compiler-embeddable")
+    implementation(group = "org.jetbrains.kotlin", name= "kotlin-script-util")
 }
 
 repositories {
