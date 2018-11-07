@@ -23,13 +23,14 @@ import org.springframework.stereotype.Service
 
 @Service
 class UserBlock(
-        val blockedUserRepository: BlockedUserRepository
+    val blockedUserRepository: BlockedUserRepository
 ) {
     fun blockUser(user: User) {
         val blockedUser = BlockedUser(user.idLong)
         blockedUserRepository.save(blockedUser)
         user.openPrivateChannel().queue {
-            it.sendMessage("This is an automated message to inform you that you have been blocked by the bot due to spam.").queue()
+            it.sendMessage("This is an automated message to inform you that you have been blocked by the bot due to spam.")
+                .queue()
         }
     }
 

@@ -24,12 +24,12 @@ import org.springframework.stereotype.Component
 
 @Component
 class WarnPointsList(
-        private val guildWarnPointsRepository: GuildWarnPointsRepository
+    private val guildWarnPointsRepository: GuildWarnPointsRepository
 ) : CommandModule(
-        arrayOf("WarnPointsList", "WarnList"),
-        null,
-        null,
-        requiredPermissions = *arrayOf(Permission.KICK_MEMBERS)
+    arrayOf("WarnPointsList", "WarnList"),
+    null,
+    null,
+    requiredPermissions = *arrayOf(Permission.KICK_MEMBERS)
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         val userWarnPoints = guildWarnPointsRepository.findAll().toSortedSet()
@@ -39,8 +39,8 @@ class WarnPointsList(
         userWarnPoints.forEach {
             val totalPoints = it.activePointsAmount()
             message.append("\n")
-                    .append(event.jda.retrieveUserById(it.userId!!).complete().asMention)
-                    .append(" [$totalPoints]")
+                .append(event.jda.retrieveUserById(it.userId!!).complete().asMention)
+                .append(" [$totalPoints]")
         }
         message.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { event.channel.sendMessage(it).queue() }
     }

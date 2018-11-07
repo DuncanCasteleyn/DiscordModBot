@@ -32,12 +32,12 @@ import java.util.concurrent.TimeUnit
 
 @Component
 class WarnPointSettings(
-        val guildWarnPointsSettingsRepository: GuildWarnPointsSettingsRepository
+    val guildWarnPointsSettingsRepository: GuildWarnPointsSettingsRepository
 ) : CommandModule(
-        arrayOf("WarnPointSettings"),
-        null,
-        "This command allows you to modify the settings for the point system.",
-        requiredPermissions = *arrayOf(Permission.ADMINISTRATOR)
+    arrayOf("WarnPointSettings"),
+    null,
+    "This command allows you to modify the settings for the point system.",
+    requiredPermissions = *arrayOf(Permission.ADMINISTRATOR)
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.jda.addEventListener(PointSettingsSequence(event.author, event.textChannel))
@@ -45,11 +45,11 @@ class WarnPointSettings(
 
     @Transactional
     inner class PointSettingsSequence(
-            user: User,
-            channel: MessageChannel
+        user: User,
+        channel: MessageChannel
     ) : Sequence(
-            user,
-            channel
+        user,
+        channel
     ) {
         var sequenceNumber = 0.toByte()
 
@@ -66,11 +66,13 @@ class WarnPointSettings(
             }
 
             val messageBuilder = MessageBuilder()
-                    .append("What would you like to do?\n")
-                    .append("\n0. Change max points per reason. Current value: ").append(guildSettings.maxPointsPerReason)
-                    .append("\n1. Change the limit before a summary is announced with the users collected points. Current value: ").append(guildSettings.announcePointsSummaryLimit)
-                    .append("\n2. Change the channel to announce the summary in. Current channel: ").append(announceChannel)
-                    .append("\n3. Invert Warn command override by AddPoints command. Current value: ").append(guildSettings.overrideWarnCommand)
+                .append("What would you like to do?\n")
+                .append("\n0. Change max points per reason. Current value: ").append(guildSettings.maxPointsPerReason)
+                .append("\n1. Change the limit before a summary is announced with the users collected points. Current value: ")
+                .append(guildSettings.announcePointsSummaryLimit)
+                .append("\n2. Change the channel to announce the summary in. Current channel: ").append(announceChannel)
+                .append("\n3. Invert Warn command override by AddPoints command. Current value: ")
+                .append(guildSettings.overrideWarnCommand)
             channel.sendMessage(messageBuilder.build()).queue { super.addMessageToCleaner(it) }
         }
 
@@ -79,15 +81,18 @@ class WarnPointSettings(
                 0.toByte() -> {
                     when (event.message.contentRaw.toByte()) {
                         0.toByte() -> {
-                            channel.sendMessage("Please enter the new max amount of allowed points per reason.").queue { super.addMessageToCleaner(it) }
+                            channel.sendMessage("Please enter the new max amount of allowed points per reason.")
+                                .queue { super.addMessageToCleaner(it) }
                             sequenceNumber = 1
                         }
                         1.toByte() -> {
-                            channel.sendMessage("Please enter the new limit for a summary to be posted.").queue { super.addMessageToCleaner(it) }
+                            channel.sendMessage("Please enter the new limit for a summary to be posted.")
+                                .queue { super.addMessageToCleaner(it) }
                             sequenceNumber = 2
                         }
                         2.toByte() -> {
-                            channel.sendMessage("Please mention the channel where you want announcement to be made. (These summaries use an everyone ping so don't use a public channel)").queue { super.addMessageToCleaner(it) }
+                            channel.sendMessage("Please mention the channel where you want announcement to be made. (These summaries use an everyone ping so don't use a public channel)")
+                                .queue { super.addMessageToCleaner(it) }
                             sequenceNumber = 3
                         }
                         3.toByte() -> {
@@ -135,5 +140,5 @@ class WarnPointSettings(
     }
 
     private fun guildWarnPointsSettings(guild: Guild) =
-            guildWarnPointsSettingsRepository.findById(guild.idLong).orElse(GuildWarnPointsSettings(guild.idLong))
+        guildWarnPointsSettingsRepository.findById(guild.idLong).orElse(GuildWarnPointsSettings(guild.idLong))
 }

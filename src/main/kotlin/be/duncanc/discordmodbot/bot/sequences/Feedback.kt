@@ -40,13 +40,13 @@ import java.util.concurrent.TimeUnit
 @Component
 class Feedback
 @Autowired constructor(
-        private val reportChannelRepository: ReportChannelRepository,
-        userBlock: UserBlock
+    private val reportChannelRepository: ReportChannelRepository,
+    userBlock: UserBlock
 ) : CommandModule(
-        arrayOf("Feedback", "Report", "Complaint"),
-        null,
-        "This command allows users to give feedback to the server staff by posting it in a channel that is configured. This command must be executed in a private channel",
-        userBlock = userBlock
+    arrayOf("Feedback", "Report", "Complaint"),
+    null,
+    "This command allows users to give feedback to the server staff by posting it in a channel that is configured. This command must be executed in a private channel",
+    userBlock = userBlock
 ) {
 
     private val setFeedbackChannel = SetFeedbackChannel()
@@ -63,13 +63,16 @@ class Feedback
         event.jda.addEventListener(setFeedbackChannel, disableFeedback)
     }
 
-    inner class FeedbackSequence(user: User, channel: MessageChannel, jda: JDA) : Sequence(user, channel, cleanAfterSequence = false, informUser = true) {
+    inner class FeedbackSequence(user: User, channel: MessageChannel, jda: JDA) :
+        Sequence(user, channel, cleanAfterSequence = false, informUser = true) {
         private var guild: Guild? = null
         private val selectableGuilds: List<Guild>
 
         init {
             val validGuilds = reportChannelRepository.findAll()
-            selectableGuilds = jda.guilds.filter { guild -> validGuilds.any { it.guildId == guild.idLong } && guild.isMember(user) }.toList()
+            selectableGuilds =
+                    jda.guilds.filter { guild -> validGuilds.any { it.guildId == guild.idLong } && guild.isMember(user) }
+                        .toList()
             if (selectableGuilds.isEmpty()) {
                 throw UnsupportedOperationException("None of the servers you are on have this feature enabled.")
             }
@@ -89,28 +92,43 @@ class Feedback
                 guild = selectableGuilds[event.message.contentRaw.toInt()]
                 channel.sendMessage("Please enter your feedback.").queue()
             } else {
-                val feedbackChannel = reportChannelRepository.findById(guild!!.idLong).orElseThrow { throw RuntimeException("The feedback feature was disabled during runtime") }.textChannelId!!
+                val feedbackChannel =
+                    reportChannelRepository.findById(guild!!.idLong).orElseThrow { throw RuntimeException("The feedback feature was disabled during runtime") }.textChannelId!!
                 val embedBuilder = EmbedBuilder()
-                        .setAuthor(guild!!.getMember(user).nicknameAndUsername, null, user.effectiveAvatarUrl)
-                        .setDescription(event.message.contentStripped)
-                        .setFooter(user.id, null)
-                        .setTimestamp(OffsetDateTime.now())
-                        .setColor(Color.GREEN)
+                    .setAuthor(guild!!.getMember(user).nicknameAndUsername, null, user.effectiveAvatarUrl)
+                    .setDescription(event.message.contentStripped)
+                    .setFooter(user.id, null)
+                    .setTimestamp(OffsetDateTime.now())
+                    .setColor(Color.GREEN)
                 guild!!.getTextChannelById(feedbackChannel).sendMessage(embedBuilder.build()).queue()
-                channel.sendMessage("Your feedback has been transferred to the moderators.\n\nThank you for helping us.").queue()
+                channel.sendMessage("Your feedback has been transferred to the moderators.\n\nThank you for helping us.")
+                    .queue()
                 super.destroy()
             }
         }
     }
 
-    inner class SetFeedbackChannel : CommandModule(arrayOf("SetFeedbackChannel"), null, "This command sets the current channel as feedback channel enabling the !feedback command for the server.", ignoreWhitelist = true, requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)) {
+    inner class SetFeedbackChannel : CommandModule(
+        arrayOf("SetFeedbackChannel"),
+        null,
+        "This command sets the current channel as feedback channel enabling the !feedback command for the server.",
+        ignoreWhitelist = true,
+        requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)
+    ) {
         override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
             reportChannelRepository.save(ReportChannel(event.guild.idLong, event.textChannel.idLong))
-            event.channel.sendMessage("This channel has been set for feedback.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+            event.channel.sendMessage("This channel has been set for feedback.")
+                .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
         }
     }
 
-    inner class DisableFeedback : CommandModule(arrayOf("DisableFeedback"), null, "This command disables the feedback system for the server where executed.", ignoreWhitelist = true, requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)) {
+    inner class DisableFeedback : CommandModule(
+        arrayOf("DisableFeedback"),
+        null,
+        "This command disables the feedback system for the server where executed.",
+        ignoreWhitelist = true,
+        requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)
+    ) {
         override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
             reportChannelRepository.deleteById(event.guild.idLong)
             event.channel.sendMessage("Disabled feedback.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }

@@ -23,12 +23,12 @@ import org.springframework.stereotype.Component
 
 @Component
 class Unblock(
-        val blockedUserRepository: BlockedUserRepository,
-        val discordModBotConfigurationProperties: DiscordModBotConfigurationProperties
+    val blockedUserRepository: BlockedUserRepository,
+    val discordModBotConfigurationProperties: DiscordModBotConfigurationProperties
 ) : CommandModule(
-        arrayOf("Unblock"),
-        null,
-        null
+    arrayOf("Unblock"),
+    null,
+    null
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         if (event.author.idLong == discordModBotConfigurationProperties.ownerId) {

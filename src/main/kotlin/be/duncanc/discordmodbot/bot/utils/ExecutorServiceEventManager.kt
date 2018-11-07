@@ -15,7 +15,9 @@
  */
 package be.duncanc.discordmodbot.bot.utils
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.launch
 import net.dv8tion.jda.core.events.Event
 import net.dv8tion.jda.core.hooks.InterfacedEventManager
 import org.slf4j.Logger
@@ -33,7 +35,7 @@ import kotlin.concurrent.thread
  */
 internal class ExecutorServiceEventManager
 constructor(
-        name: String
+    name: String
 ) : InterfacedEventManager() {
     companion object {
         val LOG: Logger = LoggerFactory.getLogger(ExecutorServiceEventManager::class.java)

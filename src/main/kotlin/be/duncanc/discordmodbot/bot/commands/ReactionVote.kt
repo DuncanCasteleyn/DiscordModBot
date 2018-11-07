@@ -25,14 +25,14 @@ import org.springframework.stereotype.Component
 //todo make emotes not static
 @Component
 class ReactionVote(
-        userBlock: UserBlock
+    userBlock: UserBlock
 ) : CommandModule(
-        arrayOf("ReactionVote", "Vote"),
-        "[message id]",
-        "Will put reactions to vote yes or no on a message.\nIf no message id is provided the message that contains the command will be used to vote.",
-        cleanCommandMessage = false,
-        ignoreWhitelist = true,
-        userBlock = userBlock
+    arrayOf("ReactionVote", "Vote"),
+    "[message id]",
+    "Will put reactions to vote yes or no on a message.\nIf no message id is provided the message that contains the command will be used to vote.",
+    cleanCommandMessage = false,
+    ignoreWhitelist = true,
+    userBlock = userBlock
 ) {
 
     companion object {

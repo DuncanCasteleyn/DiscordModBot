@@ -26,28 +26,28 @@ import javax.validation.constraints.NotNull
 @IdClass(IAmRolesCategory.IAmRoleId::class)
 data class IAmRolesCategory
 constructor(
-        @Id
-        @Column(updatable = false)
-        val guildId: Long? = null,
+    @Id
+    @Column(updatable = false)
+    val guildId: Long? = null,
 
-        @Id
-        @GeneratedValue(generator = "i_am_roles_category_id_seq")
-        @SequenceGenerator(name = "i_am_roles_category_id_seq", sequenceName = "i_am_roles_seq", allocationSize = 1)
-        @Column(insertable = false, updatable = false)
-        val categoryId: Long? = null,
+    @Id
+    @GeneratedValue(generator = "i_am_roles_category_id_seq")
+    @SequenceGenerator(name = "i_am_roles_category_id_seq", sequenceName = "i_am_roles_seq", allocationSize = 1)
+    @Column(insertable = false, updatable = false)
+    val categoryId: Long? = null,
 
-        @Column(unique = true, nullable = false)
-        var categoryName: String? = null,
+    @Column(unique = true, nullable = false)
+    var categoryName: String? = null,
 
-        @Column(nullable = false)
-        @NotNull
-        var allowedRoles: Int = 0,
+    @Column(nullable = false)
+    @NotNull
+    var allowedRoles: Int = 0,
 
-        @Column(nullable = false)
-        @field:NotNull
-        @CollectionTable(name = "i_am_roles_category_roles")
-        @ElementCollection
-        val roles: MutableSet<Long> = HashSet()
+    @Column(nullable = false)
+    @field:NotNull
+    @CollectionTable(name = "i_am_roles_category_roles")
+    @ElementCollection
+    val roles: MutableSet<Long> = HashSet()
 ) {
 
     override fun equals(other: Any?): Boolean {
@@ -74,9 +74,10 @@ constructor(
 
 
     data class IAmRoleId(
-            val guildId: Long? = null,
+        val guildId: Long? = null,
 
-            val categoryId: Long? = null) : Serializable {
+        val categoryId: Long? = null
+    ) : Serializable {
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true

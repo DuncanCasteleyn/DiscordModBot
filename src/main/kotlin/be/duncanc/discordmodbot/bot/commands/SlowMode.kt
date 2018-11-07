@@ -40,16 +40,18 @@ import java.util.concurrent.*
 @Component
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 class SlowMode : CommandModule(
-        ALIASES,
-        ARGUMENTATION_SYNTAX,
-        DESCRIPTION,
-        true,
-        true
+    ALIASES,
+    ARGUMENTATION_SYNTAX,
+    DESCRIPTION,
+    true,
+    true
 ) {
     companion object {
         private val ALIASES = arrayOf("SlowMode")
-        private const val ARGUMENTATION_SYNTAX = "[Threshold message limit] [Threshold reset time] [Mute time when threshold hit]"
-        private const val DESCRIPTION = "This command will prevent spamming in channels by temporary revoking permissions on users that spam in a channel."
+        private const val ARGUMENTATION_SYNTAX =
+            "[Threshold message limit] [Threshold reset time] [Mute time when threshold hit]"
+        private const val DESCRIPTION =
+            "This command will prevent spamming in channels by temporary revoking permissions on users that spam in a channel."
     }
 
     private val slowedChannels: ArrayList<SlowModeOnChannel> = ArrayList()
@@ -57,23 +59,27 @@ class SlowMode : CommandModule(
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         val args: Array<String>? = arguments?.split(" ".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
         if (!event.isFromType(ChannelType.TEXT)) {
-            event.author.openPrivateChannel().queue { privateChannel -> privateChannel.sendMessage("This command only works in a guild.").queue() }
+            event.author.openPrivateChannel()
+                .queue { privateChannel -> privateChannel.sendMessage("This command only works in a guild.").queue() }
         } else if (!event.member.hasPermission(event.textChannel, Permission.MESSAGE_MANAGE)) {
-            val noPermissionMessage = event.author.asMention + " You need manage messages in this channel to toggle SlowMode!"
-            event.author.openPrivateChannel().queue { privateChannel -> privateChannel.sendMessage(noPermissionMessage).queue() }
+            val noPermissionMessage =
+                event.author.asMention + " You need manage messages in this channel to toggle SlowMode!"
+            event.author.openPrivateChannel()
+                .queue { privateChannel -> privateChannel.sendMessage(noPermissionMessage).queue() }
         } else {
             if (event.guild.getMember(event.jda.selfUser).permissions.contains(Permission.MANAGE_PERMISSIONS)) {
-                val guildLogger = event.jda.registeredListeners.stream().filter { o -> o is GuildLogger }.findFirst().orElse(null) as GuildLogger
+                val guildLogger =
+                    event.jda.registeredListeners.stream().filter { o -> o is GuildLogger }.findFirst().orElse(null) as GuildLogger
                 var wasSlowed = false
                 for (slowChannel in slowedChannels) {
                     if (slowChannel.slowChannel === event.channel) {
                         slowChannel.disable()
                         slowedChannels.remove(slowChannel)
                         val logEmbed = EmbedBuilder()
-                                .setColor(Color.GREEN)
-                                .setTitle("Slow mode disabled", null)
-                                .addField("Moderator", event.member.nicknameAndUsername, true)
-                                .addField("Channel", event.textChannel.name, true)
+                            .setColor(Color.GREEN)
+                            .setTitle("Slow mode disabled", null)
+                            .addField("Moderator", event.member.nicknameAndUsername, true)
+                            .addField("Channel", event.textChannel.name, true)
 
                         guildLogger.log(logEmbed, event.author, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
 
@@ -85,21 +91,35 @@ class SlowMode : CommandModule(
                 if (!wasSlowed) {
                     if (args != null && args.size >= 3) {
                         try {
-                            slowedChannels.add(SlowModeOnChannel(event.textChannel, Integer.parseInt(args[0]), Integer.parseInt(args[1]), Integer.parseInt(args[2])))
+                            slowedChannels.add(
+                                SlowModeOnChannel(
+                                    event.textChannel,
+                                    Integer.parseInt(args[0]),
+                                    Integer.parseInt(args[1]),
+                                    Integer.parseInt(args[2])
+                                )
+                            )
                             val logEmbed = EmbedBuilder()
-                                    .setColor(Color.YELLOW)
-                                    .setTitle("Slow mode enabled", null)
-                                    .addField("Moderator", event.member.nicknameAndUsername, true)
-                                    .addField("Channel", event.textChannel.name, true)
-                                    .addBlankField(false)
-                                    .addField("Threshold", args[0], true)
-                                    .addField("Threshold time", args[1], true)
-                                    .addField("Mute time", args[2], true)
+                                .setColor(Color.YELLOW)
+                                .setTitle("Slow mode enabled", null)
+                                .addField("Moderator", event.member.nicknameAndUsername, true)
+                                .addField("Channel", event.textChannel.name, true)
+                                .addBlankField(false)
+                                .addField("Threshold", args[0], true)
+                                .addField("Threshold time", args[1], true)
+                                .addField("Mute time", args[2], true)
 
-                            guildLogger.log(logEmbed, event.author, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
+                            guildLogger.log(
+                                logEmbed,
+                                event.author,
+                                event.guild,
+                                null,
+                                GuildLogger.LogTypeAction.MODERATOR
+                            )
                         } catch (e: NumberFormatException) {
                             val privateChannel: PrivateChannel = event.author.openPrivateChannel().complete()
-                            privateChannel.sendMessage("The provided argument for the command !slowmode was incorrect. Provide integer numbers.").queue()
+                            privateChannel.sendMessage("The provided argument for the command !slowmode was incorrect. Provide integer numbers.")
+                                .queue()
                         }
 
                     } else {
@@ -108,21 +128,22 @@ class SlowMode : CommandModule(
                         val muteTime = 5
                         slowedChannels.add(SlowModeOnChannel(event.textChannel, threshold, thresholdTime, muteTime))
                         val logEmbed = EmbedBuilder()
-                                .setColor(Color.YELLOW)
-                                .setTitle("Slow mode enabled", null)
-                                .addField("Moderator", event.member.nicknameAndUsername, true)
-                                .addField("Channel", event.textChannel.name, true)
-                                .addBlankField(false)
-                                .addField("Threshold", threshold.toString(), true)
-                                .addField("Threshold time", thresholdTime.toString(), true)
-                                .addField("Mute time", muteTime.toString(), true)
+                            .setColor(Color.YELLOW)
+                            .setTitle("Slow mode enabled", null)
+                            .addField("Moderator", event.member.nicknameAndUsername, true)
+                            .addField("Channel", event.textChannel.name, true)
+                            .addBlankField(false)
+                            .addField("Threshold", threshold.toString(), true)
+                            .addField("Threshold time", thresholdTime.toString(), true)
+                            .addField("Mute time", muteTime.toString(), true)
 
                         guildLogger.log(logEmbed, event.author, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
                     }
                 }
             } else {
                 val privateChannel: PrivateChannel = event.author.openPrivateChannel().complete()
-                privateChannel.sendMessage("Cannot perform slow mode due to a lack of Permission. Missing permission: " + Permission.MANAGE_PERMISSIONS).queue()
+                privateChannel.sendMessage("Cannot perform slow mode due to a lack of Permission. Missing permission: " + Permission.MANAGE_PERMISSIONS)
+                    .queue()
             }
         }
     }
@@ -141,12 +162,16 @@ class SlowMode : CommandModule(
      * @param muteTime    The amount of time in seconds members need to wait before sending a new message.
      */
     internal constructor(
-            /**
-             * This method will the return the channel that is being slowed by the object.
-             *
-             * @return the channel object that is being slowed by this object.
-             */
-            internal val slowChannel: TextChannel, private val threshold: Int, private val thresholdResetTime: Int, private var muteTime: Int) : ListenerAdapter() {
+        /**
+         * This method will the return the channel that is being slowed by the object.
+         *
+         * @return the channel object that is being slowed by this object.
+         */
+        internal val slowChannel: TextChannel,
+        private val threshold: Int,
+        private val thresholdResetTime: Int,
+        private var muteTime: Int
+    ) : ListenerAdapter() {
         private val removeThreads: ThreadGroup = ThreadGroup("Slow mode user remove threads")
         private val removeThreadsPool: ScheduledExecutorService
         private val memberSlowModeCleanerMap: HashMap<Long, MemberSlowModeCleanerAndDataHolder> = HashMap()
@@ -224,11 +249,16 @@ class SlowMode : CommandModule(
 
             if (event.channel === slowChannel) {
                 if (!memberSlowModeCleanerMap.containsKey(event.author.idLong)) {
-                    val memberSlowModeCleanerAndDataHolder: MemberSlowModeCleanerAndDataHolder = if (slowChannel.getPermissionOverride(event.member) != null) {
-                        MemberSlowModeCleanerAndDataHolder(event.member, false, event.channel.getPermissionOverride(event.member).allowed.contains(Permission.MESSAGE_WRITE))
-                    } else {
-                        MemberSlowModeCleanerAndDataHolder(event.member, true)
-                    }
+                    val memberSlowModeCleanerAndDataHolder: MemberSlowModeCleanerAndDataHolder =
+                        if (slowChannel.getPermissionOverride(event.member) != null) {
+                            MemberSlowModeCleanerAndDataHolder(
+                                event.member,
+                                false,
+                                event.channel.getPermissionOverride(event.member).allowed.contains(Permission.MESSAGE_WRITE)
+                            )
+                        } else {
+                            MemberSlowModeCleanerAndDataHolder(event.member, true)
+                        }
                     memberSlowModeCleanerMap[event.author.idLong] = memberSlowModeCleanerAndDataHolder
                 } else {
                     memberSlowModeCleanerMap[event.author.idLong]?.newMessage()
@@ -248,7 +278,11 @@ class SlowMode : CommandModule(
          * @param deletePermissionOverride If the user his permission override should be deleted or not.
          * @param grantPerm                If the user should get override write permissions assigned after his Mute.
          */
-        @JvmOverloads internal constructor(private val memberToClean: Member, private val deletePermissionOverride: Boolean, private val grantPerm: Boolean = false) : Runnable {
+        @JvmOverloads internal constructor(
+            private val memberToClean: Member,
+            private val deletePermissionOverride: Boolean,
+            private val grantPerm: Boolean = false
+        ) : Runnable {
             private val scheduledCleaner: ScheduledFuture<*>
             private var wasMuted: Boolean = false
             private var messagesAmount: Byte = 0
@@ -285,9 +319,12 @@ class SlowMode : CommandModule(
                     wasMuted = true
                     val canceled = scheduledCleaner.cancel(false)
                     if (slowChannel.getPermissionOverride(memberToClean) != null) {
-                        slowChannel.getPermissionOverride(memberToClean).manager.deny(Permission.MESSAGE_WRITE).reason("SlowMode: mute").queue()
+                        slowChannel.getPermissionOverride(memberToClean).manager.deny(Permission.MESSAGE_WRITE)
+                            .reason("SlowMode: mute").queue()
                     } else {
-                        slowChannel.createPermissionOverride(memberToClean).queue { permissionOverride -> permissionOverride.manager.deny(Permission.MESSAGE_WRITE).reason("SlowMode: mute").queue() }
+                        slowChannel.createPermissionOverride(memberToClean).queue { permissionOverride ->
+                            permissionOverride.manager.deny(Permission.MESSAGE_WRITE).reason("SlowMode: mute").queue()
+                        }
                     }
                     if (canceled) {
                         try {
@@ -319,9 +356,15 @@ class SlowMode : CommandModule(
                         memberSlowModeCleanerMap.remove(memberToClean.user.idLong)
                         if (wasMuted) {
                             when {
-                                deletePermissionOverride -> slowChannel.getPermissionOverride(memberToClean).delete().reason("SlowMode: remove mute").queue()
-                                grantPerm -> slowChannel.getPermissionOverride(memberToClean).manager.grant(Permission.MESSAGE_WRITE).reason("SlowMode: remove mute").queue()
-                                else -> slowChannel.getPermissionOverride(memberToClean).manager.clear(Permission.MESSAGE_WRITE).reason("SlowMode: remove mute").queue()
+                                deletePermissionOverride -> slowChannel.getPermissionOverride(memberToClean).delete().reason(
+                                    "SlowMode: remove mute"
+                                ).queue()
+                                grantPerm -> slowChannel.getPermissionOverride(memberToClean).manager.grant(Permission.MESSAGE_WRITE).reason(
+                                    "SlowMode: remove mute"
+                                ).queue()
+                                else -> slowChannel.getPermissionOverride(memberToClean).manager.clear(Permission.MESSAGE_WRITE).reason(
+                                    "SlowMode: remove mute"
+                                ).queue()
                             }
                         }
                     } catch (t: Throwable) {

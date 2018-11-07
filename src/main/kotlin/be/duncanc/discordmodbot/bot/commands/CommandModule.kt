@@ -44,13 +44,13 @@ import kotlin.collections.HashMap
  */
 abstract class CommandModule
 @JvmOverloads protected constructor(
-        internal open val aliases: Array<String>,
-        internal open val argumentationSyntax: String?,
-        internal open val description: String?,
-        private val cleanCommandMessage: Boolean = true,
-        private val ignoreWhitelist: Boolean = false,
-        protected open val userBlock: UserBlock? = null,
-        internal open vararg val requiredPermissions: Permission
+    internal open val aliases: Array<String>,
+    internal open val argumentationSyntax: String?,
+    internal open val description: String?,
+    private val cleanCommandMessage: Boolean = true,
+    private val ignoreWhitelist: Boolean = false,
+    protected open val userBlock: UserBlock? = null,
+    internal open vararg val requiredPermissions: Permission
 ) : ListenerAdapter() {
 
     companion object {
@@ -106,13 +106,17 @@ abstract class CommandModule
             if (Arrays.stream(aliases).anyMatch { s -> s.equals(command, ignoreCase = true) }) {
                 try {
                     if (event.isFromType(ChannelType.TEXT) && !ignoreWhitelist) {
-                        val commandTextChannelsWhitelist = event.jda.registeredListeners.find { it is CommandTextChannelsWhitelist } as CommandTextChannelsWhitelist?
+                        val commandTextChannelsWhitelist =
+                            event.jda.registeredListeners.find { it is CommandTextChannelsWhitelist } as CommandTextChannelsWhitelist?
                         if (commandTextChannelsWhitelist?.isWhitelisted(event.textChannel) == false) {
                             throw IllegalTextChannelException()
                         }
                     }
                     if (requiredPermissions.isNotEmpty()) {
-                        if (event.isFromType(ChannelType.TEXT) && !event.member.permissions.containsAll(requiredPermissions.asList())) {
+                        if (event.isFromType(ChannelType.TEXT) && !event.member.permissions.containsAll(
+                                requiredPermissions.asList()
+                            )
+                        ) {
                             throw PermissionException("You do not have sufficient permissions to use this command.\nYou need the following permissions: ${requiredPermissions.contentToString()}")
                         } else if (!event.isFromType(ChannelType.TEXT)) {
                             throw PermissionException("This command requires permissions, which means it has to be executed from a text channel on a guild/server.")
@@ -122,11 +126,18 @@ abstract class CommandModule
                     LOG.info("Bot ${event.jda.selfUser} on channel ${if (event.guild != null) "${event.guild} " else ""}${event.channel.name} completed executing ${event.message.contentStripped} command from user ${event.author}")
                 } catch (pe: PermissionException) {
                     LOG.warn("Bot ${event.jda.selfUser} on channel ${if (event.guild != null) "${event.guild} " else ""}${event.channel.name} failed executing ${event.message.contentStripped} command from user ${event.author}")
-                    val exceptionMessage = MessageBuilder().append("${event.author.asMention} Cannot complete action due to a permission issue; see the message below for details.").appendCodeBlock(pe.javaClass.simpleName + ": " + pe.message, "text").build()
+                    val exceptionMessage =
+                        MessageBuilder().append("${event.author.asMention} Cannot complete action due to a permission issue; see the message below for details.")
+                            .appendCodeBlock(pe.javaClass.simpleName + ": " + pe.message, "text").build()
                     event.channel.sendMessage(exceptionMessage).queue { it.delete().queueAfter(5, TimeUnit.MINUTES) }
                 } catch (t: Throwable) {
-                    LOG.error("Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " failed executing " + event.message.contentStripped + " command from user " + event.author.toString(), t)
-                    val exceptionMessage = MessageBuilder().append("${event.author.asMention} Cannot complete action due to an error; see the message below for details.").appendCodeBlock(t.javaClass.simpleName + ": " + t.message, "text").build()
+                    LOG.error(
+                        "Bot " + event.jda.selfUser.toString() + " on channel " + (if (event.guild != null) event.guild.toString() + " " else "") + event.channel.name + " failed executing " + event.message.contentStripped + " command from user " + event.author.toString(),
+                        t
+                    )
+                    val exceptionMessage =
+                        MessageBuilder().append("${event.author.asMention} Cannot complete action due to an error; see the message below for details.")
+                            .appendCodeBlock(t.javaClass.simpleName + ": " + t.message, "text").build()
                     event.channel.sendMessage(exceptionMessage).queue { it.delete().queueAfter(5, TimeUnit.MINUTES) }
                 }
 
@@ -135,7 +146,10 @@ abstract class CommandModule
                         event.message.delete().queue()
                     }
                 } catch (e: Exception) {
-                    LOG.warn("Bot ${event.jda.selfUser} on channel ${if (event.guild != null) "${event.guild} " else ""}${event.channel.name} failed deleting ${event.message.contentStripped} command from user ${event.author}", e)
+                    LOG.warn(
+                        "Bot ${event.jda.selfUser} on channel ${if (event.guild != null) "${event.guild} " else ""}${event.channel.name} failed deleting ${event.message.contentStripped} command from user ${event.author}",
+                        e
+                    )
                 }
                 spamCheck(event.author)
             }

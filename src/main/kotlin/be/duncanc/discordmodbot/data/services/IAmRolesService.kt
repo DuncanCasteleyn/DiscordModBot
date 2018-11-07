@@ -27,7 +27,7 @@ import java.util.*
 @Service
 class IAmRolesService
 @Autowired constructor(
-        private val iAmRolesRepository: IAmRolesRepository
+    private val iAmRolesRepository: IAmRolesRepository
 ) {
 
     fun getAllCategoriesForGuild(guildId: Long): List<IAmRolesCategory> {
@@ -64,7 +64,8 @@ class IAmRolesService
 
     @Transactional
     fun changeCategoryName(guildId: Long, categoryId: Long, newName: String) {
-        val iAmRolesCategory = iAmRolesRepository.findById(IAmRolesCategory.IAmRoleId(guildId, categoryId)).orElseThrow { IllegalArgumentException("The entity does not exist within the database.") }
+        val iAmRolesCategory = iAmRolesRepository.findById(IAmRolesCategory.IAmRoleId(guildId, categoryId))
+            .orElseThrow { IllegalArgumentException("The entity does not exist within the database.") }
         iAmRolesCategory.categoryName = newName
         iAmRolesRepository.save(iAmRolesCategory)
     }
@@ -74,7 +75,8 @@ class IAmRolesService
      */
     @Transactional
     fun addOrRemoveRole(guildId: Long, categoryId: Long, roleId: Long): Boolean {
-        val iAmRolesCategory = iAmRolesRepository.findById(IAmRolesCategory.IAmRoleId(guildId, categoryId)).orElseThrow { IllegalArgumentException("The entity does not exist within the database.") }
+        val iAmRolesCategory = iAmRolesRepository.findById(IAmRolesCategory.IAmRoleId(guildId, categoryId))
+            .orElseThrow { IllegalArgumentException("The entity does not exist within the database.") }
         return if (iAmRolesCategory.roles.contains(roleId)) {
             iAmRolesCategory.roles.remove(roleId)
             false
@@ -86,13 +88,15 @@ class IAmRolesService
 
     @Transactional
     fun changeAllowedRoles(guildId: Long, categoryId: Long, newAmount: Int) {
-        val iAmRolesCategory = iAmRolesRepository.findById(IAmRolesCategory.IAmRoleId(guildId, categoryId)).orElseThrow { IllegalArgumentException("The entity does not exist within the database.") }
+        val iAmRolesCategory = iAmRolesRepository.findById(IAmRolesCategory.IAmRoleId(guildId, categoryId))
+            .orElseThrow { IllegalArgumentException("The entity does not exist within the database.") }
         iAmRolesCategory.allowedRoles = newAmount
         iAmRolesRepository.save(iAmRolesCategory)
     }
 
     fun getRoleIds(guildId: Long, categoryId: Long): Set<Long> {
-        val iAmRolesCategory = iAmRolesRepository.findById(IAmRolesCategory.IAmRoleId(guildId, categoryId)).orElseThrow { IllegalArgumentException("The entity does not exist within the database.") }
+        val iAmRolesCategory = iAmRolesRepository.findById(IAmRolesCategory.IAmRoleId(guildId, categoryId))
+            .orElseThrow { IllegalArgumentException("The entity does not exist within the database.") }
         return HashSet(iAmRolesCategory.roles)
     }
 }

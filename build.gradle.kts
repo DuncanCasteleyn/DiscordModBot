@@ -61,9 +61,9 @@ dependencies {
     implementation(group = "org.apache.commons", name = "commons-lang3", version = "3.5")
     implementation(group = "javax.xml.bind", name = "jaxb-api", version = "2.3.0")
     implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.0.0")
-    implementation(group = "org.jetbrains.kotlin", name= "kotlin-script-runtime")
-    implementation(group = "org.jetbrains.kotlin", name= "kotlin-compiler-embeddable")
-    implementation(group = "org.jetbrains.kotlin", name= "kotlin-script-util")
+    implementation(group = "org.jetbrains.kotlin", name = "kotlin-script-runtime")
+    implementation(group = "org.jetbrains.kotlin", name = "kotlin-compiler-embeddable")
+    implementation(group = "org.jetbrains.kotlin", name = "kotlin-script-util")
 }
 
 repositories {

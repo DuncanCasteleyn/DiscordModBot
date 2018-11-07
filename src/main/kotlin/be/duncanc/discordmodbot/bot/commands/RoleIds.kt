@@ -30,12 +30,12 @@ import java.util.concurrent.TimeUnit
  */
 @Component
 class RoleIds(
-        userBlock: UserBlock
+    userBlock: UserBlock
 ) : CommandModule(
-        ALIASES,
-        null,
-        DESCRIPTION,
-        userBlock = userBlock
+    ALIASES,
+    null,
+    DESCRIPTION,
+    userBlock = userBlock
 ) {
     companion object {
         private val ALIASES = arrayOf("RoleIds", "GetRoleIds")
@@ -44,9 +44,11 @@ class RoleIds(
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         if (!event.isFromType(ChannelType.TEXT)) {
-            event.channel.sendMessage("This command only works in a guild.").queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
+            event.channel.sendMessage("This command only works in a guild.")
+                .queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
         } else if (!event.member.hasPermission(Permission.MANAGE_ROLES)) {
-            event.channel.sendMessage(event.author.asMention + " you need manage roles permission to use this command.").queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
+            event.channel.sendMessage(event.author.asMention + " you need manage roles permission to use this command.")
+                .queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
         } else {
             val result = StringBuilder()
             if (event.guild != null) {

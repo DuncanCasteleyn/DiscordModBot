@@ -32,13 +32,13 @@ import java.util.*
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 class QuitBot
 @Autowired constructor(
-        private val applicationContext: ApplicationContext
+    private val applicationContext: ApplicationContext
 ) : CommandModule(
-        ALIASES,
-        null,
-        DESCRIPTION,
-        true,
-        true
+    ALIASES,
+    null,
+    DESCRIPTION,
+    true,
+    true
 ) {
     companion object {
         private val ALIASES = arrayOf("Quit", "Shutdown", "Disconnect")
@@ -69,7 +69,8 @@ class QuitBot
             event.jda.shutdown()
             (applicationContext as ConfigurableApplicationContext).close()
         } else {
-            event.channel.sendMessage(event.author.asMention + " you don't have permission to shutdown the bot!").queue()
+            event.channel.sendMessage(event.author.asMention + " you don't have permission to shutdown the bot!")
+                .queue()
         }
 
     }

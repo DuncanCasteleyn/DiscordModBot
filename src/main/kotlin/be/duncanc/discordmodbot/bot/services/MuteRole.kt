@@ -34,11 +34,11 @@ import java.util.concurrent.TimeUnit
 @Transactional
 class MuteRole
 @Autowired constructor(
-        private val muteRolesRepository: MuteRolesRepository
+    private val muteRolesRepository: MuteRolesRepository
 ) : CommandModule(
-        arrayOf("MuteRole"),
-        "Name of the mute role or nothing to remove, the role",
-        "This command allows you to set the mute role for a guild/server"
+    arrayOf("MuteRole"),
+    "Name of the mute role or nothing to remove, the role",
+    "This command allows you to set the mute role for a guild/server"
 ) {
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
@@ -49,11 +49,13 @@ class MuteRole
         val guildId = event.guild.idLong
         if (arguments == null) {
             muteRolesRepository.deleteById(guildId)
-            event.channel.sendMessage("Mute role has been removed.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+            event.channel.sendMessage("Mute role has been removed.")
+                .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
         } else {
             try {
                 muteRolesRepository.save(MuteRole(guildId, event.guild.getRolesByName(arguments, false)[0].idLong))
-                event.channel.sendMessage("Role has been set as mute role.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                event.channel.sendMessage("Role has been set as mute role.")
+                    .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
             } catch (exception: IndexOutOfBoundsException) {
                 throw IllegalArgumentException("Couldn't find any roles with that name.", exception)
             }
@@ -66,7 +68,8 @@ class MuteRole
 
     @Transactional(readOnly = true)
     fun getMuteRole(guild: Guild): Role {
-        val roleId = muteRolesRepository.findById(guild.idLong).orElseThrow { throw IllegalStateException("This guild does not have a mute role set up.") }.roleId!!
+        val roleId =
+            muteRolesRepository.findById(guild.idLong).orElseThrow { throw IllegalStateException("This guild does not have a mute role set up.") }.roleId!!
 
         return guild.getRoleById(roleId)
     }

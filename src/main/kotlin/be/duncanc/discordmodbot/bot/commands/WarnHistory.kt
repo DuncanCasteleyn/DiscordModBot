@@ -33,31 +33,43 @@ import java.util.concurrent.TimeUnit
 
 @Component
 class WarnHistory(
-        val guildWarnPointsRepository: GuildWarnPointsRepository,
-        userBlock: UserBlock
+    val guildWarnPointsRepository: GuildWarnPointsRepository,
+    userBlock: UserBlock
 ) : CommandModule(
-        arrayOf("WarnHistory"),
-        null,
-        null,
-        userBlock = userBlock
+    arrayOf("WarnHistory"),
+    null,
+    null,
+    userBlock = userBlock
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         if (!event.isFromType(ChannelType.TEXT)) {
             throw IllegalArgumentException("This command can only be used in a guild/server channel.")
         }
         if (event.message.mentionedUsers.size == 1 && event.member.hasPermission(Permission.KICK_MEMBERS)) {
-            val requestedUserPoints = guildWarnPointsRepository.findById(GuildWarnPoints.GuildWarnPointsId(event.message.mentionedUsers[0].idLong, event.guild.idLong))
+            val requestedUserPoints = guildWarnPointsRepository.findById(
+                GuildWarnPoints.GuildWarnPointsId(
+                    event.message.mentionedUsers[0].idLong,
+                    event.guild.idLong
+                )
+            )
             if (requestedUserPoints.isPresent) {
                 informUserOfPoints(event.author, requestedUserPoints.get(), event.guild, true)
-                event.textChannel.sendMessage("The list of points the user collected has been send in a private message for privacy reason").queue(cleanUp())
+                event.textChannel.sendMessage("The list of points the user collected has been send in a private message for privacy reason")
+                    .queue(cleanUp())
             } else {
                 event.textChannel.sendMessage("The user has not received any points.").queue(cleanUp())
             }
         } else {
-            val userPoints = guildWarnPointsRepository.findById(GuildWarnPoints.GuildWarnPointsId(event.author.idLong, event.guild.idLong))
+            val userPoints = guildWarnPointsRepository.findById(
+                GuildWarnPoints.GuildWarnPointsId(
+                    event.author.idLong,
+                    event.guild.idLong
+                )
+            )
             if (userPoints.isPresent) {
                 informUserOfPoints(event.author, userPoints.get(), event.guild, false)
-                event.textChannel.sendMessage("Your list of points has been send in a private message to you for privacy reasons, if you didn't receive any messages make sure you have enabled dm from server members on this server before executing this command.").queue(cleanUp())
+                event.textChannel.sendMessage("Your list of points has been send in a private message to you for privacy reasons, if you didn't receive any messages make sure you have enabled dm from server members on this server before executing this command.")
+                    .queue(cleanUp())
             } else {
                 event.textChannel.sendMessage("You haven't received any points. Good job!").queue(cleanUp())
             }
@@ -65,7 +77,7 @@ class WarnHistory(
     }
 
     private fun cleanUp(): (Message) -> Unit =
-            { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+        { it.delete().queueAfter(1, TimeUnit.MINUTES) }
 
     private fun informUserOfPoints(user: User, warnPoints: GuildWarnPoints, guild: Guild, moderator: Boolean) {
         user.openPrivateChannel().queue { privateChannel ->
@@ -78,8 +90,9 @@ class WarnHistory(
                 } else {
                     message.append("Warned")
                 }
-                message.append(" on ").append(it.creationDate.format(messageTimeFormat)).append(" by ").append(guild.getMemberById(it.creatorId!!).nicknameAndUsername)
-                        .append("\n\nReason: ").append(it.reason)
+                message.append(" on ").append(it.creationDate.format(messageTimeFormat)).append(" by ")
+                    .append(guild.getMemberById(it.creatorId!!).nicknameAndUsername)
+                    .append("\n\nReason: ").append(it.reason)
                 if (moderator) {
                     message.append("\n\nExpires: ").append(it.expireDate!!.format(messageTimeFormat))
                 }

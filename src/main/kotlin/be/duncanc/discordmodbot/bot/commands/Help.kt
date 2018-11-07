@@ -24,7 +24,6 @@ import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import org.springframework.beans.factory.config.ConfigurableBeanFactory
 import org.springframework.context.annotation.Scope
 import org.springframework.stereotype.Component
-import java.util.*
 
 /**
  * Will create a help command containing information about commands.
@@ -34,19 +33,22 @@ import java.util.*
 @Component
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 class Help(
-        userBlock: UserBlock
+    userBlock: UserBlock
 ) : CommandModule(
-        arrayOf("Help"),
-        null,
-        "Show a list of commands",
-        userBlock = userBlock
+    arrayOf("Help"),
+    null,
+    "Show a list of commands",
+    userBlock = userBlock
 ) {
 
     /**
      * Sends an embed to the users containing help for the commands
      */
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-        if (!event.isFromType(ChannelType.PRIVATE) && (event.isFromType(ChannelType.TEXT) && !event.member.hasPermission(Permission.MESSAGE_MANAGE))) {
+        if (!event.isFromType(ChannelType.PRIVATE) && (event.isFromType(ChannelType.TEXT) && !event.member.hasPermission(
+                Permission.MESSAGE_MANAGE
+            ))
+        ) {
             throw UnsupportedOperationException("The help command should be executed in private chat")
         }
         val helpEmbeds: MutableList<EmbedBuilder> = mutableListOf(EmbedBuilder().setTitle("Help"))
@@ -55,9 +57,16 @@ class Help(
             if (helpEmbeds[helpEmbeds.lastIndex].fields.count() >= 25) {
                 helpEmbeds.add(EmbedBuilder().setTitle("Help part ${helpEmbeds.size + 1}"))
             }
-            helpEmbeds[helpEmbeds.lastIndex].addField("${it.aliases.contentToString().replace("[", "").replace("]", "")}${if (it.argumentationSyntax != null) " ${it.argumentationSyntax}" else ""}", (it.description
+            helpEmbeds[helpEmbeds.lastIndex].addField(
+                "${it.aliases.contentToString().replace("[", "").replace(
+                    "]",
+                    ""
+                )}${if (it.argumentationSyntax != null) " ${it.argumentationSyntax}" else ""}",
+                (it.description
                     ?: "No description available.") +
-                    (if (it.requiredPermissions.isNotEmpty()) "Requires server permissions: ${it.requiredPermissions.contentToString()}" else ""), false)
+                        (if (it.requiredPermissions.isNotEmpty()) "Requires server permissions: ${it.requiredPermissions.contentToString()}" else ""),
+                false
+            )
         }
 
         helpEmbeds.forEach { embedBuilder ->

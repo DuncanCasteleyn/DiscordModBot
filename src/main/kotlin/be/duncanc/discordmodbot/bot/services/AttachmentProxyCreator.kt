@@ -49,13 +49,19 @@ class AttachmentProxyCreator {
             val stringBuilder = StringBuilder()
             val message = attachmentCache.remove(id)
             if (message != null) {
-                message.attachments.forEach { attachment -> stringBuilder.append("[").append(attachment.fileName).append("](").append(attachment.url).append(")\n") }
+                message.attachments.forEach { attachment ->
+                    stringBuilder.append("[").append(attachment.fileName).append("](").append(attachment.url)
+                        .append(")\n")
+                }
                 var subMessage = message
                 do {
                     if (attachmentCache.containsKey(subMessage!!.idLong)) {
                         subMessage = attachmentCache.remove(subMessage.idLong)
                         if (subMessage != null) {
-                            subMessage.attachments.forEach { attachment -> stringBuilder.append("[").append(attachment.fileName).append("](").append(attachment.url).append(")\n") }
+                            subMessage.attachments.forEach { attachment ->
+                                stringBuilder.append("[").append(attachment.fileName).append("](")
+                                    .append(attachment.url).append(")\n")
+                            }
                         } else {
                             stringBuilder.append("The message either contained an attachment larger then 8MB and could not be uploaded again, or failed to create a proxy.")
                         }
@@ -130,7 +136,11 @@ class AttachmentProxyCreator {
 
                     buffer.flush()
 
-                    event.jda.getTextChannelById(CACHE_CHANNEL).sendFile(buffer.toByteArray(), attachment.fileName, MessageBuilder().append(event.message.id).build()).queue { message -> addToCache(event.message.idLong, message) }
+                    event.jda.getTextChannelById(CACHE_CHANNEL).sendFile(
+                        buffer.toByteArray(),
+                        attachment.fileName,
+                        MessageBuilder().append(event.message.id).build()
+                    ).queue { message -> addToCache(event.message.idLong, message) }
                 } catch (e: Exception) {
                     LOG.info("An exception occurred when retrieving one of the attachments", e)
                     addToCache(event.message.idLong, null)
@@ -147,7 +157,8 @@ class AttachmentProxyCreator {
     @Synchronized
     fun cleanCache() {
         if (attachmentCache.size > 0) {
-            attachmentCache[attachmentCache.firstKey()]!!.jda.getTextChannelById(CACHE_CHANNEL).limitLessBulkDelete(ArrayList(attachmentCache.values))
+            attachmentCache[attachmentCache.firstKey()]!!.jda.getTextChannelById(CACHE_CHANNEL)
+                .limitLessBulkDelete(ArrayList(attachmentCache.values))
         }
     }
 }

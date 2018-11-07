@@ -40,7 +40,7 @@ class MessageHistory
  */
 @Autowired
 constructor(
-        private val attachmentProxyCreator: AttachmentProxyCreator
+    private val attachmentProxyCreator: AttachmentProxyCreator
 ) {
     companion object {
         private const val HISTORY_SIZE_PER_CHANNEL = 2000

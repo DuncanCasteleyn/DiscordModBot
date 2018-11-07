@@ -24,13 +24,13 @@ import org.springframework.stereotype.Component
 
 @Component
 class Quote(
-        userBlock: UserBlock
+    userBlock: UserBlock
 ) : CommandModule(
-        arrayOf("Quote"),
-        "[message id to quote] [response text]",
-        "Will quote text and put a response under it, response text is optional",
-        ignoreWhitelist = true,
-        userBlock = userBlock
+    arrayOf("Quote"),
+    "[message id to quote] [response text]",
+    "Will quote text and put a response under it, response text is optional",
+    ignoreWhitelist = true,
+    userBlock = userBlock
 ) {
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
@@ -43,17 +43,17 @@ class Quote(
             throw IllegalArgumentException("The message you want to quote has no content to quote.")
         }
         val quoteEmbed = EmbedBuilder()
-                .setAuthor(messageToQuote.member.nicknameAndUsername, null, messageToQuote.author.effectiveAvatarUrl)
-                .setDescription(messageToQuote.contentDisplay)
-                .setFooter(event.author.id, null)
+            .setAuthor(messageToQuote.member.nicknameAndUsername, null, messageToQuote.author.effectiveAvatarUrl)
+            .setDescription(messageToQuote.contentDisplay)
+            .setFooter(event.author.id, null)
         val response = arguments.substring(channelId.length)
         val responseEmbed = if (response.isEmpty()) {
             null
         } else {
             EmbedBuilder()
-                    .setAuthor(event.member.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
-                    .setDescription(response)
-                    .setFooter(event.author.id, null)
+                .setAuthor(event.member.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
+                .setDescription(response)
+                .setFooter(event.author.id, null)
         }
         event.textChannel.sendMessage(quoteEmbed.build()).queue()
         if (responseEmbed != null) {

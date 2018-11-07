@@ -22,12 +22,12 @@ import org.springframework.stereotype.Component
 
 @Component
 class Ping(
-        userBlock: UserBlock
+    userBlock: UserBlock
 ) : CommandModule(
-        ALIASES,
-        null,
-        DESCRIPTION,
-        userBlock = userBlock
+    ALIASES,
+    null,
+    DESCRIPTION,
+    userBlock = userBlock
 ) {
     companion object {
         private val ALIASES = arrayOf("Ping")
@@ -36,6 +36,10 @@ class Ping(
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         val millisBeforeRequest = System.currentTimeMillis()
-        event.channel.sendMessage("pong!\nIt took Discord " + event.jda.ping + " milliseconds to respond to our last heartbeat.").queue { message -> message.editMessage(message.contentRaw + "\nIt took Discord " + (System.currentTimeMillis() - millisBeforeRequest) + " milliseconds to process this message.").queue() }
+        event.channel.sendMessage("pong!\nIt took Discord " + event.jda.ping + " milliseconds to respond to our last heartbeat.")
+            .queue { message ->
+                message.editMessage(message.contentRaw + "\nIt took Discord " + (System.currentTimeMillis() - millisBeforeRequest) + " milliseconds to process this message.")
+                    .queue()
+            }
     }
 }

@@ -35,11 +35,11 @@ import java.util.concurrent.TimeUnit
  */
 @Component
 class PurgeChannel : CommandModule(
-        arrayOf("PurgeChannel", "Purge"),
-        "[Amount of messages] (Mention user(s) to filter on)",
-        "Cleans the amount of messages given as argument in the channel where executed. If (a) user(s) are/is mentioned at the end of this command only their/his messages will be deleted, but due to limitations in the discord api this **only works on users that are present in the server**, mentioning a user that is not on the server will causes the command to think you mentioned nobody wiping everyone's messages. (Messages older than 2 weeks are ignored due to api issues.)",
-        cleanCommandMessage = false,
-        ignoreWhitelist = true
+    arrayOf("PurgeChannel", "Purge"),
+    "[Amount of messages] (Mention user(s) to filter on)",
+    "Cleans the amount of messages given as argument in the channel where executed. If (a) user(s) are/is mentioned at the end of this command only their/his messages will be deleted, but due to limitations in the discord api this **only works on users that are present in the server**, mentioning a user that is not on the server will causes the command to think you mentioned nobody wiping everyone's messages. (Messages older than 2 weeks are ignored due to api issues.)",
+    cleanCommandMessage = false,
+    ignoreWhitelist = true
 ) {
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
@@ -52,13 +52,15 @@ class PurgeChannel : CommandModule(
         if (!event.isFromType(ChannelType.TEXT)) {
             event.channel.sendMessage("This command only works in a guild.").queue()
         } else if (!event.member.hasPermission(event.textChannel, Permission.MESSAGE_MANAGE)) {
-            event.channel.sendMessage(event.author.asMention + " you need manage messages permission in this channel to use this command.").queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
+            event.channel.sendMessage(event.author.asMention + " you need manage messages permission in this channel to use this command.")
+                .queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
         } else if (event.message.mentionedUsers.size > 0) {
             val amount: Int
             try {
                 amount = parseAmountOfMessages(args[0])
             } catch (ex: NumberFormatException) {
-                event.channel.sendMessage(event.author.asMention + " the first argument needs to be a number of maximum 100 and minimum 2").queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
+                event.channel.sendMessage(event.author.asMention + " the first argument needs to be a number of maximum 100 and minimum 2")
+                    .queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
                 return
             }
 
@@ -77,7 +79,8 @@ class PurgeChannel : CommandModule(
             }
             val amountDeleted = messageList.size
             textChannel.limitLessBulkDelete(messageList)
-            val stringBuilder = StringBuilder(event.author.asMention).append(" deleted ").append(amountDeleted).append(" most recent messages from ")
+            val stringBuilder = StringBuilder(event.author.asMention).append(" deleted ").append(amountDeleted)
+                .append(" most recent messages from ")
             for (i in targetUsers.indices) {
                 stringBuilder.append(targetUsers[i].asMention)
                 if (i != targetUsers.size - 1) {
@@ -86,7 +89,8 @@ class PurgeChannel : CommandModule(
                     stringBuilder.append('.')
                 }
             }
-            event.channel.sendMessage(stringBuilder.toString()).queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
+            event.channel.sendMessage(stringBuilder.toString())
+                .queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
 
 
             val logToChannel = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
@@ -94,11 +98,11 @@ class PurgeChannel : CommandModule(
                 val filterString = StringBuilder()
                 targetUsers.forEach { user -> filterString.append(user.asMention).append("\n") }
                 val logEmbed = EmbedBuilder()
-                        .setColor(Color.YELLOW)
-                        .setTitle("Filtered channel purge", null)
-                        .addField("Moderator", event.member.nicknameAndUsername, true)
-                        .addField("Channel", textChannel.name, true)
-                        .addField("Filter", filterString.toString(), true)
+                    .setColor(Color.YELLOW)
+                    .setTitle("Filtered channel purge", null)
+                    .addField("Moderator", event.member.nicknameAndUsername, true)
+                    .addField("Channel", textChannel.name, true)
+                    .addField("Filter", filterString.toString(), true)
 
                 logToChannel.log(logEmbed, event.author, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
             }
@@ -108,7 +112,8 @@ class PurgeChannel : CommandModule(
             try {
                 amount = parseAmountOfMessages(args[0])
             } catch (ex: NumberFormatException) {
-                event.channel.sendMessage(event.author.asMention + " the first argument needs to be a number of maximum 1000 and minimum 2").queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
+                event.channel.sendMessage(event.author.asMention + " the first argument needs to be a number of maximum 1000 and minimum 2")
+                    .queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
                 return
             }
 
@@ -126,15 +131,16 @@ class PurgeChannel : CommandModule(
             }
             val amountDeleted = messageList.size
             textChannel.limitLessBulkDelete(messageList)
-            textChannel.sendMessage(event.author.asMention + " deleted " + amountDeleted + " most recent messages not older than 2 weeks.").queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
+            textChannel.sendMessage(event.author.asMention + " deleted " + amountDeleted + " most recent messages not older than 2 weeks.")
+                .queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
 
             val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
             if (guildLogger != null) {
                 val logEmbed = EmbedBuilder()
-                        .setColor(Color.YELLOW)
-                        .setTitle("Channel purge", null)
-                        .addField("Moderator", event.member.nicknameAndUsername, true)
-                        .addField("Channel", textChannel.name, true)
+                    .setColor(Color.YELLOW)
+                    .setTitle("Channel purge", null)
+                    .addField("Moderator", event.member.nicknameAndUsername, true)
+                    .addField("Channel", textChannel.name, true)
 
                 guildLogger.log(logEmbed, event.author, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
             }

@@ -38,13 +38,13 @@ import kotlin.coroutines.CoroutineContext
 @Component
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 class Eval(
-        val discordModBotConfigurationProperties: DiscordModBotConfigurationProperties
+    val discordModBotConfigurationProperties: DiscordModBotConfigurationProperties
 ) : CommandModule(
-        ALIASES,
-        DESCRIPTION,
-        ARGUMENTATION,
-        false,
-        true
+    ALIASES,
+    DESCRIPTION,
+    ARGUMENTATION,
+    false,
+    true
 ) {
     companion object {
         private val ALIASES = arrayOf("Eval")
@@ -60,7 +60,8 @@ class Eval(
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         if (event.author.idLong != discordModBotConfigurationProperties.ownerId) {
-            event.channel.sendMessage("Sorry, this command is for the bot owner only!").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+            event.channel.sendMessage("Sorry, this command is for the bot owner only!")
+                .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
             return
         }
 
@@ -69,9 +70,11 @@ class Eval(
             try {
                 val engine = ScriptEngineManager().getEngineByExtension("kts")!!
                 engine.put("event", event)
-                engine.eval("import net.dv8tion.jda.core.utils.*\n" +
-                        "import net.dv8tion.jda.core.events.message.MessageReceivedEvent\n" +
-                        "val event = bindings[\"event\"] as MessageReceivedEvent")
+                engine.eval(
+                    "import net.dv8tion.jda.core.utils.*\n" +
+                            "import net.dv8tion.jda.core.events.message.MessageReceivedEvent\n" +
+                            "val event = bindings[\"event\"] as MessageReceivedEvent"
+                )
                 val future = async {
                     engine.eval(event.message.contentRaw.substring(command.length + 2))
                 }
@@ -86,9 +89,11 @@ class Eval(
                 }
                 messageBuilder.appendCodeBlock(out?.toString() ?: "Executed without error.", "text")
             } catch (scriptException: ScriptException) {
-                messageBuilder.appendCodeBlock("${scriptException.javaClass.simpleName
+                messageBuilder.appendCodeBlock(
+                    "${scriptException.javaClass.simpleName
                         ?: scriptException.javaClass.simpleName}: ${scriptException.message
-                        ?: scriptException.message}", "text")
+                        ?: scriptException.message}", "text"
+                )
             } catch (throwable: Throwable) {
                 messageBuilder.appendCodeBlock("${throwable.javaClass.simpleName}: ${throwable.message}", "text")
                 event.channel.sendMessage(messageBuilder.build()).queue()

@@ -42,11 +42,11 @@ import java.util.concurrent.TimeUnit
 
 @Component
 class WeeklyActivityReport(
-        private val activityReportSettingsRepository: ActivityReportSettingsRepository
+    private val activityReportSettingsRepository: ActivityReportSettingsRepository
 ) : CommandModule(
-        arrayOf("WeeklyActivitySettings"),
-        null,
-        "Allows you to configure weekly reports on ammount of message per channel for certain users (in a role)"
+    arrayOf("WeeklyActivitySettings"),
+    null,
+    "Allows you to configure weekly reports on ammount of message per channel for certain users (in a role)"
 ) {
     companion object {
         val LOG: Logger = LoggerFactory.getLogger(WeeklyActivityReport::class.java)
@@ -136,21 +136,23 @@ class WeeklyActivityReport(
     }
 
     inner class WeeklyReportConfigurationSequence(
-            user: User,
-            channel: MessageChannel
+        user: User,
+        channel: MessageChannel
     ) : Sequence(
-            user,
-            channel,
-            true,
-            true
+        user,
+        channel,
+        true,
+        true
     ) {
         private var sequenceNumber: Byte = 0
 
         init {
-            channel.sendMessage("Please selection the action you want to perform:\n\n" +
-                    "0. Set report channel\n" +
-                    "1. add tracked member or role\n" +
-                    "2. remove tracked member or role").queue { addMessageToCleaner(it) }
+            channel.sendMessage(
+                "Please selection the action you want to perform:\n\n" +
+                        "0. Set report channel\n" +
+                        "1. add tracked member or role\n" +
+                        "2. remove tracked member or role"
+            ).queue { addMessageToCleaner(it) }
         }
 
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
@@ -159,40 +161,48 @@ class WeeklyActivityReport(
                     when (event.message.contentRaw.toByte()) {
                         0.toByte() -> {
                             sequenceNumber = 1
-                            channel.sendMessage("Please mention the channel or send the id of the channel").queue { addMessageToCleaner(it) }
+                            channel.sendMessage("Please mention the channel or send the id of the channel")
+                                .queue { addMessageToCleaner(it) }
                         }
                         1.toByte() -> {
                             sequenceNumber = 2
-                            channel.sendMessage("Please mention the user or role or send the id of the role or user").queue { addMessageToCleaner(it) }
+                            channel.sendMessage("Please mention the user or role or send the id of the role or user")
+                                .queue { addMessageToCleaner(it) }
                         }
                         2.toByte() -> {
                             sequenceNumber = 3
-                            channel.sendMessage("Please mention the user or role or send the id of the role or user").queue { addMessageToCleaner(it) }
+                            channel.sendMessage("Please mention the user or role or send the id of the role or user")
+                                .queue { addMessageToCleaner(it) }
                         }
                     }
                 }
                 1.toByte() -> {
                     val channelId = event.message.contentRaw.replace("<#", "").replace(">", "").toLong()
                     val guildId = event.guild.idLong
-                    val activityReportSettings = activityReportSettingsRepository.findById(guildId).orElse(ActivityReportSettings(guildId))
+                    val activityReportSettings =
+                        activityReportSettingsRepository.findById(guildId).orElse(ActivityReportSettings(guildId))
                     activityReportSettings.reportChannel = channelId
                     activityReportSettingsRepository.save(activityReportSettings)
                     channel.sendMessage("Channel configured.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                     destroy()
                 }
                 2.toByte() -> {
-                    val roleOrMemberId = event.message.contentRaw.replace("<@", "").replace("&", "").replace(">", "").toLong()
+                    val roleOrMemberId =
+                        event.message.contentRaw.replace("<@", "").replace("&", "").replace(">", "").toLong()
                     val guildId = event.guild.idLong
-                    val activityReportSettings = activityReportSettingsRepository.findById(guildId).orElse(ActivityReportSettings(guildId))
+                    val activityReportSettings =
+                        activityReportSettingsRepository.findById(guildId).orElse(ActivityReportSettings(guildId))
                     activityReportSettings.trackedRoleOrMember.add(roleOrMemberId)
                     activityReportSettingsRepository.save(activityReportSettings)
                     channel.sendMessage("Role or member added.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                     destroy()
                 }
                 3.toByte() -> {
-                    val roleOrMemberId = event.message.contentRaw.replace("<@", "").replace("&", "").replace(">", "").toLong()
+                    val roleOrMemberId =
+                        event.message.contentRaw.replace("<@", "").replace("&", "").replace(">", "").toLong()
                     val guildId = event.guild.idLong
-                    val activityReportSettings = activityReportSettingsRepository.findById(guildId).orElse(ActivityReportSettings(guildId))
+                    val activityReportSettings =
+                        activityReportSettingsRepository.findById(guildId).orElse(ActivityReportSettings(guildId))
                     activityReportSettings.trackedRoleOrMember.remove(roleOrMemberId)
                     activityReportSettingsRepository.save(activityReportSettings)
                     channel.sendMessage("Role or member removed.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }

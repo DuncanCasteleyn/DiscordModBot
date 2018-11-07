@@ -31,8 +31,8 @@ import org.springframework.stereotype.Component
 @Component
 class RunBots
 @Autowired constructor(
-        private val applicationContext: ApplicationContext,
-        private val discordModBotConfigurationProperties: DiscordModBotConfigurationProperties
+    private val applicationContext: ApplicationContext,
+    private val discordModBotConfigurationProperties: DiscordModBotConfigurationProperties
 ) : CommandLineRunner {
     companion object {
         const val BOT_THREAD_POOL_SIZE = 3
@@ -43,12 +43,12 @@ class RunBots
         try {
             discordModBotConfigurationProperties.botTokens.forEach {
                 JDABuilder(AccountType.BOT)
-                        .setCorePoolSize(BOT_THREAD_POOL_SIZE)
-                        .setEventManager(ExecutorServiceEventManager(it.substring(30)))
-                        .setToken(it)
-                        .setBulkDeleteSplittingEnabled(false)
-                        .addEventListener(*applicationContext.getBeansOfType(ListenerAdapter::class.java).values.toTypedArray())
-                        .build()
+                    .setCorePoolSize(BOT_THREAD_POOL_SIZE)
+                    .setEventManager(ExecutorServiceEventManager(it.substring(30)))
+                    .setToken(it)
+                    .setBulkDeleteSplittingEnabled(false)
+                    .addEventListener(*applicationContext.getBeansOfType(ListenerAdapter::class.java).values.toTypedArray())
+                    .build()
             }
         } catch (e: Exception) {
             LOG.error("Exception while booting the bots", e)

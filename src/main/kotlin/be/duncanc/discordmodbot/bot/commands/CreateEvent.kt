@@ -39,10 +39,10 @@ import kotlin.collections.ArrayList
 
 @Component
 class CreateEvent : CommandModule(
-        arrayOf("CreateEvent"),
-        "<event id/name> <subscribers role> <emote to react to> <event text>",
-        "Creates an event, including role and message to announce the event",
-        requiredPermissions = *arrayOf(Permission.MANAGE_ROLES)
+    arrayOf("CreateEvent"),
+    "<event id/name> <subscribers role> <emote to react to> <event text>",
+    "Creates an event, including role and message to announce the event",
+    requiredPermissions = *arrayOf(Permission.MANAGE_ROLES)
 ) {
 
     companion object {
@@ -63,7 +63,8 @@ class CreateEvent : CommandModule(
             val serverEvent = EVENTS[event.guild]
             if (serverEvent != null && serverEvent.any { it.announceMessage.idLong == event.messageIdLong }) {
                 val reactedEvent = serverEvent.filter { it.announceMessage.idLong == event.messageIdLong }[0]
-                event.guild.controller.addSingleRoleToMember(event.member, reactedEvent.eventRole).reason("Voted on event reaction").queue()
+                event.guild.controller.addSingleRoleToMember(event.member, reactedEvent.eventRole)
+                    .reason("Voted on event reaction").queue()
             }
         }
     }
@@ -73,7 +74,8 @@ class CreateEvent : CommandModule(
             val serverEvent = EVENTS[event.guild]
             if (serverEvent != null && serverEvent.any { it.announceMessage.idLong == event.messageIdLong }) {
                 val reactedEvent = serverEvent.filter { it.announceMessage.idLong == event.messageIdLong }[0]
-                event.guild.controller.removeSingleRoleFromMember(event.member, reactedEvent.eventRole).reason("Remove vote on event reaction").queue()
+                event.guild.controller.removeSingleRoleFromMember(event.member, reactedEvent.eventRole)
+                    .reason("Remove vote on event reaction").queue()
             }
         }
     }
@@ -145,7 +147,18 @@ class CreateEvent : CommandModule(
                         eventsArray.forEach {
                             it as JSONObject
                             try {
-                                newArrayList.add(EventRole(it.getString("eventId"), jda.getRoleById(it.getLong("eventRole")), jda.getEmoteById(it.getLong("reactEmote")), jda.getTextChannelById(it.getLong("announceChannel")).getMessageById(it.getLong("announceMessage")).complete()))
+                                newArrayList.add(
+                                    EventRole(
+                                        it.getString("eventId"),
+                                        jda.getRoleById(it.getLong("eventRole")),
+                                        jda.getEmoteById(it.getLong("reactEmote")),
+                                        jda.getTextChannelById(it.getLong("announceChannel")).getMessageById(
+                                            it.getLong(
+                                                "announceMessage"
+                                            )
+                                        ).complete()
+                                    )
+                                )
                             } catch (ignored: Exception) {
                             }
                         }
@@ -157,7 +170,8 @@ class CreateEvent : CommandModule(
         }
     }
 
-    inner class EventCreationSequence(user: User, channel: MessageChannel) : Sequence(user, channel, cleanAfterSequence = true, informUser = true) {
+    inner class EventCreationSequence(user: User, channel: MessageChannel) :
+        Sequence(user, channel, cleanAfterSequence = true, informUser = true) {
         private var eventName: String? = null
         private var eventRole: String? = null
         private var reactEmote: Emote? = null
@@ -170,7 +184,8 @@ class CreateEvent : CommandModule(
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) = when {
             eventName == null -> {
                 eventName = event.message.contentStripped
-                channel.sendMessage("What should the name of the new event role be?").queue { super.addMessageToCleaner(it) }
+                channel.sendMessage("What should the name of the new event role be?")
+                    .queue { super.addMessageToCleaner(it) }
             }
             eventRole == null -> {
                 eventRole = event.message.contentDisplay
@@ -178,7 +193,8 @@ class CreateEvent : CommandModule(
             }
             reactEmote == null -> {
                 reactEmote = event.message.emotes[0]
-                channel.sendMessage("Please mention the channel were you want the announcement to be made.").queue { super.addMessageToCleaner(it) }
+                channel.sendMessage("Please mention the channel were you want the announcement to be made.")
+                    .queue { super.addMessageToCleaner(it) }
             }
             announceChannel == null -> {
                 announceChannel = event.message.mentionedChannels[0]
@@ -239,7 +255,8 @@ class CreateEvent : CommandModule(
                         EVENTS[event.guild] = newArrayList
                     }
                     save()
-                    super.channel.sendMessage(super.user.asMention + " All tasks where completed without errors.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                    super.channel.sendMessage(super.user.asMention + " All tasks where completed without errors.")
+                        .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                     destroy()
                 }
             }
@@ -247,5 +264,10 @@ class CreateEvent : CommandModule(
     }
 
 
-    class EventRole(val eventId: String, val eventRole: Role, val reactEmote: Emote, internal val announceMessage: Message)
+    class EventRole(
+        val eventId: String,
+        val eventRole: Role,
+        val reactEmote: Emote,
+        internal val announceMessage: Message
+    )
 }

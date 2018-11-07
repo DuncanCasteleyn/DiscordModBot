@@ -26,8 +26,8 @@ import javax.validation.constraints.NotNull
 @ConfigurationProperties("discord-mod-bot")
 @Validated
 class DiscordModBotConfigurationProperties(
-        @field:NotNull
-        var ownerId: Long? = null,
-        @field:NotEmpty
-        var botTokens: HashSet<String> = HashSet()
+    @field:NotNull
+    var ownerId: Long? = null,
+    @field:NotEmpty
+    var botTokens: HashSet<String> = HashSet()
 )

@@ -33,12 +33,12 @@ import java.util.concurrent.TimeUnit
  */
 @Component
 class ChannelIds(
-        userBlock: UserBlock
+    userBlock: UserBlock
 ) : CommandModule(
-        ALIASES,
-        null,
-        DESCRIPTION,
-        userBlock = userBlock
+    ALIASES,
+    null,
+    DESCRIPTION,
+    userBlock = userBlock
 ) {
     companion object {
         private val ALIASES = arrayOf("ChannelIds", "GetChannelIds")
@@ -49,14 +49,18 @@ class ChannelIds(
         if (!event.isFromType(ChannelType.TEXT)) {
             event.channel.sendMessage("This command only works in a guild.").queue()
         } else if (!event.member.hasPermission(Permission.MANAGE_CHANNEL)) {
-            event.channel.sendMessage("You need manage channels permission to use this command.").queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
+            event.channel.sendMessage("You need manage channels permission to use this command.")
+                .queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
         } else {
             val result = StringBuilder()
             if (event.guild != null) {
-                event.guild.textChannels.forEach { channel: TextChannel -> result.append(channel.toString()).append("\n") }
+                event.guild.textChannels.forEach { channel: TextChannel ->
+                    result.append(channel.toString()).append("\n")
+                }
             }
             event.author.openPrivateChannel().queue { privateChannel ->
-                val messages = MessageBuilder().appendCodeBlock(result.toString(), "text").buildAll(MessageBuilder.SplitPolicy.NEWLINE)
+                val messages = MessageBuilder().appendCodeBlock(result.toString(), "text")
+                    .buildAll(MessageBuilder.SplitPolicy.NEWLINE)
                 messages.forEach { message -> privateChannel.sendMessage(message).queue() }
             }
         }

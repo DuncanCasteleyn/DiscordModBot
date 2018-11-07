@@ -30,12 +30,12 @@ import java.time.format.DateTimeFormatter
  */
 @Component
 class UserInfo(
-        userBlock: UserBlock
+    userBlock: UserBlock
 ) : CommandModule(
-        ALIASES,
-        ARGUMENTATION_SYNTAX,
-        DESCRIPTION,
-        userBlock = userBlock
+    ALIASES,
+    ARGUMENTATION_SYNTAX,
+    DESCRIPTION,
+    userBlock = userBlock
 ) {
     companion object {
         private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd-M-yyyy hh:mm:ss a O")
@@ -55,11 +55,15 @@ class UserInfo(
         if (event.isFromType(ChannelType.TEXT)) {
             val privateChannel: PrivateChannel = event.author.openPrivateChannel().complete()
             if (arguments == null) {
-                privateChannel.sendMessage("Please mention the user you want to get the dates from by using username#discriminator without @ sign, e.g.: \"Puck#5244\"\n").queue()
+                privateChannel.sendMessage("Please mention the user you want to get the dates from by using username#discriminator without @ sign, e.g.: \"Puck#5244\"\n")
+                    .queue()
             } else if (!arguments.contains("#")) {
-                privateChannel.sendMessage("Discriminator missing use username#discrimanator without @ sign, e.g.: \"Puck#5244\"").queue()
+                privateChannel.sendMessage("Discriminator missing use username#discrimanator without @ sign, e.g.: \"Puck#5244\"")
+                    .queue()
             } else {
-                val searchTerms = event.message.contentRaw.substring(command.length + 2).toLowerCase().split("#".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                val searchTerms =
+                    event.message.contentRaw.substring(command.length + 2).toLowerCase().split("#".toRegex())
+                        .dropLastWhile { it.isEmpty() }.toTypedArray()
                 var targetFound = false
                 for (member in event.guild.members) {
                     if (searchTerms[0] == member.user.name.toLowerCase() && searchTerms[1] == member.user.discriminator) {
@@ -67,20 +71,24 @@ class UserInfo(
                         //                                        "Guild join date: " + member.getJoinDate().format(DATE_TIME_FORMATTER) + "\n" +
                         //                                        "Account creation date: " + member.getUser().getCreationTime().format(DATE_TIME_FORMATTER)).queue();
                         val userDateMessage = EmbedBuilder()
-                                .setAuthor(member.nicknameAndUsername, null, member.user.effectiveAvatarUrl)
-                                .setThumbnail(member.user.effectiveAvatarUrl)
-                                .setTitle("Guild: " + member.guild.name, null)
-                                .addField("User id", member.user.id, false)
-                                .addField("Discriminator", member.user.discriminator, false)
-                                .addField("Online status", member.onlineStatus.name, false)
-                                .addField("In voice channel?", member.voiceState.inVoiceChannel().toString(), true)
-                                .addField("Guild owner?", member.isOwner.toString(), true)
-                                .addField("is a bot?", member.user.isBot.toString(), true)
-                                .addField("Permissions", member.permissions.toString(), false)
-                                .addField("Roles", member.roles.toString(), false)
-                                .addField("Guild join date", member.joinDate.format(DATE_TIME_FORMATTER), true)
-                                .addField("Account creation date", member.user.creationTime.format(DATE_TIME_FORMATTER), true)
-                                .build()
+                            .setAuthor(member.nicknameAndUsername, null, member.user.effectiveAvatarUrl)
+                            .setThumbnail(member.user.effectiveAvatarUrl)
+                            .setTitle("Guild: " + member.guild.name, null)
+                            .addField("User id", member.user.id, false)
+                            .addField("Discriminator", member.user.discriminator, false)
+                            .addField("Online status", member.onlineStatus.name, false)
+                            .addField("In voice channel?", member.voiceState.inVoiceChannel().toString(), true)
+                            .addField("Guild owner?", member.isOwner.toString(), true)
+                            .addField("is a bot?", member.user.isBot.toString(), true)
+                            .addField("Permissions", member.permissions.toString(), false)
+                            .addField("Roles", member.roles.toString(), false)
+                            .addField("Guild join date", member.joinDate.format(DATE_TIME_FORMATTER), true)
+                            .addField(
+                                "Account creation date",
+                                member.user.creationTime.format(DATE_TIME_FORMATTER),
+                                true
+                            )
+                            .build()
                         privateChannel.sendMessage(userDateMessage).queue()
                         targetFound = true
                         break

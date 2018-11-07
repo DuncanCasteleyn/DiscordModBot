@@ -30,13 +30,13 @@ import java.util.concurrent.TimeUnit
 @Component
 class CommandTextChannelsWhitelist
 @Autowired constructor(
-        private val guildCommandChannelsRepository: GuildCommandChannelsRepository
+    private val guildCommandChannelsRepository: GuildCommandChannelsRepository
 ) : CommandModule(
-        arrayOf("CommandWhitelistChannel", "WhitelistChannel"),
-        null,
-        "Whitelists the channel so commands can be used in it.",
-        ignoreWhitelist = true,
-        requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)
+    arrayOf("CommandWhitelistChannel", "WhitelistChannel"),
+    null,
+    "Whitelists the channel so commands can be used in it.",
+    ignoreWhitelist = true,
+    requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)
 ) {
 
     @Transactional
@@ -47,7 +47,8 @@ class CommandTextChannelsWhitelist
             mutableSet.remove(event.textChannel.idLong)
             if (mutableSet.isEmpty()) {
                 guildCommandChannelsRepository.findById(event.guild.idLong)
-                event.channel.sendMessage("The channel was removed from the whitelist. There are no channels left on the whitelist commands can be used in all channels now.").queue(cleanMessages())
+                event.channel.sendMessage("The channel was removed from the whitelist. There are no channels left on the whitelist commands can be used in all channels now.")
+                    .queue(cleanMessages())
             } else {
                 event.channel.sendMessage("The channel was removed from the whitelist.").queue(cleanMessages())
             }
@@ -56,7 +57,8 @@ class CommandTextChannelsWhitelist
             newHashSet.add(event.textChannel.idLong)
             val newGuildCommandChannels = GuildCommandChannels(event.guild.idLong, newHashSet)
             guildCommandChannelsRepository.save(newGuildCommandChannels)
-            event.channel.sendMessage("The channel was added to the whitelist. Commands can now only be used in whitelisted channels.").queue(cleanMessages())
+            event.channel.sendMessage("The channel was added to the whitelist. Commands can now only be used in whitelisted channels.")
+                .queue(cleanMessages())
         } else {
             mutableSet.add(event.textChannel.idLong)
             guildCommandChannelsRepository.save(guildCommandChannels)
@@ -65,11 +67,12 @@ class CommandTextChannelsWhitelist
     }
 
     private fun cleanMessages(): (Message) -> Unit =
-            { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+        { it.delete().queueAfter(1, TimeUnit.MINUTES) }
 
     @Transactional(readOnly = true)
     fun isWhitelisted(textChannel: TextChannel): Boolean {
-        val contains = guildCommandChannelsRepository.findById(textChannel.guild.idLong).orElse(null)?.whitelistedChannels?.contains(textChannel.idLong)
+        val contains = guildCommandChannelsRepository.findById(textChannel.guild.idLong).orElse(null)
+            ?.whitelistedChannels?.contains(textChannel.idLong)
         return contains == true || contains == null
     }
 }

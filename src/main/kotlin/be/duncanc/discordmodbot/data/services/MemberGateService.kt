@@ -28,7 +28,7 @@ import java.util.*
 @Service
 @Transactional(readOnly = true)
 class MemberGateService(
-        val guildMemberGateRepository: GuildMemberGateRepository
+    val guildMemberGateRepository: GuildMemberGateRepository
 ) {
     /**
      * @return null when not configured or channel no longer exists.

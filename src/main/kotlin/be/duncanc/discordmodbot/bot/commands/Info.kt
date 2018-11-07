@@ -30,20 +30,20 @@ import java.awt.Color
  */
 @Component
 class Info(
-        userBlock: UserBlock
+    userBlock: UserBlock
 ) : CommandModule(
-        arrayOf("Info"),
-        null,
-        "Returns information about the bot.",
-        userBlock = userBlock
+    arrayOf("Info"),
+    null,
+    "Returns information about the bot.",
+    userBlock = userBlock
 ) {
 
     companion object {
         private val INFO_MESSAGE: MessageEmbed = EmbedBuilder()
-                .setTitle("Discord bot", null)
-                .setDescription("**Author:** Dunciboy\n**Language:** Java & Kotlin\n**Discord-lib:** JDA")
-                .setColor(Color.RED)
-                .build()
+            .setTitle("Discord bot", null)
+            .setDescription("**Author:** Dunciboy\n**Language:** Java & Kotlin\n**Discord-lib:** JDA")
+            .setColor(Color.RED)
+            .build()
     }
 
     /**

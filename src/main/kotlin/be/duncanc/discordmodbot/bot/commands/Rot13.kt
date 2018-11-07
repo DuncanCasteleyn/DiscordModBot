@@ -27,14 +27,14 @@ import org.springframework.stereotype.Component
 
 @Component
 class Rot13(
-        userBlock: UserBlock
+    userBlock: UserBlock
 ) : CommandModule(
-        arrayOf("Rot13", "Spoiler", "Sp"),
-        "[Spoiler source] | [Content]",
-        "Encodes a message to rot 13",
-        ignoreWhitelist = true,
-        userBlock = userBlock,
-        cleanCommandMessage = false
+    arrayOf("Rot13", "Spoiler", "Sp"),
+    "[Spoiler source] | [Content]",
+    "Encodes a message to rot 13",
+    ignoreWhitelist = true,
+    userBlock = userBlock,
+    cleanCommandMessage = false
 ) {
     companion object {
         const val EMBED_TITLE = "Contains spoilers for:"
@@ -52,7 +52,11 @@ class Rot13(
         val spoilerSource = split[0].trim()
         val spoilerContent = split[1].trim()
         val embedBuilder = EmbedBuilder()
-        embedBuilder.setAuthor(event.member.nicknameAndUsername, "https://discordapp.com/users/${event.author.id}", event.author.effectiveAvatarUrl)
+        embedBuilder.setAuthor(
+            event.member.nicknameAndUsername,
+            "https://discordapp.com/users/${event.author.id}",
+            event.author.effectiveAvatarUrl
+        )
         embedBuilder.setTitle("$EMBED_TITLE\n***$spoilerSource***")
         embedBuilder.setDescription("``${spoilerContent.rot13()}``")
         embedBuilder.setFooter("To decrypt the message simply react on it", null)
@@ -66,9 +70,11 @@ class Rot13(
         event.channel.getMessageById(event.messageIdLong).queue { message ->
             if (message.author == event.jda.selfUser && message.embeds.size == 1 && message.embeds[0].title.split("\n")[0] == EMBED_TITLE) {
                 event.member.user.openPrivateChannel().queue {
-                    event.jda.retrieveUserById(message.embeds[0].author.url.removePrefix("https://discordapp.com/users/")).queue { user ->
-                        it.sendMessage("${user.asMention}'s spoiler message from ${event.channel.asMention}:\n\n" + message.embeds[0].description.rot13()).queue()
-                    }
+                    event.jda.retrieveUserById(message.embeds[0].author.url.removePrefix("https://discordapp.com/users/"))
+                        .queue { user ->
+                            it.sendMessage("${user.asMention}'s spoiler message from ${event.channel.asMention}:\n\n" + message.embeds[0].description.rot13())
+                                .queue()
+                        }
                 }
                 spamCheck(event.user)
             }

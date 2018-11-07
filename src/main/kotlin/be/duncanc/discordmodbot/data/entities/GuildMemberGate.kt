@@ -25,17 +25,17 @@ import javax.persistence.*
 
 @Entity
 data class GuildMemberGate(
-        @Id
-        val guildId: Long? = null,
-        var memberRole: Long? = null,
-        var rulesTextChannel: Long? = null,
-        var gateTextChannel: Long? = null,
-        var welcomeTextChannel: Long? = null,
-        @ElementCollection(targetClass = WelcomeMessage::class)
-        val welcomeMessages: MutableSet<WelcomeMessage> = HashSet(),
-        @ElementCollection
-        @Column(name = "question")
-        val questions: MutableSet<String> = HashSet()
+    @Id
+    val guildId: Long? = null,
+    var memberRole: Long? = null,
+    var rulesTextChannel: Long? = null,
+    var gateTextChannel: Long? = null,
+    var welcomeTextChannel: Long? = null,
+    @ElementCollection(targetClass = WelcomeMessage::class)
+    val welcomeMessages: MutableSet<WelcomeMessage> = HashSet(),
+    @ElementCollection
+    @Column(name = "question")
+    val questions: MutableSet<String> = HashSet()
 ) {
 
     /**
@@ -43,22 +43,22 @@ data class GuildMemberGate(
      */
     @Embeddable
     data class WelcomeMessage(
-            @Column(nullable = false)
-            private var imageUrl: String? = null,
-            @Column(nullable = false)
-            private var message: String? = null
+        @Column(nullable = false)
+        private var imageUrl: String? = null,
+        @Column(nullable = false)
+        private var message: String? = null
     ) {
 
         fun getWelcomeMessage(user: User): Message {
             val joinEmbed = EmbedBuilder()
-                    .setDescription(this.message)
-                    .setImage(imageUrl)
-                    .setColor(Color.GREEN)
-                    .build()
+                .setDescription(this.message)
+                .setImage(imageUrl)
+                .setColor(Color.GREEN)
+                .build()
             return MessageBuilder()
-                    .append(user.asMention)
-                    .setEmbed(joinEmbed)
-                    .build()
+                .append(user.asMention)
+                .setEmbed(joinEmbed)
+                .build()
         }
     }
 }

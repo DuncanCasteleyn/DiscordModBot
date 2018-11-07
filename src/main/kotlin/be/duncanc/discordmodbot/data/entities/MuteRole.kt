@@ -26,13 +26,13 @@ import javax.validation.constraints.NotNull
 @Table(name = "mute_roles")
 data class MuteRole
 constructor(
-        @Id
-        @Column(updatable = false)
-        val guildId: Long? = null,
+    @Id
+    @Column(updatable = false)
+    val guildId: Long? = null,
 
-        @field:NotNull
-        @Column(nullable = false)
-        val roleId: Long? = null
+    @field:NotNull
+    @Column(nullable = false)
+    val roleId: Long? = null
 ) {
 
     override fun equals(other: Any?): Boolean {
