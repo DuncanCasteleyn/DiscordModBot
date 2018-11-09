@@ -24,8 +24,9 @@ import org.apache.commons.collections4.map.LinkedMap
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.ByteArrayOutputStream
-import java.io.InputStream
 import java.util.*
+import org.apache.tomcat.util.http.fileupload.IOUtils
+
 
 /**
  * Created by Duncan on 14/01/2017.
@@ -116,36 +117,19 @@ class AttachmentProxyCreator {
 
         event.message.attachments.forEach { attachment ->
             if (attachment.size < 8 shl 20) {  //8MB
-                var inputStream: InputStream? = null
                 try {
-                    /*Request request = new Request.Builder().addHeader("user-agent", Requester.USER_AGENT).url(attachment.getUrl()).build();
-                    Response response = ((JDAImpl) event.getJDA()).getRequester().getHttpClient().newCall(request).execute();
-                    //noinspection ConstantConditions
-                    inputStream = response.body().byteStream();*/
-                    inputStream = attachment.inputStream
-                    val buffer = ByteArrayOutputStream()
-
-
-                    val data = ByteArray(8192)
-
-                    var nRead = inputStream.read(data, 0, data.size)
-                    while (nRead != -1) {
-                        buffer.write(data, 0, nRead)
-                        nRead = inputStream.read(data, 0, data.size)
-                    }
-
-                    buffer.flush()
+                    val inputStream = attachment.inputStream
+                    val outputStream = ByteArrayOutputStream()
+                    IOUtils.copy(inputStream, outputStream)
 
                     event.jda.getTextChannelById(CACHE_CHANNEL).sendFile(
-                        buffer.toByteArray(),
+                        outputStream.toByteArray(),
                         attachment.fileName,
                         MessageBuilder().append(event.message.id).build()
                     ).queue { message -> addToCache(event.message.idLong, message) }
                 } catch (e: Exception) {
                     LOG.info("An exception occurred when retrieving one of the attachments", e)
                     addToCache(event.message.idLong, null)
-                } finally {
-                    inputStream?.close()
                 }
             } else {
                 LOG.warn("The file was larger than 8MB.")
