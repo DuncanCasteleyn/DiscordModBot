@@ -25,7 +25,7 @@ import java.util.*
 /**
  * When a time format has to be displayed generally this format will be used.
  */
-val messageTimeFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm O")
+val messageTimeFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm O", Locale.ROOT)
 
 /**
  * Retrieves a string that contains both the nickname and username of a member.
