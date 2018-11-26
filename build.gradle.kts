@@ -59,7 +59,6 @@ dependencies {
     }
     implementation(group = "club.minnced", name = "opus-java", version = "1.0.4")
     implementation(group = "org.apache.commons", name = "commons-lang3", version = "3.5")
-    implementation(group = "javax.xml.bind", name = "jaxb-api", version = "2.3.0")
     implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.0.0")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-script-runtime")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-compiler-embeddable")
@@ -79,7 +78,7 @@ tasks {
         }
     }
     withType<Wrapper> {
-        gradleVersion = "4.10.2"
+        gradleVersion = "5.0"
     }
     withType<JavaCompile> {
         sourceCompatibility = "1.8"
