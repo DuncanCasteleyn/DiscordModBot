@@ -21,11 +21,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 
 @SpringBootApplication
-class TestApplication {
-    companion object {
-        @JvmStatic
-        fun main(args: Array<String>) = runBlocking<Unit> {
-            runApplication<TestApplication>(*args)
-        }
-    }
+class TestApplication
+
+fun main() = runBlocking<Unit> {
+    runApplication<TestApplication>()
 }
