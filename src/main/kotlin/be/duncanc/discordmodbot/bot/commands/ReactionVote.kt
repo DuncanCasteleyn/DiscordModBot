@@ -16,15 +16,16 @@
 
 package be.duncanc.discordmodbot.bot.commands
 
+import be.duncanc.discordmodbot.data.entities.VoteEmotes
+import be.duncanc.discordmodbot.data.repositories.VotingEmotesRepository
 import be.duncanc.discordmodbot.data.services.UserBlockService
-import net.dv8tion.jda.core.entities.Guild
 import net.dv8tion.jda.core.entities.Message
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 
-//todo make emotes not static
 @Component
 class ReactionVote(
+    private val votingEmotesRepository: VotingEmotesRepository,
     userBlockService: UserBlockService
 ) : CommandModule(
     arrayOf("ReactionVote", "Vote"),
@@ -35,31 +36,29 @@ class ReactionVote(
     userBlockService = userBlockService
 ) {
 
-    companion object {
-        private const val EMOTE_SOURCE = 160450060436504578L
-    }
-
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-        val emoteSource: Guild = event.jda.getGuildById(EMOTE_SOURCE)
         try {
             val messageId = arguments!!.toLong()
             event.textChannel.getMessageById(messageId).queue {
-                addVoteReactions(it, emoteSource)
+                it.addVoteReactions()
             }
             event.message.delete().queue()
         } catch (nfe: NumberFormatException) {
-            useReceivedMessage(event, emoteSource)
+            event.message.addVoteReactions()
         } catch (npe: NullPointerException) {
-            useReceivedMessage(event, emoteSource)
+            event.message.addVoteReactions()
         }
     }
 
-    private fun useReceivedMessage(event: MessageReceivedEvent, emoteSource: Guild) {
-        addVoteReactions(event.message, emoteSource)
-    }
-
-    private fun addVoteReactions(it: Message, emoteSource: Guild) {
-        it.addReaction(emoteSource.getEmotesByName("voteYes", false)[0]).queue()
-        it.addReaction(emoteSource.getEmotesByName("voteNo", false)[0]).queue()
+    private fun Message.addVoteReactions() {
+        val voteEmotes: VoteEmotes? = votingEmotesRepository.findById(guild.idLong)
+            .orElse(null)
+        if (voteEmotes != null) {
+            addReaction(jda.getEmoteById(voteEmotes.voteYesEmote!!)).queue()
+            addReaction(jda.getEmoteById(voteEmotes.voteNoEmote!!)).queue()
+        } else {
+            addReaction("✅").queue()
+            addReaction("❎").queue()
+        }
     }
 }
