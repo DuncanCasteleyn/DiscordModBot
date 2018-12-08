@@ -16,7 +16,7 @@
 
 package be.duncanc.discordmodbot.bot.commands
 
-import be.duncanc.discordmodbot.data.services.UserBlock
+import be.duncanc.discordmodbot.data.services.UserBlockService
 import net.dv8tion.jda.core.entities.Guild
 import net.dv8tion.jda.core.entities.Message
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
@@ -25,14 +25,14 @@ import org.springframework.stereotype.Component
 //todo make emotes not static
 @Component
 class ReactionVote(
-    userBlock: UserBlock
+    userBlockService: UserBlockService
 ) : CommandModule(
     arrayOf("ReactionVote", "Vote"),
     "[message id]",
     "Will put reactions to vote yes or no on a message.\nIf no message id is provided the message that contains the command will be used to vote.",
     cleanCommandMessage = false,
     ignoreWhitelist = true,
-    userBlock = userBlock
+    userBlockService = userBlockService
 ) {
 
     companion object {

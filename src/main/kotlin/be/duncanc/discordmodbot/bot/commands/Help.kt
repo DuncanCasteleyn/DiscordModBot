@@ -16,7 +16,7 @@
 
 package be.duncanc.discordmodbot.bot.commands
 
-import be.duncanc.discordmodbot.data.services.UserBlock
+import be.duncanc.discordmodbot.data.services.UserBlockService
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.ChannelType
@@ -33,12 +33,12 @@ import org.springframework.stereotype.Component
 @Component
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 class Help(
-    userBlock: UserBlock
+    userBlockService: UserBlockService
 ) : CommandModule(
     arrayOf("Help"),
     null,
     "Show a list of commands",
-    userBlock = userBlock
+    userBlockService = userBlockService
 ) {
 
     /**

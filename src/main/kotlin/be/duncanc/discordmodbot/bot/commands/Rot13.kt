@@ -18,7 +18,7 @@ package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.bot.utils.rot13
-import be.duncanc.discordmodbot.data.services.UserBlock
+import be.duncanc.discordmodbot.data.services.UserBlockService
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.entities.ChannelType
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
@@ -27,13 +27,13 @@ import org.springframework.stereotype.Component
 
 @Component
 class Rot13(
-    userBlock: UserBlock
+    userBlockService: UserBlockService
 ) : CommandModule(
     arrayOf("Rot13", "Spoiler", "Sp"),
     "[Spoiler source] | [Content]",
     "Encodes a message to rot 13",
     ignoreWhitelist = true,
-    userBlock = userBlock,
+    userBlockService = userBlockService,
     cleanCommandMessage = false
 ) {
     companion object {
@@ -64,7 +64,7 @@ class Rot13(
     }
 
     override fun onGuildMessageReactionAdd(event: GuildMessageReactionAddEvent) {
-        if (event.member.user.isBot || userBlock?.isBlocked(event.user.idLong) == true) {
+        if (event.member.user.isBot || userBlockService?.isBlocked(event.user.idLong) == true) {
             return
         }
         event.channel.getMessageById(event.messageIdLong).queue { message ->

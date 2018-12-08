@@ -22,7 +22,7 @@ import net.dv8tion.jda.core.entities.User
 import org.springframework.stereotype.Service
 
 @Service
-class UserBlock(
+class UserBlockService(
     val blockedUserRepository: BlockedUserRepository
 ) {
     fun blockUser(user: User) {

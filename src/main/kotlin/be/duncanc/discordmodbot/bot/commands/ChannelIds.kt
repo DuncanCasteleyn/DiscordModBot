@@ -16,7 +16,7 @@
 
 package be.duncanc.discordmodbot.bot.commands
 
-import be.duncanc.discordmodbot.data.services.UserBlock
+import be.duncanc.discordmodbot.data.services.UserBlockService
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.ChannelType
@@ -33,12 +33,12 @@ import java.util.concurrent.TimeUnit
  */
 @Component
 class ChannelIds(
-    userBlock: UserBlock
+    userBlockService: UserBlockService
 ) : CommandModule(
     ALIASES,
     null,
     DESCRIPTION,
-    userBlock = userBlock
+    userBlockService = userBlockService
 ) {
     companion object {
         private val ALIASES = arrayOf("ChannelIds", "GetChannelIds")

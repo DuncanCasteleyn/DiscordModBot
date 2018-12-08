@@ -16,7 +16,7 @@
 
 package be.duncanc.discordmodbot.bot.commands
 
-import be.duncanc.discordmodbot.data.services.UserBlock
+import be.duncanc.discordmodbot.data.services.UserBlockService
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.entities.MessageEmbed
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
@@ -30,12 +30,12 @@ import java.awt.Color
  */
 @Component
 class Info(
-    userBlock: UserBlock
+    userBlockService: UserBlockService
 ) : CommandModule(
     arrayOf("Info"),
     null,
     "Returns information about the bot.",
-    userBlock = userBlock
+    userBlockService = userBlockService
 ) {
 
     companion object {

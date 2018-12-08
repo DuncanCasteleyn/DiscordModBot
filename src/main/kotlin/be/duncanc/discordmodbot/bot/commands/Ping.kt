@@ -16,18 +16,18 @@
 
 package be.duncanc.discordmodbot.bot.commands
 
-import be.duncanc.discordmodbot.data.services.UserBlock
+import be.duncanc.discordmodbot.data.services.UserBlockService
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 
 @Component
 class Ping(
-    userBlock: UserBlock
+    userBlockService: UserBlockService
 ) : CommandModule(
     ALIASES,
     null,
     DESCRIPTION,
-    userBlock = userBlock
+    userBlockService = userBlockService
 ) {
     companion object {
         private val ALIASES = arrayOf("Ping")

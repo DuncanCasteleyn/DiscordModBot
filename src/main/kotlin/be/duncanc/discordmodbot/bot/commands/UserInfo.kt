@@ -17,7 +17,7 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
-import be.duncanc.discordmodbot.data.services.UserBlock
+import be.duncanc.discordmodbot.data.services.UserBlockService
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.entities.ChannelType
 import net.dv8tion.jda.core.entities.PrivateChannel
@@ -30,12 +30,12 @@ import java.time.format.DateTimeFormatter
  */
 @Component
 class UserInfo(
-    userBlock: UserBlock
+    userBlockService: UserBlockService
 ) : CommandModule(
     ALIASES,
     ARGUMENTATION_SYNTAX,
     DESCRIPTION,
-    userBlock = userBlock
+    userBlockService = userBlockService
 ) {
     companion object {
         private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd-M-yyyy hh:mm:ss a O")

@@ -17,7 +17,7 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.sequences.Sequence
-import be.duncanc.discordmodbot.data.services.UserBlock
+import be.duncanc.discordmodbot.data.services.UserBlockService
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.ChannelType
@@ -49,7 +49,7 @@ abstract class CommandModule
     internal open val description: String?,
     private val cleanCommandMessage: Boolean = true,
     private val ignoreWhitelist: Boolean = false,
-    protected open val userBlock: UserBlock? = null,
+    protected open val userBlockService: UserBlockService? = null,
     internal open vararg val requiredPermissions: Permission
 ) : ListenerAdapter() {
 
@@ -92,7 +92,7 @@ abstract class CommandModule
         }
 
         if (messageContent[0] == COMMAND_SIGN) {
-            if (userBlock?.isBlocked(authorId) == true) {
+            if (userBlockService?.isBlocked(authorId) == true) {
                 return
             }
             val argumentsArray = messageContent.split(" ")//.dropLastWhile { it.isEmpty() }.toTypedArray()
@@ -157,7 +157,7 @@ abstract class CommandModule
     }
 
     protected open fun spamCheck(user: User) {
-        if (userBlock != null) {
+        if (userBlockService != null) {
             val userId = user.idLong
             when {
                 Duration.between(lastAntiSpamCountReset, Instant.now()).seconds > 10 -> {
@@ -167,7 +167,7 @@ abstract class CommandModule
                 antiSpamMap.containsKey(userId) -> {
                     var value = antiSpamMap[userId]!!
                     if (value > ANTI_SPAM_LIMIT) {
-                        userBlock?.blockUser(user)
+                        userBlockService?.blockUser(user)
                     }
                     antiSpamMap[userId] = ++value
                 }
