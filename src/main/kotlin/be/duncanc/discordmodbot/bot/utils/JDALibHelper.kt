@@ -58,7 +58,7 @@ fun String.rot13(): String {
 /**
  * Deletes multiple messages at once, unlike the default method this one will split the ArrayList messages in stacks of 100 messages each automatically
  *
- * @param messages Messages to deleted. The list you give will be emptied for you.
+ * @param messages Messages to delete. The list you provide will be emptied for you.
  */
 fun TextChannel.limitLessBulkDelete(messages: ArrayList<Message>) {
     if (messages.size in 2..100) {
