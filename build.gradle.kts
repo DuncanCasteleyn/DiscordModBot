@@ -19,7 +19,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 buildscript {
-    val kotlinVersion = "1.3.0"
+    val kotlinVersion = "1.3.11"
     val springBootVersion = "2.1.0.RELEASE"
 
     repositories {
@@ -39,7 +39,7 @@ apply(plugin = "io.spring.dependency-management")
 plugins {
     java
     idea
-    kotlin("jvm").version("1.3.0")
+    kotlin("jvm").version("1.3.11")
 }
 
 
