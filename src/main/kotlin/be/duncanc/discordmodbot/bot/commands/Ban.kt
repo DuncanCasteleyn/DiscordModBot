@@ -69,8 +69,10 @@ class Ban : CommandModule(
         } else {
             val reason: String
             try {
-                reason =
-                        arguments!!.substring(arguments.split(" ".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0].length + 1)
+                reason = arguments!!.substring(
+                    arguments.split(" ")
+                        .dropLastWhile { it.isEmpty() }
+                        .toTypedArray()[0].length + 1)
             } catch (e: IndexOutOfBoundsException) {
                 throw IllegalArgumentException("No reason provided for this action.")
             }
