@@ -37,7 +37,7 @@ class MuteRole
     private val muteRolesRepository: MuteRolesRepository
 ) : CommandModule(
     arrayOf("MuteRole"),
-    "Name of the mute role or nothing to remove, the role",
+    "[Name of the mute role or nothing to remove the role]",
     "This command allows you to set the mute role for a guild/server"
 ) {
 
