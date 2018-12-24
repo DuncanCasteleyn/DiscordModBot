@@ -60,7 +60,7 @@ dependencies {
     implementation(group = "club.minnced", name = "opus-java", version = "1.0.4")
     implementation(group = "org.apache.commons", name = "commons-collections4", version = "4.2")
     implementation(group = "org.json", name = "json", version = "20180813")
-    implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.0.0")
+    implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.1.0")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-script-runtime")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-compiler-embeddable")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-script-util")
