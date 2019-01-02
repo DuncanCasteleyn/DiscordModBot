@@ -402,8 +402,9 @@ internal constructor(
                             }
                             welcomeMessageList.append('\n')
                                 .append("Respond with the welcome message number to remove it.")
-                            channel.sendMessage(welcomeMessageList.build()).queue { super.addMessageToCleaner(it) }
-
+                            welcomeMessageList.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { message ->
+                                channel.sendMessage(message).queue { super.addMessageToCleaner(it) }
+                            }
                         }
                         4.toByte() -> {
                             channel.sendMessage("Please mention the channel you want to set.")
