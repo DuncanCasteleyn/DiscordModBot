@@ -19,8 +19,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 buildscript {
-    val  springBootVersion = "2.1.1.RELEASE"
     val kotlinVersion = "1.3.20"
+    val springBootVersion = "2.1.2.RELEASE"
 
     repositories {
         mavenCentral()
