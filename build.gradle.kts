@@ -54,7 +54,7 @@ dependencies {
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-reflect")
     testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-test")
     testImplementation(group = "org.springframework.security", name = "spring-security-test")
-    implementation(group = "net.dv8tion", name = "JDA", version = "3.8.1_450") {
+    implementation(group = "net.dv8tion", name = "JDA", version = "3.8.1_457") {
         exclude(group = "club.minnced", module = "opus-java")
     }
     implementation(group = "club.minnced", name = "opus-java", version = "1.0.4")
