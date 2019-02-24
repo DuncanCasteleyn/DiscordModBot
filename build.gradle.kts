@@ -56,7 +56,6 @@ dependencies {
     implementation(group = "net.dv8tion", name = "JDA", version = "3.8.3_460") {
         exclude(group = "club.minnced", module = "opus-java")
     }
-    implementation(group = "club.minnced", name = "opus-java", version = "1.0.4")
     implementation(group = "org.apache.commons", name = "commons-collections4", version = "4.2")
     implementation(group = "org.json", name = "json", version = "20180813")
     implementation(group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.1.0")
