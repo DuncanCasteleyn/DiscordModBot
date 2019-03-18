@@ -18,7 +18,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 buildscript {
-    val kotlinVersion = "1.3.20"
+    val kotlinVersion = "1.3.21"
     val springBootVersion = "2.1.3.RELEASE"
 
     repositories {
@@ -38,7 +38,7 @@ apply(plugin = "io.spring.dependency-management")
 plugins {
     java
     idea
-    kotlin("jvm").version("1.3.20")
+    kotlin("jvm").version("1.3.21")
 }
 
 
