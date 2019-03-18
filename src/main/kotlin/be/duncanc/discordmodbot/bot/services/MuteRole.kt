@@ -17,24 +17,34 @@
 package be.duncanc.discordmodbot.bot.services
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
+import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.entities.MuteRole
 import be.duncanc.discordmodbot.data.repositories.MuteRolesRepository
+import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.Guild
 import net.dv8tion.jda.core.entities.Role
+import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent
+import net.dv8tion.jda.core.events.guild.member.GuildMemberLeaveEvent
+import net.dv8tion.jda.core.events.guild.member.GuildMemberRoleAddEvent
+import net.dv8tion.jda.core.events.guild.member.GuildMemberRoleRemoveEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.events.role.RoleDeleteEvent
 import net.dv8tion.jda.core.exceptions.PermissionException
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
+import java.awt.Color
+import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.math.log
 
 @Component
 @Transactional
 class MuteRole
 @Autowired constructor(
-    private val muteRolesRepository: MuteRolesRepository
+    private val muteRolesRepository: MuteRolesRepository,
+    private val guildLogger: GuildLogger
 ) : CommandModule(
     arrayOf("MuteRole"),
     "[Name of the mute role or nothing to remove the role]",
@@ -73,5 +83,51 @@ class MuteRole
             ?: throw IllegalStateException("This guild does not have a mute role set up.")
 
         return guild.getRoleById(roleId)
+    }
+
+    override fun onGuildMemberRoleAdd(event: GuildMemberRoleAddEvent) {
+        val muteRole = muteRolesRepository.findById(event.guild.idLong)
+            .orElse(null)
+        if (muteRole != null && event.roles.contains(muteRole.roleId?.let { event.guild.getRoleById(it) })) {
+            muteRole.mutedUsers.add(event.user.idLong)
+            muteRolesRepository.save(muteRole)
+        }
+    }
+
+    override fun onGuildMemberRoleRemove(event: GuildMemberRoleRemoveEvent) {
+        val muteRole = muteRolesRepository.findById(event.guild.idLong)
+            .orElse(null)
+        if (muteRole != null && event.roles.contains(muteRole.roleId?.let { event.guild.getRoleById(it) })) {
+            muteRole.mutedUsers.remove(event.user.idLong)
+            muteRolesRepository.save(muteRole)
+        }
+    }
+
+    override fun onGuildMemberLeave(event: GuildMemberLeaveEvent) {
+        val muteRole = muteRolesRepository.findById(event.guild.idLong)
+            .orElse(null)
+        if (muteRole != null) {
+            if (event.member.roles.contains(muteRole.roleId?.let { event.guild.getRoleById(it) })) {
+                muteRole.mutedUsers.add(event.user.idLong)
+                muteRolesRepository.save(muteRole)
+            } else {
+                muteRole.mutedUsers.remove(event.user.idLong)
+                muteRolesRepository.save(muteRole)
+            }
+        }
+    }
+
+    override fun onGuildMemberJoin(event: GuildMemberJoinEvent) {
+        val muteRole = muteRolesRepository.findById(event.guild.idLong)
+            .orElse(null)
+        if (muteRole?.roleId != null && muteRole.mutedUsers.contains(event.user.idLong)) {
+            event.guild.controller.addSingleRoleToMember(event.member, event.guild.getRoleById(muteRole.roleId)).queue()
+            val logEmbed = EmbedBuilder()
+                .setColor(Color.YELLOW)
+                .setTitle("User automatically muted")
+                .addField("User", event.member.nicknameAndUsername, true)
+                .addField("Reason", "Previously muted before leaving the server", false)
+            guildLogger.log(guild = event.guild, associatedUser = event.user, logEmbed = logEmbed, actionType = GuildLogger.LogTypeAction.MODERATOR)
+        }
     }
 }

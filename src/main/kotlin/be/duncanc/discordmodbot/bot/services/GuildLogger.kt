@@ -667,9 +667,9 @@ class GuildLogger
      */
     fun log(
         logEmbed: EmbedBuilder,
-        associatedUser: User?,
+        associatedUser: User? = null,
         guild: Guild,
-        embeds: List<MessageEmbed>?,
+        embeds: List<MessageEmbed>? = null,
         actionType: GuildLogger.LogTypeAction,
         bytes: ByteArray? = null
     ) {

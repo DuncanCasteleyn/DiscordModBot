@@ -16,10 +16,7 @@
 
 package be.duncanc.discordmodbot.data.entities
 
-import javax.persistence.Column
-import javax.persistence.Entity
-import javax.persistence.Id
-import javax.persistence.Table
+import javax.persistence.*
 import javax.validation.constraints.NotNull
 
 @Entity
@@ -32,7 +29,11 @@ constructor(
 
     @field:NotNull
     @Column(nullable = false)
-    val roleId: Long? = null
+    val roleId: Long? = null,
+
+    @ElementCollection
+    @CollectionTable(name = "muted_users")
+    val mutedUsers: MutableSet<Long> = HashSet()
 ) {
 
     override fun equals(other: Any?): Boolean {
