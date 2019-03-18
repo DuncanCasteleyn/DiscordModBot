@@ -25,7 +25,7 @@ import javax.validation.constraints.NotNull
 @Component
 @ConfigurationProperties("discord-mod-bot")
 @Validated
-class DiscordModBotConfigurationProperties(
+class DiscordModBotConfig(
     @field:NotNull
     var ownerId: Long? = null,
     @field:NotEmpty

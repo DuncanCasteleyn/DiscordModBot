@@ -16,7 +16,7 @@
 
 package be.duncanc.discordmodbot.bot.commands
 
-import be.duncanc.discordmodbot.data.configs.properties.DiscordModBotConfigurationProperties
+import be.duncanc.discordmodbot.data.configs.properties.DiscordModBotConfig
 import be.duncanc.discordmodbot.data.repositories.BlockedUserRepository
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
@@ -24,14 +24,14 @@ import org.springframework.stereotype.Component
 @Component
 class Unblock(
     val blockedUserRepository: BlockedUserRepository,
-    val discordModBotConfigurationProperties: DiscordModBotConfigurationProperties
+    val discordModBotConfig: DiscordModBotConfig
 ) : CommandModule(
     arrayOf("Unblock"),
     null,
     null
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-        if (event.author.idLong == discordModBotConfigurationProperties.ownerId) {
+        if (event.author.idLong == discordModBotConfig.ownerId) {
             blockedUserRepository.deleteById(event.message.contentRaw.toLong())
         }
     }

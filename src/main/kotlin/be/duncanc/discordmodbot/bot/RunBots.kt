@@ -17,7 +17,7 @@
 package be.duncanc.discordmodbot.bot
 
 import be.duncanc.discordmodbot.bot.utils.ExecutorServiceEventManager
-import be.duncanc.discordmodbot.data.configs.properties.DiscordModBotConfigurationProperties
+import be.duncanc.discordmodbot.data.configs.properties.DiscordModBotConfig
 import net.dv8tion.jda.core.AccountType
 import net.dv8tion.jda.core.JDABuilder
 import net.dv8tion.jda.core.hooks.ListenerAdapter
@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component
 class RunBots
 @Autowired constructor(
     private val applicationContext: ApplicationContext,
-    private val discordModBotConfigurationProperties: DiscordModBotConfigurationProperties
+    private val discordModBotConfig: DiscordModBotConfig
 ) : CommandLineRunner {
     companion object {
         const val BOT_THREAD_POOL_SIZE = 3
@@ -41,7 +41,7 @@ class RunBots
 
     override fun run(vararg args: String?) {
         try {
-            discordModBotConfigurationProperties.botTokens.forEach {
+            discordModBotConfig.botTokens.forEach {
                 JDABuilder(AccountType.BOT)
                     .setCorePoolSize(BOT_THREAD_POOL_SIZE)
                     .setEventManager(ExecutorServiceEventManager(it.substring(30)))
