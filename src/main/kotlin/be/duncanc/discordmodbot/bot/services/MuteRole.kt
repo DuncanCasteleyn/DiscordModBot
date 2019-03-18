@@ -68,8 +68,9 @@ class MuteRole
 
     @Transactional(readOnly = true)
     fun getMuteRole(guild: Guild): Role {
-        val roleId =
-            muteRolesRepository.findById(guild.idLong).orElseThrow { throw IllegalStateException("This guild does not have a mute role set up.") }.roleId!!
+        val roleId = muteRolesRepository.findById(guild.idLong)
+            .orElse(null)?.roleId
+            ?: throw IllegalStateException("This guild does not have a mute role set up.")
 
         return guild.getRoleById(roleId)
     }
