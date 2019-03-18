@@ -13,20 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-logging.level.root=info
-logging.level.org.hibernate.SQL=debug
-logging.level.org.hibernate.type=trace
-logging.level.org.hibernate.engine.transaction=trace
-# Profile
-spring.profiles.active=testing
-# H2
-spring.h2.console.enabled=true
-spring.h2.console.path=/h2
-# Datasource
-spring.datasource.url=jdbc:h2:mem:discordModBotTest
-spring.datasource.username=sa
-spring.datasource.password=
-spring.datasource.driver-class-name=org.h2.Driver
-# Hibernate
-spring.jpa.hibernate.ddl-auto=create-drop
-spring.jpa.properties.hibernate.use_sql_comments=true
+spring:
+  profiles:
+    active: "production"

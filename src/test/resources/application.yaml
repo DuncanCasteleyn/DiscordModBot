@@ -13,16 +13,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-logging.level.root=info
-# Profile
-spring.profiles.active=production
-# H2
-spring.h2.console.enabled=false
-spring.h2.console.path=/h2
-# Datasource
-spring.datasource.url=jdbc:h2:file:./discordModBot
-spring.datasource.username=sa
-spring.datasource.password=
-spring.datasource.driver-class-name=org.h2.Driver
-# Hibernate
-spring.jpa.hibernate.ddl-auto=update
+logging:
+  level:
+    root: info
+    org:
+      hibernate:
+        SQL: debug
+        type: trace
+        engine:
+          transaction: trace
+spring:
+  profiles:
+    active: "testing"
+  h2:
+    console:
+      enabled: true
+      path: "/h2"
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      use_sql_comments: true
+  datasource:
+    url: "jdbc:h2:mem:discordModBotTest"
+    username: "sa"
+    password: ""
+    driver-class-name: org.h2.Driver
