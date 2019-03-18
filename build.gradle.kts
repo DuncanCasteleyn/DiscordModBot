@@ -62,6 +62,8 @@ dependencies {
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-script-runtime")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-compiler-embeddable")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-script-util")
+
+    annotationProcessor(group = "org.springframework.boot", name = "spring-boot-configuration-processor")
 }
 
 repositories {
@@ -71,6 +73,7 @@ repositories {
 
 tasks {
     withType<KotlinCompile> {
+        dependsOn(processResources)
         kotlinOptions {
             freeCompilerArgs = listOf("-Xjsr305=strict", "-progressive")
             jvmTarget = "1.8"
@@ -80,6 +83,7 @@ tasks {
         gradleVersion = "5.2.1"
     }
     withType<JavaCompile> {
+        dependsOn(processResources)
         sourceCompatibility = "1.8"
         options.encoding = "UTF-8"
         options.compilerArgs.add("-Xlint:deprecation")
