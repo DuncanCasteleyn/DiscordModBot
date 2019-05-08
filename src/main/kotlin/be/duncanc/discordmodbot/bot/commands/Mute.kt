@@ -79,7 +79,7 @@ class Mute
             event.guild.controller.addRolesToMember(
                 toMute,
                 applicationContext.getBean(MuteRole::class.java).getMuteRole(event.guild)
-            ).reason(reason).queue({
+            ).queue({
                 val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
                 if (guildLogger != null) {
                     val logEmbed = EmbedBuilder()

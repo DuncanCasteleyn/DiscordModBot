@@ -81,7 +81,7 @@ class Ban : CommandModule(
             if (!event.member.canInteract(toBan)) {
                 throw PermissionException("You can't interact with this member")
             }
-            val banRestAction = event.guild.controller.ban(toBan, 1, reason)
+            val banRestAction = event.guild.controller.ban(toBan, 1)
             val description = StringBuilder("Reason: $reason")
             if (event.guild.idLong == 175856762677624832L) {
                 description.append("\n\n")

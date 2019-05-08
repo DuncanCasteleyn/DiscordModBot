@@ -77,7 +77,7 @@ class RemoveMute : CommandModule(
                 throw UnsupportedOperationException("Can't remove a mute from a user that is not muted.")
             }
             event.guild.controller.removeRolesFromMember(toRemoveMute, event.guild.getRoleById("221678882342830090"))
-                .reason(reason).queue({ _ ->
+                    .queue({ _ ->
                     val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
                     if (guildLogger != null) {
                         val logEmbed = EmbedBuilder()

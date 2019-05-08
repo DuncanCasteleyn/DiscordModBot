@@ -79,7 +79,7 @@ class Kick
             if (!event.member.canInteract(toKick)) {
                 throw PermissionException("You can't interact with this member")
             }
-            val kickRestAction = event.guild.controller.kick(toKick, reason)
+            val kickRestAction = event.guild.controller.kick(toKick)
 
             val userKickNotification = EmbedBuilder()
                 .setColor(Color.RED)

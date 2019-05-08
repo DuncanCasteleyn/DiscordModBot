@@ -83,7 +83,7 @@ class BanUserById : CommandModule(
                     privateChannel?.sendMessage("You can't ban a user that you can't interact with.")?.queue()
                     return@queue
                 }
-                event.guild.controller.ban(userId, 1, reason).queue(banQue@{
+                event.guild.controller.ban(userId, 1).queue(banQue@{
                     val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
                     if (guildLogger != null) {
                         val logEmbed = EmbedBuilder()

@@ -18,8 +18,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 buildscript {
-    val kotlinVersion = "1.3.21"
-    val springBootVersion = "2.1.3.RELEASE"
+    val kotlinVersion = "1.3.31"
+    val springBootVersion = "2.1.4.RELEASE"
 
     repositories {
         mavenCentral()
@@ -95,4 +95,4 @@ tasks {
 }
 
 project.group = "be.duncanc"
-project.version = "1.11.11"
+project.version = "1.11.12"
