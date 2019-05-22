@@ -244,6 +244,10 @@ class GuildLogger
                     }
                 }
 
+                if (moderator != null && moderator == event.jda.selfUser) {
+                    return@schedule  //Bot has removed message no need to log, if needed it will be placed in the module that is issuing the remove.
+                }
+
                 val logEmbed = EmbedBuilder()
                     .setTitle("#" + channel.name + ": Message was deleted!")
                     .setDescription("Old message was:\n" + oldMessage.contentDisplay)
@@ -666,17 +670,17 @@ class GuildLogger
      * @param guild    The guild where the message needs to be logged to
      */
     fun log(
-        logEmbed: EmbedBuilder,
-        associatedUser: User? = null,
-        guild: Guild,
-        embeds: List<MessageEmbed>? = null,
-        actionType: GuildLogger.LogTypeAction,
-        bytes: ByteArray? = null
+            logEmbed: EmbedBuilder,
+            associatedUser: User? = null,
+            guild: Guild,
+            embeds: List<MessageEmbed>? = null,
+            actionType: LogTypeAction,
+            bytes: ByteArray? = null
     ) {
         val logSettings = loggingSettingsRepository.findById(guild.idLong).orElse(null)
             ?: return
 
-        val targetChannel: TextChannel = if (actionType === GuildLogger.LogTypeAction.MODERATOR) {
+        val targetChannel: TextChannel = if (actionType === LogTypeAction.MODERATOR) {
             logSettings.modLogChannel?.let { guild.getTextChannelById(it) }
         } else {
             logSettings.userLogChannel?.let { guild.getTextChannelById(it) }

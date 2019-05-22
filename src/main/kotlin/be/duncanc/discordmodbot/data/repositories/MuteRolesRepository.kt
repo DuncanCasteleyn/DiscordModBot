@@ -18,8 +18,10 @@ package be.duncanc.discordmodbot.data.repositories
 
 import be.duncanc.discordmodbot.data.entities.MuteRole
 import org.springframework.data.repository.CrudRepository
+import org.springframework.stereotype.Repository
 import org.springframework.transaction.annotation.Transactional
 
+@Repository
 interface MuteRolesRepository : CrudRepository<MuteRole, Long> {
     @Transactional
     fun deleteByRoleIdAndGuildId(roleId: Long, guildId: Long)
