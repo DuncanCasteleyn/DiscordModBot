@@ -91,6 +91,7 @@ tasks {
     withType<BootJar> {
         requiresUnpack("**/*.jar")
         launchScript()
+        archiveFileName.set("DiscordModBot.jar")
     }
 }
 
