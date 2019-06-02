@@ -8,6 +8,7 @@ import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.entities.Guild
 import net.dv8tion.jda.core.entities.Message
 import net.dv8tion.jda.core.entities.MessageChannel
+import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.core.events.message.guild.GuildMessageUpdateEvent
@@ -21,8 +22,8 @@ class WordFiltering(
         val logger: GuildLogger
 ) : CommandModule(
         arrayOf("WordBlacklist"),
-        "todo",
-        "todo"
+        "[Word] [${FilterMethod.values()}",
+        "Adds a word to the blacklist and filters it based on the supplied filter method"
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         val argSplit = arguments?.split(' ')
@@ -73,6 +74,34 @@ class WordFiltering(
                     .setColor(Color.RED)
             logger.log(embedBuilder, message.author, guild, actionType = GuildLogger.LogTypeAction.MODERATOR)
             channel.sendMessage("${message.author.asMention} Your message has been deleted it contained word(s) banned under Discord ToS. Please watch your language.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+        }
+    }
+
+    override fun onReady(event: ReadyEvent) {
+        event.jda.addEventListener(RemoveWord(), ListWords())
+    }
+
+    inner class RemoveWord : CommandModule(
+            arrayOf("RemoveWordBlacklist"),
+            "[word]",
+            "Removes the word from the filter"
+    ) {
+        override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+            if (arguments == null || arguments.contains(' ')) {
+                throw IllegalArgumentException("One word is required to remove a word from the blacklist")
+            }
+            blackListedWordRepository.deleteById(BlackListedWord.BlackListedWordId(event.guild.idLong, arguments))
+        }
+    }
+
+    inner class ListWords : CommandModule(
+            arrayOf("ListWordBlacklist"),
+            null,
+            "List all the black listed words"
+    ) {
+        override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+            val blackListedWords = blackListedWordRepository.findAllByGuildId(event.guild.idLong).toCollection(arrayListOf())
+            event.channel.sendMessage("The following words are blacklisted: \n${blackListedWords.joinToString("\n")}").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
         }
     }
 }
