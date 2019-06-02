@@ -32,9 +32,13 @@ class WordFiltering(
         }
         val blackListedWord = BlackListedWord(event.guild.idLong, argSplit[0], FilterMethod.valueOf(argSplit[1].toUpperCase()))
         blackListedWordRepository.save(blackListedWord)
+        event.channel.sendMessage("Word has been added to black list.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
     }
 
     override fun onGuildMessageUpdate(event: GuildMessageUpdateEvent) {
+        if (event.member.user == event.jda.selfUser) {
+            return
+        }
         val message: Message = event.message
         val channel: MessageChannel = message.channel
         val guild = event.guild
@@ -42,6 +46,9 @@ class WordFiltering(
     }
 
     override fun onGuildMessageReceived(event: GuildMessageReceivedEvent) {
+        if (event.member.user == event.jda.selfUser) {
+            return
+        }
         val message: Message = event.message
         val channel: MessageChannel = message.channel
         val guild = event.guild
@@ -91,6 +98,7 @@ class WordFiltering(
                 throw IllegalArgumentException("One word is required to remove a word from the blacklist")
             }
             blackListedWordRepository.deleteById(BlackListedWord.BlackListedWordId(event.guild.idLong, arguments))
+            event.channel.sendMessage("The word has been removed.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
         }
     }
 
