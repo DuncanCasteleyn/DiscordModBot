@@ -18,7 +18,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 buildscript {
-    val kotlinVersion = "1.3.31"
+    val kotlinVersion = "1.3.21"
     val springBootVersion = "2.1.4.RELEASE"
 
     repositories {
@@ -38,7 +38,7 @@ apply(plugin = "io.spring.dependency-management")
 plugins {
     java
     idea
-    kotlin("jvm").version("1.3.31")
+    kotlin("jvm").version("1.3.21")
 }
 
 
@@ -53,7 +53,7 @@ dependencies {
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-reflect")
     testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-test")
     testImplementation(group = "org.springframework.security", name = "spring-security-test")
-    implementation(group = "net.dv8tion", name = "JDA", version = "3.8.3_460") {
+    implementation(group = "net.dv8tion", name = "JDA", version = "3.8.3_463") {
         exclude(group = "club.minnced", module = "opus-java")
     }
     implementation(group = "org.apache.commons", name = "commons-collections4", version = "4.2")
