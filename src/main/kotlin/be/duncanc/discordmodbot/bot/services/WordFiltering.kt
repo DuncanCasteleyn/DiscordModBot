@@ -72,7 +72,7 @@ class WordFiltering(
                     .setDescription("Old message was:\n" + message.contentDisplay)
                     .setColor(Color.RED)
             logger.log(embedBuilder, message.author, guild, actionType = GuildLogger.LogTypeAction.MODERATOR)
-            channel.sendMessage("${message.author.asMention} Your message has been deleted it contained banned word(s). Please watch your language.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+            channel.sendMessage("${message.author.asMention} Your message has been deleted it contained word(s) banned under Discord ToS. Please watch your language.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
         }
     }
 }
