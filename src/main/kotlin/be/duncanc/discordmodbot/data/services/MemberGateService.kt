@@ -16,19 +16,25 @@
 
 package be.duncanc.discordmodbot.data.services
 
+import be.duncanc.discordmodbot.bot.RunBots
 import be.duncanc.discordmodbot.data.entities.GuildMemberGate
 import be.duncanc.discordmodbot.data.repositories.GuildMemberGateRepository
+import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.entities.Role
 import net.dv8tion.jda.core.entities.TextChannel
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.awt.Color
+import java.time.OffsetDateTime
 import java.util.*
 
 @Service
 @Transactional(readOnly = true)
 class MemberGateService(
-    val guildMemberGateRepository: GuildMemberGateRepository
+        val guildMemberGateRepository: GuildMemberGateRepository,
+        val runBots: RunBots
 ) {
     /**
      * @return null when not configured or channel no longer exists.
@@ -45,8 +51,7 @@ class MemberGateService(
     @Transactional
     fun setGateChannel(guildId: Long, gateChannel: TextChannel) {
         val memberGate: GuildMemberGate = guildMemberGateRepository.findById(guildId).orElse(GuildMemberGate(guildId))
-        memberGate.gateTextChannel = gateChannel.idLong
-        guildMemberGateRepository.save(memberGate)
+        guildMemberGateRepository.save(memberGate.copy(gateTextChannel = gateChannel.idLong))
     }
 
     /**
@@ -64,8 +69,7 @@ class MemberGateService(
     @Transactional
     fun setWelcomeChannel(guildId: Long, welcomeChannel: TextChannel) {
         val memberGate: GuildMemberGate = guildMemberGateRepository.findById(guildId).orElse(GuildMemberGate(guildId))
-        memberGate.welcomeTextChannel = welcomeChannel.idLong
-        guildMemberGateRepository.save(memberGate)
+        guildMemberGateRepository.save(memberGate.copy(welcomeTextChannel = welcomeChannel.idLong))
     }
 
     /**
@@ -83,8 +87,7 @@ class MemberGateService(
     @Transactional
     fun setRulesChannel(guildId: Long, rulesChannel: TextChannel) {
         val memberGate = guildMemberGateRepository.findById(guildId).orElse(GuildMemberGate(guildId))
-        memberGate.rulesTextChannel = rulesChannel.idLong
-        guildMemberGateRepository.save(memberGate)
+        guildMemberGateRepository.save(memberGate.copy(rulesTextChannel = rulesChannel.idLong))
     }
 
     /**
@@ -103,8 +106,7 @@ class MemberGateService(
     @Transactional
     fun setMemberRole(guildId: Long, memberRole: Role) {
         val memberGate: GuildMemberGate = guildMemberGateRepository.findById(guildId).orElse(GuildMemberGate(guildId))
-        memberGate.memberRole = memberRole.idLong
-        guildMemberGateRepository.save(memberGate)
+        guildMemberGateRepository.save(memberGate.copy(memberRole = memberRole.idLong))
     }
 
     fun getQuestions(guildId: Long): Set<String> {
@@ -160,10 +162,7 @@ class MemberGateService(
         val guildMemberGate: GuildMemberGate? = guildMemberGateRepository.findById(guildId).orElse(null)
         if (guildMemberGate != null) {
             guildMemberGate.questions.clear()
-            guildMemberGate.gateTextChannel = null
-            guildMemberGate.memberRole = null
-            guildMemberGate.rulesTextChannel = null
-            guildMemberGateRepository.save(guildMemberGate)
+            guildMemberGateRepository.save(guildMemberGate.copy(gateTextChannel = null, memberRole = null, rulesTextChannel = null, removeTimeHours = null))
         }
     }
 
@@ -172,13 +171,46 @@ class MemberGateService(
         val guildMemberGate: GuildMemberGate? = guildMemberGateRepository.findById(guildId).orElse(null)
         if (guildMemberGate != null) {
             guildMemberGate.welcomeMessages.clear()
-            guildMemberGate.welcomeTextChannel = null
-            guildMemberGateRepository.save(guildMemberGate)
+            guildMemberGateRepository.save(guildMemberGate.copy(welcomeTextChannel = null))
         }
     }
 
     @Transactional
     fun resetAllSettings(guildId: Long) {
         guildMemberGateRepository.deleteById(guildId)
+    }
+
+    @Transactional
+    fun setPurgeTime(guildId: Long, purgeTime: Long?) {
+        val guildMemberGate: GuildMemberGate? = guildMemberGateRepository.findById(guildId).orElse(null)
+        if (guildMemberGate != null) {
+            guildMemberGateRepository.save(guildMemberGate.copy(removeTimeHours = purgeTime))
+        }
+    }
+
+    @Transactional(readOnly = true)
+    @Scheduled(fixedDelay = 3600000)
+    fun purgeMembersWithoutRoles() {
+        runBots.runningBots.forEach { jda ->
+            jda.guilds.forEach { guild ->
+                val guildSettings = guildMemberGateRepository.findById(guild.idLong).orElse(null)
+                if (guildSettings?.removeTimeHours != null && guildSettings.memberRole != null) {
+                    guild.members.filter { it.roles.size < 1 && it.joinDate.isBefore(OffsetDateTime.now().minusHours(guildSettings.removeTimeHours)) }.forEach { member ->
+                        val userKickNotification = EmbedBuilder()
+                                .setColor(Color.RED)
+                                .setTitle("${guild.name}: You have been kicked", null)
+                                .setDescription("Reason: You did not complete the server entry process within ${guildSettings.removeTimeHours} hour(s)")
+                                .build()
+                        member.user.openPrivateChannel().queue(
+                                {
+                                    it.sendMessage(userKickNotification).queue({ guild.controller.kick(member).queue() }, { guild.controller.kick(member).queue() })
+                                },
+                                {
+                                    guild.controller.kick(member).queue()
+                                })
+                    }
+                }
+            }
+        }
     }
 }
