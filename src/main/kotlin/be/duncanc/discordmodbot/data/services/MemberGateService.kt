@@ -17,12 +17,14 @@
 package be.duncanc.discordmodbot.data.services
 
 import be.duncanc.discordmodbot.bot.RunBots
+import be.duncanc.discordmodbot.bot.services.MemberGate
 import be.duncanc.discordmodbot.data.entities.GuildMemberGate
 import be.duncanc.discordmodbot.data.repositories.GuildMemberGateRepository
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.entities.Role
 import net.dv8tion.jda.core.entities.TextChannel
+import org.springframework.context.annotation.Lazy
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -33,8 +35,10 @@ import java.util.*
 @Service
 @Transactional(readOnly = true)
 class MemberGateService(
-        val guildMemberGateRepository: GuildMemberGateRepository,
-        val runBots: RunBots
+        private val guildMemberGateRepository: GuildMemberGateRepository,
+        private val runBots: RunBots,
+        @Lazy
+        private val memberGate: MemberGate
 ) {
     /**
      * @return null when not configured or channel no longer exists.
@@ -195,7 +199,12 @@ class MemberGateService(
             jda.guilds.forEach { guild ->
                 val guildSettings = guildMemberGateRepository.findById(guild.idLong).orElse(null)
                 if (guildSettings?.removeTimeHours != null && guildSettings.memberRole != null) {
-                    guild.members.filter { it.roles.size < 1 && it.joinDate.isBefore(OffsetDateTime.now().minusHours(guildSettings.removeTimeHours)) }.forEach { member ->
+                    guild.members.filter {
+                        val reachedTimeLimit = it.joinDate.isBefore(OffsetDateTime.now().minusHours(guildSettings.removeTimeHours))
+                        val notQueuedForApproval = !memberGate.approvalQueue.containsKey(it.user.idLong)
+                        val noRoles = it.roles.size < 1
+                        noRoles && reachedTimeLimit && notQueuedForApproval
+                    }.forEach { member ->
                         val userKickNotification = EmbedBuilder()
                                 .setColor(Color.RED)
                                 .setTitle("${guild.name}: You have been kicked", null)

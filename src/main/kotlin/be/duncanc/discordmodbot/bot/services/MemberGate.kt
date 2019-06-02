@@ -56,7 +56,7 @@ internal constructor(
         private const val CHANNEL_SET = "Channel set"
     }
 
-    private val approvalQueue = LinkedMap<Long, String>()
+    val approvalQueue = LinkedMap<Long, String>()
     private val informUserMessageIds = HashMap<Long, Long>()
 
     /**
