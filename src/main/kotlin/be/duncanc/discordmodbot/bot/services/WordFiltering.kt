@@ -5,6 +5,7 @@ import be.duncanc.discordmodbot.data.entities.BlackListedWord
 import be.duncanc.discordmodbot.data.entities.BlackListedWord.FilterMethod
 import be.duncanc.discordmodbot.data.repositories.BlackListedWordRepository
 import net.dv8tion.jda.core.EmbedBuilder
+import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.Guild
 import net.dv8tion.jda.core.entities.Message
 import net.dv8tion.jda.core.entities.MessageChannel
@@ -23,7 +24,8 @@ class WordFiltering(
 ) : CommandModule(
         arrayOf("WordBlacklist"),
         "[Word] [${FilterMethod.values()}",
-        "Adds a word to the blacklist and filters it based on the supplied filter method"
+        "Adds a word to the blacklist and filters it based on the supplied filter method",
+        requiredPermissions = *arrayOf(Permission.MESSAGE_MANAGE)
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         val argSplit = arguments?.split(' ')
@@ -91,7 +93,8 @@ class WordFiltering(
     inner class RemoveWord : CommandModule(
             arrayOf("RemoveWordBlacklist"),
             "[word]",
-            "Removes the word from the filter"
+            "Removes the word from the filter",
+            requiredPermissions = *arrayOf(Permission.MESSAGE_MANAGE)
     ) {
         override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
             if (arguments == null || arguments.contains(' ')) {
@@ -105,7 +108,8 @@ class WordFiltering(
     inner class ListWords : CommandModule(
             arrayOf("ListWordBlacklist"),
             null,
-            "List all the black listed words"
+            "List all the black listed words",
+            requiredPermissions = *arrayOf(Permission.MESSAGE_MANAGE)
     ) {
         override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
             val blackListedWords = blackListedWordRepository.findAllByGuildId(event.guild.idLong).toCollection(arrayListOf())
