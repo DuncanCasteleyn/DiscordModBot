@@ -632,7 +632,7 @@ internal constructor(
                         reject(event, noOp = true)
                     }
                     else -> {
-                        throw IllegalArgumentException("Expecting one of the previously mentioned responses in code blocks but got ``$messageContent`` as response")
+                        throw IllegalArgumentException("Expecting one of the previously mentioned responses, but got \"$messageContent\" as response")
                     }
                 }
             }
