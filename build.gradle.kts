@@ -38,7 +38,7 @@ apply(plugin = "io.spring.dependency-management")
 plugins {
     java
     idea
-    kotlin("jvm").version("1.3.21")
+    kotlin("jvm").version("1.3.31")
 }
 
 
