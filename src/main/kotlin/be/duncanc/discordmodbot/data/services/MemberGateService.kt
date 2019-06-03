@@ -195,31 +195,35 @@ class MemberGateService(
     @Transactional(readOnly = true)
     @Scheduled(fixedDelay = 3600000)
     fun purgeMembersWithoutRoles() {
-        runBots.runningBots.forEach { jda ->
-            jda.guilds.forEach { guild ->
-                val guildSettings = guildMemberGateRepository.findById(guild.idLong).orElse(null)
-                if (guildSettings?.removeTimeHours != null && guildSettings.memberRole != null) {
-                    guild.members.filter {
-                        val reachedTimeLimit = it.joinDate.isBefore(OffsetDateTime.now().minusHours(guildSettings.removeTimeHours))
-                        val notQueuedForApproval = !memberGate.approvalQueue.containsKey(it.user.idLong)
-                        val noRoles = it.roles.size < 1
-                        noRoles && reachedTimeLimit && notQueuedForApproval
-                    }.forEach { member ->
-                        val userKickNotification = EmbedBuilder()
-                                .setColor(Color.RED)
-                                .setTitle("${guild.name}: You have been kicked", null)
-                                .setDescription("Reason: You did not complete the server entry process within ${guildSettings.removeTimeHours} hour(s)")
-                                .build()
-                        member.user.openPrivateChannel().queue(
-                                {
-                                    it.sendMessage(userKickNotification).queue({ guild.controller.kick(member).queue() }, { guild.controller.kick(member).queue() })
-                                },
-                                {
-                                    guild.controller.kick(member).queue()
-                                })
+        try {
+            runBots.runningBots.forEach { jda ->
+                jda.guilds.forEach { guild ->
+                    val guildSettings = guildMemberGateRepository.findById(guild.idLong).orElse(null)
+                    if (guildSettings?.removeTimeHours != null && guildSettings.memberRole != null) {
+                        guild.members.filter {
+                            val reachedTimeLimit = it.joinDate.isBefore(OffsetDateTime.now().minusHours(guildSettings.removeTimeHours))
+                            val notQueuedForApproval = !memberGate.approvalQueue.containsKey(it.user.idLong)
+                            val noRoles = it.roles.size < 1
+                            noRoles && reachedTimeLimit && notQueuedForApproval
+                        }.forEach { member ->
+                            val userKickNotification = EmbedBuilder()
+                                    .setColor(Color.RED)
+                                    .setTitle("${guild.name}: You have been kicked", null)
+                                    .setDescription("Reason: You did not complete the server entry process within ${guildSettings.removeTimeHours} hour(s)")
+                                    .build()
+                            member.user.openPrivateChannel().queue(
+                                    {
+                                        it.sendMessage(userKickNotification).queue({ guild.controller.kick(member).queue() }, { guild.controller.kick(member).queue() })
+                                    },
+                                    {
+                                        guild.controller.kick(member).queue()
+                                    })
+                        }
                     }
                 }
             }
+        } catch (ignored: UninitializedPropertyAccessException) {
+            // Ignored
         }
     }
 }
