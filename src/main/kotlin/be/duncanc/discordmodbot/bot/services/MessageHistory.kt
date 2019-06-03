@@ -62,6 +62,9 @@ constructor(
         textChannel.iterableHistory.takeAsync(HISTORY_SIZE_PER_CHANNEL).thenAccept { retrieveMessages ->
             synchronized(this) {
                 retrieveMessages.reversed().forEach { message ->
+                    if (message.author.isBot) {
+                        return@forEach
+                    }
                     messages[message.idLong] = message
                 }
             }
