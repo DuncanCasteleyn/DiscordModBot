@@ -46,6 +46,7 @@ dependencies {
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-security")
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-web")
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-data-jpa")
+    implementation(group = "org.flywaydb", name = "flyway-core")
     runtime(group = "com.h2database", name = "h2")
     runtime(group = "org.mariadb.jdbc", name = "mariadb-java-client", version = "2.2.3")
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin")
