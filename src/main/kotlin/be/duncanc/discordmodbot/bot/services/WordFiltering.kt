@@ -15,6 +15,7 @@ import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.core.events.message.guild.GuildMessageUpdateEvent
 import org.springframework.stereotype.Component
 import java.awt.Color
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 @Component
@@ -23,7 +24,7 @@ class WordFiltering(
         val logger: GuildLogger
 ) : CommandModule(
         arrayOf("AddWordFilter"),
-        "[Word] [${FilterMethod.values()}",
+        "[Word] [${Arrays.toString(FilterMethod.values())}",
         "Adds a word to the blacklist and filters it based on the supplied filter method",
         requiredPermissions = *arrayOf(Permission.MESSAGE_MANAGE)
 ) {
@@ -34,7 +35,7 @@ class WordFiltering(
         }
         val blackListedWord = BlackListedWord(event.guild.idLong, argSplit[0], FilterMethod.valueOf(argSplit[1].toUpperCase()))
         blackListedWordRepository.save(blackListedWord)
-        event.channel.sendMessage("Word has been added to black list.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+        event.channel.sendMessage("Word has been added to the filter list.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
     }
 
     override fun onGuildMessageUpdate(event: GuildMessageUpdateEvent) {
@@ -98,10 +99,10 @@ class WordFiltering(
     ) {
         override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
             if (arguments == null || arguments.contains(' ')) {
-                throw IllegalArgumentException("One word is required to remove a word from the blacklist")
+                throw IllegalArgumentException("One word is required to remove a word from the filter")
             }
             blackListedWordRepository.deleteById(BlackListedWord.BlackListedWordId(event.guild.idLong, arguments))
-            event.channel.sendMessage("The word has been removed.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+            event.channel.sendMessage("The word has been removed from the filter.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
         }
     }
 
