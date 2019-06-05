@@ -59,7 +59,7 @@ class WordFiltering(
     }
 
     private fun checkForBlacklistedWords(message: Message, guild: Guild, channel: MessageChannel) {
-        val messageContent = message.contentStripped
+        val messageContent = message.contentStripped.replace("||", "")
         val messageWords = messageContent.split(" ")
         val blackListedGuildWords = blackListedWordRepository.findAllByGuildId(guild.idLong)
         val containsBlackListedWord = blackListedGuildWords.any {
