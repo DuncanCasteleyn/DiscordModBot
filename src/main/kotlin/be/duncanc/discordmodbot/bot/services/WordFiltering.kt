@@ -22,7 +22,7 @@ class WordFiltering(
         val blackListedWordRepository: BlackListedWordRepository,
         val logger: GuildLogger
 ) : CommandModule(
-        arrayOf("WordBlacklist"),
+        arrayOf("AddWordFilter"),
         "[Word] [${FilterMethod.values()}",
         "Adds a word to the blacklist and filters it based on the supplied filter method",
         requiredPermissions = *arrayOf(Permission.MESSAGE_MANAGE)
@@ -91,7 +91,7 @@ class WordFiltering(
     }
 
     inner class RemoveWord : CommandModule(
-            arrayOf("RemoveWordBlacklist"),
+            arrayOf("RemoveWordFilter"),
             "[word]",
             "Removes the word from the filter",
             requiredPermissions = *arrayOf(Permission.MESSAGE_MANAGE)
@@ -106,7 +106,7 @@ class WordFiltering(
     }
 
     inner class ListWords : CommandModule(
-            arrayOf("ListWordBlacklist"),
+            arrayOf("ListWordFilters"),
             null,
             "List all the black listed words",
             requiredPermissions = *arrayOf(Permission.MESSAGE_MANAGE)
