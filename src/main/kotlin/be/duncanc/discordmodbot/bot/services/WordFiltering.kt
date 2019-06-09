@@ -83,7 +83,7 @@ class WordFiltering(
                     .setTitle("#" + channel.name + ": Message was removed due to blacklisted word(s)!")
                     .setDescription("Old message was:\n" + message.contentDisplay)
                     .addField("Author", message.member.nicknameAndUsername, true)
-                    .addField("Message url", "[Link](${message.jumpUrl})", false)
+                    .addField("Message URL", "[Link](${message.jumpUrl})", false)
                     .setColor(Color.RED)
             logger.log(embedBuilder, message.author, guild, actionType = GuildLogger.LogTypeAction.MODERATOR)
             channel.sendMessage("${message.author.asMention} Your message has been deleted it contained word(s) banned under Discord ToS. Please watch your language.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
