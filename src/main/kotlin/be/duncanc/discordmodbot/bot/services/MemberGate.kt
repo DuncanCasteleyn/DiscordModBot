@@ -100,24 +100,14 @@ internal constructor(
         val gateTextChannel = memberGateService.getGateChannel(event.guild.idLong, event.jda)
         val welcomeChannel = memberGateService.getWelcomeChannel(event.guild.idLong, event.jda)
         if (gateTextChannel != null) {
-            if (event.guild.verificationLevel == Guild.VerificationLevel.VERY_HIGH) {
-                gateTextChannel.sendMessage(
-                        "Welcome " + event.member.asMention + ", this server uses phone verification.\n" +
-                                "If you have verified your phone and are able to chat in this channel, you can simply type ``!join`` to join the server.\n" +
-                                "If you can't use phone verification, send " + event.jda.selfUser.asMention + " a dm and type ``!nomobile``. You will be granted a special role! After that, return to this channel and type ``!join`` and follow the instructions.\n" +
-                                "\n" +
-                                "**Warning: Users that are not mobile verified will be punished much more severely and faster when breaking the rules or when suspected of bypassing a ban.**"
-                )?.queue { message -> message.delete().queueAfter(5, TimeUnit.MINUTES) }
-            } else {
-                gateTextChannel.sendMessage(
-                        "Welcome " + event.member.asMention + ", this server requires you to read the " +
-                                (memberGateService.getRulesChannel(event.guild.idLong, event.jda)?.asMention
-                                        ?: "rules") +
-                                " and answer a question regarding those before you gain full access.\n\n" +
-                                "If you have read the rules and are ready to answer the question, type ``!" + super.aliases[1] + "`` and follow the instructions from the bot.\n\n" +
-                                "Please read the pinned message for more information."
-                )?.queue { message -> message.delete().queueAfter(5, TimeUnit.MINUTES) }
-            }
+            gateTextChannel.sendMessage(
+                    "Welcome " + event.member.asMention + ", this server requires you to read the " +
+                            (memberGateService.getRulesChannel(event.guild.idLong, event.jda)?.asMention
+                                    ?: "rules") +
+                            " and answer a question regarding those before you gain full access.\n\n" +
+                            "If you have read the rules and are ready to answer the question, type ``!" + super.aliases[1] + "`` and follow the instructions from the bot.\n\n" +
+                            "Please read the pinned message for more information."
+            )?.queue { message -> message.delete().queueAfter(5, TimeUnit.MINUTES) }
         } else if (welcomeChannel != null) {
             val welcomeMessages = memberGateService.getWelcomeMessages(event.guild.idLong).toTypedArray()
             if (welcomeMessages.isNotEmpty()) {
@@ -189,11 +179,6 @@ internal constructor(
     private fun join(event: MessageReceivedEvent) {
         val memberRole = memberGateService.getMemberRole(event.guild.idLong, event.jda)
         if (memberRole == null || event.guild.getMember(event.author).roles.any { it.idLong == memberRole.idLong }) {
-            return
-        }
-
-        if (event.guild.verificationLevel == Guild.VerificationLevel.VERY_HIGH && event.guild.getMember(event.author).roles.stream().noneMatch { it.name.toLowerCase() == "no mobile verification" }) {
-            accept(event.guild.getMember(event.author))
             return
         }
 
