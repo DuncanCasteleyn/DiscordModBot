@@ -40,7 +40,7 @@ class WordFiltering(
     }
 
     override fun onGuildMessageUpdate(event: GuildMessageUpdateEvent) {
-        if (event.member.user == event.jda.selfUser) {
+        if (event.member?.user == event.jda.selfUser) {
             return
         }
         val message: Message = event.message
@@ -50,7 +50,7 @@ class WordFiltering(
     }
 
     override fun onGuildMessageReceived(event: GuildMessageReceivedEvent) {
-        if (event.member.user == event.jda.selfUser) {
+        if (event.member?.user == event.jda.selfUser) {
             return
         }
         val message: Message = event.message
