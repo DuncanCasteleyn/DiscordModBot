@@ -29,6 +29,10 @@ class WordFiltering(
         "Adds a word to the blacklist and filters it based on the supplied filter method",
         requiredPermissions = *arrayOf(Permission.MESSAGE_MANAGE)
 ) {
+    companion object {
+        val signFilter = Regex("[^A-Za-z0-9 ]")
+    }
+
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         val argSplit = arguments?.split(' ')
         if (argSplit == null || argSplit.size < 2) {
@@ -60,7 +64,7 @@ class WordFiltering(
     }
 
     private fun checkForBlacklistedWords(message: Message, guild: Guild, channel: MessageChannel) {
-        val messageContent = message.contentStripped.replace("||", "")
+        val messageContent = signFilter.replace(message.contentStripped, " ")
         val messageWords = messageContent.split(" ")
         val blackListedGuildWords = blackListedWordRepository.findAllByGuildId(guild.idLong)
         val containsBlackListedWord = blackListedGuildWords.any {
