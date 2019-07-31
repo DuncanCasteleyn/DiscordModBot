@@ -48,7 +48,7 @@ dependencies {
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-data-jpa")
     implementation(group = "org.flywaydb", name = "flyway-core")
     runtime(group = "com.h2database", name = "h2")
-    runtime(group = "org.mariadb.jdbc", name = "mariadb-java-client", version = "2.2.3")
+    runtime(group = "org.mariadb.jdbc", name = "mariadb-java-client")
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-reflect")
@@ -81,7 +81,7 @@ tasks {
         }
     }
     withType<Wrapper> {
-        gradleVersion = "5.2.1"
+        gradleVersion = "5.5.1"
     }
     withType<JavaCompile> {
         dependsOn(processResources)
