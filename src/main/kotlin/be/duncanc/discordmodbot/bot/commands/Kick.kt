@@ -18,16 +18,16 @@ package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.services.GuildLogger
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
-import net.dv8tion.jda.core.EmbedBuilder
-import net.dv8tion.jda.core.MessageBuilder
-import net.dv8tion.jda.core.Permission
-import net.dv8tion.jda.core.entities.ChannelType
-import net.dv8tion.jda.core.entities.Member
-import net.dv8tion.jda.core.entities.Message
-import net.dv8tion.jda.core.entities.PrivateChannel
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
-import net.dv8tion.jda.core.exceptions.PermissionException
-import net.dv8tion.jda.core.requests.RestAction
+import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.MessageBuilder
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.ChannelType
+import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.PrivateChannel
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.exceptions.PermissionException
+import net.dv8tion.jda.api.requests.RestAction
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Component
@@ -60,7 +60,7 @@ class Kick
 
         if (!event.isFromType(ChannelType.TEXT)) {
             privateChannel?.sendMessage("This command only works in a guild.")?.queue()
-        } else if (!event.member.hasPermission(Permission.KICK_MEMBERS)) {
+        } else if (event.member?.hasPermission(Permission.KICK_MEMBERS) != true) {
             privateChannel?.sendMessage(event.author.asMention + " you need kick members permission to use this command!")
                 ?.queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
         } else if (event.message.mentionedUsers.size < 1) {
@@ -75,16 +75,16 @@ class Kick
                 throw IllegalArgumentException("No reason provided for this action.")
             }
 
-            val toKick = event.guild.getMember(event.message.mentionedUsers[0])
-            if (!event.member.canInteract(toKick)) {
+            val toKick = event.guild.getMember(event.message.mentionedUsers[0])!!
+            if (event.member?.canInteract(toKick) != true) {
                 throw PermissionException("You can't interact with this member")
             }
-            val kickRestAction = event.guild.controller.kick(toKick)
+            val kickRestAction = event.guild.kick(toKick)
 
             val userKickNotification = EmbedBuilder()
                 .setColor(Color.RED)
-                .setAuthor(event.member.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
-                .setTitle("${event.guild.name}: You have been kicked by ${event.member.nicknameAndUsername}", null)
+                    .setAuthor(event.member?.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
+                    .setTitle("${event.guild.name}: You have been kicked by ${event.member?.nicknameAndUsername}", null)
                 .setDescription("Reason: $reason")
                 .build()
 
@@ -117,7 +117,7 @@ class Kick
                 .setTitle("User kicked")
                 .addField("UUID", UUID.randomUUID().toString(), false)
                 .addField("User", toKick.nicknameAndUsername, true)
-                .addField("Moderator", event.member.nicknameAndUsername, true)
+                    .addField("Moderator", event.member!!.nicknameAndUsername, true)
                 .addField("Reason", reason, false)
 
             guildLogger.log(logEmbed, toKick.user, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)

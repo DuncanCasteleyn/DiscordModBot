@@ -17,10 +17,10 @@
 package be.duncanc.discordmodbot.bot.services
 
 
-import net.dv8tion.jda.core.entities.Message
-import net.dv8tion.jda.core.entities.TextChannel
-import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent
-import net.dv8tion.jda.core.events.message.guild.GuildMessageUpdateEvent
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.TextChannel
+import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
+import net.dv8tion.jda.api.events.message.guild.GuildMessageUpdateEvent
 import org.apache.commons.collections4.map.LinkedMap
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired

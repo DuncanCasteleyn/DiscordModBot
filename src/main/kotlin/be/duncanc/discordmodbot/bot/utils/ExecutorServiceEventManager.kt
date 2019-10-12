@@ -18,8 +18,8 @@ package be.duncanc.discordmodbot.bot.utils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.launch
-import net.dv8tion.jda.core.events.Event
-import net.dv8tion.jda.core.hooks.InterfacedEventManager
+import net.dv8tion.jda.api.events.GenericEvent
+import net.dv8tion.jda.api.hooks.InterfacedEventManager
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Executors
@@ -35,7 +35,7 @@ import kotlin.concurrent.thread
  */
 internal class ExecutorServiceEventManager
 constructor(
-    name: String
+        name: String
 ) : InterfacedEventManager() {
     companion object {
         val LOG: Logger = LoggerFactory.getLogger(ExecutorServiceEventManager::class.java)
@@ -52,7 +52,7 @@ constructor(
      *
      * @see InterfacedEventManager.handle
      */
-    override fun handle(event: Event) {
+    override fun handle(event: GenericEvent) {
         CoroutineScope(executor).launch {
             try {
                 super.handle(event)

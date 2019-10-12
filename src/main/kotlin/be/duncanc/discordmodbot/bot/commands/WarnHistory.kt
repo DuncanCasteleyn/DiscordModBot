@@ -21,13 +21,13 @@ import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.entities.GuildWarnPoints
 import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsRepository
 import be.duncanc.discordmodbot.data.services.UserBlockService
-import net.dv8tion.jda.core.MessageBuilder
-import net.dv8tion.jda.core.Permission
-import net.dv8tion.jda.core.entities.ChannelType
-import net.dv8tion.jda.core.entities.Guild
-import net.dv8tion.jda.core.entities.Message
-import net.dv8tion.jda.core.entities.User
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.MessageBuilder
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.ChannelType
+import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
 
@@ -45,7 +45,7 @@ class WarnHistory(
         if (!event.isFromType(ChannelType.TEXT)) {
             throw IllegalArgumentException("This command can only be used in a guild/server channel.")
         }
-        if (event.message.mentionedUsers.size == 1 && event.member.hasPermission(Permission.KICK_MEMBERS)) {
+        if (event.message.mentionedUsers.size == 1 && event.member?.hasPermission(Permission.KICK_MEMBERS) == true) {
             val requestedUserPoints = guildWarnPointsRepository.findById(
                 GuildWarnPoints.GuildWarnPointsId(
                     event.message.mentionedUsers[0].idLong,
@@ -91,7 +91,7 @@ class WarnHistory(
                     message.append("Warned")
                 }
                 message.append(" on ").append(it.creationDate.format(messageTimeFormat)).append(" by ")
-                    .append(guild.getMemberById(it.creatorId!!).nicknameAndUsername)
+                        .append(guild.getMemberById(it.creatorId!!)?.nicknameAndUsername)
                     .append("\n\nReason: ").append(it.reason)
                 if (moderator) {
                     message.append("\n\nExpires: ").append(it.expireDate!!.format(messageTimeFormat))

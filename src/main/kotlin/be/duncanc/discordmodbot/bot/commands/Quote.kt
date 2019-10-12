@@ -18,8 +18,8 @@ package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.services.UserBlockService
-import net.dv8tion.jda.core.EmbedBuilder
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 
 @Component
@@ -38,12 +38,12 @@ class Quote(
             throw IllegalArgumentException("This command requires at least a message id.")
         }
         val channelId = arguments.split(" ")[0]
-        val messageToQuote = event.textChannel.getMessageById(channelId).complete()
+        val messageToQuote = event.textChannel.retrieveMessageById(channelId).complete()
         if (messageToQuote.contentDisplay.isEmpty()) {
             throw IllegalArgumentException("The message you want to quote has no content to quote.")
         }
         val quoteEmbed = EmbedBuilder()
-            .setAuthor(messageToQuote.member.nicknameAndUsername, null, messageToQuote.author.effectiveAvatarUrl)
+                .setAuthor(messageToQuote.member?.nicknameAndUsername, null, messageToQuote.author.effectiveAvatarUrl)
             .setDescription(messageToQuote.contentDisplay)
             .setFooter(event.author.id, null)
         val response = arguments.substring(channelId.length)
@@ -51,7 +51,7 @@ class Quote(
             null
         } else {
             EmbedBuilder()
-                .setAuthor(event.member.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
+                    .setAuthor(event.member?.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
                 .setDescription(response)
                 .setFooter(event.author.id, null)
         }

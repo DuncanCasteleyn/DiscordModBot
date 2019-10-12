@@ -21,16 +21,16 @@ import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.entities.ReportChannel
 import be.duncanc.discordmodbot.data.repositories.ReportChannelRepository
 import be.duncanc.discordmodbot.data.services.UserBlockService
-import net.dv8tion.jda.core.EmbedBuilder
-import net.dv8tion.jda.core.JDA
-import net.dv8tion.jda.core.MessageBuilder
-import net.dv8tion.jda.core.Permission
-import net.dv8tion.jda.core.entities.ChannelType
-import net.dv8tion.jda.core.entities.Guild
-import net.dv8tion.jda.core.entities.MessageChannel
-import net.dv8tion.jda.core.entities.User
-import net.dv8tion.jda.core.events.ReadyEvent
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.MessageBuilder
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.ChannelType
+import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.MessageChannel
+import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.events.ReadyEvent
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.awt.Color
@@ -95,12 +95,12 @@ class Feedback
                 val feedbackChannel =
                     reportChannelRepository.findById(guild!!.idLong).orElseThrow { throw RuntimeException("The feedback feature was disabled during runtime") }.textChannelId!!
                 val embedBuilder = EmbedBuilder()
-                    .setAuthor(guild!!.getMember(user).nicknameAndUsername, null, user.effectiveAvatarUrl)
+                        .setAuthor(guild!!.getMember(user)!!.nicknameAndUsername, null, user.effectiveAvatarUrl)
                     .setDescription(event.message.contentStripped)
                     .setFooter(user.id, null)
                     .setTimestamp(OffsetDateTime.now())
                     .setColor(Color.GREEN)
-                guild!!.getTextChannelById(feedbackChannel).sendMessage(embedBuilder.build()).queue()
+                guild!!.getTextChannelById(feedbackChannel)!!.sendMessage(embedBuilder.build()).queue()
                 channel.sendMessage("Your feedback has been transferred to the moderators.\n\nThank you for helping us.")
                     .queue()
                 super.destroy()

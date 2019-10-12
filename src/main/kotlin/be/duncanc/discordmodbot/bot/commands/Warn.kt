@@ -20,15 +20,15 @@ import be.duncanc.discordmodbot.bot.services.GuildLogger
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.entities.GuildWarnPointsSettings
 import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsSettingsRepository
-import net.dv8tion.jda.core.EmbedBuilder
-import net.dv8tion.jda.core.MessageBuilder
-import net.dv8tion.jda.core.Permission
-import net.dv8tion.jda.core.entities.ChannelType
-import net.dv8tion.jda.core.entities.Member
-import net.dv8tion.jda.core.entities.MessageEmbed
-import net.dv8tion.jda.core.entities.PrivateChannel
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
-import net.dv8tion.jda.core.exceptions.PermissionException
+import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.MessageBuilder
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.ChannelType
+import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.entities.MessageEmbed
+import net.dv8tion.jda.api.entities.PrivateChannel
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.exceptions.PermissionException
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.awt.Color
@@ -67,7 +67,7 @@ class Warn
     private fun commandExec(event: MessageReceivedEvent, arguments: String?, privateChannel: PrivateChannel?) {
         if (!event.isFromType(ChannelType.TEXT)) {
             privateChannel?.sendMessage("This command only works in a guild.")?.queue()
-        } else if (!(event.member.hasPermission(Permission.KICK_MEMBERS) || event.member.hasPermission(Permission.BAN_MEMBERS))) {
+        } else if (!(event.member?.hasPermission(Permission.KICK_MEMBERS) == true || event.member?.hasPermission(Permission.BAN_MEMBERS) == true)) {
             privateChannel?.sendMessage(event.author.asMention + " you need kick/ban members permissions to warn users.")
                 ?.queue()
         } else if (event.message.mentionedUsers.size < 1) {
@@ -82,8 +82,8 @@ class Warn
                 throw IllegalArgumentException("No reason provided for this action.")
             }
 
-            val toWarn = event.guild.getMember(event.message.mentionedUsers[0])
-            if (!event.member.canInteract(toWarn)) {
+            val toWarn = event.guild.getMember(event.message.mentionedUsers[0])!!
+            if (event.member?.canInteract(toWarn) != true) {
                 throw PermissionException("You can't interact with this member")
             }
             val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
@@ -93,7 +93,7 @@ class Warn
                     .setTitle("User warned")
                     .addField("UUID", UUID.randomUUID().toString(), false)
                     .addField("User", toWarn.nicknameAndUsername, true)
-                    .addField("Moderator", event.member.nicknameAndUsername, true)
+                        .addField("Moderator", event.member!!.nicknameAndUsername, true)
                     .addField("Reason", reason, false)
 
                 guildLogger.log(logEmbed, toWarn.user, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
@@ -103,8 +103,8 @@ class Warn
 
             val userWarning = EmbedBuilder()
                 .setColor(Color.YELLOW)
-                .setAuthor(event.member.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
-                .setTitle(event.guild.name + ": You have been warned by " + event.member.nicknameAndUsername, null)
+                    .setAuthor(event.member!!.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
+                    .setTitle(event.guild.name + ": You have been warned by " + event.member!!.nicknameAndUsername, null)
                 .addField("Reason", reason, false)
 
             toWarn.user.openPrivateChannel().queue(

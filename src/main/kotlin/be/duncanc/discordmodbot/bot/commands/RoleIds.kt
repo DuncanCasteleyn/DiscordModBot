@@ -17,11 +17,11 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.data.services.UserBlockService
-import net.dv8tion.jda.core.MessageBuilder
-import net.dv8tion.jda.core.Permission
-import net.dv8tion.jda.core.entities.ChannelType
-import net.dv8tion.jda.core.entities.Role
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.MessageBuilder
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.ChannelType
+import net.dv8tion.jda.api.entities.Role
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
 
@@ -46,14 +46,12 @@ class RoleIds(
         if (!event.isFromType(ChannelType.TEXT)) {
             event.channel.sendMessage("This command only works in a guild.")
                 .queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
-        } else if (!event.member.hasPermission(Permission.MANAGE_ROLES)) {
+        } else if (event.member?.hasPermission(Permission.MANAGE_ROLES) != true) {
             event.channel.sendMessage(event.author.asMention + " you need manage roles permission to use this command.")
                 .queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
         } else {
             val result = StringBuilder()
-            if (event.guild != null) {
-                event.guild.roles.forEach { role: Role -> result.append(role.toString()).append("\n") }
-            }
+            event.guild.roles.forEach { role: Role -> result.append(role.toString()).append("\n") }
             event.author.openPrivateChannel().queue { privateChannel ->
                 val messages = MessageBuilder().append(result.toString()).buildAll(MessageBuilder.SplitPolicy.NEWLINE)
                 messages.forEach { message -> privateChannel.sendMessage(message).queue() }

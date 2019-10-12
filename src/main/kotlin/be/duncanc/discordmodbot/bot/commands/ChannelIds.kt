@@ -17,11 +17,11 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.data.services.UserBlockService
-import net.dv8tion.jda.core.MessageBuilder
-import net.dv8tion.jda.core.Permission
-import net.dv8tion.jda.core.entities.ChannelType
-import net.dv8tion.jda.core.entities.TextChannel
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.MessageBuilder
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.ChannelType
+import net.dv8tion.jda.api.entities.TextChannel
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
 
@@ -48,15 +48,13 @@ class ChannelIds(
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         if (!event.isFromType(ChannelType.TEXT)) {
             event.channel.sendMessage("This command only works in a guild.").queue()
-        } else if (!event.member.hasPermission(Permission.MANAGE_CHANNEL)) {
+        } else if (event.member?.hasPermission(Permission.MANAGE_CHANNEL) != true) {
             event.channel.sendMessage("You need manage channels permission to use this command.")
                 .queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
         } else {
             val result = StringBuilder()
-            if (event.guild != null) {
-                event.guild.textChannels.forEach { channel: TextChannel ->
-                    result.append(channel.toString()).append("\n")
-                }
+            event.guild.textChannels.forEach { channel: TextChannel ->
+                result.append(channel.toString()).append("\n")
             }
             event.author.openPrivateChannel().queue { privateChannel ->
                 val messages = MessageBuilder().appendCodeBlock(result.toString(), "text")

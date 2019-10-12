@@ -18,7 +18,7 @@ package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.data.configs.properties.DiscordModBotConfig
 import be.duncanc.discordmodbot.data.repositories.BlockedUserRepository
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 
 @Component

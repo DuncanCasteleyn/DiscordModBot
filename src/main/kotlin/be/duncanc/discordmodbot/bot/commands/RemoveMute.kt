@@ -18,14 +18,14 @@ package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.services.GuildLogger
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
-import net.dv8tion.jda.core.EmbedBuilder
-import net.dv8tion.jda.core.MessageBuilder
-import net.dv8tion.jda.core.Permission
-import net.dv8tion.jda.core.entities.ChannelType
-import net.dv8tion.jda.core.entities.Member
-import net.dv8tion.jda.core.entities.MessageEmbed
-import net.dv8tion.jda.core.entities.PrivateChannel
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.MessageBuilder
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.ChannelType
+import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.entities.MessageEmbed
+import net.dv8tion.jda.api.entities.PrivateChannel
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 import java.awt.Color
 
@@ -57,7 +57,7 @@ class RemoveMute : CommandModule(
     private fun commandExec(event: MessageReceivedEvent, arguments: String?, privateChannel: PrivateChannel?) {
         if (!event.isFromType(ChannelType.TEXT)) {
             privateChannel?.sendMessage("This command only works in a guild.")?.queue()
-        } else if (!event.member.hasPermission(Permission.MANAGE_ROLES)) {
+        } else if (event.member?.hasPermission(Permission.MANAGE_ROLES) != true) {
             privateChannel?.sendMessage(event.author.asMention + " you need manage roles permission to remove a mute!")
                 ?.queue()
         } else if (event.message.mentionedUsers.size < 1) {
@@ -73,10 +73,10 @@ class RemoveMute : CommandModule(
             }
 
             val toRemoveMute = event.guild.getMember(event.message.mentionedUsers[0])
-            if (!toRemoveMute.roles.contains(event.guild.getRoleById("221678882342830090"))) {
+            if (toRemoveMute?.roles?.contains(event.guild.getRoleById("221678882342830090")) != true) { // TODO fix this hard coded role
                 throw UnsupportedOperationException("Can't remove a mute from a user that is not muted.")
             }
-            event.guild.controller.removeRolesFromMember(toRemoveMute, event.guild.getRoleById("221678882342830090"))
+            event.guild.removeRoleFromMember(toRemoveMute, event.guild.getRoleById("221678882342830090")!!)
                     .queue({ _ ->
                     val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
                     if (guildLogger != null) {
@@ -84,7 +84,7 @@ class RemoveMute : CommandModule(
                             .setColor(Color.GREEN)
                             .setTitle("User's mute was removed", null)
                             .addField("User", toRemoveMute.nicknameAndUsername, true)
-                            .addField("Moderator", event.member.nicknameAndUsername, true)
+                                .addField("Moderator", event.member!!.nicknameAndUsername, true)
                             .addField("Reason", reason, false)
 
                         guildLogger.log(
@@ -97,9 +97,9 @@ class RemoveMute : CommandModule(
                     }
                     val muteRemoveNotification = EmbedBuilder()
                         .setColor(Color.green)
-                        .setAuthor(event.member.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
+                            .setAuthor(event.member!!.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
                         .setTitle(
-                            event.guild.name + ": Your mute has been removed by " + event.member.nicknameAndUsername,
+                                event.guild.name + ": Your mute has been removed by " + event.member!!.nicknameAndUsername,
                             null
                         )
                         .addField("Reason", reason, false)

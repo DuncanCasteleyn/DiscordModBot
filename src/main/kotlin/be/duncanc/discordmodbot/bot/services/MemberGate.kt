@@ -21,13 +21,13 @@ import be.duncanc.discordmodbot.bot.sequences.Sequence
 import be.duncanc.discordmodbot.bot.utils.limitLessBulkDelete
 import be.duncanc.discordmodbot.data.entities.GuildMemberGate
 import be.duncanc.discordmodbot.data.services.MemberGateService
-import net.dv8tion.jda.core.MessageBuilder
-import net.dv8tion.jda.core.Permission
-import net.dv8tion.jda.core.entities.*
-import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent
-import net.dv8tion.jda.core.events.guild.member.GuildMemberLeaveEvent
-import net.dv8tion.jda.core.events.guild.member.GuildMemberRoleAddEvent
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.MessageBuilder
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.*
+import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent
+import net.dv8tion.jda.api.events.guild.member.GuildMemberLeaveEvent
+import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleAddEvent
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.apache.commons.collections4.map.LinkedMap
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -107,7 +107,7 @@ internal constructor(
                             " and answer a question regarding those before you gain full access.\n\n" +
                             "If you have read the rules and are ready to answer the question, type ``!" + super.aliases[1] + "`` and follow the instructions from the bot.\n\n" +
                             "Please read the pinned message for more information."
-            )?.queue { message -> message.delete().queueAfter(5, TimeUnit.MINUTES) }
+            ).queue { message -> message.delete().queueAfter(5, TimeUnit.MINUTES) }
         } else if (welcomeChannel != null) {
             val welcomeMessages = memberGateService.getWelcomeMessages(event.guild.idLong).toTypedArray()
             if (welcomeMessages.isNotEmpty()) {
@@ -141,7 +141,7 @@ internal constructor(
         synchronized(informUserMessageIds) {
             val messageToRemove = informUserMessageIds.remove(userId)
             if (messageToRemove != null) {
-                gateChannel.getMessageById(messageToRemove).queue { it.delete().queue() }
+                gateChannel.retrieveMessageById(messageToRemove).queue { it.delete().queue() }
             }
         }
         cleanMessagesFromUser(gateChannel, event.user)
@@ -171,14 +171,14 @@ internal constructor(
     }
 
     private fun review(event: MessageReceivedEvent, arguments: String?) {
-        if (event.guild.getMember(event.author).hasPermission(Permission.MANAGE_ROLES)) {
+        if (event.guild.getMember(event.author)?.hasPermission(Permission.MANAGE_ROLES) == true) {
             event.jda.addEventListener(ReviewSequence(event.author, event.channel, arguments!!.toLong()))
         }
     }
 
     private fun join(event: MessageReceivedEvent) {
         val memberRole = memberGateService.getMemberRole(event.guild.idLong, event.jda)
-        if (memberRole == null || event.guild.getMember(event.author).roles.any { it.idLong == memberRole.idLong }) {
+        if (memberRole == null || event.guild.getMember(event.author)?.roles?.any { it.idLong == memberRole.idLong } == true) {
             return
         }
 
@@ -200,7 +200,7 @@ internal constructor(
     }
 
     private fun configure(event: MessageReceivedEvent) {
-        if (event.guild.getMember(event.author).hasPermission(Permission.MANAGE_ROLES)) {
+        if (event.guild.getMember(event.author)?.hasPermission(Permission.MANAGE_ROLES) == true) {
             event.jda.addEventListener(ConfigureSequence(event.author, event.channel))
         }
     }
@@ -211,7 +211,7 @@ internal constructor(
     private fun accept(member: Member) {
         val guild = member.guild
         memberGateService.getMemberRole(guild.idLong, member.jda)
-                ?.let { guild.controller.addSingleRoleToMember(member, it).queue() }
+                ?.let { guild.addRoleToMember(member, it).queue() }
     }
 
     /**
@@ -285,12 +285,12 @@ internal constructor(
                         "no" -> {
                             destroy()
                             val reason = "Doesn't agree with the rules."
-                            event.guild.controller.kick(event.member, reason).queue()
+                            event.guild.kick(event.member!!, reason).queue()
                             val logToChannel = event.jda.registeredListeners.firstOrNull { it is GuildLogger }
                             if (logToChannel != null) {
                                 logToChannel as GuildLogger
                                 logToChannel.logKick(
-                                        event.member,
+                                        event.member!!,
                                         event.guild,
                                         event.guild.getMember(event.jda.selfUser),
                                         reason
@@ -305,7 +305,7 @@ internal constructor(
                 }
                 else -> {
                     destroy()
-                    val member = event.guild.getMemberById(user.idLong)
+                    val member = event.guild.getMemberById(user.idLong)!!
                     informMember(
                             member = member,
                             question = question,
@@ -640,7 +640,7 @@ internal constructor(
                 if (messageToRemove != null) {
                     memberGateService.getGateChannel(event.guild.idLong, event.jda)
                             ?.let { gateTextChannel ->
-                                gateTextChannel.getMessageById(messageToRemove).queue { it.delete().queue() }
+                                gateTextChannel.retrieveMessageById(messageToRemove).queue { it.delete().queue() }
                             }
                 }
             }
@@ -663,7 +663,7 @@ internal constructor(
                 if (messageToRemove != null) {
                     memberGateService.getGateChannel(event.guild.idLong, event.jda)
                             ?.let { gateTextChannel ->
-                                gateTextChannel.getMessageById(messageToRemove).queue { it.delete().queue() }
+                                gateTextChannel.retrieveMessageById(messageToRemove).queue { it.delete().queue() }
                             }
                 }
             }
@@ -672,4 +672,3 @@ internal constructor(
     }
 }
 
-     

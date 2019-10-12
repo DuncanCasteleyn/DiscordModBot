@@ -17,17 +17,17 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.data.services.UserBlockService
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 
 @Component
 class Ping(
-    userBlockService: UserBlockService
+        userBlockService: UserBlockService
 ) : CommandModule(
-    ALIASES,
-    null,
-    DESCRIPTION,
-    userBlockService = userBlockService
+        ALIASES,
+        null,
+        DESCRIPTION,
+        userBlockService = userBlockService
 ) {
     companion object {
         private val ALIASES = arrayOf("Ping")
@@ -35,11 +35,13 @@ class Ping(
     }
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-        val millisBeforeRequest = System.currentTimeMillis()
-        event.channel.sendMessage("pong!\nIt took Discord " + event.jda.ping + " milliseconds to respond to our last heartbeat.")
-            .queue { message ->
-                message.editMessage(message.contentRaw + "\nIt took Discord " + (System.currentTimeMillis() - millisBeforeRequest) + " milliseconds to process this message.")
-                    .queue()
-            }
+        event.jda.restPing.queue {
+            event.channel.sendMessage(
+                    """pong!
+It took Discord ${event.jda.gatewayPing} milliseconds to respond to our last heartbeat (gateway).
+The REST API responded within $it milliseconds"""
+            ).queue()
+        }
+
     }
 }

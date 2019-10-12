@@ -18,12 +18,12 @@ package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.services.GuildLogger
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
-import net.dv8tion.jda.core.EmbedBuilder
-import net.dv8tion.jda.core.MessageBuilder
-import net.dv8tion.jda.core.Permission
-import net.dv8tion.jda.core.entities.ChannelType
-import net.dv8tion.jda.core.entities.PrivateChannel
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.MessageBuilder
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.ChannelType
+import net.dv8tion.jda.api.entities.PrivateChannel
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 import java.awt.Color
 import java.util.*
@@ -58,7 +58,7 @@ class BanUserById : CommandModule(
                 event.channel.sendMessage("This command only works in a guild.")
                     .queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
             }
-        } else if (!event.member.hasPermission(Permission.BAN_MEMBERS)) {
+        } else if (event.member?.hasPermission(Permission.BAN_MEMBERS) != true) {
             event.channel.sendMessage("You need ban members permission to use this command.")
                 .queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
         } else {
@@ -79,11 +79,11 @@ class BanUserById : CommandModule(
 
             event.jda.retrieveUserById(userId).queue({ toBan ->
                 val toBanMemberCheck = event.guild.getMember(toBan)
-                if (toBanMemberCheck != null && !event.member.canInteract(toBanMemberCheck)) {
+                if (toBanMemberCheck != null && event.member?.canInteract(toBanMemberCheck) != true) {
                     privateChannel?.sendMessage("You can't ban a user that you can't interact with.")?.queue()
                     return@queue
                 }
-                event.guild.controller.ban(userId, 1).queue(banQue@{
+                event.guild.ban(userId, 1).queue(banQue@{
                     val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
                     if (guildLogger != null) {
                         val logEmbed = EmbedBuilder()
@@ -91,7 +91,7 @@ class BanUserById : CommandModule(
                             .setTitle("User banned by id")
                             .addField("UUID", UUID.randomUUID().toString(), false)
                             .addField("User", toBan.name, true)
-                            .addField("Moderator", event.member.nicknameAndUsername, true)
+                                .addField("Moderator", event.member!!.nicknameAndUsername, true)
                             .addField("Reason", reason, false)
 
                         guildLogger.log(logEmbed, toBan, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)

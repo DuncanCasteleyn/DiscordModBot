@@ -5,15 +5,15 @@ import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.entities.BlackListedWord
 import be.duncanc.discordmodbot.data.entities.BlackListedWord.FilterMethod
 import be.duncanc.discordmodbot.data.repositories.BlackListedWordRepository
-import net.dv8tion.jda.core.EmbedBuilder
-import net.dv8tion.jda.core.Permission
-import net.dv8tion.jda.core.entities.Guild
-import net.dv8tion.jda.core.entities.Message
-import net.dv8tion.jda.core.entities.MessageChannel
-import net.dv8tion.jda.core.events.ReadyEvent
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
-import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent
-import net.dv8tion.jda.core.events.message.guild.GuildMessageUpdateEvent
+import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.MessageChannel
+import net.dv8tion.jda.api.events.ReadyEvent
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
+import net.dv8tion.jda.api.events.message.guild.GuildMessageUpdateEvent
 import org.springframework.stereotype.Component
 import java.awt.Color
 import java.util.*
@@ -86,7 +86,7 @@ class WordFiltering(
             val embedBuilder: EmbedBuilder = EmbedBuilder()
                     .setTitle("#" + channel.name + ": Message was removed due to blacklisted word(s)!")
                     .setDescription("Old message was:\n" + message.contentDisplay)
-                    .addField("Author", message.member.nicknameAndUsername, true)
+                    .addField("Author", message.member?.nicknameAndUsername, true)
                     .addField("Message URL", "[Link](${message.jumpUrl})", false)
                     .setColor(Color.RED)
             logger.log(embedBuilder, message.author, guild, actionType = GuildLogger.LogTypeAction.MODERATOR)

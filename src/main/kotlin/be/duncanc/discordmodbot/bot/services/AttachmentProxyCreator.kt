@@ -17,15 +17,14 @@
 package be.duncanc.discordmodbot.bot.services
 
 import be.duncanc.discordmodbot.bot.utils.limitLessBulkDelete
-import net.dv8tion.jda.core.MessageBuilder
-import net.dv8tion.jda.core.entities.Message
-import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
 import org.apache.commons.collections4.map.LinkedMap
+import org.apache.tomcat.util.http.fileupload.IOUtils
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.ByteArrayOutputStream
 import java.util.*
-import org.apache.tomcat.util.http.fileupload.IOUtils
 
 
 /**
@@ -118,14 +117,13 @@ class AttachmentProxyCreator {
         event.message.attachments.forEach { attachment ->
             if (attachment.size < 8 shl 20) {  //8MB
                 try {
-                    val inputStream = attachment.inputStream
+                    val inputStream = attachment.retrieveInputStream().get()
                     val outputStream = ByteArrayOutputStream()
                     IOUtils.copy(inputStream, outputStream)
 
-                    event.jda.getTextChannelById(CACHE_CHANNEL).sendFile(
+                    event.jda.getTextChannelById(CACHE_CHANNEL)!!.sendFile(
                         outputStream.toByteArray(),
-                        attachment.fileName,
-                        MessageBuilder().append(event.message.id).build()
+                            attachment.fileName
                     ).queue { message -> addToCache(event.message.idLong, message) }
                 } catch (e: Exception) {
                     LOG.info("An exception occurred when retrieving one of the attachments", e)
@@ -142,7 +140,7 @@ class AttachmentProxyCreator {
     fun cleanCache() {
         if (attachmentCache.size > 0) {
             attachmentCache[attachmentCache.firstKey()]!!.jda.getTextChannelById(CACHE_CHANNEL)
-                .limitLessBulkDelete(ArrayList(attachmentCache.values))
+                    ?.limitLessBulkDelete(ArrayList(attachmentCache.values))
         }
     }
 }

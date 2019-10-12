@@ -26,11 +26,11 @@ import be.duncanc.discordmodbot.data.entities.GuildWarnPointsSettings
 import be.duncanc.discordmodbot.data.entities.UserWarnPoints
 import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsRepository
 import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsSettingsRepository
-import net.dv8tion.jda.core.EmbedBuilder
-import net.dv8tion.jda.core.MessageBuilder
-import net.dv8tion.jda.core.Permission
-import net.dv8tion.jda.core.entities.*
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.MessageBuilder
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.*
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.awt.Color
@@ -62,7 +62,7 @@ class AddWarnPoints(
             throw IllegalArgumentException("You need to mention 1 member.")
         }
         val member = event.message.mentionedMembers[0]
-        if (event.member.canInteract(member)) {
+        if (event.member?.canInteract(member) == true) {
             event.jda.addEventListener(
                 AddPointsSequence(
                     event.author,
@@ -151,7 +151,7 @@ class AddWarnPoints(
                     guildWarnPoints.points.add(userWarnPoints)
                     guildWarnPointsRepository.save(guildWarnPoints)
                     performChecks(guildWarnPoints, guildPointsSettings, targetMember)
-                    val moderator = targetMember.guild.getMember(user)
+                    val moderator = targetMember.guild.getMember(user)!!
                     logAddPoints(moderator, targetMember, reason!!, points!!, userWarnPoints.id, expireDate!!, action)
                     informUserAndModerator(
                         moderator,
@@ -163,11 +163,11 @@ class AddWarnPoints(
                     )
                     val guild = targetMember.guild
                     when (action) {
-                        1.toByte() -> guild.controller.addSingleRoleToMember(
+                        1.toByte() -> guild.addRoleToMember(
                             targetMember,
                             muteRole.getMuteRole(guild)
                         ).reason(reason).queue()
-                        2.toByte() -> guild.controller.kick(targetMember).reason(reason).queue()
+                        2.toByte() -> guild.kick(targetMember).reason(reason).queue()
                     }
                     super.destroy()
                 }
@@ -193,13 +193,13 @@ class AddWarnPoints(
                 .append("Summary of active points:")
             activatePoints.forEach {
                 messageBuilder.append("\n\n").append(it.points).append(" point(s) added by ")
-                    .append(guild.getMemberById(it.creatorId!!).nicknameAndUsername)
+                        .append(guild.getMemberById(it.creatorId!!)?.nicknameAndUsername)
                     .append(" on ").append(it.creationDate.format(messageTimeFormat)).append('\n')
                     .append("Reason: ").append(it.reason)
                     .append("\nExpires on: ").append(it.expireDate?.format(messageTimeFormat))
             }
             messageBuilder.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach {
-                guild.getTextChannelById(guildWarnPointsSettings.announceChannelId!!).sendMessage(it).queue()
+                guild.getTextChannelById(guildWarnPointsSettings.announceChannelId!!)?.sendMessage(it)?.queue()
             }
         }
     }

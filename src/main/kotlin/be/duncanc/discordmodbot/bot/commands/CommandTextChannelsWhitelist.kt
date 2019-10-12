@@ -18,10 +18,10 @@ package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.data.entities.GuildCommandChannels
 import be.duncanc.discordmodbot.data.repositories.GuildCommandChannelsRepository
-import net.dv8tion.jda.core.Permission
-import net.dv8tion.jda.core.entities.Message
-import net.dv8tion.jda.core.entities.TextChannel
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.TextChannel
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional

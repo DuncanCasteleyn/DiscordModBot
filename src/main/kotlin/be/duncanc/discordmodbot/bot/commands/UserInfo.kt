@@ -18,10 +18,10 @@ package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.services.UserBlockService
-import net.dv8tion.jda.core.EmbedBuilder
-import net.dv8tion.jda.core.entities.ChannelType
-import net.dv8tion.jda.core.entities.PrivateChannel
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.entities.ChannelType
+import net.dv8tion.jda.api.entities.PrivateChannel
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 import java.time.format.DateTimeFormatter
 
@@ -77,15 +77,15 @@ class UserInfo(
                             .addField("User id", member.user.id, false)
                             .addField("Discriminator", member.user.discriminator, false)
                             .addField("Online status", member.onlineStatus.name, false)
-                            .addField("In voice channel?", member.voiceState.inVoiceChannel().toString(), true)
+                                .addField("In voice channel?", member.voiceState?.inVoiceChannel().toString(), true)
                             .addField("Guild owner?", member.isOwner.toString(), true)
                             .addField("is a bot?", member.user.isBot.toString(), true)
                             .addField("Permissions", member.permissions.toString(), false)
                             .addField("Roles", member.roles.toString(), false)
-                            .addField("Guild join date", member.joinDate.format(DATE_TIME_FORMATTER), true)
+                                .addField("Guild join date", member.timeJoined.format(DATE_TIME_FORMATTER), true)
                             .addField(
                                 "Account creation date",
-                                member.user.creationTime.format(DATE_TIME_FORMATTER),
+                                    member.user.timeCreated.format(DATE_TIME_FORMATTER),
                                 true
                             )
                             .build()

@@ -21,16 +21,16 @@ import be.duncanc.discordmodbot.bot.sequences.Sequence
 import be.duncanc.discordmodbot.data.entities.IAmRolesCategory
 import be.duncanc.discordmodbot.data.services.IAmRolesService
 import be.duncanc.discordmodbot.data.services.UserBlockService
-import net.dv8tion.jda.core.MessageBuilder
-import net.dv8tion.jda.core.Permission
-import net.dv8tion.jda.core.entities.MessageChannel
-import net.dv8tion.jda.core.entities.Role
-import net.dv8tion.jda.core.entities.TextChannel
-import net.dv8tion.jda.core.entities.User
-import net.dv8tion.jda.core.events.ReadyEvent
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
-import net.dv8tion.jda.core.events.role.RoleDeleteEvent
-import net.dv8tion.jda.core.exceptions.PermissionException
+import net.dv8tion.jda.api.MessageBuilder
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.MessageChannel
+import net.dv8tion.jda.api.entities.Role
+import net.dv8tion.jda.api.entities.TextChannel
+import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.events.ReadyEvent
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.events.role.RoleDeleteEvent
+import net.dv8tion.jda.api.exceptions.PermissionException
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
@@ -77,7 +77,7 @@ class IAmRoles
                 super.destroy()
                 throw UnsupportedOperationException("This command must be executed in a guild.")
             }
-            if (!channel.guild.getMember(user).hasPermission(Permission.MANAGE_ROLES)) {
+            if (channel.guild.getMember(user)?.hasPermission(Permission.MANAGE_ROLES) != true) {
                 throw PermissionException("You do not have permission to modify IAmRoles categories.")
             }
             iAmRolesCategories = iAmRolesService.getAllCategoriesForGuild(channel.guild.idLong)
@@ -301,7 +301,7 @@ class IAmRoles
                     if (roles!!.isEmpty()) {
                         throw IllegalStateException("There are no roles in this category. Please contact a server admin.")
                     }
-                    assignedRoles = ArrayList(event.member.roles)
+                    assignedRoles = ArrayList(event.member!!.roles)
                     val notMutableRoles = roles!!
                     assignedRoles!!.removeIf { assignedRole ->
                         notMutableRoles.none { it == assignedRole.idLong }
@@ -333,7 +333,7 @@ class IAmRoles
                         }
                         for (i in roles!!.indices) {
                             val role = (channel as TextChannel).guild.getRoleById(roles!![i])
-                            message.append('\n').append(i).append(". ").append(role.name)
+                            message.append('\n').append(i).append(". ").append(role?.name)
                         }
                     }
                     message.buildAll(MessageBuilder.SplitPolicy.NEWLINE)
@@ -353,16 +353,15 @@ class IAmRoles
                             rRoles.add(assignedRoles!![it.toInt()])
                         } else {
                             val id = this.roles!![it.toInt()]
-                            rRoles.add(event.guild.getRoleById(id))
+                            rRoles.add(event.guild.getRoleById(id)!!)
                         }
                     }
 
-                    val member = event.guild.getMember(user)
-                    val controller = event.guild.controller
+                    val member = event.guild.getMember(user)!!
                     if (remove) {
-                        controller.removeRolesFromMember(member, rRoles).reason("User used !iam command").queue()
+                        event.guild.modifyMemberRoles(member, null, rRoles).reason("User used !iam command").queue()
                     } else {
-                        controller.addRolesToMember(member, rRoles).reason("User used !iam command").queue()
+                        event.guild.modifyMemberRoles(member, rRoles, null).reason("User used !iam command").queue()
                     }
                     channel.sendMessage(user.asMention + " The requested role(s) were/was " + if (remove) "removed" else "added.")
                         .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }

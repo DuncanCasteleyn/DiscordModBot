@@ -18,16 +18,16 @@ package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.services.GuildLogger
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
-import net.dv8tion.jda.core.EmbedBuilder
-import net.dv8tion.jda.core.MessageBuilder
-import net.dv8tion.jda.core.Permission
-import net.dv8tion.jda.core.entities.ChannelType
-import net.dv8tion.jda.core.entities.Member
-import net.dv8tion.jda.core.entities.Message
-import net.dv8tion.jda.core.entities.PrivateChannel
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
-import net.dv8tion.jda.core.exceptions.PermissionException
-import net.dv8tion.jda.core.requests.RestAction
+import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.MessageBuilder
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.ChannelType
+import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.PrivateChannel
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.exceptions.PermissionException
+import net.dv8tion.jda.api.requests.RestAction
 import org.springframework.stereotype.Component
 import java.awt.Color
 import java.util.*
@@ -60,7 +60,7 @@ class Ban : CommandModule(
                 event.channel.sendMessage("This command only works in a guild.")
                     .queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
             }
-        } else if (!event.member.hasPermission(Permission.BAN_MEMBERS)) {
+        } else if (event.member?.hasPermission(Permission.BAN_MEMBERS) != true) {
             privateChannel?.sendMessage(event.author.asMention + " you don't have permission to ban!")
                 ?.queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
         } else if (event.message.mentionedUsers.size < 1) {
@@ -78,10 +78,10 @@ class Ban : CommandModule(
             }
 
             val toBan = event.guild.getMember(event.message.mentionedUsers[0])
-            if (!event.member.canInteract(toBan)) {
+            if (toBan?.let { event.member?.canInteract(it) } != true) {
                 throw PermissionException("You can't interact with this member")
             }
-            val banRestAction = event.guild.controller.ban(toBan, 1)
+            val banRestAction = event.guild.ban(toBan, 1)
             val description = StringBuilder("Reason: $reason")
             if (event.guild.idLong == 175856762677624832L) {
                 description.append("\n\n")
@@ -91,7 +91,7 @@ class Ban : CommandModule(
             val userBanNotification = EmbedBuilder()
                 .setColor(Color.red)
                 .setAuthor(event.member?.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
-                .setTitle(event.guild.name + ": You have been banned by " + event.member.nicknameAndUsername, null)
+                    .setTitle(event.guild.name + ": You have been banned by " + event.member!!.nicknameAndUsername, null)
                 .setDescription(description.toString())
                 .build()
 
@@ -131,7 +131,7 @@ class Ban : CommandModule(
                 .setTitle("User banned")
                 .addField("UUID", UUID.randomUUID().toString(), false)
                 .addField("User", toBan.nicknameAndUsername, true)
-                .addField("Moderator", event.member.nicknameAndUsername, true)
+                    .addField("Moderator", event.member!!.nicknameAndUsername, true)
                 .addField("Reason", reason, false)
 
 

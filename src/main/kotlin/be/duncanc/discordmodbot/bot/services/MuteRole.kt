@@ -20,24 +20,22 @@ import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.entities.MuteRole
 import be.duncanc.discordmodbot.data.repositories.MuteRolesRepository
-import net.dv8tion.jda.core.EmbedBuilder
-import net.dv8tion.jda.core.Permission
-import net.dv8tion.jda.core.entities.Guild
-import net.dv8tion.jda.core.entities.Role
-import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent
-import net.dv8tion.jda.core.events.guild.member.GuildMemberLeaveEvent
-import net.dv8tion.jda.core.events.guild.member.GuildMemberRoleAddEvent
-import net.dv8tion.jda.core.events.guild.member.GuildMemberRoleRemoveEvent
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
-import net.dv8tion.jda.core.events.role.RoleDeleteEvent
-import net.dv8tion.jda.core.exceptions.PermissionException
+import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.Role
+import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent
+import net.dv8tion.jda.api.events.guild.member.GuildMemberLeaveEvent
+import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleAddEvent
+import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.events.role.RoleDeleteEvent
+import net.dv8tion.jda.api.exceptions.PermissionException
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.awt.Color
-import java.util.*
 import java.util.concurrent.TimeUnit
-import kotlin.math.log
 
 @Component
 @Transactional
@@ -52,7 +50,7 @@ class MuteRole
 ) {
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-        if (!event.member.hasPermission(Permission.MANAGE_ROLES)) {
+        if (event.member?.hasPermission(Permission.MANAGE_ROLES) != true) {
             throw PermissionException("You do not have sufficient permissions to set the mute role for this server")
         }
 
@@ -82,7 +80,7 @@ class MuteRole
             .orElse(null)?.roleId
             ?: throw IllegalStateException("This guild does not have a mute role set up.")
 
-        return guild.getRoleById(roleId)
+        return guild.getRoleById(roleId)!!
     }
 
     override fun onGuildMemberRoleAdd(event: GuildMemberRoleAddEvent) {
@@ -121,7 +119,7 @@ class MuteRole
         val muteRole = muteRolesRepository.findById(event.guild.idLong)
             .orElse(null)
         if (muteRole?.roleId != null && muteRole.mutedUsers.contains(event.user.idLong)) {
-            event.guild.controller.addSingleRoleToMember(event.member, event.guild.getRoleById(muteRole.roleId)).queue()
+            event.guild.addRoleToMember(event.member, event.guild.getRoleById(muteRole.roleId)!!).queue()
             val logEmbed = EmbedBuilder()
                 .setColor(Color.YELLOW)
                 .setTitle("User automatically muted")

@@ -17,15 +17,15 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.sequences.Sequence
-import net.dv8tion.jda.core.JDA
-import net.dv8tion.jda.core.Permission
-import net.dv8tion.jda.core.entities.*
-import net.dv8tion.jda.core.events.ReadyEvent
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
-import net.dv8tion.jda.core.events.message.guild.GuildMessageDeleteEvent
-import net.dv8tion.jda.core.events.message.guild.react.GuildMessageReactionAddEvent
-import net.dv8tion.jda.core.events.message.guild.react.GuildMessageReactionRemoveEvent
-import net.dv8tion.jda.core.events.role.RoleDeleteEvent
+import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.*
+import net.dv8tion.jda.api.events.ReadyEvent
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.events.message.guild.GuildMessageDeleteEvent
+import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent
+import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionRemoveEvent
+import net.dv8tion.jda.api.events.role.RoleDeleteEvent
 import org.json.JSONArray
 import org.json.JSONObject
 import org.springframework.stereotype.Component
@@ -63,7 +63,7 @@ class CreateEvent : CommandModule(
             val serverEvent = EVENTS[event.guild]
             if (serverEvent != null && serverEvent.any { it.announceMessage.idLong == event.messageIdLong }) {
                 val reactedEvent = serverEvent.filter { it.announceMessage.idLong == event.messageIdLong }[0]
-                event.guild.controller.addSingleRoleToMember(event.member, reactedEvent.eventRole)
+                event.guild.addRoleToMember(event.member, reactedEvent.eventRole)
                     .reason("Voted on event reaction").queue()
             }
         }
@@ -74,7 +74,7 @@ class CreateEvent : CommandModule(
             val serverEvent = EVENTS[event.guild]
             if (serverEvent != null && serverEvent.any { it.announceMessage.idLong == event.messageIdLong }) {
                 val reactedEvent = serverEvent.filter { it.announceMessage.idLong == event.messageIdLong }[0]
-                event.guild.controller.removeSingleRoleFromMember(event.member, reactedEvent.eventRole)
+                event.guild.addRoleToMember(event.member, reactedEvent.eventRole)
                     .reason("Remove vote on event reaction").queue()
             }
         }
@@ -150,9 +150,9 @@ class CreateEvent : CommandModule(
                                 newArrayList.add(
                                     EventRole(
                                         it.getString("eventId"),
-                                        jda.getRoleById(it.getLong("eventRole")),
-                                        jda.getEmoteById(it.getLong("reactEmote")),
-                                        jda.getTextChannelById(it.getLong("announceChannel")).getMessageById(
+                                            jda.getRoleById(it.getLong("eventRole"))!!,
+                                            jda.getEmoteById(it.getLong("reactEmote"))!!,
+                                            jda.getTextChannelById(it.getLong("announceChannel"))!!.retrieveMessageById(
                                             it.getLong(
                                                 "announceMessage"
                                             )
@@ -203,11 +203,11 @@ class CreateEvent : CommandModule(
             else -> {
                 val guild = event.guild
 
-                val newRoleFuture = guild.controller.createRole().submit()
+                val newRoleFuture = guild.createRole().submit()
                 val announceFuture = announceChannel!!.sendMessage(event.message.contentRaw).submit()
                 try {
-                    val changeRoleName = newRoleFuture.get().manager.setName(eventRole).submit()
-                    val reactFuture = announceFuture.get().addReaction(reactEmote).submit()
+                    val changeRoleName = newRoleFuture.get().manager.setName(eventRole!!).submit()
+                    val reactFuture = announceFuture.get().addReaction(reactEmote!!).submit()
                     try {
                         changeRoleName.get()
                         reactFuture.get()

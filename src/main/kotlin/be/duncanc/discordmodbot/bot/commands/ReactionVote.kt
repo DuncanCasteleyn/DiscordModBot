@@ -19,8 +19,8 @@ package be.duncanc.discordmodbot.bot.commands
 import be.duncanc.discordmodbot.data.entities.VoteEmotes
 import be.duncanc.discordmodbot.data.repositories.VotingEmotesRepository
 import be.duncanc.discordmodbot.data.services.UserBlockService
-import net.dv8tion.jda.core.entities.Message
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 
 @Component
@@ -39,7 +39,7 @@ class ReactionVote(
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         try {
             val messageId = arguments!!.toLong()
-            event.textChannel.getMessageById(messageId).queue {
+            event.textChannel.retrieveMessageById(messageId).queue {
                 it.addVoteReactions()
             }
             event.message.delete().queue()
@@ -54,8 +54,8 @@ class ReactionVote(
         val voteEmotes: VoteEmotes? = votingEmotesRepository.findById(guild.idLong)
             .orElse(null)
         if (voteEmotes != null) {
-            addReaction(jda.getEmoteById(voteEmotes.voteYesEmote!!)).queue()
-            addReaction(jda.getEmoteById(voteEmotes.voteNoEmote!!)).queue()
+            addReaction(jda.getEmoteById(voteEmotes.voteYesEmote!!)!!).queue()
+            addReaction(jda.getEmoteById(voteEmotes.voteNoEmote!!)!!).queue()
         } else {
             addReaction("✅").queue()
             addReaction("❎").queue()

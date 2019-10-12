@@ -20,17 +20,17 @@ import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.sequences.Sequence
 import be.duncanc.discordmodbot.data.entities.ActivityReportSettings
 import be.duncanc.discordmodbot.data.repositories.ActivityReportSettingsRepository
-import net.dv8tion.jda.core.JDA
-import net.dv8tion.jda.core.MessageBuilder
-import net.dv8tion.jda.core.Permission
-import net.dv8tion.jda.core.entities.Member
-import net.dv8tion.jda.core.entities.MessageChannel
-import net.dv8tion.jda.core.entities.TextChannel
-import net.dv8tion.jda.core.entities.User
-import net.dv8tion.jda.core.events.ReadyEvent
-import net.dv8tion.jda.core.events.ShutdownEvent
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
-import net.dv8tion.jda.core.exceptions.PermissionException
+import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.MessageBuilder
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.entities.MessageChannel
+import net.dv8tion.jda.api.entities.TextChannel
+import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.events.ReadyEvent
+import net.dv8tion.jda.api.events.ShutdownEvent
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.exceptions.PermissionException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
@@ -63,7 +63,7 @@ class WeeklyActivityReport(
     }
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-        if (event.member.hasPermission(Permission.ADMINISTRATOR)) {
+        if (event.member?.hasPermission(Permission.ADMINISTRATOR) == true) {
             event.jda.addEventListener(WeeklyReportConfigurationSequence(event.author, event.channel))
         } else {
             throw PermissionException("You need administrator permissions.")
@@ -90,7 +90,7 @@ class WeeklyActivityReport(
                             val members = guild.getMembersWithRoles(role)
                             trackedMembers.addAll(members)
                         } else {
-                            val member = guild.getMemberById(it)
+                            val member = guild.getMemberById(it)!!
                             trackedMembers.add(member)
                         }
                     }
@@ -104,9 +104,9 @@ class WeeklyActivityReport(
                         try {
                             for (message in it.iterableHistory) {
                                 if (trackedMembers.contains(message.member)) {
-                                    channelStats[message.member] = (channelStats[message.member] ?: 0L) + 1L
+                                    channelStats[message.member!!] = (channelStats[message.member!!] ?: 0L) + 1L
                                 }
-                                if (Duration.between(message.creationTime, statsCollectionStartTime).toDays() >= 7) {
+                                if (Duration.between(message.timeCreated, statsCollectionStartTime).toDays() >= 7) {
                                     break
                                 }
                             }

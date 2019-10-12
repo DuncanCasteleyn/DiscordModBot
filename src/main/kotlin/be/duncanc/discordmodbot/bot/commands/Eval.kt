@@ -18,8 +18,8 @@ package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.data.configs.properties.DiscordModBotConfig
 import kotlinx.coroutines.*
-import net.dv8tion.jda.core.MessageBuilder
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.MessageBuilder
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.jetbrains.kotlin.cli.common.environment.setIdeaIoUseFallback
 import org.springframework.beans.factory.config.ConfigurableBeanFactory
 import org.springframework.context.annotation.Scope
@@ -71,8 +71,8 @@ class Eval(
                 val engine = ScriptEngineManager().getEngineByExtension("kts")!!
                 engine.put("event", event)
                 engine.eval(
-                    "import net.dv8tion.jda.core.utils.*\n" +
-                            "import net.dv8tion.jda.core.events.message.MessageReceivedEvent\n" +
+                        "import net.dv8tion.jda.api.utils.*\n" +
+                                "import net.dv8tion.jda.api.events.message.MessageReceivedEvent\n" +
                             "val event = bindings[\"event\"] as MessageReceivedEvent"
                 )
                 val future = async {

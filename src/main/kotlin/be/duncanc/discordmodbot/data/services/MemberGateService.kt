@@ -20,10 +20,10 @@ import be.duncanc.discordmodbot.bot.RunBots
 import be.duncanc.discordmodbot.bot.services.MemberGate
 import be.duncanc.discordmodbot.data.entities.GuildMemberGate
 import be.duncanc.discordmodbot.data.repositories.GuildMemberGateRepository
-import net.dv8tion.jda.core.EmbedBuilder
-import net.dv8tion.jda.core.JDA
-import net.dv8tion.jda.core.entities.Role
-import net.dv8tion.jda.core.entities.TextChannel
+import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.entities.Role
+import net.dv8tion.jda.api.entities.TextChannel
 import org.springframework.context.annotation.Lazy
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
@@ -201,7 +201,7 @@ class MemberGateService(
                     val guildSettings = guildMemberGateRepository.findById(guild.idLong).orElse(null)
                     if (guildSettings?.removeTimeHours != null && guildSettings.memberRole != null) {
                         guild.members.filter {
-                            val reachedTimeLimit = it.joinDate.isBefore(OffsetDateTime.now().minusHours(guildSettings.removeTimeHours))
+                            val reachedTimeLimit = it.timeJoined.isBefore(OffsetDateTime.now().minusHours(guildSettings.removeTimeHours))
                             val notQueuedForApproval = !memberGate.approvalQueue.containsKey(it.user.idLong)
                             val noRoles = it.roles.size < 1
                             noRoles && reachedTimeLimit && notQueuedForApproval
@@ -213,10 +213,10 @@ class MemberGateService(
                                     .build()
                             member.user.openPrivateChannel().queue(
                                     {
-                                        it.sendMessage(userKickNotification).queue({ guild.controller.kick(member).queue() }, { guild.controller.kick(member).queue() })
+                                        it.sendMessage(userKickNotification).queue({ guild.kick(member).queue() }, { guild.kick(member).queue() })
                                     },
                                     {
-                                        guild.controller.kick(member).queue()
+                                        guild.kick(member).queue()
                                     })
                         }
                     }

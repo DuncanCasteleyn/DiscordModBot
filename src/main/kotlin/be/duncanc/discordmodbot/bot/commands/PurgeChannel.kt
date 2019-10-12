@@ -19,11 +19,11 @@ package be.duncanc.discordmodbot.bot.commands
 import be.duncanc.discordmodbot.bot.services.GuildLogger
 import be.duncanc.discordmodbot.bot.utils.limitLessBulkDelete
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
-import net.dv8tion.jda.core.EmbedBuilder
-import net.dv8tion.jda.core.Permission
-import net.dv8tion.jda.core.entities.ChannelType
-import net.dv8tion.jda.core.entities.Message
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.ChannelType
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 import java.awt.Color
 import java.time.OffsetDateTime
@@ -51,7 +51,7 @@ class PurgeChannel : CommandModule(
         val args = arguments!!.split(" ".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
         if (!event.isFromType(ChannelType.TEXT)) {
             event.channel.sendMessage("This command only works in a guild.").queue()
-        } else if (!event.member.hasPermission(event.textChannel, Permission.MESSAGE_MANAGE)) {
+        } else if (event.member?.hasPermission(event.textChannel, Permission.MESSAGE_MANAGE) != true) {
             event.channel.sendMessage(event.author.asMention + " you need manage messages permission in this channel to use this command.")
                 .queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
         } else if (event.message.mentionedUsers.size > 0) {
@@ -68,9 +68,9 @@ class PurgeChannel : CommandModule(
             val messageList = ArrayList<Message>()
             val targetUsers = event.message.mentionedUsers
             for (m in textChannel.iterableHistory.cache(false)) {
-                if (targetUsers.contains(m.author) && m.creationTime.isAfter(OffsetDateTime.now().minusWeeks(2))) {
+                if (targetUsers.contains(m.author) && m.timeCreated.isAfter(OffsetDateTime.now().minusWeeks(2))) {
                     messageList.add(m)
-                } else if (m.creationTime.isBefore(OffsetDateTime.now().minusWeeks(2))) {
+                } else if (m.timeCreated.isBefore(OffsetDateTime.now().minusWeeks(2))) {
                     break
                 }
                 if (messageList.size >= amount) {
@@ -100,7 +100,7 @@ class PurgeChannel : CommandModule(
                 val logEmbed = EmbedBuilder()
                     .setColor(Color.YELLOW)
                     .setTitle("Filtered channel purge", null)
-                    .addField("Moderator", event.member.nicknameAndUsername, true)
+                        .addField("Moderator", event.member!!.nicknameAndUsername, true)
                     .addField("Channel", textChannel.name, true)
                     .addField("Filter", filterString.toString(), true)
 
@@ -120,7 +120,7 @@ class PurgeChannel : CommandModule(
             val textChannel = event.textChannel
             val messageList = ArrayList<Message>()
             for (m in textChannel.iterableHistory.cache(false)) {
-                if (m.creationTime.isAfter(OffsetDateTime.now().minusWeeks(2))) {
+                if (m.timeCreated.isAfter(OffsetDateTime.now().minusWeeks(2))) {
                     messageList.add(m)
                 } else {
                     break
@@ -139,7 +139,7 @@ class PurgeChannel : CommandModule(
                 val logEmbed = EmbedBuilder()
                     .setColor(Color.YELLOW)
                     .setTitle("Channel purge", null)
-                    .addField("Moderator", event.member.nicknameAndUsername, true)
+                        .addField("Moderator", event.member!!.nicknameAndUsername, true)
                     .addField("Channel", textChannel.name, true)
 
                 guildLogger.log(logEmbed, event.author, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)

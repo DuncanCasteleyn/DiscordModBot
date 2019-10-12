@@ -19,15 +19,15 @@ package be.duncanc.discordmodbot.bot.commands
 import be.duncanc.discordmodbot.bot.services.GuildLogger
 import be.duncanc.discordmodbot.bot.services.MuteRole
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
-import net.dv8tion.jda.core.EmbedBuilder
-import net.dv8tion.jda.core.MessageBuilder
-import net.dv8tion.jda.core.Permission
-import net.dv8tion.jda.core.entities.ChannelType
-import net.dv8tion.jda.core.entities.Member
-import net.dv8tion.jda.core.entities.MessageEmbed
-import net.dv8tion.jda.core.entities.PrivateChannel
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
-import net.dv8tion.jda.core.exceptions.PermissionException
+import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.MessageBuilder
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.ChannelType
+import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.entities.MessageEmbed
+import net.dv8tion.jda.api.entities.PrivateChannel
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.exceptions.PermissionException
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Component
@@ -58,7 +58,7 @@ class Mute
     private fun commandExec(event: MessageReceivedEvent, arguments: String?, privateChannel: PrivateChannel?) {
         if (!event.isFromType(ChannelType.TEXT)) {
             privateChannel?.sendMessage("This command only works in a guild.")?.queue()
-        } else if (!event.member.hasPermission(Permission.MANAGE_ROLES)) {
+        } else if (event.member?.hasPermission(Permission.MANAGE_ROLES) != true) {
             privateChannel?.sendMessage(event.author.asMention + " you need manage roles permission to mute!")?.queue()
         } else if (event.message.mentionedUsers.size < 1) {
             privateChannel?.sendMessage("Illegal argumentation, you need to mention a user that is still in the server.")
@@ -72,11 +72,11 @@ class Mute
                 throw IllegalArgumentException("No reason provided for this action.")
             }
 
-            val toMute = event.guild.getMember(event.message.mentionedUsers[0])
-            if (!event.member.canInteract(toMute)) {
+            val toMute = event.guild.getMember(event.message.mentionedUsers[0])!!
+            if (event.member?.canInteract(toMute) != true) {
                 throw PermissionException("You can't interact with this member")
             }
-            event.guild.controller.addRolesToMember(
+            event.guild.addRoleToMember(
                 toMute,
                 applicationContext.getBean(MuteRole::class.java).getMuteRole(event.guild)
             ).queue({
@@ -87,15 +87,15 @@ class Mute
                         .setTitle("User muted")
                         .addField("UUID", UUID.randomUUID().toString(), false)
                         .addField("User", toMute.nicknameAndUsername, true)
-                        .addField("Moderator", event.member.nicknameAndUsername, true)
+                            .addField("Moderator", event.member!!.nicknameAndUsername, true)
                         .addField("Reason", reason, false)
 
                     guildLogger.log(logEmbed, toMute.user, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
                 }
                 val userMuteWarning = EmbedBuilder()
                     .setColor(Color.YELLOW)
-                    .setAuthor(event.member.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
-                    .setTitle("${event.guild.name}: You have been muted by ${event.member.nicknameAndUsername}")
+                        .setAuthor(event.member!!.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
+                        .setTitle("${event.guild.name}: You have been muted by ${event.member!!.nicknameAndUsername}")
                     .addField("Reason", reason, false)
 
                 toMute.user.openPrivateChannel().queue(
