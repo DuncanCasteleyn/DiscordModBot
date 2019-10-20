@@ -18,8 +18,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 buildscript {
-    val kotlinVersion = "1.3.40"
-    val springBootVersion = "2.1.5.RELEASE"
+    val kotlinVersion = "1.3.50"
+    val springBootVersion = "2.2.0.RELEASE"
 
     repositories {
         mavenCentral()
@@ -38,7 +38,7 @@ apply(plugin = "io.spring.dependency-management")
 plugins {
     java
     idea
-    kotlin("jvm").version("1.3.40")
+    kotlin("jvm").version("1.3.50")
 }
 
 
@@ -81,7 +81,7 @@ tasks {
         }
     }
     withType<Wrapper> {
-        gradleVersion = "5.5.1"
+        gradleVersion = "5.6.3"
     }
     withType<JavaCompile> {
         dependsOn(processResources)
