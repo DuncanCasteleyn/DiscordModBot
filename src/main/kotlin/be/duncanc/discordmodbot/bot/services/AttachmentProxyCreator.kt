@@ -24,6 +24,7 @@ import org.apache.tomcat.util.http.fileupload.IOUtils
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.ByteArrayOutputStream
+import java.io.InputStream
 import java.util.*
 
 
@@ -51,16 +52,16 @@ class AttachmentProxyCreator {
             if (message != null) {
                 message.attachments.forEach { attachment ->
                     stringBuilder.append("[").append(attachment.fileName).append("](").append(attachment.url)
-                        .append(")\n")
+                            .append(")\n")
                 }
                 var subMessage = message
                 do {
-                    if (attachmentCache.containsKey(subMessage!!.idLong)) {
-                        subMessage = attachmentCache.remove(subMessage.idLong)
+                    if (attachmentCache.containsKey(subMessage?.idLong)) {
+                        subMessage = attachmentCache.remove(subMessage?.idLong)
                         if (subMessage != null) {
                             subMessage.attachments.forEach { attachment ->
                                 stringBuilder.append("[").append(attachment.fileName).append("](")
-                                    .append(attachment.url).append(")\n")
+                                        .append(attachment.url).append(")\n")
                             }
                         } else {
                             stringBuilder.append("The message either contained an attachment larger then 8MB and could not be uploaded again, or failed to create a proxy.")
@@ -94,19 +95,14 @@ class AttachmentProxyCreator {
         while (attachmentCache.size > CACHE_SIZE) {
             val messageToClean = attachmentCache.remove(attachmentCache.firstKey())
             messageToClean?.delete()?.queue()
-            informDeleteFromCache(message!!.idLong)
+            message?.idLong?.let { informDeleteFromCache(it) }
         }
-        if (attachmentCache.containsKey(id)) {
-            addToCache(attachmentCache[id]!!.idLong, message)
+        val messageId = attachmentCache[id]?.idLong
+        if (messageId != null) {
+            addToCache(messageId, message)
         } else {
-            attachmentCache[id] = message
+            attachmentCache[messageId] = message
         }
-    }
-
-
-    @Deprecated("Replaced with proxyMessageAttachment", ReplaceWith("proxyMessageAttachments(event)"))
-    fun storeMessageAttachments(event: GuildMessageReceivedEvent) {
-        proxyMessageAttachments(event)
     }
 
     fun proxyMessageAttachments(event: GuildMessageReceivedEvent) {
@@ -116,18 +112,18 @@ class AttachmentProxyCreator {
 
         event.message.attachments.forEach { attachment ->
             if (attachment.size < 8 shl 20) {  //8MB
-                try {
-                    val inputStream = attachment.retrieveInputStream().get()
+                attachment.retrieveInputStream().thenAccept { inputStream: InputStream ->
                     val outputStream = ByteArrayOutputStream()
                     IOUtils.copy(inputStream, outputStream)
 
-                    event.jda.getTextChannelById(CACHE_CHANNEL)!!.sendFile(
-                        outputStream.toByteArray(),
+                    event.jda.getTextChannelById(CACHE_CHANNEL)?.sendFile(
+                            outputStream.toByteArray(),
                             attachment.fileName
-                    ).queue { message -> addToCache(event.message.idLong, message) }
-                } catch (e: Exception) {
+                    )?.queue { message -> addToCache(event.message.idLong, message) }
+                }.exceptionally { e ->
                     LOG.info("An exception occurred when retrieving one of the attachments", e)
                     addToCache(event.message.idLong, null)
+                    null
                 }
             } else {
                 LOG.warn("The file was larger than 8MB.")
@@ -139,7 +135,7 @@ class AttachmentProxyCreator {
     @Synchronized
     fun cleanCache() {
         if (attachmentCache.size > 0) {
-            attachmentCache[attachmentCache.firstKey()]!!.jda.getTextChannelById(CACHE_CHANNEL)
+            attachmentCache[attachmentCache.firstKey()]?.jda?.getTextChannelById(CACHE_CHANNEL)
                     ?.limitLessBulkDelete(ArrayList(attachmentCache.values))
         }
     }
