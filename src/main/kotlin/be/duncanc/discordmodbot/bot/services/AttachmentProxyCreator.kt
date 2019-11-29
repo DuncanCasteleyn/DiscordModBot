@@ -80,7 +80,7 @@ class AttachmentProxyCreator {
     }
 
     @Synchronized
-    tailrec fun informDeleteFromCache(id: Long) {
+    final tailrec fun informDeleteFromCache(id: Long) {
         if (attachmentCache.containsKey(id)) {
             val message = attachmentCache.remove(id)
             if (message != null) {
@@ -91,7 +91,7 @@ class AttachmentProxyCreator {
     }
 
     @Synchronized
-    private tailrec fun addToCache(id: Long, message: Message?) {
+    private final tailrec fun addToCache(id: Long, message: Message?) {
         while (attachmentCache.size > CACHE_SIZE) {
             val messageToClean = attachmentCache.remove(attachmentCache.firstKey())
             messageToClean?.delete()?.queue()
