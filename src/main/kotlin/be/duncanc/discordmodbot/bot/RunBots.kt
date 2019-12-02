@@ -22,9 +22,7 @@ import net.dv8tion.jda.api.AccountType
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.hooks.ListenerAdapter
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.CommandLineRunner
 import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Component
 
@@ -32,27 +30,15 @@ import org.springframework.stereotype.Component
 @Component
 class RunBots
 @Autowired constructor(
-    private val applicationContext: ApplicationContext,
-    private val discordModBotConfig: DiscordModBotConfig
-) : CommandLineRunner {
-    lateinit var runningBots: List<JDA>
-
-    companion object {
-        internal val LOG = LoggerFactory.getLogger(RunBots::class.java)
-    }
-
-    override fun run(vararg args: String?) {
-        try {
-            runningBots = discordModBotConfig.botTokens.map {
-                JDABuilder(AccountType.BOT)
-                        .setEventManager(ExecutorServiceEventManager(it.substring(30)))
-                        .setToken(it)
-                        .setBulkDeleteSplittingEnabled(false)
-                        .addEventListeners(*applicationContext.getBeansOfType(ListenerAdapter::class.java).values.toTypedArray())
-                        .build()
-            }
-        } catch (e: Exception) {
-            LOG.error("Exception while booting the bots", e)
-        }
+        applicationContext: ApplicationContext,
+        discordModBotConfig: DiscordModBotConfig
+) {
+    val runningBots: List<JDA> = discordModBotConfig.botTokens.map {
+        JDABuilder(AccountType.BOT)
+                .setEventManager(ExecutorServiceEventManager(it.substring(30)))
+                .setToken(it)
+                .setBulkDeleteSplittingEnabled(false)
+                .addEventListeners(*applicationContext.getBeansOfType(ListenerAdapter::class.java).values.toTypedArray())
+                .build()
     }
 }
