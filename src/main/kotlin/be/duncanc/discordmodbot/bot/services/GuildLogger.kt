@@ -159,7 +159,7 @@ class GuildLogger
 
         if (oldMessage != null) {
             val name: String = try {
-                oldMessage.guild.getMember(oldMessage.author)!!.nicknameAndUsername
+                oldMessage.guild.getMember(oldMessage.author)?.nicknameAndUsername ?: oldMessage.author.name
             } catch (e: IllegalArgumentException) {
                 oldMessage.author.name
             }
@@ -207,44 +207,12 @@ class GuildLogger
             val attachmentString = messageHistory.getAttachmentsString(event.messageIdLong)
 
             val name: String = try {
-                oldMessage.guild.getMember(oldMessage.author)!!.nicknameAndUsername
+                oldMessage.guild.getMember(oldMessage.author)?.nicknameAndUsername ?: oldMessage.author.name
             } catch (e: IllegalArgumentException) {
                 oldMessage.author.name
             }
             guildLoggerExecutor.schedule({
-                var moderator: User? = null
-                run {
-                    var i = 0
-                    for (logEntry in event.guild.retrieveAuditLogs().cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
-                        if (i == 0) {
-                            guildLoggerExecutor.execute {
-                                lastCheckedLogEntries[event.guild.idLong] = logEntry
-                            }
-                        }
-                        if (!lastCheckedLogEntries.containsKey(event.guild.idLong)) {
-                            i = LOG_ENTRY_CHECK_LIMIT
-                        } else {
-                            val cachedAuditLogEntry = lastCheckedLogEntries[event.guild.idLong]
-                            if (logEntry.idLong == cachedAuditLogEntry?.idLong) {
-                                if (logEntry.type == ActionType.MESSAGE_DELETE && logEntry.targetIdLong == oldMessage.author.idLong && logEntry.getOption<Any>(
-                                                AuditLogOption.COUNT
-                                        ) != cachedAuditLogEntry.getOption<Any>(AuditLogOption.COUNT)
-                                ) {
-                                    moderator = logEntry.user
-                                }
-                                break
-                            }
-                        }
-                        if (logEntry.type == ActionType.MESSAGE_DELETE && logEntry.targetIdLong == oldMessage.author.idLong) {
-                            moderator = logEntry.user
-                            break
-                        }
-                        i++
-                        if (i >= LOG_ENTRY_CHECK_LIMIT) {
-                            break
-                        }
-                    }
-                }
+                val moderator = findModerator(event, oldMessage)
 
                 if (moderator != null && moderator == event.jda.selfUser) {
                     return@schedule  //Bot has removed message no need to log, if needed it will be placed in the module that is issuing the remove.
@@ -258,7 +226,7 @@ class GuildLogger
                 }
                 logEmbed.addField("Author", name, true)
                 if (moderator != null) {
-                    logEmbed.addField("Deleted by", event.guild.getMember(moderator!!)?.nicknameAndUsername, true)
+                    logEmbed.addField("Deleted by", event.guild.getMember(moderator)?.nicknameAndUsername, true)
                             .setColor(Color.YELLOW)
                 } else {
                     logEmbed.setColor(LIGHT_BLUE)
@@ -274,6 +242,41 @@ class GuildLogger
                 )
             }, 1, TimeUnit.SECONDS)
         }
+    }
+
+    private fun findModerator(event: GuildMessageDeleteEvent, oldMessage: Message): User? {
+        var foundModerator: User? = null
+        var i = 0
+        for (logEntry in event.guild.retrieveAuditLogs().cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
+            if (i == 0) {
+                guildLoggerExecutor.execute {
+                    lastCheckedLogEntries[event.guild.idLong] = logEntry
+                }
+            }
+            if (!lastCheckedLogEntries.containsKey(event.guild.idLong)) {
+                i = LOG_ENTRY_CHECK_LIMIT
+            } else {
+                val cachedAuditLogEntry = lastCheckedLogEntries[event.guild.idLong]
+                if (logEntry.idLong == cachedAuditLogEntry?.idLong) {
+                    if (logEntry.type == ActionType.MESSAGE_DELETE && logEntry.targetIdLong == oldMessage.author.idLong && logEntry.getOption<Any>(
+                                    AuditLogOption.COUNT
+                            ) != cachedAuditLogEntry.getOption<Any>(AuditLogOption.COUNT)
+                    ) {
+                        foundModerator = logEntry.user
+                    }
+                    break
+                }
+            }
+            if (logEntry.type == ActionType.MESSAGE_DELETE && logEntry.targetIdLong == oldMessage.author.idLong) {
+                foundModerator = logEntry.user
+                break
+            }
+            i++
+            if (i >= LOG_ENTRY_CHECK_LIMIT) {
+                break
+            }
+        }
+        return foundModerator
     }
 
     private fun linkEmotes(emotes: MutableList<Emote>, logEmbed: EmbedBuilder) {
@@ -346,14 +349,16 @@ class GuildLogger
         }
 
         guildLoggerExecutor.schedule({
-            var moderator: User? = null
-            var reason: String? = null
+            val moderator: User?
+            val reason: String?
             run {
+                var findModerator: User? = null
+                var findReason: String? = null
                 var i = 0
                 for (logEntry in event.guild.retrieveAuditLogs().cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
                     if (logEntry.type == ActionType.KICK && logEntry.targetIdLong == event.member.user.idLong && logEntry.idLong != lastCheckedLogEntries[event.guild.idLong]?.idLong) {
-                        moderator = logEntry.user
-                        reason = logEntry.reason
+                        findModerator = logEntry.user
+                        findReason = logEntry.reason
                         break
                     }
                     i++
@@ -361,6 +366,8 @@ class GuildLogger
                         break
                     }
                 }
+                moderator = findModerator
+                reason = findReason
             }
 
             if (moderator != null && moderator == event.jda.selfUser) {
@@ -378,10 +385,10 @@ class GuildLogger
                         event.member.user,
                         event.guild,
                         null,
-                        if (moderator == null) LogTypeAction.USER else LogTypeAction.MODERATOR
+                        LogTypeAction.USER
                 )
             } else {
-                logKick(event.member, event.guild, event.guild.getMember(moderator!!), reason)
+                logKick(event.member, event.guild, event.guild.getMember(moderator), reason)
             }
         }, 1, TimeUnit.SECONDS)
 
@@ -407,14 +414,16 @@ class GuildLogger
         }
 
         guildLoggerExecutor.schedule({
-            var moderator: User? = null
-            var reason: String? = null
+            val moderator: User?
+            val reason: String?
             run {
+                var findModerator: User? = null
+                var findReason: String? = null
                 var i = 0
                 for (logEntry in event.guild.retrieveAuditLogs().cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
                     if (logEntry.type == ActionType.BAN && logEntry.targetIdLong == event.user.idLong) {
-                        moderator = logEntry.user
-                        reason = logEntry.reason
+                        findModerator = logEntry.user
+                        findReason = logEntry.reason
                         break
                     }
                     i++
@@ -422,6 +431,8 @@ class GuildLogger
                         break
                     }
                 }
+                moderator = findModerator
+                reason = findReason
             }
 
             if (moderator != null && moderator == event.jda.selfUser) {
@@ -434,7 +445,8 @@ class GuildLogger
                     .addField("UUID", UUID.randomUUID().toString(), false)
                     .addField("User", event.user.name, true)
             if (moderator != null) {
-                logEmbed.addField("Moderator", event.guild.getMember(moderator!!)!!.nicknameAndUsername, true)
+                logEmbed.addField("Moderator", event.guild.getMember(moderator)?.nicknameAndUsername
+                        ?: moderator.name, true)
                 if (reason != null) {
                     logEmbed.addField("Reason", reason, false)
                 }
@@ -464,8 +476,8 @@ class GuildLogger
         }
 
         guildLoggerExecutor.schedule({
-            var moderator: User? = null
-            run {
+            val moderator: User? = run {
+                var findModerator: User? = null
                 var i = 0
                 for (logEntry in event.guild.retrieveAuditLogs().cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
                     if (i == 0) {
@@ -474,7 +486,7 @@ class GuildLogger
                         }
                     }
                     if (logEntry.type == ActionType.UNBAN && logEntry.targetIdLong == event.user.idLong) {
-                        moderator = logEntry.user
+                        findModerator = logEntry.user
                         break
                     }
                     i++
@@ -482,6 +494,7 @@ class GuildLogger
                         break
                     }
                 }
+                findModerator
             }
 
             val logEmbed = EmbedBuilder()
@@ -489,7 +502,8 @@ class GuildLogger
                     .setTitle("User ban revoked", null)
                     .addField("User", event.user.name, true)
             if (moderator != null) {
-                logEmbed.addField("Moderator", event.guild.getMember(moderator!!)!!.nicknameAndUsername, true)
+                logEmbed.addField("Moderator", event.guild.getMember(moderator)?.nicknameAndUsername
+                        ?: moderator.name, true)
             }
             log(logEmbed, event.user, event.guild, null, LogTypeAction.MODERATOR)
         }, 1, TimeUnit.SECONDS)
@@ -526,14 +540,14 @@ class GuildLogger
 
     override fun onGuildMemberUpdateNickname(event: GuildMemberUpdateNicknameEvent) {
         guildLoggerExecutor.schedule({
-            var moderator: User? = null
-            run {
+            var moderator: User? = run {
+                var findModerator: User? = null
                 var i = 0
                 for (logEntry in event.guild.retrieveAuditLogs().type(ActionType.MEMBER_UPDATE).cache(false).limit(
                         LOG_ENTRY_CHECK_LIMIT
                 )) {
                     if (logEntry.type == ActionType.MEMBER_UPDATE && logEntry.targetIdLong == event.member.user.idLong) {
-                        moderator = logEntry.user
+                        findModerator = logEntry.user
                         break
                     }
                     i++
@@ -541,6 +555,7 @@ class GuildLogger
                         break
                     }
                 }
+                findModerator
             }
 
             val logEmbed = EmbedBuilder()
@@ -552,7 +567,8 @@ class GuildLogger
                 logEmbed.setTitle("User has changed nickname")
             } else {
                 logEmbed.setTitle("Moderator has changed nickname")
-                        .addField("Moderator", event.guild.getMember(moderator!!)!!.nicknameAndUsername, false)
+                        .addField("Moderator", event.guild.getMember(moderator)?.nicknameAndUsername
+                                ?: moderator.name, false)
             }
             log(
                     logEmbed,
