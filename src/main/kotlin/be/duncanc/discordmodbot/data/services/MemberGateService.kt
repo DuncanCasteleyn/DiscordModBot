@@ -36,6 +36,7 @@ import java.util.*
 @Transactional(readOnly = true)
 class MemberGateService(
         private val guildMemberGateRepository: GuildMemberGateRepository,
+        @Lazy
         private val runBots: RunBots,
         @Lazy
         private val memberGate: MemberGate

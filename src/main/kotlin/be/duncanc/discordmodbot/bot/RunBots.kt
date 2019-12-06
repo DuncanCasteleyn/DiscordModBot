@@ -23,14 +23,13 @@ import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Component
 
 
 @Component
 class RunBots
 @Autowired constructor(
-        applicationContext: ApplicationContext,
+        listenerAdapters: Array<ListenerAdapter>,
         discordModBotConfig: DiscordModBotConfig
 ) {
     val runningBots: List<JDA> = discordModBotConfig.botTokens.map {
@@ -38,7 +37,7 @@ class RunBots
                 .setEventManager(ExecutorServiceEventManager(it.substring(30)))
                 .setToken(it)
                 .setBulkDeleteSplittingEnabled(false)
-                .addEventListeners(*applicationContext.getBeansOfType(ListenerAdapter::class.java).values.toTypedArray())
+                .addEventListeners(*listenerAdapters)
                 .build()
     }
 }
