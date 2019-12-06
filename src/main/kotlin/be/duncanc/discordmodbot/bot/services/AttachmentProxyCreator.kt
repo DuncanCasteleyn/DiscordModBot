@@ -22,6 +22,8 @@ import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
 import org.apache.commons.collections4.map.LinkedMap
 import org.apache.tomcat.util.http.fileupload.IOUtils
 import org.slf4j.LoggerFactory
+import org.springframework.scheduling.annotation.Async
+import org.springframework.scheduling.annotation.AsyncResult
 import org.springframework.stereotype.Component
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
@@ -101,13 +103,15 @@ class AttachmentProxyCreator {
         if (messageId != null) {
             addToCache(messageId, message)
         } else {
-            attachmentCache[messageId] = message
+            attachmentCache[id] = message
         }
     }
 
-    fun proxyMessageAttachments(event: GuildMessageReceivedEvent) {
+    @Synchronized
+    @Async
+    fun proxyMessageAttachments(event: GuildMessageReceivedEvent): AsyncResult<Unit> {
         if (event.author.isBot) {
-            return
+            return AsyncResult(Unit)
         }
 
         event.message.attachments.forEach { attachment ->
@@ -119,7 +123,7 @@ class AttachmentProxyCreator {
                     event.jda.getTextChannelById(CACHE_CHANNEL)?.sendFile(
                             outputStream.toByteArray(),
                             attachment.fileName
-                    )?.queue { message -> addToCache(event.message.idLong, message) }
+                    )?.complete().let { message -> addToCache(event.message.idLong, message) }
                 }.exceptionally { e ->
                     LOG.info("An exception occurred when retrieving one of the attachments", e)
                     addToCache(event.message.idLong, null)
@@ -130,6 +134,7 @@ class AttachmentProxyCreator {
                 addToCache(event.message.idLong, null)
             }
         }
+        return AsyncResult(Unit)
     }
 
     @Synchronized
