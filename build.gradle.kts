@@ -39,6 +39,7 @@ plugins {
     java
     idea
     kotlin("jvm").version("1.3.61")
+    id("net.ossindex.audit").version("0.4.11")
 }
 
 
@@ -73,6 +74,7 @@ repositories {
 
 tasks {
     withType<KotlinCompile> {
+        dependsOn(audit)
         dependsOn(processResources)
         kotlinOptions {
             freeCompilerArgs = listOf("-Xjsr305=strict", "-progressive")
@@ -83,6 +85,7 @@ tasks {
         gradleVersion = "6.0.1"
     }
     withType<JavaCompile> {
+        dependsOn(audit)
         dependsOn(processResources)
         sourceCompatibility = "1.8"
         options.encoding = "UTF-8"
