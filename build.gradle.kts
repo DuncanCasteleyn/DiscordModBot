@@ -17,29 +17,15 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 
-buildscript {
-    val kotlinVersion = "1.3.61"
-    val springBootVersion = "2.2.2.RELEASE"
-
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        classpath(group = "org.springframework.boot", name = "spring-boot-gradle-plugin", version = springBootVersion)
-        classpath(group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version = kotlinVersion)
-        classpath(group = "org.jetbrains.kotlin", name = "kotlin-allopen", version = kotlinVersion)
-    }
-}
-
-apply(plugin = "kotlin-spring")
-apply(plugin = "org.springframework.boot")
-apply(plugin = "io.spring.dependency-management")
-
 plugins {
-    java
-    idea
-    kotlin("jvm").version("1.3.61")
-    id("net.ossindex.audit").version("0.4.11")
+    val kotlinVersion = "1.3.61"
+
+    id("org.springframework.boot") version "2.2.2.RELEASE"
+    id("io.spring.dependency-management") version "1.0.8.RELEASE"
+    kotlin("jvm") version kotlinVersion
+    kotlin("plugin.spring") version kotlinVersion
+    kotlin("plugin.jpa") version kotlinVersion
+    id("net.ossindex.audit") version "0.4.11"
 }
 
 
@@ -53,7 +39,9 @@ dependencies {
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-reflect")
-    testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-test")
+    testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-test") {
+        exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
+    }
     testImplementation(group = "org.springframework.security", name = "spring-security-test")
     implementation(group = "net.dv8tion", name = "JDA", version = "4.0.0_52") {
         exclude(group = "club.minnced", module = "opus-java")
@@ -72,13 +60,20 @@ repositories {
     mavenCentral()
 }
 
+configure<JavaPluginConvention> {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
 tasks {
+    withType<Test> {
+        useJUnitPlatform()
+    }
     withType<KotlinCompile> {
         dependsOn(audit)
         dependsOn(processResources)
         kotlinOptions {
             freeCompilerArgs = listOf("-Xjsr305=strict", "-progressive")
-            jvmTarget = "1.8"
+            jvmTarget = "11"
         }
     }
     withType<Wrapper> {
