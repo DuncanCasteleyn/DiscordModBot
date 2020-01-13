@@ -75,7 +75,7 @@ class WeeklyActivityReport(
     fun sendReports() {
         val statsCollectionStartTime = OffsetDateTime.now()
         activityReportSettingsRepository.findAll().forEach { reportSettings ->
-            val guild = reportSettings.guildId?.let { guildId ->
+            val guild = reportSettings.guildId.let { guildId ->
                 instances.stream().filter { jda ->
                     jda.getGuildById(guildId) != null
                 }.findFirst().orElse(null)?.getGuildById(guildId)

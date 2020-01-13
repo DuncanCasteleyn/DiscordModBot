@@ -61,8 +61,8 @@ class ReactionVote(
 
     private fun Message.addYesOrNoVoteReactions() {
         votingEmotesRepository.findById(guild.idLong).ifPresentOrElse({
-            addReaction(jda.getEmoteById(it.voteYesEmote!!)!!).queue()
-            addReaction(jda.getEmoteById(it.voteNoEmote!!)!!).queue()
+            addReaction(jda.getEmoteById(it.voteYesEmote)!!).queue()
+            addReaction(jda.getEmoteById(it.voteNoEmote)!!).queue()
         }, {
             addReaction("✅").queue()
             addReaction("❎").queue()

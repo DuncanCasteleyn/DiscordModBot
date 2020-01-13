@@ -55,7 +55,7 @@ class Warn
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         val guildWarnPointsSettings = guildWarnPointsSettingsRepository.findById(event.guild.idLong)
-            .orElse(GuildWarnPointsSettings(event.guild.idLong))
+                .orElse(GuildWarnPointsSettings(event.guild.idLong, announceChannelId = -1))
         if (guildWarnPointsSettings.overrideWarnCommand) {
             return
         }

@@ -23,17 +23,17 @@ import javax.validation.constraints.NotNull
 @Table(name = "mute_roles")
 data class MuteRole
 constructor(
-    @Id
-    @Column(updatable = false)
-    val guildId: Long? = null,
+        @Id
+        @Column(updatable = false)
+        val guildId: Long,
 
-    @field:NotNull
-    @Column(nullable = false)
-    val roleId: Long? = null,
+        @field:NotNull
+        @Column(nullable = false)
+        val roleId: Long,
 
-    @ElementCollection
-    @CollectionTable(name = "muted_users")
-    val mutedUsers: MutableSet<Long> = HashSet()
+        @ElementCollection
+        @CollectionTable(name = "muted_users")
+        val mutedUsers: MutableSet<Long> = HashSet()
 ) {
 
     override fun equals(other: Any?): Boolean {
@@ -46,7 +46,7 @@ constructor(
     }
 
     override fun hashCode(): Int {
-        return guildId?.hashCode() ?: 0
+        return guildId.hashCode()
     }
 
     override fun toString(): String {

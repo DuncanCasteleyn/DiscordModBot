@@ -24,15 +24,15 @@ import javax.persistence.*
 @IdClass(GuildWarnPoints.GuildWarnPointsId::class)
 @Table(name = "guild_warn_points")
 data class GuildWarnPoints(
-    @Id
-    @Column(updatable = false)
-    val userId: Long? = null,
-    @Id
-    @Column(updatable = false)
-    val guildId: Long? = null,
-    @OneToMany(fetch = FetchType.EAGER, cascade = [(CascadeType.ALL)], orphanRemoval = true)
-    @JoinTable(name = "user_has_warn_points")
-    val points: MutableSet<UserWarnPoints> = HashSet()
+        @Id
+        @Column(updatable = false)
+        val userId: Long,
+        @Id
+        @Column(updatable = false)
+        val guildId: Long,
+        @OneToMany(fetch = FetchType.EAGER, cascade = [(CascadeType.ALL)], orphanRemoval = true)
+        @JoinTable(name = "user_has_warn_points")
+        val points: MutableSet<UserWarnPoints> = HashSet()
 ) : Comparable<GuildWarnPoints> {
 
     /**
@@ -45,19 +45,19 @@ data class GuildWarnPoints(
         return when {
             totalPoints > totalPointsOther -> -1
             totalPoints < totalPointsOther -> +1
-            userId ?: 0 < other.userId ?: 0 -> +1
-            userId ?: 0 > other.userId ?: 0 -> -1
+            userId < other.userId -> +1
+            userId > other.userId -> -1
             else -> 0
         }
     }
 
     fun activePointsAmount(): Int {
         var totalPoints = 0
-        filterExpiredPoints().forEach { totalPoints += it.points ?: 0 }
+        filterExpiredPoints().forEach { totalPoints += it.points }
         return totalPoints
     }
 
-    fun filterExpiredPoints() = points.filter { it.expireDate?.isAfter(OffsetDateTime.now()) == true }
+    fun filterExpiredPoints() = points.filter { it.expireDate.isAfter(OffsetDateTime.now()) }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -70,8 +70,8 @@ data class GuildWarnPoints(
     }
 
     override fun hashCode(): Int {
-        var result = userId?.hashCode() ?: 0
-        result = 31 * result + (guildId?.hashCode() ?: 0)
+        var result = userId.hashCode()
+        result = 31 * result + guildId.hashCode()
         return result
     }
 

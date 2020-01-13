@@ -59,11 +59,7 @@ class WarnPointSettings(
             val guildSettings = guildWarnPointsSettings(guild)
 
             val announceChannelId = guildSettings.announceChannelId
-            val announceChannel = if (announceChannelId != null) {
-                guild.getTextChannelById(announceChannelId)?.name ?: "Chanel no longer exists"
-            } else {
-                "Not set"
-            }
+            val announceChannel = guild.getTextChannelById(announceChannelId)?.name ?: "Chanel no longer exists"
 
             val messageBuilder = MessageBuilder()
                 .append("What would you like to do?\n")
@@ -140,5 +136,5 @@ class WarnPointSettings(
     }
 
     private fun guildWarnPointsSettings(guild: Guild) =
-        guildWarnPointsSettingsRepository.findById(guild.idLong).orElse(GuildWarnPointsSettings(guild.idLong))
+            guildWarnPointsSettingsRepository.findById(guild.idLong).orElse(GuildWarnPointsSettings(guild.idLong, announceChannelId = -1))
 }

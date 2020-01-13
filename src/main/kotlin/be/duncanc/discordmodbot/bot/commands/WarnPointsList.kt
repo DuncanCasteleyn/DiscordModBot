@@ -39,7 +39,7 @@ class WarnPointsList(
         userWarnPoints.forEach {
             val totalPoints = it.activePointsAmount()
             message.append("\n")
-                .append(event.jda.retrieveUserById(it.userId!!).complete().asMention)
+                    .append(event.jda.retrieveUserById(it.userId).complete().asMention)
                 .append(" [$totalPoints]")
         }
         message.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { event.channel.sendMessage(it).queue() }

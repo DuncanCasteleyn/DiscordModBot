@@ -12,9 +12,9 @@ import javax.persistence.IdClass
 @IdClass(BlackListedWordId::class)
 data class BlackListedWord(
         @Id
-        val guildId: Long? = null,
+        val guildId: Long,
         @Id
-        val word: String? = null,
+        val word: String,
         @Column(nullable = false)
         val filterMethod: FilterMethod = EXACT
 ) {
@@ -47,8 +47,8 @@ data class BlackListedWord(
     }
 
     override fun hashCode(): Int {
-        var result = guildId?.hashCode() ?: 0
-        result = 31 * result + (word?.hashCode() ?: 0)
+        var result = guildId.hashCode()
+        result = 31 * result + word.hashCode()
         return result
     }
 }

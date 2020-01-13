@@ -23,23 +23,23 @@ import javax.validation.constraints.NotNull
 @Table(name = "logging_settings")
 data class LoggingSettings
     (
-    @Id
-    @Column(updatable = false)
-    val guildId: Long? = null,
-    @Column(nullable = false)
-    @field:NotNull
-    var modLogChannel: Long? = null,
-    var userLogChannel: Long? = null,
-    var logMessageUpdate: Boolean = true,
-    var logMessageDelete: Boolean = true,
-    var logMemberJoin: Boolean = true,
-    var logMemberLeave: Boolean = true,
-    var logMemberBan: Boolean = true,
-    var logMemberRemoveBan: Boolean = true,
-    @ElementCollection
-    @CollectionTable(name = "logging_ignored_channels")
-    val ignoredChannels: MutableSet<Long> = HashSet()
-) {
+            @Id
+            @Column(updatable = false)
+            val guildId: Long,
+            @Column(nullable = false)
+            @field:NotNull
+            var modLogChannel: Long? = null,
+            var userLogChannel: Long? = null,
+            var logMessageUpdate: Boolean = true,
+            var logMessageDelete: Boolean = true,
+            var logMemberJoin: Boolean = true,
+            var logMemberLeave: Boolean = true,
+            var logMemberBan: Boolean = true,
+            var logMemberRemoveBan: Boolean = true,
+            @ElementCollection
+            @CollectionTable(name = "logging_ignored_channels")
+            val ignoredChannels: MutableSet<Long> = HashSet()
+    ) {
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -51,6 +51,6 @@ data class LoggingSettings
     }
 
     override fun hashCode(): Int {
-        return guildId?.hashCode() ?: 0
+        return guildId.hashCode()
     }
 }

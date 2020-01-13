@@ -26,13 +26,13 @@ import javax.validation.constraints.NotNull
 @Table(name = "report_channels")
 data class ReportChannel
 constructor(
-    @Id
-    @Column(updatable = false)
-    val guildId: Long? = null,
+        @Id
+        @Column(updatable = false)
+        val guildId: Long,
 
-    @Column(nullable = false)
-    @field:NotNull
-    val textChannelId: Long? = null
+        @Column(nullable = false)
+        @field:NotNull
+        val textChannelId: Long
 ) {
 
     override fun equals(other: Any?): Boolean {
@@ -48,7 +48,7 @@ constructor(
         return guildId == that.guildId
     }
 
-    override fun hashCode(): Int = guildId?.hashCode() ?: 0
+    override fun hashCode(): Int = guildId.hashCode()
 
     override fun toString(): String {
         return "ReportChannel(guildId=$guildId, textChannelId=$textChannelId)"

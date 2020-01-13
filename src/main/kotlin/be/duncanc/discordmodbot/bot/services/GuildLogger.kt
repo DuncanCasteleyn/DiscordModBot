@@ -114,7 +114,7 @@ class GuildLogger
 
     override fun onReady(event: ReadyEvent) {
         val guilds =
-                loggingSettingsRepository.findAll().map { it.guildId?.let { id -> event.jda.getGuildById(id) } }.toHashSet()
+                loggingSettingsRepository.findAll().map { it.guildId.let { id -> event.jda.getGuildById(id) } }.toHashSet()
         guilds.forEach { guild ->
             guild ?: return@forEach
             guild.retrieveAuditLogs().limit(1).cache(false).queue { auditLogEntries ->
@@ -536,7 +536,7 @@ class GuildLogger
     }
 
     private fun getGuildsWithLogging(jda: JDA): Set<Guild?> =
-            loggingSettingsRepository.findAll().map { it.guildId?.let { id -> jda.getGuildById(id) } }.toHashSet()
+            loggingSettingsRepository.findAll().map { it.guildId.let { id -> jda.getGuildById(id) } }.toHashSet()
 
     override fun onGuildMemberUpdateNickname(event: GuildMemberUpdateNicknameEvent) {
         guildLoggerExecutor.schedule({

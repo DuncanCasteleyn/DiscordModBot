@@ -26,7 +26,7 @@ import javax.persistence.*
 @Entity
 data class GuildMemberGate(
         @Id
-        val guildId: Long? = null,
+        val guildId: Long,
         val memberRole: Long? = null,
         val rulesTextChannel: Long? = null,
         val gateTextChannel: Long? = null,

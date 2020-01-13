@@ -75,9 +75,9 @@ open class VoteEmoteSettingsSequence(
                 if (event.message.emotes[0].isFake) {
                     throw IllegalArgumentException("The bot can't access this emote")
                 }
-                votingEmotesRepository.save(VoteEmotes(event.guild.idLong, voteYesEmoteId, voteNoEmote.idLong))
+                votingEmotesRepository.save(VoteEmotes(event.guild.idLong, voteYesEmoteId!!, voteNoEmote.idLong))
                 channel.sendMessage("New emotes have been set")
-                    .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                        .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                 destroy()
             }
         }

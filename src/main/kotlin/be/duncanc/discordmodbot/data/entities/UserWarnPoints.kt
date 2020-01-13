@@ -31,35 +31,33 @@ import javax.validation.constraints.Positive
 @Entity
 @Table(name = "user_warn_points")
 data class UserWarnPoints(
-    @Id
-    @Column(updatable = false, columnDefinition = "BINARY(16)")
-    val id: UUID = UUID.randomUUID(),
-    @field:Positive
-    @Column(nullable = false, updatable = false)
-    val points: Int? = null,
-    @field:NotNull
-    @Column(nullable = false, updatable = false)
-    val creatorId: Long? = null,
-    @field:NotBlank
-    @Column(nullable = false, updatable = false, columnDefinition = "TEXT")
-    val reason: String? = null,
-    @field:NotNull
-    @Column(nullable = false, updatable = false)
-    val creationDate: OffsetDateTime = OffsetDateTime.now(),
-    @field:Future
-    @field:NotNull
-    @Column(nullable = false, updatable = false)
-    val expireDate: OffsetDateTime? = null
+        @Id
+        @Column(updatable = false, columnDefinition = "BINARY(16)")
+        val id: UUID = UUID.randomUUID(),
+        @field:Positive
+        @Column(nullable = false, updatable = false)
+        val points: Int,
+        @field:NotNull
+        @Column(nullable = false, updatable = false)
+        val creatorId: Long,
+        @field:NotBlank
+        @Column(nullable = false, updatable = false, columnDefinition = "TEXT")
+        val reason: String,
+        @field:NotNull
+        @Column(nullable = false, updatable = false)
+        val creationDate: OffsetDateTime = OffsetDateTime.now(),
+        @field:Future
+        @field:NotNull
+        @Column(nullable = false, updatable = false)
+        val expireDate: OffsetDateTime
 ) {
     init {
-        if (points != null && points <= 0) {
+        if (points <= 0) {
             throw IllegalArgumentException("Points need to be a positive number")
         }
-        if (expireDate != null && expireDate.isBefore(creationDate)) {
+        if (expireDate.isBefore(creationDate)) {
             throw IllegalArgumentException("UserWarnPoints can't expire before the date it was created.")
         }
-        if (reason != null) {
-            Assert.hasLength(reason, "The reason can not be empty.")
-        }
+        Assert.hasLength(reason, "The reason can not be empty.")
     }
 }

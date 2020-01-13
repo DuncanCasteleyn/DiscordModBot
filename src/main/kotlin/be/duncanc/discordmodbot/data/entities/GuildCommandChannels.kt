@@ -22,12 +22,12 @@ import javax.persistence.*
 @Table(name = "guild_command_channels")
 data class GuildCommandChannels
 constructor(
-    @Id
-    @Column(updatable = false)
-    val guildId: Long? = null,
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "command_channels_list")
-    val whitelistedChannels: MutableSet<Long> = HashSet()
+        @Id
+        @Column(updatable = false)
+        val guildId: Long,
+        @ElementCollection(fetch = FetchType.EAGER)
+        @CollectionTable(name = "command_channels_list")
+        val whitelistedChannels: MutableSet<Long> = HashSet()
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -39,6 +39,6 @@ constructor(
     }
 
     override fun hashCode(): Int {
-        return guildId?.hashCode() ?: 0
+        return guildId.hashCode()
     }
 }

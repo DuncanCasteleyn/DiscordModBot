@@ -26,18 +26,18 @@ import javax.validation.constraints.Positive
 @Entity
 @Table(name = "guild_warn_point_settings")
 data class GuildWarnPointsSettings(
-    @Id
-    val guildId: Long? = null,
-    @Positive
-    @Column(nullable = false)
-    var maxPointsPerReason: Int = 1,
-    @Positive
-    @Column(nullable = false)
-    var announcePointsSummaryLimit: Int = 3,
-    @NotNull
-    @Column(nullable = false)
-    var announceChannelId: Long? = null,
-    var overrideWarnCommand: Boolean = false
+        @Id
+        val guildId: Long,
+        @Positive
+        @Column(nullable = false)
+        var maxPointsPerReason: Int = 1,
+        @Positive
+        @Column(nullable = false)
+        var announcePointsSummaryLimit: Int = 3,
+        @NotNull
+        @Column(nullable = false)
+        var announceChannelId: Long,
+        var overrideWarnCommand: Boolean = false
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -49,6 +49,6 @@ data class GuildWarnPointsSettings(
     }
 
     override fun hashCode(): Int {
-        return guildId?.hashCode() ?: 0
+        return guildId.hashCode()
     }
 }

@@ -86,7 +86,7 @@ class MuteRole
     override fun onGuildMemberRoleAdd(event: GuildMemberRoleAddEvent) {
         val muteRole = muteRolesRepository.findById(event.guild.idLong)
             .orElse(null)
-        if (muteRole != null && event.roles.contains(muteRole.roleId?.let { event.guild.getRoleById(it) })) {
+        if (!(muteRole == null || !event.roles.contains(muteRole.roleId.let { event.guild.getRoleById(it) }))) {
             muteRole.mutedUsers.add(event.user.idLong)
             muteRolesRepository.save(muteRole)
         }
@@ -95,7 +95,7 @@ class MuteRole
     override fun onGuildMemberRoleRemove(event: GuildMemberRoleRemoveEvent) {
         val muteRole = muteRolesRepository.findById(event.guild.idLong)
             .orElse(null)
-        if (muteRole != null && event.roles.contains(muteRole.roleId?.let { event.guild.getRoleById(it) })) {
+        if (muteRole != null && event.roles.contains(muteRole.roleId.let { event.guild.getRoleById(it) })) {
             muteRole.mutedUsers.remove(event.user.idLong)
             muteRolesRepository.save(muteRole)
         }
@@ -105,7 +105,7 @@ class MuteRole
         val muteRole = muteRolesRepository.findById(event.guild.idLong)
             .orElse(null)
         if (muteRole != null) {
-            if (event.member.roles.contains(muteRole.roleId?.let { event.guild.getRoleById(it) })) {
+            if (event.member.roles.contains(muteRole.roleId.let { event.guild.getRoleById(it) })) {
                 muteRole.mutedUsers.add(event.user.idLong)
                 muteRolesRepository.save(muteRole)
             } else {

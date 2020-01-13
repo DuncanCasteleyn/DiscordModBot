@@ -93,7 +93,7 @@ class Feedback
                 channel.sendMessage("Please enter your feedback.").queue()
             } else {
                 val feedbackChannel =
-                    reportChannelRepository.findById(guild!!.idLong).orElseThrow { throw RuntimeException("The feedback feature was disabled during runtime") }.textChannelId!!
+                        reportChannelRepository.findById(guild!!.idLong).orElseThrow { throw RuntimeException("The feedback feature was disabled during runtime") }.textChannelId
                 val embedBuilder = EmbedBuilder()
                         .setAuthor(guild!!.getMember(user)!!.nicknameAndUsername, null, user.effectiveAvatarUrl)
                     .setDescription(event.message.contentStripped)

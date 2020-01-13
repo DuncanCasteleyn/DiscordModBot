@@ -71,13 +71,13 @@ class WordFiltering(
             when (it.filterMethod) {
                 FilterMethod.EXACT -> messageWords.any { word -> word.equals(it.word, ignoreCase = true) }
                 FilterMethod.CONTAINS -> messageWords.any { word ->
-                    it.word?.let { blackListedWord -> word.contains(blackListedWord, ignoreCase = true) } ?: false
+                    it.word.let { blackListedWord -> word.contains(blackListedWord, ignoreCase = true) }
                 }
                 FilterMethod.STARTS_WITH -> messageWords.any { word ->
-                    it.word?.let { blackListedWord -> word.startsWith(blackListedWord, ignoreCase = true) } ?: false
+                    it.word.let { blackListedWord -> word.startsWith(blackListedWord, ignoreCase = true) }
                 }
                 FilterMethod.ENDS_WITH -> messageWords.any { word ->
-                    it.word?.let { blacklistedWord -> word.endsWith(blacklistedWord, ignoreCase = true) } ?: false
+                    it.word.let { blacklistedWord -> word.endsWith(blacklistedWord, ignoreCase = true) }
                 }
             }
         }
