@@ -625,10 +625,10 @@ internal constructor(
 
         private fun reject(event: MessageReceivedEvent, noOp: Boolean = false) {
             val member: Member? = event.guild.getMemberById(userId)
+            val gateChannel = memberGateService.getGateChannel(event.guild.idLong, event.jda)
             if (member != null) {
                 if (!noOp) {
-                    super.channel.sendMessage("Your answer was incorrect " + member.user.asMention + ".  You can use the ``!join`` command to try again.")
-                            .queue()
+                    gateChannel?.sendMessage("Your answer was incorrect " + member.user.asMention + ".  You can use the ``!join`` command to try again.")?.queue()
                 }
             } else {
                 super.channel.sendMessage("The user already left; no further action is needed.")
@@ -638,7 +638,7 @@ internal constructor(
             synchronized(informUserMessageIds) {
                 val messageToRemove = informUserMessageIds.remove(userId)
                 if (messageToRemove != null) {
-                    memberGateService.getGateChannel(event.guild.idLong, event.jda)
+                    gateChannel
                             ?.let { gateTextChannel ->
                                 gateTextChannel.retrieveMessageById(messageToRemove).queue { it.delete().queue() }
                             }
