@@ -82,7 +82,6 @@ tasks {
     withType<JavaCompile> {
         dependsOn(audit)
         dependsOn(processResources)
-        sourceCompatibility = "1.8"
         options.encoding = "UTF-8"
         options.compilerArgs.add("-Xlint:deprecation")
     }
