@@ -119,7 +119,7 @@ class GuildLogger
             guild ?: return@forEach
             guild.retrieveAuditLogs().limit(1).cache(false).queue { auditLogEntries ->
                 val auditLogEntry = if (auditLogEntries.isEmpty()) {
-                    AuditLogEntry(ActionType.MESSAGE_DELETE, -1, -1, guild as GuildImpl, null, null, null, null, null)
+                    AuditLogEntry(ActionType.MESSAGE_DELETE, -1, -1, -1, guild as GuildImpl, null, null, null, null, null)
                     //Creating a dummy
                 } else {
                     auditLogEntries[0]

@@ -43,7 +43,7 @@ dependencies {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
     }
     testImplementation(group = "org.springframework.security", name = "spring-security-test")
-    implementation(group = "net.dv8tion", name = "JDA", version = "4.0.0_52") {
+    implementation(group = "net.dv8tion", name = "JDA", version = "4.1.0_81") {
         exclude(group = "club.minnced", module = "opus-java")
     }
     implementation(group = "org.apache.commons", name = "commons-collections4", version = "4.2")

@@ -74,8 +74,10 @@ class CreateEvent : CommandModule(
             val serverEvent = EVENTS[event.guild]
             if (serverEvent != null && serverEvent.any { it.announceMessage.idLong == event.messageIdLong }) {
                 val reactedEvent = serverEvent.filter { it.announceMessage.idLong == event.messageIdLong }[0]
-                event.guild.addRoleToMember(event.member, reactedEvent.eventRole)
-                    .reason("Remove vote on event reaction").queue()
+                event.member?.let {
+                    event.guild.addRoleToMember(it, reactedEvent.eventRole)
+                            .reason("Remove vote on event reaction").queue()
+                }
             }
         }
     }
