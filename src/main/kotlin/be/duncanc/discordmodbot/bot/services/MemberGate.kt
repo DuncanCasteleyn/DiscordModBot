@@ -245,7 +245,7 @@ internal constructor(
          * Asks first question.
          */
         init {
-            super.channel.sendMessage(user.asMention + " Have you read the rules? answer with \"yes\" or \"no\"")
+            super.channel.sendMessage("${user.asMention} Have you read the rules? answer with `yes` or `no`")
                     .queue { super.addMessageToCleaner(it) }
         }
 
@@ -260,17 +260,17 @@ internal constructor(
                 0.toByte() -> {
                     when (event.message.contentRaw.toLowerCase()) {
                         "yes" -> {
-                            super.channel.sendMessage(user.asMention + " Do you accept the rules? Answer with \"yes\" or \"no\"")
+                            super.channel.sendMessage("${user.asMention} Do you accept the rules? Answer with `yes` or `no`")
                                     .queue { super.addMessageToCleaner(it) }
                             sequenceNumber = 1
                         }
                         "no" -> {
                             destroy()
-                            super.channel.sendMessage(user.asMention + " Please read the rules, before using this command.")
+                            super.channel.sendMessage("${user.asMention} Please read the rules, before using this command.")
                                     .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                         }
                         else -> {
-                            super.channel.sendMessage(user.asMention + " Invalid response! Answer with \"yes\" or \"no\"!")
+                            super.channel.sendMessage("${user.asMention} Invalid response! Answer with `yes` or `no`!")
                                     .queue { super.addMessageToCleaner(it) }
                         }
                     }
