@@ -19,6 +19,8 @@ package be.duncanc.discordmodbot.bot.utils
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.TextChannel
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.exceptions.PermissionException
 import java.time.format.DateTimeFormatter
 import java.util.*
 
@@ -85,4 +87,28 @@ fun TextChannel.limitLessBulkDelete(messages: ArrayList<Message>) {
         }
     }
     messages.clear()
+}
+
+fun extractReason(arguments: String?): String {
+    val reason: String
+    try {
+        reason = extractSentenceIgnoringFirstWord(arguments)
+    } catch (e: IndexOutOfBoundsException) {
+        throw IllegalArgumentException("No reason provided for this action.")
+    }
+    return reason
+}
+
+private fun extractSentenceIgnoringFirstWord(arguments: String?) =
+        arguments!!.substring(getIndexStartOfSecondWord(arguments))
+
+private fun getIndexStartOfSecondWord(arguments: String) =
+        arguments.split(" ").dropLastWhile { it.isEmpty() }.toTypedArray()[0].length + 1
+
+fun findMemberAndCheckCanInteract(event: MessageReceivedEvent): Member {
+    val target = event.guild.getMember(event.message.mentionedUsers[0])!!
+    if (event.member?.canInteract(target) != true) {
+        throw PermissionException("You can't interact with this member")
+    }
+    return target
 }

@@ -17,6 +17,8 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.services.GuildLogger
+import be.duncanc.discordmodbot.bot.utils.extractReason
+import be.duncanc.discordmodbot.bot.utils.findMemberAndCheckCanInteract
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.entities.GuildWarnPointsSettings
 import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsSettingsRepository
@@ -28,7 +30,6 @@ import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.PrivateChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import net.dv8tion.jda.api.exceptions.PermissionException
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.awt.Color
@@ -74,18 +75,9 @@ class Warn
             privateChannel?.sendMessage("Illegal argumentation, you need to mention a user that is still in the server.")
                 ?.queue()
         } else {
-            val reason: String
-            try {
-                reason =
-                        arguments!!.substring(arguments.split(" ".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0].length + 1)
-            } catch (e: IndexOutOfBoundsException) {
-                throw IllegalArgumentException("No reason provided for this action.")
-            }
+            val reason: String = extractReason(arguments)
 
-            val toWarn = event.guild.getMember(event.message.mentionedUsers[0])!!
-            if (event.member?.canInteract(toWarn) != true) {
-                throw PermissionException("You can't interact with this member")
-            }
+            val toWarn = findMemberAndCheckCanInteract(event)
             val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
             if (guildLogger != null) {
                 val logEmbed = EmbedBuilder()

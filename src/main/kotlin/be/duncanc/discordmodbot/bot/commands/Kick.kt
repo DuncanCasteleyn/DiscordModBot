@@ -17,6 +17,8 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.services.GuildLogger
+import be.duncanc.discordmodbot.bot.utils.extractReason
+import be.duncanc.discordmodbot.bot.utils.findMemberAndCheckCanInteract
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.MessageBuilder
@@ -26,10 +28,7 @@ import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.PrivateChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import net.dv8tion.jda.api.exceptions.PermissionException
 import net.dv8tion.jda.api.requests.RestAction
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Component
 import java.awt.Color
 import java.util.*
@@ -39,20 +38,17 @@ import java.util.concurrent.TimeUnit
  * This class create a kick command that will be logged.
  */
 @Component
-class Kick
-@Autowired constructor(
-    private val applicationContext: ApplicationContext
-) : CommandModule(
-    arrayOf("Kick"),
-    "[User mention] [Reason~]",
-    "This command will kick the mentioned users and log this to the log channel. A reason is required.",
-    true,
-    true
+class Kick : CommandModule(
+        arrayOf("Kick"),
+        "[User mention] [Reason~]",
+        "This command will kick the mentioned users and log this to the log channel. A reason is required.",
+        true,
+        true
 ) {
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.author.openPrivateChannel().queue(
-            { privateChannel -> commandExec(event, arguments, privateChannel) }
+                { privateChannel -> commandExec(event, arguments, privateChannel) }
         ) { commandExec(event, arguments, null) }
     }
 
@@ -67,18 +63,9 @@ class Kick
             privateChannel?.sendMessage("Illegal argumentation, you need to mention a user that is still in the server.")
                 ?.queue()
         } else {
-            val reason: String
-            try {
-                reason =
-                        arguments!!.substring(arguments.split(" ".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0].length + 1)
-            } catch (e: IndexOutOfBoundsException) {
-                throw IllegalArgumentException("No reason provided for this action.")
-            }
+            val reason: String = extractReason(arguments)
 
-            val toKick = event.guild.getMember(event.message.mentionedUsers[0])!!
-            if (event.member?.canInteract(toKick) != true) {
-                throw PermissionException("You can't interact with this member")
-            }
+            val toKick = findMemberAndCheckCanInteract(event)
             val kickRestAction = event.guild.kick(toKick)
 
             val userKickNotification = EmbedBuilder()

@@ -18,6 +18,8 @@ package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.services.GuildLogger
 import be.duncanc.discordmodbot.bot.services.MuteRole
+import be.duncanc.discordmodbot.bot.utils.extractReason
+import be.duncanc.discordmodbot.bot.utils.findMemberAndCheckCanInteract
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.MessageBuilder
@@ -27,7 +29,6 @@ import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.PrivateChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import net.dv8tion.jda.api.exceptions.PermissionException
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Component
@@ -64,18 +65,9 @@ class Mute
             privateChannel?.sendMessage("Illegal argumentation, you need to mention a user that is still in the server.")
                 ?.queue()
         } else {
-            val reason: String
-            try {
-                reason =
-                        arguments!!.substring(arguments.split(" ".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0].length + 1)
-            } catch (e: IndexOutOfBoundsException) {
-                throw IllegalArgumentException("No reason provided for this action.")
-            }
+            val reason: String = extractReason(arguments)
 
-            val toMute = event.guild.getMember(event.message.mentionedUsers[0])!!
-            if (event.member?.canInteract(toMute) != true) {
-                throw PermissionException("You can't interact with this member")
-            }
+            val toMute = findMemberAndCheckCanInteract(event)
             event.guild.addRoleToMember(
                 toMute,
                 applicationContext.getBean(MuteRole::class.java).getMuteRole(event.guild)

@@ -17,6 +17,8 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.services.GuildLogger
+import be.duncanc.discordmodbot.bot.utils.extractReason
+import be.duncanc.discordmodbot.bot.utils.findMemberAndCheckCanInteract
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.MessageBuilder
@@ -64,18 +66,9 @@ class RemoveMute : CommandModule(
             privateChannel?.sendMessage("Illegal argumentation, you need to mention a user that is still in the server.")
                 ?.queue()
         } else {
-            val reason: String
-            try {
-                reason =
-                        arguments!!.substring(arguments.split(" ".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0].length + 1)
-            } catch (e: IndexOutOfBoundsException) {
-                throw IllegalArgumentException("No reason provided for this action.")
-            }
+            val reason: String = extractReason(arguments)
 
-            val toRemoveMute = event.guild.getMember(event.message.mentionedUsers[0])
-            if (toRemoveMute?.roles?.contains(event.guild.getRoleById("221678882342830090")) != true) { // TODO fix this hard coded role
-                throw UnsupportedOperationException("Can't remove a mute from a user that is not muted.")
-            }
+            val toRemoveMute = findMemberAndCheckCanInteract(event)
             event.guild.removeRoleFromMember(toRemoveMute, event.guild.getRoleById("221678882342830090")!!)
                     .queue({ _ ->
                     val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?

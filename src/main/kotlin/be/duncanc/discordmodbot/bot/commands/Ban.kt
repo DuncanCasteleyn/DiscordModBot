@@ -17,6 +17,8 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.services.GuildLogger
+import be.duncanc.discordmodbot.bot.utils.extractReason
+import be.duncanc.discordmodbot.bot.utils.findMemberAndCheckCanInteract
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.MessageBuilder
@@ -26,7 +28,6 @@ import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.PrivateChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import net.dv8tion.jda.api.exceptions.PermissionException
 import net.dv8tion.jda.api.requests.RestAction
 import org.springframework.stereotype.Component
 import java.awt.Color
@@ -67,20 +68,9 @@ class Ban : CommandModule(
             privateChannel?.sendMessage("Illegal argumentation, you need to mention a user that is still in the server.")
                 ?.queue()
         } else {
-            val reason: String
-            try {
-                reason = arguments!!.substring(
-                    arguments.split(" ")
-                        .dropLastWhile { it.isEmpty() }
-                        .toTypedArray()[0].length + 1)
-            } catch (e: IndexOutOfBoundsException) {
-                throw IllegalArgumentException("No reason provided for this action.")
-            }
+            val reason: String = extractReason(arguments)
 
-            val toBan = event.guild.getMember(event.message.mentionedUsers[0])
-            if (toBan?.let { event.member?.canInteract(it) } != true) {
-                throw PermissionException("You can't interact with this member")
-            }
+            val toBan = findMemberAndCheckCanInteract(event)
             val banRestAction = event.guild.ban(toBan, 1)
             val description = StringBuilder("Reason: $reason")
             if (event.guild.idLong == 175856762677624832L) {
