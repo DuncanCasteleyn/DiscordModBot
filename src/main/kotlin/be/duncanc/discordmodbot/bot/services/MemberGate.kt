@@ -82,12 +82,14 @@ internal constructor(
      */
     private fun cleanMessagesFromUser(gateTextChannel: TextChannel, user: User) {
         val userMessages: ArrayList<Message> = ArrayList()
-        gateTextChannel.iterableHistory.map {
+        gateTextChannel.iterableHistory.forEachAsync {
             if (it.author == user || it.contentRaw.contains(user.id)) {
                 userMessages.add(it)
             }
+            true
+        }.thenRun {
+            gateTextChannel.limitLessBulkDelete(userMessages)
         }
-        gateTextChannel.limitLessBulkDelete(userMessages)
     }
 
     /**
