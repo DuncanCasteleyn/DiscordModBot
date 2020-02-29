@@ -35,7 +35,7 @@ class ReactionVote(
         userBlockService = userBlockService
 ) {
     companion object {
-        val numericVoteEmotes = arrayOf("0⃣", "1⃣", "2⃣", "3⃣", "4⃣", "5⃣", "6⃣", "7⃣", "8⃣", "9⃣", "\uD83D\uDD1F")
+        val numericVoteEmotes = arrayOf("1⃣", "2⃣", "3⃣", "4⃣", "5⃣", "6⃣", "7⃣", "8⃣", "9⃣", "\uD83D\uDD1F", "0⃣")
     }
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
