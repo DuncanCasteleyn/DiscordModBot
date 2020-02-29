@@ -20,7 +20,7 @@ import org.springframework.boot.gradle.tasks.bundling.BootJar
 plugins {
     val kotlinVersion = "1.3.61"
 
-    id("org.springframework.boot") version "2.2.4.RELEASE"
+    id("org.springframework.boot") version "2.2.5.RELEASE"
     id("io.spring.dependency-management") version "1.0.8.RELEASE"
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.spring") version kotlinVersion
@@ -47,7 +47,7 @@ dependencies {
         exclude(group = "club.minnced", module = "opus-java")
     }
     implementation(group = "org.apache.commons", name = "commons-collections4", version = "4.2")
-    implementation(group = "org.json", name = "json", version = "20180813")
+    implementation(group = "org.json", name = "json", version = "20190722")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-script-runtime")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-compiler-embeddable")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-script-util")
