@@ -46,7 +46,7 @@ class WeeklyActivityReport(
 ) : CommandModule(
     arrayOf("WeeklyActivitySettings"),
     null,
-    "Allows you to configure weekly reports on ammount of message per channel for certain users (in a role)"
+    "Allows you to configure weekly reports on amount of message per channel for certain users (in a role)"
 ) {
     companion object {
         val LOG: Logger = LoggerFactory.getLogger(WeeklyActivityReport::class.java)
@@ -117,9 +117,9 @@ class WeeklyActivityReport(
                     }
                     val message = MessageBuilder()
                     message.append("**Message statistics of the past 7 days**\n")
-                    stats.forEach { channel, channelStats ->
+                    stats.forEach { (channel, channelStats) ->
                         message.append("\n***${channel.asMention}***\n\n")
-                        channelStats.forEach { member, count ->
+                        channelStats.forEach { (member, count) ->
                             message.append("${member.user.name}: $count\n")
                         }
                     }
@@ -187,8 +187,7 @@ class WeeklyActivityReport(
                     destroy()
                 }
                 2.toByte() -> {
-                    val roleOrMemberId =
-                        event.message.contentRaw.replace("<@", "").replace("&", "").replace(">", "").toLong()
+                    val roleOrMemberId = getRoleOrMemberIdFromString(event)
                     val guildId = event.guild.idLong
                     val activityReportSettings =
                         activityReportSettingsRepository.findById(guildId).orElse(ActivityReportSettings(guildId))
@@ -198,11 +197,10 @@ class WeeklyActivityReport(
                     destroy()
                 }
                 3.toByte() -> {
-                    val roleOrMemberId =
-                        event.message.contentRaw.replace("<@", "").replace("&", "").replace(">", "").toLong()
                     val guildId = event.guild.idLong
+                    val roleOrMemberId = getRoleOrMemberIdFromString(event)
                     val activityReportSettings =
-                        activityReportSettingsRepository.findById(guildId).orElse(ActivityReportSettings(guildId))
+                            activityReportSettingsRepository.findById(guildId).orElse(ActivityReportSettings(guildId))
                     activityReportSettings.trackedRoleOrMember.remove(roleOrMemberId)
                     activityReportSettingsRepository.save(activityReportSettings)
                     channel.sendMessage("Role or member removed.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
@@ -211,4 +209,11 @@ class WeeklyActivityReport(
             }
         }
     }
+
+    private fun getRoleOrMemberIdFromString(event: MessageReceivedEvent) =
+            event.message.contentRaw
+                    .replace("<@", "")
+                    .replace("&", "")
+                    .replace(">", "")
+                    .toLong()
 }
