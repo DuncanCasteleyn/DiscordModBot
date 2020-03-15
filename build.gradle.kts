@@ -77,7 +77,7 @@ tasks {
         }
     }
     withType<Wrapper> {
-        gradleVersion = "6.0.1"
+        gradleVersion = "6.2.2"
     }
     withType<JavaCompile> {
         dependsOn(audit)
