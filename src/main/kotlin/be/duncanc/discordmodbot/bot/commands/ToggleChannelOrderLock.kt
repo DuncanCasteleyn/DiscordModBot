@@ -5,6 +5,7 @@ import be.duncanc.discordmodbot.data.repositories.ChannelOrderLockRepository
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
 import java.util.concurrent.TimeUnit
 
 @Component
@@ -16,6 +17,7 @@ class ToggleChannelOrderLock(
         "Enables/disables channel order locking for the guild",
         requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)
 ) {
+    @Transactional
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         val guildId = event.guild.idLong
         val channelOrderLock = channelOrderLockRepository.findById(guildId)
