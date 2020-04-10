@@ -59,7 +59,7 @@ abstract class Sequence
             this.cleanAfterSequence = null
         }
         sequenceKillerExecutor = Executors.newSingleThreadScheduledExecutor { r ->
-            val t = Thread(r, "Sequence Thread " + this.toString())
+            val t = Thread(r, "Sequence Thread $this")
             t.isDaemon = true
             t
         }

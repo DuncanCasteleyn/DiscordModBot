@@ -225,7 +225,7 @@ internal constructor(
                         "A moderator can use ``!" + super.aliases[2] + " " + member.user.idLong + "``"
         ).queue {
             synchronized(informUserMessageIds) {
-                informUserMessageIds.put(member.user.idLong, it.idLong)
+                informUserMessageIds[member.user.idLong] = it.idLong
             }
         }
         synchronized(approvalQueue) {
@@ -475,7 +475,7 @@ internal constructor(
                     val questionListMessage = MessageBuilder()
                     val guildId = (channel as TextChannel).guild.idLong
                     questions = memberGateService.getQuestions(guildId).toList()
-                    for (i in 0 until questions.size) {
+                    for (i in questions.indices) {
                         questionListMessage.append(i.toString()).append(". ").append(questions[i]).append('\n')
                     }
                     questionListMessage.append('\n').append("Respond with the question number to remove it.")
@@ -491,7 +491,7 @@ internal constructor(
                     val welcomeMessageList = MessageBuilder()
                     val guildId = (channel as TextChannel).guild.idLong
                     welcomeMessages = memberGateService.getWelcomeMessages(guildId).toList()
-                    for (i in 0 until welcomeMessages.size) {
+                    for (i in welcomeMessages.indices) {
                         welcomeMessageList.append(i.toString()).append(". ").append(welcomeMessages[i])
                                 .append('\n')
                     }
@@ -607,8 +607,7 @@ internal constructor(
                 if (userId !in approvalQueue) {
                     throw IllegalStateException("The user is no longer in the queue; another moderator may have reviewed it already.")
                 }
-                val messageContent: String = event.message.contentDisplay.toLowerCase()
-                when (messageContent) {
+                when (val messageContent: String = event.message.contentDisplay.toLowerCase()) {
                     "approve", "accept" -> {
                         accept(event)
                     }
