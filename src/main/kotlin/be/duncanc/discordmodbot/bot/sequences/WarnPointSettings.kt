@@ -62,12 +62,12 @@ class WarnPointSettings(
             val announceChannel = guild.getTextChannelById(announceChannelId)?.name ?: "Chanel no longer exists"
 
             val messageBuilder = MessageBuilder()
-                .append("What would you like to do?\n")
-                .append("\n0. Change max points per reason. Current value: ").append(guildSettings.maxPointsPerReason)
-                .append("\n1. Change the limit before a summary is announced with the users collected points. Current value: ")
-                .append(guildSettings.announcePointsSummaryLimit)
-                .append("\n2. Change the channel to announce the summary in. Current channel: ").append(announceChannel)
-                .append("\n3. Invert Warn command override by AddPoints command. Current value: ")
+                    .append("What would you like to do?\n")
+                    .append("\n0. Change max points per reason. Current value: ").append(guildSettings.maxPointsPerReason)
+                    .append("\n1. Change the limit before a summary is announced with the users collected points. Current value: ")
+                    .append(guildSettings.announcePointsSummaryLimit)
+                    .append("\n2. Change the channel to announce the summary in. Current channel: ").append(announceChannel)
+                    .append("\n3. Toggle Warn command override by replacing Warn with AddPoints command. Current value: ")
                 .append(guildSettings.overrideWarnCommand)
             channel.sendMessage(messageBuilder.build()).queue { super.addMessageToCleaner(it) }
         }
