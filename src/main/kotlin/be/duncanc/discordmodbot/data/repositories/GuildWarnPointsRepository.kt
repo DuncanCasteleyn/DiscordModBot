@@ -21,4 +21,6 @@ import org.springframework.data.repository.CrudRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-interface GuildWarnPointsRepository : CrudRepository<GuildWarnPoints, GuildWarnPoints.GuildWarnPointsId>
+interface GuildWarnPointsRepository : CrudRepository<GuildWarnPoints, GuildWarnPoints.GuildWarnPointsId> {
+    fun findAllByGuildId(guildId: Long): Iterable<GuildWarnPoints>
+}

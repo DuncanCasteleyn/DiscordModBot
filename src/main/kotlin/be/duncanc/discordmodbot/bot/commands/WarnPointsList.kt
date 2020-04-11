@@ -32,7 +32,7 @@ class WarnPointsList(
     requiredPermissions = *arrayOf(Permission.KICK_MEMBERS)
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-        val userWarnPoints = guildWarnPointsRepository.findAll().toSortedSet()
+        val userWarnPoints = guildWarnPointsRepository.findAllByGuildId(event.guild.idLong).toSortedSet()
         userWarnPoints.removeIf { it.filterExpiredPoints().isEmpty() }
         val message = MessageBuilder()
         message.append("Summary of active points per user:\n")
