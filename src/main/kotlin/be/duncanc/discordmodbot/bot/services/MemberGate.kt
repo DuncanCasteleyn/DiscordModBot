@@ -66,7 +66,7 @@ internal constructor(
         val guild = event.guild
         val welcomeMessages = memberGateService.getWelcomeMessages(guild.idLong).toTypedArray()
         val memberRole = memberGateService.getMemberRole(guild.idLong, guild.jda)
-        if (welcomeMessages.isEmpty() || memberGateService.getQuestions(guild.idLong).isEmpty() || event.user.isBot || memberRole !in event.roles) {
+        if (welcomeMessages.isEmpty() || event.user.isBot || memberRole !in event.roles) {
             return
         }
         val welcomeMessage = welcomeMessages[Random().nextInt(welcomeMessages.size)].getWelcomeMessage(event.user)
@@ -180,7 +180,8 @@ internal constructor(
 
     private fun join(event: MessageReceivedEvent) {
         val memberRole = memberGateService.getMemberRole(event.guild.idLong, event.jda)
-        if (memberRole == null || event.guild.getMember(event.author)?.roles?.any { it.idLong == memberRole.idLong } == true) {
+        val member = event.guild.getMember(event.author)
+        if (memberRole == null || member == null || member.roles.any { it.idLong == memberRole.idLong }) {
             return
         }
 
@@ -192,6 +193,9 @@ internal constructor(
             }
         }
         val questions = memberGateService.getQuestions(event.guild.idLong).toList()
+        if (questions.isEmpty()) {
+            accept(member)
+        }
         event.jda.addEventListener(
                 QuestionSequence(
                         event.author,
@@ -349,7 +353,7 @@ internal constructor(
                             "10. Wipe member gate module settings\n" +
                             "11. Set auto purge time in hours (purges members that don't complete entry process)\n" +
                             "12. Disable auto purge\n\n" +
-                            "To enable the member gate you need to set at least a question, the member gate channel and the member role\n" +
+                            "To enable the member gate you need to set at least the member gate channel and the member role\n" +
                             "To enable welcome messages you need to set at least a welcome message and the welcome channel"
             ).queue { super.addMessageToCleaner(it) }
         }
