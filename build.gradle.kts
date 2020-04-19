@@ -18,7 +18,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 plugins {
-    val kotlinVersion = "1.3.71"
+    val kotlinVersion = "1.3.72"
 
     id("org.springframework.boot") version "2.2.6.RELEASE"
     id("io.spring.dependency-management") version "1.0.9.RELEASE"
@@ -34,15 +34,9 @@ dependencies {
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-web")
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-data-jpa")
     implementation(group = "org.flywaydb", name = "flyway-core")
-    runtimeOnly(group = "com.h2database", name = "h2")
-    runtimeOnly(group = "org.mariadb.jdbc", name = "mariadb-java-client")
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-reflect")
-    testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-test") {
-        exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
-    }
-    testImplementation(group = "org.springframework.security", name = "spring-security-test")
     implementation(group = "net.dv8tion", name = "JDA", version = "4.1.1_101") {
         exclude(group = "club.minnced", module = "opus-java")
     }
@@ -51,6 +45,14 @@ dependencies {
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-script-runtime")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-compiler-embeddable")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-script-util")
+
+    runtimeOnly(group = "com.h2database", name = "h2")
+    runtimeOnly(group = "org.mariadb.jdbc", name = "mariadb-java-client")
+
+    testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-test") {
+        exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
+    }
+    testImplementation(group = "org.springframework.security", name = "spring-security-test")
 
     annotationProcessor(group = "org.springframework.boot", name = "spring-boot-configuration-processor")
 }
