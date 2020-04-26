@@ -39,10 +39,10 @@ import java.util.concurrent.TimeUnit
  */
 abstract class Sequence
 @JvmOverloads protected constructor(
-    val user: User,
-    val channel: MessageChannel,
-    cleanAfterSequence: Boolean = true,
-    informUser: Boolean = true
+        val user: User,
+        val channel: MessageChannel,
+        cleanAfterSequence: Boolean = true,
+        informUser: Boolean = true
 ) : ListenerAdapter() {
     companion object {
         private val LOG = LoggerFactory.getLogger(Sequence::class.java)
@@ -66,14 +66,15 @@ abstract class Sequence
         cleaner = sequenceKillerExecutor.schedule({ this.destroy() }, 5, TimeUnit.MINUTES)
         if (informUser) {
             try {
-                val sequenceInformMessage: Message = channel.sendMessage(
-                    user.asMention + " You are now in a sequences. The bot will ignore all further commands as you first need to complete the sequences.\n" +
-                            "To complete the sequence answer the questions or tasks given by the bot in " + (if (channel is TextChannel) channel.asMention else "Private chat") + " \n" +
-                            "Any message you send in this channel will be used as input.\n" +
-                            "\nA sequences automatically expires after not receiving a message for 5 minutes within this channel.\n" +
-                            "You can also kill a sequences by sending \"STOP\" (Case sensitive)."
-                ).complete()
-                addMessageToCleaner(sequenceInformMessage)
+                channel.sendMessage(
+                        user.asMention + " You are now in a sequences. The bot will ignore all further commands as you first need to complete the sequences.\n" +
+                                "To complete the sequence answer the questions or tasks given by the bot in " + (if (channel is TextChannel) channel.asMention else "Private chat") + " \n" +
+                                "Any message you send in this channel will be used as input.\n" +
+                                "\nA sequences automatically expires after not receiving a message for 5 minutes within this channel.\n" +
+                                "You can also kill a sequences by sending \"STOP\" (Case sensitive)."
+                ).queue {
+                    addMessageToCleaner(it)
+                }
             } catch (e: Exception) {
                 LOG.info("A sequence was terminated due to an exception during initialization", e)
                 destroy()
@@ -109,9 +110,9 @@ abstract class Sequence
             LOG.info("A sequence was terminated due to an exception", t)
             destroy()
             val errorMessage: Message =
-                MessageBuilder().append(user.asMention + " The sequences has been terminated due to an error; see the message below for more information.")
-                    .appendCodeBlock(t.javaClass.simpleName + ": " + t.message, "text")
-                    .build()
+                    MessageBuilder().append(user.asMention + " The sequences has been terminated due to an error; see the message below for more information.")
+                            .appendCodeBlock(t.javaClass.simpleName + ": " + t.message, "text")
+                            .build()
             channel.sendMessage(errorMessage).queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
             return
         }
