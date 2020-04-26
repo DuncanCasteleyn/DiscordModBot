@@ -25,7 +25,6 @@ import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsSettingsReposit
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.PrivateChannel
@@ -44,13 +43,14 @@ import java.util.*
 @Component
 class Warn
 @Autowired constructor(
-    private val guildWarnPointsSettingsRepository: GuildWarnPointsSettingsRepository
+        private val guildWarnPointsSettingsRepository: GuildWarnPointsSettingsRepository
 ) : CommandModule(
-    arrayOf("Warn"),
-    "[User mention] [Reason~]",
-    "Warns as user by sending the user mentioned a message and logs the warning to the log channel.",
-    true,
-    true
+        arrayOf("Warn"),
+        "[User mention] [Reason~]",
+        "Warns as user by sending the user mentioned a message and logs the warning to the log channel.",
+        true,
+        true,
+        requiredPermissions = *arrayOf(Permission.KICK_MEMBERS)
 ) {
 
 
@@ -61,19 +61,14 @@ class Warn
             return
         }
         event.author.openPrivateChannel().queue(
-            { privateChannel -> commandExec(event, arguments, privateChannel) }
+                { privateChannel -> commandExec(event, arguments, privateChannel) }
         ) { commandExec(event, arguments, null as PrivateChannel?) }
     }
 
     private fun commandExec(event: MessageReceivedEvent, arguments: String?, privateChannel: PrivateChannel?) {
-        if (!event.isFromType(ChannelType.TEXT)) {
-            privateChannel?.sendMessage("This command only works in a guild.")?.queue()
-        } else if (!(event.member?.hasPermission(Permission.KICK_MEMBERS) == true || event.member?.hasPermission(Permission.BAN_MEMBERS) == true)) {
-            privateChannel?.sendMessage(event.author.asMention + " you need kick/ban members permissions to warn users.")
-                ?.queue()
-        } else if (event.message.mentionedUsers.size < 1) {
+        if (event.message.mentionedUsers.size < 1) {
             privateChannel?.sendMessage("Illegal argumentation, you need to mention a user that is still in the server.")
-                ?.queue()
+                    ?.queue()
         } else {
             val reason: String = extractReason(arguments)
 
@@ -81,48 +76,46 @@ class Warn
             val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
             if (guildLogger != null) {
                 val logEmbed = EmbedBuilder()
-                    .setColor(Color.YELLOW)
-                    .setTitle("User warned")
-                    .addField("UUID", UUID.randomUUID().toString(), false)
-                    .addField("User", toWarn.nicknameAndUsername, true)
+                        .setColor(Color.YELLOW)
+                        .setTitle("User warned")
+                        .addField("UUID", UUID.randomUUID().toString(), false)
+                        .addField("User", toWarn.nicknameAndUsername, true)
                         .addField("Moderator", event.member!!.nicknameAndUsername, true)
-                    .addField("Reason", reason, false)
+                        .addField("Reason", reason, false)
 
                 guildLogger.log(logEmbed, toWarn.user, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
-
-                //runBots.getLogToChannel().log(JDALibHelper.getEffectiveNameAndUsername(event.getMember()) + " warned " + JDALibHelper.getEffectiveNameAndUsername(toWarn), "Reason: " + arguments, event.getGuild(), toWarn.getUser().getId(), toWarn.getUser().getEffectiveAvatarUrl(), true);
             }
 
             val userWarning = EmbedBuilder()
-                .setColor(Color.YELLOW)
+                    .setColor(Color.YELLOW)
                     .setAuthor(event.member!!.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
                     .setTitle(event.guild.name + ": You have been warned by " + event.member!!.nicknameAndUsername, null)
-                .addField("Reason", reason, false)
+                    .addField("Reason", reason, false)
 
             toWarn.user.openPrivateChannel().queue(
-                { privateChannelUserToWarn ->
-                    privateChannelUserToWarn.sendMessage(userWarning.build()).queue(
-                        { onSuccessfulWarnUser(privateChannel!!, toWarn, userWarning.build()) }
-                    ) { throwable -> onFailToWarnUser(privateChannel!!, toWarn, throwable) }
-                }
+                    { privateChannelUserToWarn ->
+                        privateChannelUserToWarn.sendMessage(userWarning.build()).queue(
+                                { onSuccessfulWarnUser(privateChannel!!, toWarn, userWarning.build()) }
+                        ) { throwable -> onFailToWarnUser(privateChannel!!, toWarn, throwable) }
+                    }
             ) { throwable -> onFailToWarnUser(privateChannel!!, toWarn, throwable) }
         }
     }
 
     private fun onSuccessfulWarnUser(privateChannel: PrivateChannel, toWarn: Member, userWarning: MessageEmbed) {
         val creatorMessage = MessageBuilder()
-            .append("Warned ").append(toWarn.toString()).append(".\n\nThe following message was sent to the user:")
-            .setEmbed(userWarning)
-            .build()
+                .append("Warned ").append(toWarn.toString()).append(".\n\nThe following message was sent to the user:")
+                .setEmbed(userWarning)
+                .build()
         privateChannel.sendMessage(creatorMessage).queue()
     }
 
     private fun onFailToWarnUser(privateChannel: PrivateChannel, toWarn: Member, throwable: Throwable) {
         val creatorMessage = MessageBuilder()
-            .append("Warned ").append(toWarn.toString())
-            .append(".\n\nWas unable to send a DM to the user please inform the user manually.\n")
-            .append(throwable.javaClass.simpleName).append(": ").append(throwable.message)
-            .build()
+                .append("Warned ").append(toWarn.toString())
+                .append(".\n\nWas unable to send a DM to the user please inform the user manually.\n")
+                .append(throwable.javaClass.simpleName).append(": ").append(throwable.message)
+                .build()
         privateChannel.sendMessage(creatorMessage).queue()
     }
 }
