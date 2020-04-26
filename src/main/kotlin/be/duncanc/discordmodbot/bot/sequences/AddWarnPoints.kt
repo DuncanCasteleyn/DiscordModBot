@@ -63,7 +63,7 @@ class AddWarnPoints(
             return
         }
 
-        val userId = event.message.contentRaw.substring(command.length + 2).trimStart('<').trimEnd('>').toLong()
+        val userId = event.message.contentRaw.substring(command.length + 2).trimStart('<', '@', '!').trimEnd('>').toLong()
         event.jda.retrieveUserById(userId).queue(
                 { user ->
                     val member = event.guild.getMember(user)
