@@ -31,6 +31,8 @@ import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.awt.Color
@@ -52,6 +54,7 @@ class AddWarnPoints(
 ) {
     companion object {
         val illegalStateException = IllegalStateException("The announcement channel needs to be configured by a server administrator")
+        val LOG: Logger = LoggerFactory.getLogger(AddWarnPoints::class.java)
     }
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
