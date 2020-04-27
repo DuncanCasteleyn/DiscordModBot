@@ -68,15 +68,15 @@ class AddWarnPoints(
 
         val userId = event.message.contentRaw.substring(command.length + 2).trimStart('<', '@', '!').trimEnd('>').toLong()
         event.jda.retrieveUserById(userId).queue(
-                { user ->
-                    val member = event.guild.getMember(user)
+                { targetUser ->
+                    val member = event.guild.getMember(targetUser)
                     if (member == null || event.member?.canInteract(member) == true) {
                         event.author.openPrivateChannel().queue {
                             event.jda.addEventListener(
                                     AddPointsSequence(
                                             event.author,
                                             it,
-                                            user,
+                                            targetUser,
                                             event.guild
                                     )
                             )
@@ -172,13 +172,13 @@ class AddWarnPoints(
             val action = event.message.contentRaw.toByte()
             val guildWarnPoints = guildWarnPointsRepository.findById(
                     GuildWarnPoints.GuildWarnPointsId(
-                            user.idLong,
+                            targetUser.idLong,
                             guild.idLong
                     )
-            ).orElse(GuildWarnPoints(user.idLong, guild.idLong))
+            ).orElse(GuildWarnPoints(targetUser.idLong, guild.idLong))
             val userWarnPoints = UserWarnPoints(
                     points = points!!,
-                    creatorId = user.idLong,
+                    creatorId = targetUser.idLong,
                     reason = reason!!,
                     expireDate = expireDate!!
             )
