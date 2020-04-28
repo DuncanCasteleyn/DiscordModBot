@@ -195,14 +195,15 @@ internal constructor(
         val questions = memberGateService.getQuestions(event.guild.idLong).toList()
         if (questions.isEmpty()) {
             accept(member)
+        } else {
+            event.jda.addEventListener(
+                    QuestionSequence(
+                            event.author,
+                            event.channel,
+                            questions[Random().nextInt(questions.size)]
+                    )
+            )
         }
-        event.jda.addEventListener(
-                QuestionSequence(
-                        event.author,
-                        event.channel,
-                        questions[Random().nextInt(questions.size)]
-                )
-        )
     }
 
     private fun configure(event: MessageReceivedEvent) {
