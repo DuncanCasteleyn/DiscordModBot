@@ -90,7 +90,7 @@ class WordFiltering(
                     .addField("Message URL", "[Link](${message.jumpUrl})", false)
                     .setColor(Color.RED)
             logger.log(embedBuilder, message.author, guild, actionType = GuildLogger.LogTypeAction.MODERATOR)
-            channel.sendMessage("${message.author.asMention} Your message has been deleted it contained word(s) banned under Discord ToS. Please watch your language.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+            channel.sendMessage("${message.author.asMention} Your message has been deleted as it violates discords TOS or our rules").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
         }
     }
 
