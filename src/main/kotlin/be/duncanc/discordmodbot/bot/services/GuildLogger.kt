@@ -37,7 +37,7 @@ import net.dv8tion.jda.api.events.guild.GuildBanEvent
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent
 import net.dv8tion.jda.api.events.guild.GuildUnbanEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent
-import net.dv8tion.jda.api.events.guild.member.GuildMemberLeaveEvent
+import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent
 import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateNicknameEvent
 import net.dv8tion.jda.api.events.message.MessageBulkDeleteEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -343,7 +343,7 @@ class GuildLogger
     }
 
     @Transactional(readOnly = true)
-    override fun onGuildMemberLeave(event: GuildMemberLeaveEvent) {
+    override fun onGuildMemberRemove(event: GuildMemberRemoveEvent) {
         if (!loggingSettingsRepository.findById(event.guild.idLong).orElse(LoggingSettings(event.guild.idLong)).logMemberLeave) {
             return
         }
@@ -356,7 +356,7 @@ class GuildLogger
                 var findReason: String? = null
                 var i = 0
                 for (logEntry in event.guild.retrieveAuditLogs().cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
-                    if (logEntry.type == ActionType.KICK && logEntry.targetIdLong == event.member.user.idLong && logEntry.idLong != lastCheckedLogEntries[event.guild.idLong]?.idLong) {
+                    if (logEntry.type == ActionType.KICK && logEntry.targetIdLong == event.user.idLong && logEntry.idLong != lastCheckedLogEntries[event.guild.idLong]?.idLong) {
                         findModerator = logEntry.user
                         findReason = logEntry.reason
                         break
@@ -378,32 +378,32 @@ class GuildLogger
             if (moderator == null) {
                 val logEmbed = EmbedBuilder()
                         .setColor(Color.RED)
-                        .addField("User", event.member.nicknameAndUsername, true)
+                        .addField("User", event.user.name, true)
                         .setTitle("User left")
                 log(
                         logEmbed,
-                        event.member.user,
+                        event.user,
                         event.guild,
                         null,
                         LogTypeAction.USER
                 )
             } else {
-                logKick(event.member, event.guild, event.guild.getMember(moderator), reason)
+                logKick(event.user, event.guild, event.guild.getMember(moderator), reason)
             }
         }, 1, TimeUnit.SECONDS)
 
     }
 
-    fun logKick(member: Member, guild: Guild, moderator: Member?, reason: String?) {
+    fun logKick(user: User, guild: Guild, moderator: Member?, reason: String?) {
         guildLoggerExecutor.execute {
             val logEmbed = EmbedBuilder()
                     .setColor(Color.RED)
                     .setTitle("User kicked")
                     .addField("UUID", UUID.randomUUID().toString(), false)
-                    .addField("User", member.nicknameAndUsername, true)
+                    .addField("User", user.name, true)
             moderator?.let { logEmbed.addField("Moderator", it.nicknameAndUsername, true) }
             reason?.let { logEmbed.addField("Reason", it, false) }
-            log(logEmbed, member.user, guild, null, LogTypeAction.MODERATOR)
+            log(logEmbed, user, guild, null, LogTypeAction.MODERATOR)
         }
     }
 

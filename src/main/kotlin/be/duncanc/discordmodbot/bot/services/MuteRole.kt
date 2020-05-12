@@ -25,7 +25,7 @@ import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Role
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent
-import net.dv8tion.jda.api.events.guild.member.GuildMemberLeaveEvent
+import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleAddEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -101,11 +101,11 @@ class MuteRole
         }
     }
 
-    override fun onGuildMemberLeave(event: GuildMemberLeaveEvent) {
+    override fun onGuildMemberRemove(event: GuildMemberRemoveEvent) {
         val muteRole = muteRolesRepository.findById(event.guild.idLong)
-            .orElse(null)
+                .orElse(null)
         if (muteRole != null) {
-            if (event.member.roles.contains(muteRole.roleId.let { event.guild.getRoleById(it) })) {
+            if (event.member?.roles?.contains(muteRole.roleId.let { event.guild.getRoleById(it) }) == true) {
                 muteRole.mutedUsers.add(event.user.idLong)
                 muteRolesRepository.save(muteRole)
             } else {

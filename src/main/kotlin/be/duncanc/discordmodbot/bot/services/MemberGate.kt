@@ -25,7 +25,7 @@ import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent
-import net.dv8tion.jda.api.events.guild.member.GuildMemberLeaveEvent
+import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleAddEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.apache.commons.collections4.map.LinkedMap
@@ -120,17 +120,14 @@ internal constructor(
         }
     }
 
-    /**
-     * Automatically handles unapproved users that leave the server.
-     */
-    override fun onGuildMemberLeave(event: GuildMemberLeaveEvent) {
+    override fun onGuildMemberRemove(event: GuildMemberRemoveEvent) {
         val gateChannel = memberGateService.getGateChannel(event.guild.idLong, event.jda)
-        if (gateChannel == null || event.member.roles.contains(
+        if (gateChannel == null || event.member?.roles?.contains(
                         memberGateService.getMemberRole(
                                 event.guild.idLong,
                                 event.jda
                         )
-                )
+                ) == true
         ) {
             return
         }
@@ -297,7 +294,7 @@ internal constructor(
                             if (logToChannel != null) {
                                 logToChannel as GuildLogger
                                 logToChannel.logKick(
-                                        event.member!!,
+                                        event.author,
                                         event.guild,
                                         event.guild.getMember(event.jda.selfUser),
                                         reason

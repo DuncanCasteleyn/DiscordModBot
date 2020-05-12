@@ -22,7 +22,7 @@ import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageChannel
 import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.entities.User
-import net.dv8tion.jda.api.events.guild.member.GuildMemberLeaveEvent
+import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import org.slf4j.LoggerFactory
@@ -122,8 +122,8 @@ abstract class Sequence
         }
     }
 
-    override fun onGuildMemberLeave(event: GuildMemberLeaveEvent) {
-        if (channel is TextChannel && channel.guild == event.member.guild && user == event.user) {
+    override fun onGuildMemberRemove(event: GuildMemberRemoveEvent) {
+        if (channel is TextChannel && channel.guild == event.guild && user == event.user) {
             destroy()
         } else if (event.user.mutualGuilds.isEmpty()) {
             destroy()
