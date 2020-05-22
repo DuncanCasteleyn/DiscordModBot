@@ -8,13 +8,16 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mockito.*
+import org.mockito.junit.jupiter.MockitoExtension
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.boot.test.mock.mockito.SpyBean
 import java.time.OffsetDateTime
 
 @SpringBootTest(classes = [ScheduledUnmuteService::class])
+@ExtendWith(MockitoExtension::class)
 internal class ScheduledUnmuteServiceTest {
     @MockBean
     lateinit var unmuteRepository: ScheduledUnmuteRepository
