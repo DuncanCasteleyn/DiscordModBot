@@ -4,6 +4,7 @@ import be.duncanc.discordmodbot.bot.RunBots
 import be.duncanc.discordmodbot.data.entities.ScheduledUnmute
 import be.duncanc.discordmodbot.data.repositories.MuteRolesRepository
 import be.duncanc.discordmodbot.data.repositories.ScheduledUnmuteRepository
+import org.springframework.context.annotation.Lazy
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.time.OffsetDateTime
@@ -13,6 +14,7 @@ import javax.transaction.Transactional
 class ScheduledUnmuteService(
         private val scheduledUnmuteRepository: ScheduledUnmuteRepository,
         private val muteRolesRepository: MuteRolesRepository,
+        @Lazy
         private val runBots: RunBots
 ) {
     @Transactional
