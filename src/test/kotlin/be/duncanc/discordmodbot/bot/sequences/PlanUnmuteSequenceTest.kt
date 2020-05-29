@@ -1,6 +1,7 @@
 package be.duncanc.discordmodbot.bot.sequences
 
 import be.duncanc.discordmodbot.data.services.ScheduledUnmuteService
+import com.nhaarman.mockitokotlin2.*
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -12,13 +13,15 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentMatchers
+import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mock
-import org.mockito.Mockito.*
+import org.mockito.Mockito.`when`
 import org.mockito.junit.jupiter.MockitoExtension
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.test.util.ReflectionTestUtils
+import java.time.OffsetDateTime
 
 @ExtendWith(MockitoExtension::class)
 internal class PlanUnmuteSequenceTest {
@@ -80,8 +83,7 @@ internal class PlanUnmuteSequenceTest {
                 planUnmuteSequence, methodInvocationName,
                 messageReceivedEvent)
         // Verify
-        val planUnmuteInvocations = mockingDetails(scheduledUnmuteService).invocations.filter { it.method.name == "planUnmute" }
-        planUnmuteInvocations.first().markVerified()
+        verify(scheduledUnmuteService).planUnmute(ArgumentMatchers.anyLong(), ArgumentMatchers.anyLong(), isA<OffsetDateTime>())
         val onMessageReceivedDuringSequence = mockingDetails(planUnmuteSequence).invocations.filter { it.method.name == methodInvocationName }
         onMessageReceivedDuringSequence.first().markVerified()
         verify(targetUser).idLong
@@ -180,15 +182,15 @@ internal class PlanUnmuteCommandTest {
         // Arrange
         val messageContent = "!${planUnmuteCommand.aliases[0]} <@1>"
         clearInvocations(planUnmuteCommand)
-        `when`(messageReceivedEvent.message).thenReturn(message)
-        `when`(message.contentRaw).thenReturn(messageContent)
-        `when`(messageReceivedEvent.guild).thenReturn(guild)
-        `when`(guild.getMemberById(1)).thenReturn(member)
-        `when`(member.user).thenReturn(user)
-        `when`(messageReceivedEvent.author).thenReturn(user)
-        `when`(messageReceivedEvent.channel).thenReturn(messageChannel)
-        `when`(messageChannel.sendMessage(anyString())).thenReturn(messageAction)
-        `when`(messageReceivedEvent.jda).thenReturn(jda)
+        whenever(messageReceivedEvent.message).thenReturn(message)
+        whenever(message.contentRaw).thenReturn(messageContent)
+        whenever(messageReceivedEvent.guild).thenReturn(guild)
+        whenever(guild.getMemberById(1)).thenReturn(member)
+        whenever(member.user).thenReturn(user)
+        whenever(messageReceivedEvent.author).thenReturn(user)
+        whenever(messageReceivedEvent.channel).thenReturn(messageChannel)
+        whenever(messageChannel.sendMessage(anyString())).thenReturn(messageAction)
+        whenever(messageReceivedEvent.jda).thenReturn(jda)
         // Act
         ReflectionTestUtils.invokeMethod<Void>(
                 planUnmuteCommand, "commandExec",
@@ -202,7 +204,7 @@ internal class PlanUnmuteCommandTest {
         verify(messageReceivedEvent).guild
         verify(guild).getMemberById(1)
         verify(member).user
-        verify(jda).addEventListener(any(PlanUnmuteSequence::class.java))
+        verify(jda).addEventListener(any<PlanUnmuteSequence>())
         verify(user).asMention
         verify(messageAction).queue(any())
     }

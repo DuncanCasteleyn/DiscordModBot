@@ -54,6 +54,7 @@ dependencies {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
     }
     testImplementation(group = "org.springframework.security", name = "spring-security-test")
+    testImplementation(group = "com.nhaarman.mockitokotlin2", name = "mockito-kotlin", version = "2.2.0")
 
     annotationProcessor(group = "org.springframework.boot", name = "spring-boot-configuration-processor")
 }
