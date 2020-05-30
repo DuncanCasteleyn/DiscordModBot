@@ -30,6 +30,7 @@ open class PlanUnmuteSequence(
             throw IllegalArgumentException("The numbers of days should not be negative")
         }
         scheduledUnmuteService.planUnmute((channel as TextChannel).guild.idLong, targetUser.idLong, OffsetDateTime.now().plusHours(days))
+        super.channel.sendMessage("Unmute has been been planned.")
     }
 }
 
