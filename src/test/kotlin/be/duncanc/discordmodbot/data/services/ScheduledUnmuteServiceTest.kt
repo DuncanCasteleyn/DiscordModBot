@@ -1,6 +1,7 @@
 package be.duncanc.discordmodbot.data.services
 
 import be.duncanc.discordmodbot.bot.RunBots
+import be.duncanc.discordmodbot.data.entities.ScheduledUnmute
 import be.duncanc.discordmodbot.data.repositories.MuteRolesRepository
 import be.duncanc.discordmodbot.data.repositories.ScheduledUnmuteRepository
 import com.nhaarman.mockitokotlin2.any
@@ -76,6 +77,7 @@ internal class ScheduledUnmuteServiceTest {
         scheduledUnmuteService.planUnmute(0, 0, unmuteDateTime)
 
         verify(scheduledUnmuteService).planUnmute(0, 0, unmuteDateTime)
-        verify(unmuteRepository).save(any())
+        @Suppress("RemoveExplicitTypeArguments")
+        verify(unmuteRepository).save(any<ScheduledUnmute>())
     }
 }
