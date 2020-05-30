@@ -15,10 +15,11 @@ data class ScheduledUnmute(
         @Column(nullable = false)
         val unmuteDateTime: OffsetDateTime
 ) {
+
     data class ScheduledUnmuteId(
             @Id
-            val guildId: Long,
+            val guildId: Long?,
             @Id
-            val userId: Long
+            val userId: Long?
     ) : Serializable
 }
