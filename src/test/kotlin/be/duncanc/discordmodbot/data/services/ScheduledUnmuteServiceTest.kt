@@ -1,15 +1,16 @@
 package be.duncanc.discordmodbot.data.services
 
 import be.duncanc.discordmodbot.bot.RunBots
-import be.duncanc.discordmodbot.data.entities.ScheduledUnmute
 import be.duncanc.discordmodbot.data.repositories.MuteRolesRepository
 import be.duncanc.discordmodbot.data.repositories.ScheduledUnmuteRepository
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.Mockito.*
 import org.mockito.junit.jupiter.MockitoExtension
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
@@ -75,6 +76,6 @@ internal class ScheduledUnmuteServiceTest {
         scheduledUnmuteService.planUnmute(0, 0, unmuteDateTime)
 
         verify(scheduledUnmuteService).planUnmute(0, 0, unmuteDateTime)
-        verify(unmuteRepository).save(any(ScheduledUnmute::class.java))
+        verify(unmuteRepository).save(any())
     }
 }

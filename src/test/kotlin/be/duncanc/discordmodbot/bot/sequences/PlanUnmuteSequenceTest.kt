@@ -12,16 +12,13 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mock
-import org.mockito.Mockito.`when`
 import org.mockito.junit.jupiter.MockitoExtension
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.test.util.ReflectionTestUtils
-import java.time.OffsetDateTime
 
 @ExtendWith(MockitoExtension::class)
 internal class PlanUnmuteSequenceTest {
@@ -60,7 +57,7 @@ internal class PlanUnmuteSequenceTest {
 
     @BeforeEach
     fun `Set action for init`() {
-        `when`(channel.sendMessage(anyString())).thenReturn(messageAction)
+        whenever(channel.sendMessage(any<String>())).thenReturn(messageAction)
         planUnmuteSequence = spy(PlanUnmuteSequence(user, channel, scheduledUnmuteService, targetUser))
         stubs = arrayOf(user, channel, scheduledUnmuteService, targetUser, messageAction, jda, messageReceivedEvent, message, guild, planUnmuteSequence)
     }
@@ -74,20 +71,20 @@ internal class PlanUnmuteSequenceTest {
     @Test
     fun `When providing a valid answer to the first question a mute should be planned`() {
         // Arrange
-        `when`(messageReceivedEvent.message).thenReturn(message)
-        `when`(message.contentRaw).thenReturn("30")
-        `when`(channel.guild).thenReturn(guild)
+        whenever(messageReceivedEvent.message).thenReturn(message)
+        whenever(message.contentRaw).thenReturn("30")
+        whenever(channel.guild).thenReturn(guild)
         // Act
         val methodInvocationName = "onMessageReceivedDuringSequence"
         ReflectionTestUtils.invokeMethod<Void>(
                 planUnmuteSequence, methodInvocationName,
                 messageReceivedEvent)
         // Verify
-        verify(scheduledUnmuteService).planUnmute(ArgumentMatchers.anyLong(), ArgumentMatchers.anyLong(), isA<OffsetDateTime>())
+        verify(scheduledUnmuteService).planUnmute(any(), any(), any())
         val onMessageReceivedDuringSequence = mockingDetails(planUnmuteSequence).invocations.filter { it.method.name == methodInvocationName }
         onMessageReceivedDuringSequence.first().markVerified()
         verify(targetUser).idLong
-        verify(channel, times(2)).sendMessage(ArgumentMatchers.anyString())
+        verify(channel, times(2)).sendMessage(any<String>())
         verify(channel).asMention
         verify(user).asMention
         verify(guild).idLong
@@ -97,8 +94,8 @@ internal class PlanUnmuteSequenceTest {
     @Test
     fun `Providing a non-numeric message should fail`() {
         // Arrange
-        `when`(messageReceivedEvent.message).thenReturn(message)
-        `when`(message.contentRaw).thenReturn("Definitely not a number")
+        whenever(messageReceivedEvent.message).thenReturn(message)
+        whenever(message.contentRaw).thenReturn("Definitely not a number")
         // Act
         val methodInvocationName = "onMessageReceivedDuringSequence"
         val numberFormatException = assertThrows<NumberFormatException> {
@@ -110,7 +107,7 @@ internal class PlanUnmuteSequenceTest {
         assertEquals("For input string: \"Definitely not a number\"", numberFormatException.message)
         val onMessageReceivedDuringSequence = mockingDetails(planUnmuteSequence).invocations.filter { it.method.name == methodInvocationName }
         onMessageReceivedDuringSequence.first().markVerified()
-        verify(channel, times(2)).sendMessage(ArgumentMatchers.anyString())
+        verify(channel, times(2)).sendMessage(any<String>())
         verify(channel).asMention
         verify(user).asMention
         verify(messageAction).queue(any())
@@ -119,8 +116,8 @@ internal class PlanUnmuteSequenceTest {
     @Test
     fun `Providing a negative number fails`() {
         // Arrange
-        `when`(messageReceivedEvent.message).thenReturn(message)
-        `when`(message.contentRaw).thenReturn("-123")
+        whenever(messageReceivedEvent.message).thenReturn(message)
+        whenever(message.contentRaw).thenReturn("-123")
         // Act
         val methodInvocationName = "onMessageReceivedDuringSequence"
         val illegalArgumentException = assertThrows<IllegalArgumentException> {
@@ -132,7 +129,7 @@ internal class PlanUnmuteSequenceTest {
         assertEquals("The numbers of days should not be negative", illegalArgumentException.message)
         val onMessageReceivedDuringSequence = mockingDetails(planUnmuteSequence).invocations.filter { it.method.name == methodInvocationName }
         onMessageReceivedDuringSequence.first().markVerified()
-        verify(channel, times(2)).sendMessage(ArgumentMatchers.anyString())
+        verify(channel, times(2)).sendMessage(any<String>())
         verify(channel).asMention
         verify(user).asMention
         verify(messageAction).queue(any())
@@ -214,8 +211,8 @@ internal class PlanUnmuteCommandTest {
         // Arrange
         val messageContent = "!${planUnmuteCommand.aliases[0]}"
         clearInvocations(planUnmuteCommand)
-        `when`(messageReceivedEvent.message).thenReturn(message)
-        `when`(message.contentRaw).thenReturn(messageContent)
+        whenever(messageReceivedEvent.message).thenReturn(message)
+        whenever(message.contentRaw).thenReturn(messageContent)
         // Act
         val illegalArgumentException = assertThrows<IllegalArgumentException> {
             ReflectionTestUtils.invokeMethod<Void>(
@@ -236,8 +233,8 @@ internal class PlanUnmuteCommandTest {
         // Arrange
         val messageContent = "!${planUnmuteCommand.aliases[0]} invalid parameters"
         clearInvocations(planUnmuteCommand)
-        `when`(messageReceivedEvent.message).thenReturn(message)
-        `when`(message.contentRaw).thenReturn(messageContent)
+        whenever(messageReceivedEvent.message).thenReturn(message)
+        whenever(message.contentRaw).thenReturn(messageContent)
         // Act & Assert throws
         val illegalArgumentException = assertThrows<IllegalArgumentException> {
             ReflectionTestUtils.invokeMethod<Void>(
