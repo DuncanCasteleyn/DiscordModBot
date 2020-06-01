@@ -18,8 +18,8 @@ data class ScheduledUnmute(
 
     data class ScheduledUnmuteId(
             @Id
-            val guildId: Long?,
+            val guildId: Long? = null,
             @Id
-            val userId: Long?
+            val userId: Long? = null
     ) : Serializable
 }

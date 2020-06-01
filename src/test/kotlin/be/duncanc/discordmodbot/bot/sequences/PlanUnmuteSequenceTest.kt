@@ -1,5 +1,8 @@
 package be.duncanc.discordmodbot.bot.sequences
 
+import be.duncanc.discordmodbot.bot.services.GuildLogger
+import be.duncanc.discordmodbot.data.entities.MuteRole
+import be.duncanc.discordmodbot.data.repositories.MuteRolesRepository
 import be.duncanc.discordmodbot.data.services.ScheduledUnmuteService
 import com.nhaarman.mockitokotlin2.*
 import net.dv8tion.jda.api.JDA
@@ -19,6 +22,8 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.test.util.ReflectionTestUtils
+import java.util.*
+import java.util.function.Consumer
 
 @ExtendWith(MockitoExtension::class)
 internal class PlanUnmuteSequenceTest {
@@ -50,6 +55,9 @@ internal class PlanUnmuteSequenceTest {
     @Mock
     private lateinit var guild: Guild
 
+    @Mock
+    private lateinit var guildLogger: GuildLogger
+
     private lateinit var planUnmuteSequence: PlanUnmuteSequence
 
 
@@ -58,8 +66,8 @@ internal class PlanUnmuteSequenceTest {
     @BeforeEach
     fun `Set action for init`() {
         whenever(channel.sendMessage(any<String>())).thenReturn(messageAction)
-        planUnmuteSequence = spy(PlanUnmuteSequence(user, channel, scheduledUnmuteService, targetUser))
-        stubs = arrayOf(user, channel, scheduledUnmuteService, targetUser, messageAction, jda, messageReceivedEvent, message, guild, planUnmuteSequence)
+        planUnmuteSequence = spy(PlanUnmuteSequence(user, channel, scheduledUnmuteService, targetUser, guildLogger))
+        stubs = arrayOf(user, channel, scheduledUnmuteService, targetUser, messageAction, jda, messageReceivedEvent, message, guild, planUnmuteSequence, guildLogger)
     }
 
 
@@ -74,6 +82,8 @@ internal class PlanUnmuteSequenceTest {
         whenever(messageReceivedEvent.message).thenReturn(message)
         whenever(message.contentRaw).thenReturn("30")
         whenever(channel.guild).thenReturn(guild)
+        whenever(targetUser.name).thenReturn("A target user")
+        whenever(user.name).thenReturn("A moderator")
         // Act
         val methodInvocationName = "onMessageReceivedDuringSequence"
         ReflectionTestUtils.invokeMethod<Void>(
@@ -84,11 +94,14 @@ internal class PlanUnmuteSequenceTest {
         val onMessageReceivedDuringSequence = mockingDetails(planUnmuteSequence).invocations.filter { it.method.name == methodInvocationName }
         onMessageReceivedDuringSequence.first().markVerified()
         verify(targetUser).idLong
-        verify(channel, times(2)).sendMessage(any<String>())
+        verify(channel, times(3)).sendMessage(any<String>())
         verify(channel).asMention
         verify(user).asMention
         verify(guild).idLong
-        verify(messageAction).queue(any())
+        verify(messageAction, times(3)).queue(any<Consumer<Message>>())
+        verify(guild).getMember(user)
+        verify(guild).getMember(targetUser)
+        verify(guildLogger).log(any(), eq(targetUser), eq(guild), eq(null), eq(GuildLogger.LogTypeAction.MODERATOR), eq(null))
     }
 
     @Test
@@ -110,7 +123,7 @@ internal class PlanUnmuteSequenceTest {
         verify(channel, times(2)).sendMessage(any<String>())
         verify(channel).asMention
         verify(user).asMention
-        verify(messageAction).queue(any())
+        verify(messageAction, times(2)).queue(any())
     }
 
     @Test
@@ -126,13 +139,13 @@ internal class PlanUnmuteSequenceTest {
                     messageReceivedEvent)
         }
         // Verify
-        assertEquals("The numbers of days should not be negative", illegalArgumentException.message)
+        assertEquals("The numbers of days should not be negative or 0", illegalArgumentException.message)
         val onMessageReceivedDuringSequence = mockingDetails(planUnmuteSequence).invocations.filter { it.method.name == methodInvocationName }
         onMessageReceivedDuringSequence.first().markVerified()
         verify(channel, times(2)).sendMessage(any<String>())
         verify(channel).asMention
         verify(user).asMention
-        verify(messageAction).queue(any())
+        verify(messageAction, times(2)).queue(any())
     }
 }
 
@@ -141,6 +154,12 @@ internal class PlanUnmuteSequenceTest {
 internal class PlanUnmuteCommandTest {
     @MockBean
     private lateinit var scheduledUnmuteService: ScheduledUnmuteService
+
+    @MockBean
+    private lateinit var guildLogger: GuildLogger
+
+    @MockBean
+    private lateinit var muteRolesRepository: MuteRolesRepository
 
     @SpyBean
     private lateinit var planUnmuteCommand: PlanUnmuteCommand
@@ -171,7 +190,8 @@ internal class PlanUnmuteCommandTest {
 
     @AfterEach
     fun `No more interactions with any spy or mocks`() {
-        verifyNoMoreInteractions(jda, planUnmuteCommand, scheduledUnmuteService, message, message, guild, member, user, messageAction, messageChannel)
+        verifyNoMoreInteractions(jda, planUnmuteCommand, scheduledUnmuteService, message, message, guild, member, user,
+                messageAction, messageChannel, guildLogger, muteRolesRepository)
     }
 
     @Test
@@ -179,6 +199,14 @@ internal class PlanUnmuteCommandTest {
         // Arrange
         val messageContent = "!${planUnmuteCommand.aliases[0]} <@1>"
         clearInvocations(planUnmuteCommand)
+        val optional = Optional.of(MuteRole(1, 1))
+        whenever(muteRolesRepository.findById(any())).thenReturn(optional)
+        val roles = mock<List<Role>>()
+        whenever(member.roles).thenReturn(roles)
+        whenever(roles.contains(any())).thenReturn(true)
+        val role = mock<Role>()
+        whenever(guild.getRoleById(any<Long>())).thenReturn(role)
+        whenever(member.guild).thenReturn(guild)
         whenever(messageReceivedEvent.message).thenReturn(message)
         whenever(message.contentRaw).thenReturn(messageContent)
         whenever(messageReceivedEvent.guild).thenReturn(guild)
@@ -197,13 +225,15 @@ internal class PlanUnmuteCommandTest {
         val commandExecInvocations = mockingDetails(planUnmuteCommand).invocations.filter { it.method.name == "commandExec" }
         assertEquals(1, commandExecInvocations.size, "Expected method commandExec to be executed once.")
         commandExecInvocations.first().markVerified()
+        verify(muteRolesRepository).findById(any<Long>())
         verify(messageReceivedEvent).message
         verify(messageReceivedEvent).guild
+        verify(guild).idLong
         verify(guild).getMemberById(1)
         verify(member).user
         verify(jda).addEventListener(any<PlanUnmuteSequence>())
         verify(user).asMention
-        verify(messageAction).queue(any())
+        verify(messageAction, times(2)).queue(any())
     }
 
     @Test

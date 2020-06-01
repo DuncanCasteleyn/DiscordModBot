@@ -85,7 +85,7 @@ class GuildLogger
     companion object {
         private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd-M-yyyy hh:mm a O")
         private val LOG = LoggerFactory.getLogger(GuildLogger::class.java)
-        private val LIGHT_BLUE = Color(52, 152, 219)
+        val LIGHT_BLUE = Color(52, 152, 219)
         private const val LOG_ENTRY_CHECK_LIMIT = 5
     }
 
