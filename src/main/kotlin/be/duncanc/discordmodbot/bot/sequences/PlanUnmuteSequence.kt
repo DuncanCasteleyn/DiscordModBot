@@ -58,7 +58,7 @@ open class PlanUnmuteSequence(
                 .setTitle("User unmuted planned")
                 .addField("User", guild.getMember(targetUser)?.nicknameAndUsername ?: targetUser.name, true)
                 .addField("Moderator", guild.getMember(user)?.nicknameAndUsername ?: user.name, true)
-                .addField("Unmute planned on", unmuteDateTime.format(messageTimeFormat), false)
+                .addField("Unmute planned after", unmuteDateTime.format(messageTimeFormat), false)
 
         guildLogger.log(logEmbed, targetUser, guild, null, GuildLogger.LogTypeAction.MODERATOR)
     }
