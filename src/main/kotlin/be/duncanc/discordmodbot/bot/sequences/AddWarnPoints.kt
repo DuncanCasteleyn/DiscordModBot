@@ -178,7 +178,7 @@ class AddWarnPoints(
             ).orElse(GuildWarnPoints(targetUser.idLong, guild.idLong))
             val userWarnPoints = UserWarnPoints(
                     points = points!!,
-                    creatorId = targetUser.idLong,
+                    creatorId = user.idLong,
                     reason = reason!!,
                     expireDate = expireDate!!
             )
