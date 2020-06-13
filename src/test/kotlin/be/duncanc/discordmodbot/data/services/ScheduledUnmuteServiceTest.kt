@@ -1,28 +1,34 @@
 package be.duncanc.discordmodbot.data.services
 
 import be.duncanc.discordmodbot.bot.RunBots
+import be.duncanc.discordmodbot.data.entities.MuteRole
 import be.duncanc.discordmodbot.data.entities.ScheduledUnmute
 import be.duncanc.discordmodbot.data.repositories.MuteRolesRepository
 import be.duncanc.discordmodbot.data.repositories.ScheduledUnmuteRepository
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
+import com.nhaarman.mockitokotlin2.*
+import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.entities.Role
+import net.dv8tion.jda.api.requests.restaction.AuditableRestAction
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.boot.test.mock.mockito.SpyBean
 import java.time.OffsetDateTime
+import java.util.*
 
 @SpringBootTest(classes = [ScheduledUnmuteService::class])
 @ExtendWith(MockitoExtension::class)
 internal class ScheduledUnmuteServiceTest {
     @MockBean
-    lateinit var unmuteRepository: ScheduledUnmuteRepository
+    lateinit var scheduledUnmuteRepository: ScheduledUnmuteRepository
 
     @MockBean
     lateinit var muteRolesRepository: MuteRolesRepository
@@ -30,12 +36,24 @@ internal class ScheduledUnmuteServiceTest {
     @MockBean
     lateinit var runBots: RunBots
 
+    @Mock
+    lateinit var jda: JDA
+
+    @Mock
+    lateinit var guild: Guild
+
+    @Mock
+    lateinit var role: Role
+
+    @Mock
+    lateinit var auditableRestAction: AuditableRestAction<Void>
+
     @SpyBean
     lateinit var scheduledUnmuteService: ScheduledUnmuteService
 
     @AfterEach
     fun `verify no more interactions with any mock or spy`() {
-        verifyNoMoreInteractions(unmuteRepository, muteRolesRepository, runBots, scheduledUnmuteService)
+        verifyNoMoreInteractions(scheduledUnmuteRepository, muteRolesRepository, runBots, scheduledUnmuteService, jda, guild, role)
     }
 
     @Test
@@ -78,6 +96,30 @@ internal class ScheduledUnmuteServiceTest {
 
         verify(scheduledUnmuteService).planUnmute(0, 0, unmuteDateTime)
         @Suppress("RemoveExplicitTypeArguments")
-        verify(unmuteRepository).save(any<ScheduledUnmute>())
+        verify(scheduledUnmuteRepository).save(any<ScheduledUnmute>())
+    }
+
+    @Test
+    fun `Performing unmute should work`() {
+        // Arrange
+        val scheduledUnmute = ScheduledUnmute(1, 1, OffsetDateTime.MIN)
+        whenever(scheduledUnmuteRepository.findByUnmuteDateTimeAfter(any())).thenReturn(Collections.singleton(scheduledUnmute))
+        whenever(runBots.runningBots).thenReturn(Collections.singletonList(jda))
+        val muteRole = Optional.of(MuteRole(1, 1))
+        whenever(muteRolesRepository.findById(any())).thenReturn(muteRole)
+        whenever(jda.getGuildById(1)).thenReturn(guild)
+        whenever(guild.getRoleById(1)).thenReturn(role)
+        whenever(guild.removeRoleFromMember(1, role)).thenReturn(auditableRestAction)
+        // Act
+        scheduledUnmuteService.performUnmute()
+        // Verify
+        verify(scheduledUnmuteService).performUnmute()
+        verify(scheduledUnmuteRepository).findByUnmuteDateTimeAfter(any())
+        verify(jda).getGuildById(1)
+        verify(runBots).runningBots
+        verify(guild).idLong
+        verify(muteRolesRepository).findById(any())
+        verify(guild).getRoleById(1)
+        verify(guild).removeRoleFromMember(eq<Long>(1), any())
     }
 }
