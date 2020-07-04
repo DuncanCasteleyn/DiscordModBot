@@ -8,7 +8,6 @@ import be.duncanc.discordmodbot.data.repositories.ScheduledUnmuteRepository
 import com.nhaarman.mockitokotlin2.*
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Guild
-import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Role
 import net.dv8tion.jda.api.requests.restaction.AuditableRestAction
 import org.junit.jupiter.api.AfterEach
@@ -103,7 +102,7 @@ internal class ScheduledUnmuteServiceTest {
     fun `Performing unmute should work`() {
         // Arrange
         val scheduledUnmute = ScheduledUnmute(1, 1, OffsetDateTime.MIN)
-        whenever(scheduledUnmuteRepository.findByUnmuteDateTimeAfter(any())).thenReturn(Collections.singleton(scheduledUnmute))
+        whenever(scheduledUnmuteRepository.findAllByUnmuteDateTimeIsBefore(any())).thenReturn(Collections.singleton(scheduledUnmute))
         whenever(runBots.runningBots).thenReturn(Collections.singletonList(jda))
         val muteRole = Optional.of(MuteRole(1, 1))
         whenever(muteRolesRepository.findById(any())).thenReturn(muteRole)
@@ -114,7 +113,7 @@ internal class ScheduledUnmuteServiceTest {
         scheduledUnmuteService.performUnmute()
         // Verify
         verify(scheduledUnmuteService).performUnmute()
-        verify(scheduledUnmuteRepository).findByUnmuteDateTimeAfter(any())
+        verify(scheduledUnmuteRepository).findAllByUnmuteDateTimeIsBefore(any())
         verify(jda).getGuildById(1)
         verify(runBots).runningBots
         verify(guild).idLong

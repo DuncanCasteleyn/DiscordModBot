@@ -36,7 +36,7 @@ class ScheduledUnmuteService(
     @Scheduled(fixedRate = 1000 * 60 * 60)
     @Transactional
     fun performUnmute() {
-        scheduledUnmuteRepository.findByUnmuteDateTimeAfter(OffsetDateTime.now()).forEach { scheduleUnmute ->
+        scheduledUnmuteRepository.findAllByUnmuteDateTimeIsBefore(OffsetDateTime.now()).forEach { scheduleUnmute ->
             runBots.runningBots.forEach { jda ->
                 val guild = jda.getGuildById(scheduleUnmute.guildId)
                 if (guild != null) {

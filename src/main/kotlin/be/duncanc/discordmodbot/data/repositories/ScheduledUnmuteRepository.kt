@@ -7,5 +7,5 @@ import java.time.OffsetDateTime
 
 @Repository
 interface ScheduledUnmuteRepository : CrudRepository<ScheduledUnmute, ScheduledUnmute.ScheduledUnmuteId> {
-    fun findByUnmuteDateTimeAfter(unmuteDateTime: OffsetDateTime): Iterable<ScheduledUnmute>
+    fun findAllByUnmuteDateTimeIsBefore(unmuteDateTime: OffsetDateTime): Iterable<ScheduledUnmute>
 }
