@@ -25,7 +25,6 @@ plugins {
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.spring") version kotlinVersion
     kotlin("plugin.jpa") version kotlinVersion
-    id("net.ossindex.audit") version "0.4.11"
 }
 
 
@@ -73,7 +72,6 @@ tasks {
         useJUnitPlatform()
     }
     withType<KotlinCompile> {
-        dependsOn(audit)
         dependsOn(processResources)
         kotlinOptions {
             freeCompilerArgs = listOf("-Xjsr305=strict", "-progressive")
@@ -84,7 +82,6 @@ tasks {
         gradleVersion = "6.5.1"
     }
     withType<JavaCompile> {
-        dependsOn(audit)
         dependsOn(processResources)
         options.encoding = "UTF-8"
         options.compilerArgs.add("-Xlint:deprecation")
