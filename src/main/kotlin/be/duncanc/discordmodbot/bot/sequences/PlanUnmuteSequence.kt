@@ -55,7 +55,7 @@ open class PlanUnmuteSequence(
     private fun logScheduledMute(guild: Guild, unmuteDateTime: OffsetDateTime) {
         val logEmbed = EmbedBuilder()
                 .setColor(GuildLogger.LIGHT_BLUE)
-                .setTitle("User unmuted planned")
+                .setTitle("User unmute planned")
                 .addField("User", guild.getMember(targetUser)?.nicknameAndUsername ?: targetUser.name, true)
                 .addField("Moderator", guild.getMember(user)?.nicknameAndUsername ?: user.name, true)
                 .addField("Unmute planned after", unmuteDateTime.format(messageTimeFormat), false)
