@@ -44,6 +44,7 @@ open class PlanUnmuteSequence(
         confirmationMessage()
         val guild = channel.guild
         logScheduledMute(guild, unmuteDateTime)
+        super.destroy()
     }
 
     private fun confirmationMessage() {
