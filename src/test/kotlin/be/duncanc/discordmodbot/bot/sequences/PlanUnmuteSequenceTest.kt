@@ -84,11 +84,14 @@ internal class PlanUnmuteSequenceTest {
         whenever(channel.guild).thenReturn(guild)
         whenever(targetUser.name).thenReturn("A target user")
         whenever(user.name).thenReturn("A moderator")
+        whenever(user.jda).thenReturn(jda)
         // Act
         val methodInvocationName = "onMessageReceivedDuringSequence"
         ReflectionTestUtils.invokeMethod<Void>(
-                planUnmuteSequence, methodInvocationName,
-                messageReceivedEvent)
+                planUnmuteSequence,
+                methodInvocationName,
+                messageReceivedEvent
+        )
         // Verify
         verify(scheduledUnmuteService).planUnmute(any(), any(), any())
         val onMessageReceivedDuringSequence = mockingDetails(planUnmuteSequence).invocations.filter { it.method.name == methodInvocationName }
@@ -102,6 +105,7 @@ internal class PlanUnmuteSequenceTest {
         verify(guild).getMember(user)
         verify(guild).getMember(targetUser)
         verify(guildLogger).log(any(), eq(targetUser), eq(guild), eq(null), eq(GuildLogger.LogTypeAction.MODERATOR), eq(null))
+        verify(jda).removeEventListener(planUnmuteSequence)
     }
 
     @Test
