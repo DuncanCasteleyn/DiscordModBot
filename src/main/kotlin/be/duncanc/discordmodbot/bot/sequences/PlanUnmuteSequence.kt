@@ -48,7 +48,7 @@ open class PlanUnmuteSequence(
     }
 
     private fun confirmationMessage() {
-        super.channel.sendMessage("Unmute has been been planned.").queue {
+        super.channel.sendMessage("Unmute has been planned.").queue {
             it.delete().queueAfter(1, TimeUnit.MINUTES)
         }
     }
