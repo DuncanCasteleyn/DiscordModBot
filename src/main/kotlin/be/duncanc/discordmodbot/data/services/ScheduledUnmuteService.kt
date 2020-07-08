@@ -36,14 +36,15 @@ class ScheduledUnmuteService(
     @Scheduled(fixedRate = 1000 * 60 * 60)
     @Transactional
     fun performUnmute() {
-        scheduledUnmuteRepository.findAllByUnmuteDateTimeIsBefore(OffsetDateTime.now()).forEach { scheduleUnmute ->
+        scheduledUnmuteRepository.findAllByUnmuteDateTimeIsBefore(OffsetDateTime.now()).forEach { scheduledUnmute ->
             runBots.runningBots.forEach { jda ->
-                val guild = jda.getGuildById(scheduleUnmute.guildId)
-                if (guild != null) {
-                    muteRolesRepository.findById(guild.idLong).ifPresent { muteRole ->
-                        guild.getRoleById(muteRole.roleId)?.let { role ->
-                            guild.removeRoleFromMember(scheduleUnmute.userId, role).queue {
-                                scheduledUnmuteRepository.delete(scheduleUnmute)
+                jda.getGuildById(scheduledUnmute.guildId)?.let { guild ->
+                    guild.getMemberById(scheduledUnmute.userId)?.let {member ->
+                        muteRolesRepository.findById(guild.idLong).ifPresent { muteRole ->
+                            guild.getRoleById(muteRole.roleId)?.let { role ->
+                                guild.removeRoleFromMember(member, role).queue {
+                                    scheduledUnmuteRepository.delete(scheduledUnmute)
+                                }
                             }
                         }
                     }
