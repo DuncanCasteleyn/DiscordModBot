@@ -34,8 +34,10 @@ class ChannelOrderLocker(
             guildChannelParentCache[guildId] = HashMap()
             val orderLockUnlock = channelOrderLock.copy(unlocked = true)
             channelOrderLockRepository.save(orderLockUnlock)
-            event.channel.sendMessage("${event.author.asMention} Any moderator can now change the order of one channel.").queue {
-                it.delete().queueAfter(1, MINUTES)
+            event.channel.sendMessage("${event.author.asMention} Any moderator can now change the order of channel for 2 minutes.").queue {
+                it.delete().queueAfter(2, MINUTES) {
+                    lockChannels(channelOrderLock)
+                }
             }
         }
     }
@@ -47,8 +49,6 @@ class ChannelOrderLocker(
                 .orElse(ChannelOrderLock(guildId))
         if (channelOrderLock.enabled && channelOrderLock.locked) {
             restoreOriginalChannelPosition(event)
-        } else {
-            lockChannels(channelOrderLock)
         }
     }
 
@@ -77,8 +77,6 @@ class ChannelOrderLocker(
                 .orElse(ChannelOrderLock(guildId))
         if (channelOrderLock.enabled && channelOrderLock.locked) {
             restoreOriginalParent(event)
-        } else {
-            lockChannels(channelOrderLock)
         }
     }
 

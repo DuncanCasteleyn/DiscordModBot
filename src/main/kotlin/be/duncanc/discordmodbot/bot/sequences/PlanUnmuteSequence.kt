@@ -92,12 +92,12 @@ class PlanUnmuteCommand(
             ) {
                 event.jda.addEventListener(PlanUnmuteSequence(event.author, event.channel, scheduledUnmuteService, memberById.user, guildLogger))
             } else {
-                userNotMutedMessage(event)
+                sendUserNotMutedMessage(event)
             }
         }
     }
 
-    private fun userNotMutedMessage(event: MessageReceivedEvent) {
+    private fun sendUserNotMutedMessage(event: MessageReceivedEvent) {
         event.channel.sendMessage("${event.author.asMention} This user is not muted.").queue {
             it.delete().queueAfter(1, TimeUnit.MINUTES)
         }
