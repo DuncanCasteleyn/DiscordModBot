@@ -1,16 +1,21 @@
 package be.duncanc.discordmodbot.data.services
 
 import be.duncanc.discordmodbot.bot.RunBots
+import be.duncanc.discordmodbot.bot.services.GuildLogger
+import be.duncanc.discordmodbot.bot.services.GuildLogger.LogTypeAction.MODERATOR
+import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.entities.MuteRole
 import be.duncanc.discordmodbot.data.entities.ScheduledUnmute
 import be.duncanc.discordmodbot.data.repositories.MuteRolesRepository
 import be.duncanc.discordmodbot.data.repositories.ScheduledUnmuteRepository
+import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Role
 import org.springframework.context.annotation.Lazy
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
+import java.awt.Color
 import java.time.OffsetDateTime
 import javax.transaction.Transactional
 
@@ -18,6 +23,7 @@ import javax.transaction.Transactional
 class ScheduledUnmuteService(
         private val scheduledUnmuteRepository: ScheduledUnmuteRepository,
         private val muteRolesRepository: MuteRolesRepository,
+        private val guildLogger: GuildLogger,
         @Lazy
         private val runBots: RunBots
 ) {
@@ -42,34 +48,64 @@ class ScheduledUnmuteService(
     fun performUnmute() {
         scheduledUnmuteRepository.findAllByUnmuteDateTimeIsBefore(OffsetDateTime.now()).forEach { scheduledUnmute ->
             runBots.runningBots.forEach { jda ->
-                jda.getGuildById(scheduledUnmute.guildId)?.let(getMemberToUnmute(scheduledUnmute))
+                jda.getGuildById(scheduledUnmute.guildId)?.let { guild ->
+                    getMemberToUnmute(scheduledUnmute, guild)
+                }
             }
         }
     }
 
-    private fun getMemberToUnmute(scheduledUnmute: ScheduledUnmute): (Guild) -> Unit {
-        return { guild ->
-            guild.getMemberById(scheduledUnmute.userId)?.let(getMuteRoleFromRepository(guild, scheduledUnmute))
+    private fun getMemberToUnmute(scheduledUnmute: ScheduledUnmute, guild: Guild) {
+        guild.getMemberById(scheduledUnmute.userId)?.let { member ->
+            getMuteRoleFromRepository(guild, scheduledUnmute, member)
         }
     }
 
-    private fun getMuteRoleFromRepository(guild: Guild, scheduledUnmute: ScheduledUnmute): (Member) -> Unit {
-        return { member ->
-            muteRolesRepository.findById(guild.idLong).ifPresent { muteRole ->
-                getMuteRoleFromGuild(guild, muteRole, member, scheduledUnmute)
-            }
+    private fun getMuteRoleFromRepository(guild: Guild, scheduledUnmute: ScheduledUnmute, member: Member) {
+        muteRolesRepository.findById(guild.idLong).ifPresent { muteRole ->
+            getMuteRoleFromGuild(guild, muteRole, member, scheduledUnmute)
         }
     }
 
     private fun getMuteRoleFromGuild(guild: Guild, muteRole: MuteRole, member: Member, scheduledUnmute: ScheduledUnmute) {
-        guild.getRoleById(muteRole.roleId)?.let(removeMute(guild, member, scheduledUnmute))
+        guild.getRoleById(muteRole.roleId)?.let { role ->
+            removeMute(guild, member, scheduledUnmute, role)
+        }
     }
 
-    private fun removeMute(guild: Guild, member: Member, scheduledUnmute: ScheduledUnmute): (Role) -> Unit {
-        return { role ->
-            guild.removeRoleFromMember(member, role).queue {
-                scheduledUnmuteRepository.delete(scheduledUnmute)
-            }
+    private fun removeMute(guild: Guild, member: Member, scheduledUnmute: ScheduledUnmute, role: Role) {
+        guild.removeRoleFromMember(member, role).queue {
+            scheduledUnmuteRepository.delete(scheduledUnmute)
+            logUnmute(guild, member)
+            informUserIsUnmuted(member)
+        }
+    }
+
+    private fun logUnmute(guild: Guild, member: Member) {
+        val logEmbed = EmbedBuilder()
+                .setColor(Color.green)
+                .setTitle("User unmuted")
+                .addField("User", member.nicknameAndUsername, true)
+                .addField("Reason", "Mute expired", false)
+
+        guildLogger.log(logEmbed, member.user, guild, null, MODERATOR)
+    }
+
+    private fun informUserIsUnmuted(member: Member) {
+        val selfUser = member.jda.selfUser
+        val guild = member.guild
+        val embed = EmbedBuilder()
+                .setColor(Color.green)
+                .setAuthor(
+                        guild.getMember(selfUser)?.nicknameAndUsername ?: selfUser.name,
+                        null,
+                        selfUser.effectiveAvatarUrl
+                )
+                .setTitle(guild.name + ": Your mute has been removed")
+                .addField("Reason", "Mute expired", false)
+                .build()
+        member.user.openPrivateChannel().queue {
+            it.sendMessage(embed).queue()
         }
     }
 }

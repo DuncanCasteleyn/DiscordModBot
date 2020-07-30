@@ -1,6 +1,7 @@
 package be.duncanc.discordmodbot.data.services
 
 import be.duncanc.discordmodbot.bot.RunBots
+import be.duncanc.discordmodbot.bot.services.GuildLogger
 import be.duncanc.discordmodbot.data.entities.MuteRole
 import be.duncanc.discordmodbot.data.entities.ScheduledUnmute
 import be.duncanc.discordmodbot.data.repositories.MuteRolesRepository
@@ -8,6 +9,7 @@ import be.duncanc.discordmodbot.data.repositories.ScheduledUnmuteRepository
 import com.nhaarman.mockitokotlin2.*
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Role
 import net.dv8tion.jda.api.requests.restaction.AuditableRestAction
 import org.junit.jupiter.api.AfterEach
@@ -35,11 +37,17 @@ internal class ScheduledUnmuteServiceTest {
     @MockBean
     lateinit var runBots: RunBots
 
+    @MockBean
+    lateinit var guildLogger: GuildLogger
+
     @Mock
     lateinit var jda: JDA
 
     @Mock
     lateinit var guild: Guild
+
+    @Mock
+    lateinit var member: Member
 
     @Mock
     lateinit var role: Role
@@ -108,7 +116,8 @@ internal class ScheduledUnmuteServiceTest {
         whenever(muteRolesRepository.findById(any())).thenReturn(muteRole)
         whenever(jda.getGuildById(1)).thenReturn(guild)
         whenever(guild.getRoleById(1)).thenReturn(role)
-        whenever(guild.removeRoleFromMember(1, role)).thenReturn(auditableRestAction)
+        whenever(guild.removeRoleFromMember(member, role)).thenReturn(auditableRestAction)
+        whenever(guild.getMemberById(any<Long>())).thenReturn(member)
         // Act
         scheduledUnmuteService.performUnmute()
         // Verify
@@ -119,6 +128,6 @@ internal class ScheduledUnmuteServiceTest {
         verify(guild).idLong
         verify(muteRolesRepository).findById(any())
         verify(guild).getRoleById(1)
-        verify(guild).removeRoleFromMember(eq<Long>(1), any())
+        verify(guild).removeRoleFromMember(member, role)
     }
 }
