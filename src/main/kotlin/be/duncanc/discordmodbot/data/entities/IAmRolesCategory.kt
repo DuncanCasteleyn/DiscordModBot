@@ -74,9 +74,8 @@ constructor(
 
 
     data class IAmRoleId(
-        val guildId: Long? = null,
-
-        val categoryId: Long? = null
+            val guildId: Long? = null,
+            val categoryId: Long? = null
     ) : Serializable {
 
         override fun equals(other: Any?): Boolean {

@@ -19,6 +19,7 @@ package be.duncanc.discordmodbot.bot.services
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.sequences.Sequence
+import be.duncanc.discordmodbot.bot.utils.messageTimeFormat
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.entities.LoggingSettings
 import be.duncanc.discordmodbot.data.repositories.LoggingSettingsRepository
@@ -85,7 +86,7 @@ class GuildLogger
     companion object {
         private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd-M-yyyy hh:mm a O")
         private val LOG = LoggerFactory.getLogger(GuildLogger::class.java)
-        private val LIGHT_BLUE = Color(52, 152, 219)
+        val LIGHT_BLUE = Color(52, 152, 219)
         private const val LOG_ENTRY_CHECK_LIMIT = 5
     }
 
@@ -540,7 +541,7 @@ class GuildLogger
 
     override fun onGuildMemberUpdateNickname(event: GuildMemberUpdateNicknameEvent) {
         guildLoggerExecutor.schedule({
-            var moderator: User? = run {
+            val moderator: User? = run {
                 var findModerator: User? = null
                 var i = 0
                 for (logEntry in event.guild.retrieveAuditLogs().type(ActionType.MEMBER_UPDATE).cache(false).limit(

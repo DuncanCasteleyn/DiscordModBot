@@ -20,12 +20,11 @@ import org.springframework.boot.gradle.tasks.bundling.BootJar
 plugins {
     val kotlinVersion = "1.3.72"
 
-    id("org.springframework.boot") version "2.3.0.RELEASE"
+    id("org.springframework.boot") version "2.3.1.RELEASE"
     id("io.spring.dependency-management") version "1.0.9.RELEASE"
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.spring") version kotlinVersion
     kotlin("plugin.jpa") version kotlinVersion
-    id("net.ossindex.audit") version "0.4.11"
 }
 
 
@@ -38,7 +37,7 @@ dependencies {
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-reflect")
-    implementation(group = "net.dv8tion", name = "JDA", version = "4.1.1_165") {
+    implementation(group = "net.dv8tion", name = "JDA", version = "4.1.1_168") {
         exclude(group = "club.minnced", module = "opus-java")
     }
     implementation(group = "org.apache.commons", name = "commons-collections4", version = "4.2")
@@ -54,6 +53,7 @@ dependencies {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
     }
     testImplementation(group = "org.springframework.security", name = "spring-security-test")
+    testImplementation(group = "com.nhaarman.mockitokotlin2", name = "mockito-kotlin", version = "2.2.0")
 
     annotationProcessor(group = "org.springframework.boot", name = "spring-boot-configuration-processor")
 }
@@ -72,7 +72,6 @@ tasks {
         useJUnitPlatform()
     }
     withType<KotlinCompile> {
-        dependsOn(audit)
         dependsOn(processResources)
         kotlinOptions {
             freeCompilerArgs = listOf("-Xjsr305=strict", "-progressive")
@@ -80,10 +79,9 @@ tasks {
         }
     }
     withType<Wrapper> {
-        gradleVersion = "6.4.1"
+        gradleVersion = "6.5.1"
     }
     withType<JavaCompile> {
-        dependsOn(audit)
         dependsOn(processResources)
         options.encoding = "UTF-8"
         options.compilerArgs.add("-Xlint:deprecation")

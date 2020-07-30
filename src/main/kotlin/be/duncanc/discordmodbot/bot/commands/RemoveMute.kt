@@ -91,10 +91,7 @@ class RemoveMute : CommandModule(
                     val muteRemoveNotification = EmbedBuilder()
                         .setColor(Color.green)
                             .setAuthor(event.member!!.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
-                        .setTitle(
-                                event.guild.name + ": Your mute has been removed by " + event.member!!.nicknameAndUsername,
-                            null
-                        )
+                        .setTitle(event.guild.name + ": Your mute has been removed by " + event.member!!.nicknameAndUsername)
                         .addField("Reason", reason, false)
                         .build()
 

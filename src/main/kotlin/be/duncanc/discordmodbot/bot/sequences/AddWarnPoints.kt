@@ -55,6 +55,7 @@ class AddWarnPoints(
     companion object {
         val illegalStateException = IllegalStateException("The announcement channel needs to be configured by a server administrator")
         val LOG: Logger = LoggerFactory.getLogger(AddWarnPoints::class.java)
+        val reasonSizeLimit = 1024
     }
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
@@ -109,6 +110,7 @@ class AddWarnPoints(
             user,
             channel
     ) {
+
         private var reason: String? = null
         private var points: Int? = null
         private var expireDate: OffsetDateTime? = null
@@ -129,10 +131,14 @@ class AddWarnPoints(
             }
             when {
                 reason == null -> {
-                    reason = event.message.contentDisplay
+                    val contentDisplay = event.message.contentDisplay
+                    if(contentDisplay.length > reasonSizeLimit) {
+                        throw IllegalArgumentException("Reasons cannot exceed $reasonSizeLimit characters")
+                    }
+                    reason = contentDisplay
                     if (guildPointsSettings.maxPointsPerReason == 1) {
                         points = guildPointsSettings.maxPointsPerReason
-                        channel.sendMessage("In how much days should these point(s) expire?").queue()
+                        askForExpireTime()
                     } else {
                         channel.sendMessage("Please enter the amount of points to assign. Your server administrator(s) has/have set a maximum of " + guildPointsSettings.maxPointsPerReason + " per reason")
                                 .queue { super.addMessageToCleaner(it) }
@@ -144,7 +150,7 @@ class AddWarnPoints(
                         throw IllegalArgumentException("This amount is above the maximum per reason")
                     }
                     points = inputPoints
-                    channel.sendMessage("In how much days should these point(s) expire?").queue()
+                    askForExpireTime()
                 }
                 expireDate == null -> {
                     val days = event.message.contentRaw.toLong()
@@ -166,6 +172,10 @@ class AddWarnPoints(
                     processSequence(event, guildPointsSettings)
                 }
             }
+        }
+
+        private fun askForExpireTime() {
+            channel.sendMessage("In how much days should these point(s) expire?").queue()
         }
 
         private fun processSequence(event: MessageReceivedEvent, guildPointsSettings: GuildWarnPointsSettings) {
