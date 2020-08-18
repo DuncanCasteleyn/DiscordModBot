@@ -32,7 +32,9 @@ import kotlin.concurrent.thread
  *
  * @property executor provides the service to execute event handling.
  * @since 1.1.0
+ * @Deprecated Causes extra overhead which is not something we want
  */
+@Deprecated("Removing in the future, causes extra overhead")
 internal class ExecutorServiceEventManager
 constructor(
         name: String

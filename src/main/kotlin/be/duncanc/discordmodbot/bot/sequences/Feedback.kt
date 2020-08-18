@@ -109,11 +109,11 @@ class Feedback
     }
 
     inner class SetFeedbackChannel : CommandModule(
-        arrayOf("SetFeedbackChannel"),
-        null,
-        "This command sets the current channel as feedback channel enabling the !feedback command for the server.",
-        ignoreWhitelist = true,
-        requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)
+            arrayOf("SetFeedbackChannel"),
+            null,
+            "This command sets the current channel as feedback channel enabling the !feedback command for the server.",
+            ignoreWhitelist = true,
+            requiredPermissions = arrayOf(Permission.MANAGE_CHANNEL)
     ) {
         override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
             reportChannelRepository.save(ReportChannel(event.guild.idLong, event.textChannel.idLong))
@@ -123,11 +123,11 @@ class Feedback
     }
 
     inner class DisableFeedback : CommandModule(
-        arrayOf("DisableFeedback"),
-        null,
-        "This command disables the feedback system for the server where executed.",
-        ignoreWhitelist = true,
-        requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)
+            arrayOf("DisableFeedback"),
+            null,
+            "This command disables the feedback system for the server where executed.",
+            ignoreWhitelist = true,
+            requiredPermissions = arrayOf(Permission.MANAGE_CHANNEL)
     ) {
         override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
             reportChannelRepository.deleteById(event.guild.idLong)

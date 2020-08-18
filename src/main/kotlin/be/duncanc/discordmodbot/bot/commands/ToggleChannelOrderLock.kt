@@ -15,7 +15,7 @@ class ToggleChannelOrderLock(
         arrayOf("ToggleChannelOrderLock"),
         null,
         "Enables/disables channel order locking for the guild",
-        requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)
+        requiredPermissions = arrayOf(Permission.MANAGE_CHANNEL)
 ) {
     @Transactional
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {

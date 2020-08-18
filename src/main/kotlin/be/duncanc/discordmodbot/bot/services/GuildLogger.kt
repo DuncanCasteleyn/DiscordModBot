@@ -19,7 +19,6 @@ package be.duncanc.discordmodbot.bot.services
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.sequences.Sequence
-import be.duncanc.discordmodbot.bot.utils.messageTimeFormat
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.entities.LoggingSettings
 import be.duncanc.discordmodbot.data.repositories.LoggingSettingsRepository
@@ -593,7 +592,7 @@ class GuildLogger
             arrayOf("LogSettings"),
             null,
             "Adjust server settings.",
-            requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)
+            requiredPermissions = arrayOf(Permission.MANAGE_CHANNEL)
     ) {
 
         @Transactional

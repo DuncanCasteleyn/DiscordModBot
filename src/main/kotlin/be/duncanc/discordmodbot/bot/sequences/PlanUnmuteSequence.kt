@@ -75,7 +75,7 @@ class PlanUnmuteCommand(
         null,
         null,
         ignoreWhitelist = true,
-        requiredPermissions = *arrayOf(Permission.MANAGE_ROLES)
+        requiredPermissions = arrayOf(Permission.MANAGE_ROLES)
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         val userId = try {

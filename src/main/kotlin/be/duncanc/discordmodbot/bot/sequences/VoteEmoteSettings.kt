@@ -31,10 +31,9 @@ import java.util.concurrent.TimeUnit
 class VoteEmoteSettings(
     val votingEmotesRepository: VotingEmotesRepository
 ) : CommandModule(
-    arrayOf("VoteEmoteSettings", "VoteSettings"),
-    null,
-    "Command to change the vote yes and no emotes for a server"
-    , requiredPermissions = *arrayOf(Permission.MANAGE_EMOTES)
+        arrayOf("VoteEmoteSettings", "VoteSettings"),
+        null,
+        "Command to change the vote yes and no emotes for a server", requiredPermissions = arrayOf(Permission.MANAGE_EMOTES)
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.jda.addEventListener(VoteEmoteSettingsSequence(votingEmotesRepository, event.author, event.channel))

@@ -16,7 +16,6 @@
 
 package be.duncanc.discordmodbot.bot
 
-import be.duncanc.discordmodbot.bot.utils.ExecutorServiceEventManager
 import be.duncanc.discordmodbot.data.configs.properties.DiscordModBotConfig
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.JDABuilder
@@ -47,7 +46,6 @@ class RunBots
 
     val runningBots: List<JDA> = discordModBotConfig.botTokens.map {
         JDABuilder.create(it, INTENTS)
-                .setEventManager(ExecutorServiceEventManager(it.substring(30)))
                 .setBulkDeleteSplittingEnabled(false)
                 .disableCache(CacheFlag.VOICE_STATE)
                 .addEventListeners(*listenerAdapters)
