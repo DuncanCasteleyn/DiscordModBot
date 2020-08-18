@@ -55,7 +55,7 @@ class AddWarnPoints(
     companion object {
         val illegalStateException = IllegalStateException("The announcement channel needs to be configured by a server administrator")
         val LOG: Logger = LoggerFactory.getLogger(AddWarnPoints::class.java)
-        val reasonSizeLimit = 1024
+        const val reasonSizeLimit = 1024
     }
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
