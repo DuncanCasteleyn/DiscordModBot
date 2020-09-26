@@ -49,9 +49,10 @@ class RevokeWarnPoints(
     ) {
         init {
             val messageBuilder = MessageBuilder("The user has had the following warnings in the past:\n\n")
-            userGuildWarnPoints.points.forEachIndexed { index, userWarnPoints ->
+            userGuildWarnPoints.points.forEach { userWarnPoints ->
                 messageBuilder.append("${userWarnPoints.id}. ${userWarnPoints.reason}\n")
             }
+            messageBuilder.append("\n\nPlease enter the ID of the warning to revoke it.")
             messageBuilder.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach {
                 channel.sendMessage(it).queue { sendMessage -> super.addMessageToCleaner(sendMessage) }
             }
@@ -64,8 +65,15 @@ class RevokeWarnPoints(
             if (selectedUserWarnPoints != null) {
                 userGuildWarnPoints.points.remove(selectedUserWarnPoints)
                 guildWarnPointsRepository.save(userGuildWarnPoints)
+                channel.sendMessage("The warning has been revoked.").queue {
+                    it.delete().queueAfter(1, TimeUnit.MINUTES)
+                }
+                super.destroy()
             } else {
-                TODO("Not yet implemented")
+                channel.sendMessage("The warning with that id was not found.").queue {
+                    it.delete().queueAfter(1, TimeUnit.MINUTES)
+                }
+                super.destroy()
             }
         }
     }
