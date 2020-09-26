@@ -25,7 +25,11 @@ class RevokeWarnPoints(
         ignoreWhitelist = true
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-        val userId = event.message.contentRaw.substring(command.length + 2).trimStart('<', '@', '!').trimEnd('>').toLong()
+        val userId = try {
+            event.message.contentRaw.substring(command.length + 2).trimStart('<', '@', '!').trimEnd('>').toLong()
+        } catch (stringIndexOutOfBoundsException: StringIndexOutOfBoundsException) {
+            throw IllegalArgumentException("A mention is required to use this command", stringIndexOutOfBoundsException)
+        }
         val userGuildWarnPoints = guildWarnPointsRepository.findById(GuildWarnPoints.GuildWarnPointsId(userId, event.guild.idLong))
         userGuildWarnPoints.ifPresentOrElse(
                 {
