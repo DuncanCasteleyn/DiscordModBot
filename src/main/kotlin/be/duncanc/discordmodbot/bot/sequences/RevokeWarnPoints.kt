@@ -54,7 +54,7 @@ class RevokeWarnPoints(
         init {
             val messageBuilder = MessageBuilder("The user has had the following warnings in the past:\n\n")
             userGuildWarnPoints.points.forEach { userWarnPoints ->
-                messageBuilder.append("${userWarnPoints.id}. ${userWarnPoints.reason}\n")
+                messageBuilder.append("$userWarnPoints\n\n")
             }
             messageBuilder.append("\n\nPlease enter the ID of the warning to revoke it.")
             messageBuilder.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach {
