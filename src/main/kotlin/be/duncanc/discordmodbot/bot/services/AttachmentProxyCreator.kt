@@ -16,11 +16,11 @@
 
 package be.duncanc.discordmodbot.bot.services
 
+import be.duncanc.discordmodbot.bot.utils.IOUtils
 import be.duncanc.discordmodbot.bot.utils.limitLessBulkDelete
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
 import org.apache.commons.collections4.map.LinkedMap
-import org.apache.tomcat.util.http.fileupload.IOUtils
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Async
 import org.springframework.scheduling.annotation.AsyncResult

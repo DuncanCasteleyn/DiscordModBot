@@ -29,8 +29,6 @@ plugins {
 
 
 dependencies {
-    implementation(group = "org.springframework.boot", name = "spring-boot-starter-security")
-    implementation(group = "org.springframework.boot", name = "spring-boot-starter-web")
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-data-jpa")
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-validation")
     implementation(group = "org.flywaydb", name = "flyway-core")
@@ -52,7 +50,6 @@ dependencies {
     testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-test") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
     }
-    testImplementation(group = "org.springframework.security", name = "spring-security-test")
     testImplementation(group = "com.nhaarman.mockitokotlin2", name = "mockito-kotlin", version = "2.2.0")
 
     annotationProcessor(group = "org.springframework.boot", name = "spring-boot-configuration-processor")
