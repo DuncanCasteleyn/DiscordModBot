@@ -19,7 +19,7 @@ class ChannelOrderLocker(
         arrayOf("unlockChannelOrder"),
         null,
         "Allows you to change the order of one channel per execution",
-        requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)
+        requiredPermissions = arrayOf(Permission.MANAGE_CHANNEL)
 ) {
     private val guildChannelPositionCache = HashMap<Long, HashMap<Long, Int>>()
     private val guildChannelParentCache = HashMap<Long, HashMap<Long, Category?>>()

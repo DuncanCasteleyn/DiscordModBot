@@ -238,7 +238,7 @@ internal constructor(
     /**
      * This sequences questions a user.
      */
-    private inner class QuestionSequence internal constructor(
+    private inner class QuestionSequence(
             user: User,
             channel: MessageChannel,
             private val question: String
@@ -324,7 +324,7 @@ internal constructor(
     /**
      * This sequences allows to configure the gate
      */
-    private inner class ConfigureSequence internal constructor(user: User, channel: MessageChannel) :
+    private inner class ConfigureSequence(user: User, channel: MessageChannel) :
             Sequence(user, channel) {
         private var sequenceNumber: Byte = 0
         private lateinit var questions: List<String>
@@ -570,7 +570,7 @@ internal constructor(
     /**
      * Sequence to review user answers
      */
-    private inner class ReviewSequence internal constructor(
+    private inner class ReviewSequence(
             user: User,
             channel: MessageChannel,
             private val userId: Long

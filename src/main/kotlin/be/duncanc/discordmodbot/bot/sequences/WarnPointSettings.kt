@@ -34,10 +34,10 @@ import java.util.concurrent.TimeUnit
 class WarnPointSettings(
     val guildWarnPointsSettingsRepository: GuildWarnPointsSettingsRepository
 ) : CommandModule(
-    arrayOf("WarnPointSettings"),
-    null,
-    "This command allows you to modify the settings for the point system.",
-    requiredPermissions = *arrayOf(Permission.ADMINISTRATOR)
+        arrayOf("WarnPointSettings"),
+        null,
+        "This command allows you to modify the settings for the point system.",
+        requiredPermissions = arrayOf(Permission.ADMINISTRATOR)
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.jda.addEventListener(PointSettingsSequence(event.author, event.textChannel))

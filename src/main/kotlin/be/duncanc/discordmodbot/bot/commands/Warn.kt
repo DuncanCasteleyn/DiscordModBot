@@ -50,7 +50,7 @@ class Warn
         "Warns as user by sending the user mentioned a message and logs the warning to the log channel.",
         true,
         true,
-        requiredPermissions = *arrayOf(Permission.KICK_MEMBERS)
+        requiredPermissions = arrayOf(Permission.KICK_MEMBERS)
 ) {
 
 

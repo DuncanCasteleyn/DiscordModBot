@@ -39,10 +39,10 @@ import kotlin.collections.ArrayList
 
 @Component
 class CreateEvent : CommandModule(
-    arrayOf("CreateEvent"),
-    "<event id/name> <subscribers role> <emote to react to> <event text>",
-    "Creates an event, including role and message to announce the event",
-    requiredPermissions = *arrayOf(Permission.MANAGE_ROLES)
+        arrayOf("CreateEvent"),
+        "<event id/name> <subscribers role> <emote to react to> <event text>",
+        "Creates an event, including role and message to announce the event",
+        requiredPermissions = arrayOf(Permission.MANAGE_ROLES)
 ) {
 
     companion object {

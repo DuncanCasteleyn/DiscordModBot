@@ -26,10 +26,9 @@ import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import org.slf4j.LoggerFactory
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.*
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
 /**
@@ -49,8 +48,7 @@ abstract class Sequence
     }
 
     private val cleanAfterSequence: ArrayList<Message>?
-    private val sequenceKillerExecutor: ScheduledExecutorService
-    private var cleaner: ScheduledFuture<*>
+    private val expireInstant: Instant = Instant.now().plus(5, ChronoUnit.MINUTES)
 
     init {
         if (cleanAfterSequence && channel is TextChannel) {
@@ -58,12 +56,6 @@ abstract class Sequence
         } else {
             this.cleanAfterSequence = null
         }
-        sequenceKillerExecutor = Executors.newSingleThreadScheduledExecutor { r ->
-            val t = Thread(r, "Sequence Thread $this")
-            t.isDaemon = true
-            t
-        }
-        cleaner = sequenceKillerExecutor.schedule({ this.destroy() }, 5, TimeUnit.MINUTES)
         if (informUser) {
             try {
                 channel.sendMessage(
@@ -94,11 +86,9 @@ abstract class Sequence
      * When {@code onMessageReceivedDuringSequence(event)} throws an exception it catches it, send the exception name and message and terminate the sequences.
      */
     override fun onMessageReceived(event: MessageReceivedEvent) {
-        if (cleaner.isDone || sequenceKillerExecutor.isShutdown || event.channel != channel || event.author != user) {
+        if (event.author != user) {
             return
         }
-
-        cleaner.cancel(false)
         addMessageToCleaner(event.message)
         if (event.message.contentRaw == "STOP") {
             destroy()
@@ -115,10 +105,6 @@ abstract class Sequence
                             .build()
             channel.sendMessage(errorMessage).queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
             return
-        }
-
-        if (!sequenceKillerExecutor.isShutdown) {
-            cleaner = sequenceKillerExecutor.schedule({ this.destroy() }, 5, TimeUnit.MINUTES)
         }
     }
 
@@ -139,9 +125,8 @@ abstract class Sequence
         destroy()
     }
 
-    protected fun destroy() {
+    fun destroy() {
         user.jda.removeEventListener(this)
-        sequenceKillerExecutor.shutdown()
         cleanAfterSequence?.let {
             synchronized(it) {
                 if (it.isNotEmpty()) {
@@ -155,13 +140,14 @@ abstract class Sequence
         if (message.channel != channel) {
             throw IllegalArgumentException("The message needs to be from the same channel as the sequence.")
         }
-        if (sequenceKillerExecutor.isShutdown) {
-            throw IllegalStateException("Cleaner shutdown.")
-        }
         cleanAfterSequence?.let {
             synchronized(it) {
                 it.add(message)
             }
         }
+    }
+
+    fun sequenceIsExpired(): Boolean {
+        return Instant.now().isAfter(expireInstant)
     }
 }

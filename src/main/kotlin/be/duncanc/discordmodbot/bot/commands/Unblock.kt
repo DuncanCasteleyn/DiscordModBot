@@ -31,8 +31,8 @@ class Unblock(
     null
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-        if (event.author.idLong == discordModBotConfig.ownerId) {
-            blockedUserRepository.deleteById(event.message.contentRaw.toLong())
+        if (event.author.idLong == discordModBotConfig.ownerId && arguments != null) {
+            blockedUserRepository.deleteById(arguments.toLong())
         }
     }
 }

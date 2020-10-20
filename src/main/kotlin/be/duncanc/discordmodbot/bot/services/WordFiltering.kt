@@ -27,7 +27,7 @@ class WordFiltering(
         arrayOf("AddWordFilter"),
         "[Word] [${Arrays.toString(FilterMethod.values())}",
         "Adds a word to the blacklist and filters it based on the supplied filter method",
-        requiredPermissions = *arrayOf(Permission.MESSAGE_MANAGE)
+        requiredPermissions = arrayOf(Permission.MESSAGE_MANAGE)
 ) {
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
@@ -99,7 +99,7 @@ class WordFiltering(
             arrayOf("RemoveWordFilter"),
             "[word]",
             "Removes the word from the filter",
-            requiredPermissions = *arrayOf(Permission.MESSAGE_MANAGE)
+            requiredPermissions = arrayOf(Permission.MESSAGE_MANAGE)
     ) {
         override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
             if (arguments == null || arguments.contains(' ')) {
@@ -114,7 +114,7 @@ class WordFiltering(
             arrayOf("ListWordFilters"),
             null,
             "List all the black listed words",
-            requiredPermissions = *arrayOf(Permission.MESSAGE_MANAGE)
+            requiredPermissions = arrayOf(Permission.MESSAGE_MANAGE)
     ) {
         override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
             val blackListedWords = blackListedWordRepository.findAllByGuildId(event.guild.idLong).toCollection(arrayListOf())

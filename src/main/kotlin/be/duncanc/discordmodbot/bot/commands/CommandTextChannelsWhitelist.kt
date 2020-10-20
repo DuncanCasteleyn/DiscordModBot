@@ -32,11 +32,11 @@ class CommandTextChannelsWhitelist
 @Autowired constructor(
     private val guildCommandChannelsRepository: GuildCommandChannelsRepository
 ) : CommandModule(
-    arrayOf("CommandWhitelistChannel", "WhitelistChannel"),
-    null,
-    "Whitelists the channel so commands can be used in it.",
-    ignoreWhitelist = true,
-    requiredPermissions = *arrayOf(Permission.MANAGE_CHANNEL)
+        arrayOf("CommandWhitelistChannel", "WhitelistChannel"),
+        null,
+        "Whitelists the channel so commands can be used in it.",
+        ignoreWhitelist = true,
+        requiredPermissions = arrayOf(Permission.MANAGE_CHANNEL)
 ) {
 
     @Transactional

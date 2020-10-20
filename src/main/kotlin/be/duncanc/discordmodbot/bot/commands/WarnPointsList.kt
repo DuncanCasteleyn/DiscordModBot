@@ -26,10 +26,10 @@ import org.springframework.stereotype.Component
 class WarnPointsList(
     private val guildWarnPointsRepository: GuildWarnPointsRepository
 ) : CommandModule(
-    arrayOf("WarnPointsList", "WarnList"),
-    null,
-    null,
-    requiredPermissions = *arrayOf(Permission.KICK_MEMBERS)
+        arrayOf("WarnPointsList", "WarnList"),
+        null,
+        null,
+        requiredPermissions = arrayOf(Permission.KICK_MEMBERS)
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         val userWarnPoints = guildWarnPointsRepository.findAllByGuildId(event.guild.idLong).toSortedSet()
