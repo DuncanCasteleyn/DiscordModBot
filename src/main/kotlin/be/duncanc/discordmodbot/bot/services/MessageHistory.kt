@@ -57,7 +57,7 @@ constructor(
         if (message.contentDisplay.isNotEmpty() && message.contentDisplay[0] == '!' || message.author.isBot) {
             return
         }
-        val discordMessage = DiscordMessage(message.idLong, message.channel.idLong, message.author.idLong, message.contentDisplay)
+        val discordMessage = DiscordMessage(message.idLong, message.guild.idLong, message.channel.idLong, message.author.idLong, message.contentDisplay)
         discordMessageRepository.save(discordMessage)
         if (message.attachments.size > 0) {
             attachmentProxyCreator.proxyMessageAttachments(event)
@@ -73,7 +73,7 @@ constructor(
     fun updateMessage(event: GuildMessageUpdateEvent) {
         if (discordMessageRepository.existsById(event.messageIdLong)) {
             val message = event.message
-            val discordMessage = DiscordMessage(message.idLong, message.channel.idLong, message.author.idLong, message.contentDisplay)
+            val discordMessage = DiscordMessage(message.idLong, message.guild.idLong, message.channel.idLong, message.author.idLong, message.contentDisplay)
             discordMessageRepository.save(discordMessage)
         }
     }

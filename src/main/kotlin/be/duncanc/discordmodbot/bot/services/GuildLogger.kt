@@ -160,8 +160,8 @@ class GuildLogger
                         .setDescription("Old message was:\n" + oldMessage.content)
                         .setColor(LIGHT_BLUE)
                         .addField("Author", name, true)
-                //.addField("Message URL", "[Link](${oldMessage.jumpUrl})", false)
-                //linkEmotes(oldMessage.emotes, logEmbed)
+                        .addField("Message URL", "[Link](${oldMessage.jumpUrl})", false)
+                // linkEmotes(oldMessage.emotes, logEmbed)
                 guildLoggerExecutor.execute {
                     log(
                             logEmbed,
@@ -227,7 +227,7 @@ class GuildLogger
                     } else {
                         logEmbed.setColor(LIGHT_BLUE)
                     }
-                    // logEmbed.addField("Message URL", "[Link](${oldMessage.jumpUrl})", false)
+                    logEmbed.addField("Message URL", "[Link](${oldMessage.jumpUrl})", false)
                     // linkEmotes(oldMessage.emotes, logEmbed)
                     log(
                             logEmbed,
