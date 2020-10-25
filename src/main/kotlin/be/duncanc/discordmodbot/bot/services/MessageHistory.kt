@@ -17,11 +17,10 @@
 package be.duncanc.discordmodbot.bot.services
 
 
-import net.dv8tion.jda.api.entities.Message
-import net.dv8tion.jda.api.entities.TextChannel
+import be.duncanc.discordmodbot.data.entities.DiscordMessage
+import be.duncanc.discordmodbot.data.repositories.DiscordMessageRepository
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.api.events.message.guild.GuildMessageUpdateEvent
-import org.apache.commons.collections4.map.LinkedMap
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -40,35 +39,11 @@ class MessageHistory
  */
 @Autowired
 constructor(
-    private val attachmentProxyCreator: AttachmentProxyCreator
+        private val discordMessageRepository: DiscordMessageRepository,
+        private val attachmentProxyCreator: AttachmentProxyCreator
 ) {
     companion object {
-        private const val HISTORY_SIZE_PER_CHANNEL = 2000
-
         private val LOG = LoggerFactory.getLogger(MessageHistory::class.java)
-    }
-
-    /**
-     * Top level Key is the channel id and the value it's Key is the channel Id
-     */
-    private val channels: HashMap<Long, LinkedMap<Long, Message>> = HashMap()
-
-    fun cacheHistoryOfChannel(textChannel: TextChannel) {
-        val channelId = textChannel.idLong
-        val messages = channels[channelId] ?: LinkedMap()
-        if (channels[channelId] == null) {
-            channels[channelId] = messages
-        }
-        textChannel.iterableHistory.takeAsync(HISTORY_SIZE_PER_CHANNEL).thenAccept { retrieveMessages ->
-            synchronized(this) {
-                retrieveMessages.reversed().forEach { message ->
-                    if (message.author.isBot) {
-                        return@forEach
-                    }
-                    messages[message.idLong] = message
-                }
-            }
-        }
     }
 
     /**
@@ -78,20 +53,12 @@ constructor(
      */
     @Synchronized
     fun storeMessage(event: GuildMessageReceivedEvent) {
-        val channelId = event.channel.idLong
-        val messages = channels[channelId] ?: LinkedMap()
-        if (channels[channelId] == null) {
-            channels[channelId] = messages
-        }
-
-        while (messages.size > HISTORY_SIZE_PER_CHANNEL) {
-            attachmentProxyCreator.informDeleteFromCache(messages.remove(messages.firstKey())!!.idLong)
-        }
         val message = event.message
         if (message.contentDisplay.isNotEmpty() && message.contentDisplay[0] == '!' || message.author.isBot) {
             return
         }
-        messages[message.idLong] = message
+        val discordMessage = DiscordMessage(message.idLong, message.channel.idLong, message.author.idLong, message.contentDisplay)
+        discordMessageRepository.save(discordMessage)
         if (message.attachments.size > 0) {
             attachmentProxyCreator.proxyMessageAttachments(event)
         }
@@ -104,10 +71,11 @@ constructor(
      */
     @Synchronized
     fun updateMessage(event: GuildMessageUpdateEvent) {
-        val channelId = event.channel.idLong
-        val messages = channels[channelId] ?: return
-        val message = event.message
-        messages.replace(message.idLong, message)
+        if (discordMessageRepository.existsById(event.messageIdLong)) {
+            val message = event.message
+            val discordMessage = DiscordMessage(message.idLong, message.channel.idLong, message.author.idLong, message.contentDisplay)
+            discordMessageRepository.save(discordMessage)
+        }
     }
 
     /**
@@ -118,13 +86,12 @@ constructor(
      * @return object Message, returns null if the id is not in the history
      */
     @Synchronized
-    internal fun getMessage(textChannelId: Long, messageId: Long, delete: Boolean = true): Message? {
-        val messages = channels[textChannelId] ?: return null
-        return if (delete) {
-            messages.remove(messageId)
-        } else {
-            messages[messageId]
+    internal fun getMessage(textChannelId: Long, messageId: Long, delete: Boolean = true): DiscordMessage? {
+        val discordMessage = discordMessageRepository.findById(messageId).orElse(null)
+        if (discordMessage != null && delete) {
+            discordMessageRepository.deleteById(messageId)
         }
+        return discordMessage
     }
 
     internal fun getAttachmentsString(id: Long): String? {

@@ -31,6 +31,7 @@ plugins {
 dependencies {
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-data-jpa")
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-validation")
+    implementation(group = "org.springframework.boot", name = "spring-boot-starter-data-redis")
     implementation(group = "org.flywaydb", name = "flyway-core")
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8")

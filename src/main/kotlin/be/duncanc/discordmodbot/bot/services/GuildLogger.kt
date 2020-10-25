@@ -20,10 +20,9 @@ package be.duncanc.discordmodbot.bot.services
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.sequences.Sequence
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
+import be.duncanc.discordmodbot.data.entities.DiscordMessage
 import be.duncanc.discordmodbot.data.entities.LoggingSettings
 import be.duncanc.discordmodbot.data.repositories.LoggingSettingsRepository
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.MessageBuilder
@@ -128,15 +127,6 @@ class GuildLogger
                     lastCheckedLogEntries[auditLogEntry.guild.idLong] = auditLogEntry
                 }
             }
-            GlobalScope.launch {
-                guild.textChannels.forEach { textChannel ->
-                    try {
-                        messageHistory.cacheHistoryOfChannel(textChannel)
-                    } catch (ignored: PermissionException) {
-                        // Ignored
-                    }
-                }
-            }
         }
     }
 
@@ -158,29 +148,32 @@ class GuildLogger
         val oldMessage = messageHistory.getMessage(event.channel.idLong, event.messageIdLong, false)
 
         if (oldMessage != null) {
-            val name: String = try {
-                oldMessage.guild.getMember(oldMessage.author)?.nicknameAndUsername ?: oldMessage.author.name
-            } catch (e: IllegalArgumentException) {
-                oldMessage.author.name
+            event.jda.retrieveUserById(oldMessage.userId).queue { user ->
+                val name: String = try {
+                    event.jda.getGuildChannelById(oldMessage.channelId)?.guild?.getMember(user)?.nicknameAndUsername
+                            ?: user.name
+                } catch (e: IllegalArgumentException) {
+                    user.name
+                }
+                val logEmbed = EmbedBuilder()
+                        .setTitle("#" + channel.name + ": Message was modified!")
+                        .setDescription("Old message was:\n" + oldMessage.content)
+                        .setColor(LIGHT_BLUE)
+                        .addField("Author", name, true)
+                //.addField("Message URL", "[Link](${oldMessage.jumpUrl})", false)
+                //linkEmotes(oldMessage.emotes, logEmbed)
+                guildLoggerExecutor.execute {
+                    log(
+                            logEmbed,
+                            user,
+                            guild,
+                            null,
+                            LogTypeAction.USER
+                    )
+                }
             }
-            val logEmbed = EmbedBuilder()
-                    .setTitle("#" + channel.name + ": Message was modified!")
-                    .setDescription("Old message was:\n" + oldMessage.contentDisplay)
-                    .setColor(LIGHT_BLUE)
-                    .addField("Author", name, true)
-                    .addField("Message URL", "[Link](${oldMessage.jumpUrl})", false)
-            linkEmotes(oldMessage.emotes, logEmbed)
-            guildLoggerExecutor.execute {
-                log(
-                        logEmbed,
-                        oldMessage.author,
-                        guild,
-                        oldMessage.embeds,
-                        LogTypeAction.USER
-                )
-            }
+            messageHistory.updateMessage(event)
         }
-        messageHistory.updateMessage(event)
     }
 
     /**
@@ -206,45 +199,49 @@ class GuildLogger
         if (oldMessage != null) {
             val attachmentString = messageHistory.getAttachmentsString(event.messageIdLong)
 
-            val name: String = try {
-                oldMessage.guild.getMember(oldMessage.author)?.nicknameAndUsername ?: oldMessage.author.name
-            } catch (e: IllegalArgumentException) {
-                oldMessage.author.name
+            event.jda.retrieveUserById(oldMessage.userId).queue { user ->
+
+                val name: String = try {
+                    event.jda.getGuildChannelById(oldMessage.channelId)?.guild?.getMember(user)?.nicknameAndUsername
+                            ?: user.name
+                } catch (e: IllegalArgumentException) {
+                    user.name
+                }
+                guildLoggerExecutor.schedule({
+                    val moderator = findModerator(event, oldMessage)
+
+                    if (moderator != null && moderator == event.jda.selfUser) {
+                        return@schedule  //Bot has removed message no need to log, if needed it will be placed in the module that is issuing the remove.
+                    }
+
+                    val logEmbed = EmbedBuilder()
+                            .setTitle("#" + channel.name + ": Message was deleted!")
+                            .setDescription("Old message was:\n" + oldMessage.content)
+                    if (attachmentString != null) {
+                        logEmbed.addField("Attachment(s)", attachmentString, false)
+                    }
+                    logEmbed.addField("Author", name, true)
+                    if (moderator != null) {
+                        logEmbed.addField("Deleted by", event.guild.getMember(moderator)?.nicknameAndUsername, true)
+                                .setColor(Color.YELLOW)
+                    } else {
+                        logEmbed.setColor(LIGHT_BLUE)
+                    }
+                    // logEmbed.addField("Message URL", "[Link](${oldMessage.jumpUrl})", false)
+                    // linkEmotes(oldMessage.emotes, logEmbed)
+                    log(
+                            logEmbed,
+                            user,
+                            guild,
+                            null,
+                            if (moderator == null) LogTypeAction.USER else LogTypeAction.MODERATOR
+                    )
+                }, 1, TimeUnit.SECONDS)
             }
-            guildLoggerExecutor.schedule({
-                val moderator = findModerator(event, oldMessage)
-
-                if (moderator != null && moderator == event.jda.selfUser) {
-                    return@schedule  //Bot has removed message no need to log, if needed it will be placed in the module that is issuing the remove.
-                }
-
-                val logEmbed = EmbedBuilder()
-                        .setTitle("#" + channel.name + ": Message was deleted!")
-                        .setDescription("Old message was:\n" + oldMessage.contentDisplay)
-                if (attachmentString != null) {
-                    logEmbed.addField("Attachment(s)", attachmentString, false)
-                }
-                logEmbed.addField("Author", name, true)
-                if (moderator != null) {
-                    logEmbed.addField("Deleted by", event.guild.getMember(moderator)?.nicknameAndUsername, true)
-                            .setColor(Color.YELLOW)
-                } else {
-                    logEmbed.setColor(LIGHT_BLUE)
-                }
-                logEmbed.addField("Message URL", "[Link](${oldMessage.jumpUrl})", false)
-                linkEmotes(oldMessage.emotes, logEmbed)
-                log(
-                        logEmbed,
-                        oldMessage.author,
-                        guild,
-                        oldMessage.embeds,
-                        if (moderator == null) LogTypeAction.USER else LogTypeAction.MODERATOR
-                )
-            }, 1, TimeUnit.SECONDS)
-        }
+            }
     }
 
-    private fun findModerator(event: GuildMessageDeleteEvent, oldMessage: Message): User? {
+    private fun findModerator(event: GuildMessageDeleteEvent, oldMessage: DiscordMessage): User? {
         var foundModerator: User? = null
         var i = 0
         for (logEntry in event.guild.retrieveAuditLogs().cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
@@ -258,7 +255,7 @@ class GuildLogger
             } else {
                 val cachedAuditLogEntry = lastCheckedLogEntries[event.guild.idLong]
                 if (logEntry.idLong == cachedAuditLogEntry?.idLong) {
-                    if (logEntry.type == ActionType.MESSAGE_DELETE && logEntry.targetIdLong == oldMessage.author.idLong && logEntry.getOption<Any>(
+                    if (logEntry.type == ActionType.MESSAGE_DELETE && logEntry.targetIdLong == oldMessage.userId && logEntry.getOption<Any>(
                                     AuditLogOption.COUNT
                             ) != cachedAuditLogEntry.getOption<Any>(AuditLogOption.COUNT)
                     ) {
@@ -267,7 +264,7 @@ class GuildLogger
                     break
                 }
             }
-            if (logEntry.type == ActionType.MESSAGE_DELETE && logEntry.targetIdLong == oldMessage.author.idLong) {
+            if (logEntry.type == ActionType.MESSAGE_DELETE && logEntry.targetIdLong == oldMessage.userId) {
                 foundModerator = logEntry.user
                 break
             }
@@ -314,20 +311,22 @@ class GuildLogger
             val message = messageHistory.getMessage(event.channel.idLong, idLong)
             if (message != null) {
                 messageLogged = true
-                logWriter.append(message.author.toString()).append(":\n").append(message.contentDisplay).append("\n\n")
-                val attachmentString = messageHistory.getAttachmentsString(idLong)
-                if (attachmentString != null) {
-                    logWriter.append("Attachment(s):\n").append(attachmentString).append("\n")
-                } else {
-                    logWriter.append("\n")
-                }
-                val emotes = message.emotes
-                if (emotes.isNotEmpty()) {
-                    logWriter.append("Emote(s):\n")
-                    emotes.forEach {
-                        logWriter.append(it.name).append(": ").append(it.imageUrl).append('\n')
+                event.jda.retrieveUserById(message.userId).queue { user ->
+                    logWriter.append(user.toString()).append(":\n").append(message.content).append("\n\n")
+                    val attachmentString = messageHistory.getAttachmentsString(idLong)
+                    if (attachmentString != null) {
+                        logWriter.append("Attachment(s):\n").append(attachmentString).append("\n")
+                    } else {
+                        logWriter.append("\n")
                     }
-                    logWriter.append('\n')
+                    /*val emotes = message.emotes
+                    if (emotes.isNotEmpty()) {
+                        logWriter.append("Emote(s):\n")
+                        emotes.forEach {
+                            logWriter.append(it.name).append(": ").append(it.imageUrl).append('\n')
+                        }
+                        logWriter.append('\n')
+                    }*/
                 }
             }
         }
