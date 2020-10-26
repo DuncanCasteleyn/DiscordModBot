@@ -17,8 +17,8 @@
 package be.duncanc.discordmodbot.data.repositories
 
 import be.duncanc.discordmodbot.data.entities.ActivityReportSettings
-import org.springframework.data.repository.CrudRepository
+import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-interface ActivityReportSettingsRepository : CrudRepository<ActivityReportSettings, Long>
+interface ActivityReportSettingsRepository : JpaRepository<ActivityReportSettings, Long>

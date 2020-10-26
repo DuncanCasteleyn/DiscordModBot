@@ -1,6 +1,6 @@
 package be.duncanc.discordmodbot.data.repositories
 
 import be.duncanc.discordmodbot.data.entities.MemberGateQuestion
-import org.springframework.data.repository.CrudRepository
+import org.springframework.data.keyvalue.repository.KeyValueRepository
 
-interface MemberGateQuestionRepository : CrudRepository<MemberGateQuestion, Long>
+interface MemberGateQuestionRepository : KeyValueRepository<MemberGateQuestion, Long>
