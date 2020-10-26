@@ -41,9 +41,6 @@ dependencies {
     }
     implementation(group = "org.apache.commons", name = "commons-collections4", version = "4.2")
     implementation(group = "org.json", name = "json", version = "20190722")
-    implementation(group = "org.jetbrains.kotlin", name = "kotlin-script-runtime")
-    implementation(group = "org.jetbrains.kotlin", name = "kotlin-compiler-embeddable")
-    implementation(group = "org.jetbrains.kotlin", name = "kotlin-script-util")
 
     runtimeOnly(group = "com.h2database", name = "h2")
     runtimeOnly(group = "org.mariadb.jdbc", name = "mariadb-java-client")
