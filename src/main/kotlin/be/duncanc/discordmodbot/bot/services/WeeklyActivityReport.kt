@@ -19,7 +19,7 @@ package be.duncanc.discordmodbot.bot.services
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.sequences.Sequence
 import be.duncanc.discordmodbot.data.entities.ActivityReportSettings
-import be.duncanc.discordmodbot.data.repositories.ActivityReportSettingsRepository
+import be.duncanc.discordmodbot.data.repositories.jpa.ActivityReportSettingsRepository
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission

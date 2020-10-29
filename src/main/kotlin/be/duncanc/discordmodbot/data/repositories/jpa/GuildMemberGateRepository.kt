@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package be.duncanc.discordmodbot.data.repositories
+package be.duncanc.discordmodbot.data.repositories.jpa
 
-import be.duncanc.discordmodbot.data.entities.UserWarnPoints
+import be.duncanc.discordmodbot.data.entities.GuildMemberGate
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
-import java.util.*
 
 @Repository
-interface UserWarnPointsRepository : JpaRepository<UserWarnPoints, UUID>
+interface GuildMemberGateRepository : JpaRepository<GuildMemberGate, Long>

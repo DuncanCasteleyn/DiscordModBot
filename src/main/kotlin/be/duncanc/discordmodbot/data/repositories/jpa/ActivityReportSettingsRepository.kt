@@ -14,15 +14,11 @@
  * limitations under the License.
  */
 
-package be.duncanc.discordmodbot.data.repositories
+package be.duncanc.discordmodbot.data.repositories.jpa
 
-import be.duncanc.discordmodbot.data.entities.IAmRolesCategory
+import be.duncanc.discordmodbot.data.entities.ActivityReportSettings
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
-import org.springframework.transaction.annotation.Transactional
 
 @Repository
-interface IAmRolesRepository : JpaRepository<IAmRolesCategory, IAmRolesCategory.IAmRoleId> {
-    @Transactional(readOnly = true)
-    fun findByGuildId(guildId: Long): Iterable<IAmRolesCategory>
-}
+interface ActivityReportSettingsRepository : JpaRepository<ActivityReportSettings, Long>

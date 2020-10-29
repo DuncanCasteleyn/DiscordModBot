@@ -4,7 +4,7 @@ import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.entities.BlackListedWord
 import be.duncanc.discordmodbot.data.entities.BlackListedWord.FilterMethod
-import be.duncanc.discordmodbot.data.repositories.BlackListedWordRepository
+import be.duncanc.discordmodbot.data.repositories.jpa.BlackListedWordRepository
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild

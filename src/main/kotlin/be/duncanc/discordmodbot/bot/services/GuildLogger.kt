@@ -20,9 +20,9 @@ package be.duncanc.discordmodbot.bot.services
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.sequences.Sequence
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
-import be.duncanc.discordmodbot.data.entities.DiscordMessage
 import be.duncanc.discordmodbot.data.entities.LoggingSettings
-import be.duncanc.discordmodbot.data.repositories.LoggingSettingsRepository
+import be.duncanc.discordmodbot.data.redis.hash.DiscordMessage
+import be.duncanc.discordmodbot.data.repositories.jpa.LoggingSettingsRepository
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.MessageBuilder

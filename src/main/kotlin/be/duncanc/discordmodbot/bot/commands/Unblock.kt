@@ -17,14 +17,14 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.data.configs.properties.DiscordModBotConfig
-import be.duncanc.discordmodbot.data.repositories.BlockedUserRepository
+import be.duncanc.discordmodbot.data.repositories.jpa.BlockedUserRepository
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 
 @Component
 class Unblock(
-    val blockedUserRepository: BlockedUserRepository,
-    val discordModBotConfig: DiscordModBotConfig
+        val blockedUserRepository: BlockedUserRepository,
+        val discordModBotConfig: DiscordModBotConfig
 ) : CommandModule(
     arrayOf("Unblock"),
     null,

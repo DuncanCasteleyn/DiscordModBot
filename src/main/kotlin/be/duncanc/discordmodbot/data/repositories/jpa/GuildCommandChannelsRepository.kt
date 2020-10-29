@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package be.duncanc.discordmodbot.data.repositories
+package be.duncanc.discordmodbot.data.repositories.jpa
 
-import be.duncanc.discordmodbot.data.entities.GuildWarnPointsSettings
+import be.duncanc.discordmodbot.data.entities.GuildCommandChannels
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-interface GuildWarnPointsSettingsRepository : JpaRepository<GuildWarnPointsSettings, Long>
+interface GuildCommandChannelsRepository : JpaRepository<GuildCommandChannels, Long>

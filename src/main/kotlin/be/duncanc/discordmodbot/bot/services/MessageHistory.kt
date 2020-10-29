@@ -17,14 +17,15 @@
 package be.duncanc.discordmodbot.bot.services
 
 
-import be.duncanc.discordmodbot.data.entities.DiscordMessage
-import be.duncanc.discordmodbot.data.repositories.DiscordMessageRepository
+import be.duncanc.discordmodbot.data.redis.hash.DiscordMessage
+import be.duncanc.discordmodbot.data.repositories.key.value.DiscordMessageRepository
 import net.dv8tion.jda.api.entities.Emote
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.api.events.message.guild.GuildMessageUpdateEvent
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
 
 /**
  * This class provides a buffer that will store Message objects so that they can
@@ -34,6 +35,7 @@ import org.springframework.stereotype.Component
  * @version 22 October 2016
  */
 @Component
+@Transactional
 class MessageHistory
 /**
  * Default constructor
@@ -52,7 +54,6 @@ constructor(
      *
      * @param event The event that triggered this method
      */
-    @Synchronized
     fun storeMessage(event: GuildMessageReceivedEvent) {
         val message = event.message
         if (message.contentDisplay.isNotEmpty() && message.contentDisplay[0] == '!' || message.author.isBot) {
@@ -77,7 +78,6 @@ constructor(
      *
      * @param event The event that triggered this method.
      */
-    @Synchronized
     fun updateMessage(event: GuildMessageUpdateEvent) {
         if (discordMessageRepository.existsById(event.messageIdLong)) {
             val message = event.message
@@ -93,7 +93,6 @@ constructor(
      * @param delete Should the message be deleted from the cache?
      * @return object Message, returns null if the id is not in the history
      */
-    @Synchronized
     internal fun getMessage(textChannelId: Long, messageId: Long, delete: Boolean = true): DiscordMessage? {
         val discordMessage = discordMessageRepository.findById(messageId).orElse(null)
         if (discordMessage != null && delete) {

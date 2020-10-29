@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-package be.duncanc.discordmodbot.data.repositories
+package be.duncanc.discordmodbot.data.repositories.jpa
 
-import be.duncanc.discordmodbot.data.entities.GuildCommandChannels
+import be.duncanc.discordmodbot.data.entities.GuildWarnPoints
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-interface GuildCommandChannelsRepository : JpaRepository<GuildCommandChannels, Long>
+interface GuildWarnPointsRepository : JpaRepository<GuildWarnPoints, GuildWarnPoints.GuildWarnPointsId> {
+    fun findAllByGuildId(guildId: Long): Iterable<GuildWarnPoints>
+}

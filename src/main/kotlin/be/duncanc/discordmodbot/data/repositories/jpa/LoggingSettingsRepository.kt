@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package be.duncanc.discordmodbot.data.repositories
+package be.duncanc.discordmodbot.data.repositories.jpa
 
-import be.duncanc.discordmodbot.data.entities.ReportChannel
+import be.duncanc.discordmodbot.data.entities.LoggingSettings
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-interface ReportChannelRepository : JpaRepository<ReportChannel, Long>
+interface LoggingSettingsRepository : JpaRepository<LoggingSettings, Long>

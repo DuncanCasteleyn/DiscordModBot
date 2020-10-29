@@ -1,4 +1,4 @@
-package be.duncanc.discordmodbot.data.entities
+package be.duncanc.discordmodbot.data.redis.hash
 
 import org.springframework.data.annotation.Id
 import org.springframework.data.redis.core.RedisHash

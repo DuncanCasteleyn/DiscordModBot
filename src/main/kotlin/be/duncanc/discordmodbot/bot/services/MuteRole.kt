@@ -19,7 +19,7 @@ package be.duncanc.discordmodbot.bot.services
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.entities.MuteRole
-import be.duncanc.discordmodbot.data.repositories.MuteRolesRepository
+import be.duncanc.discordmodbot.data.repositories.jpa.MuteRolesRepository
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
@@ -41,8 +41,8 @@ import java.util.concurrent.TimeUnit
 @Transactional
 class MuteRole
 @Autowired constructor(
-    private val muteRolesRepository: MuteRolesRepository,
-    private val guildLogger: GuildLogger
+        private val muteRolesRepository: MuteRolesRepository,
+        private val guildLogger: GuildLogger
 ) : CommandModule(
     arrayOf("MuteRole"),
     "[Name of the mute role or nothing to remove the role]",

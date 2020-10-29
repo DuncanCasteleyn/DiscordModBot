@@ -24,8 +24,8 @@ import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.entities.GuildWarnPoints
 import be.duncanc.discordmodbot.data.entities.GuildWarnPointsSettings
 import be.duncanc.discordmodbot.data.entities.UserWarnPoints
-import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsRepository
-import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsSettingsRepository
+import be.duncanc.discordmodbot.data.repositories.jpa.GuildWarnPointsRepository
+import be.duncanc.discordmodbot.data.repositories.jpa.GuildWarnPointsSettingsRepository
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission

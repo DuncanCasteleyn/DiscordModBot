@@ -1,7 +1,7 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.data.entities.ChannelOrderLock
-import be.duncanc.discordmodbot.data.repositories.ChannelOrderLockRepository
+import be.duncanc.discordmodbot.data.repositories.jpa.ChannelOrderLockRepository
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component

@@ -2,7 +2,7 @@ package be.duncanc.discordmodbot.bot.services
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.data.entities.ChannelOrderLock
-import be.duncanc.discordmodbot.data.repositories.ChannelOrderLockRepository
+import be.duncanc.discordmodbot.data.repositories.jpa.ChannelOrderLockRepository
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Category
 import net.dv8tion.jda.api.events.channel.text.update.TextChannelUpdateParentEvent

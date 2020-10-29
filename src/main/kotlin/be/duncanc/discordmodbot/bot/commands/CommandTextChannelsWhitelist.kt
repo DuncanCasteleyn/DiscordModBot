@@ -17,7 +17,7 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.data.entities.GuildCommandChannels
-import be.duncanc.discordmodbot.data.repositories.GuildCommandChannelsRepository
+import be.duncanc.discordmodbot.data.repositories.jpa.GuildCommandChannelsRepository
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.TextChannel

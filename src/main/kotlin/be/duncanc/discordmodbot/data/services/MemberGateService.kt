@@ -18,8 +18,8 @@ package be.duncanc.discordmodbot.data.services
 
 import be.duncanc.discordmodbot.bot.RunBots
 import be.duncanc.discordmodbot.data.entities.GuildMemberGate
-import be.duncanc.discordmodbot.data.repositories.GuildMemberGateRepository
-import be.duncanc.discordmodbot.data.repositories.MemberGateQuestionRepository
+import be.duncanc.discordmodbot.data.repositories.jpa.GuildMemberGateRepository
+import be.duncanc.discordmodbot.data.repositories.key.value.MemberGateQuestionRepository
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Role
