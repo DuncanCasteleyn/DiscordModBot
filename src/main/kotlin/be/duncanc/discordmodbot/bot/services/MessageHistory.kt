@@ -19,6 +19,7 @@ package be.duncanc.discordmodbot.bot.services
 
 import be.duncanc.discordmodbot.data.entities.DiscordMessage
 import be.duncanc.discordmodbot.data.repositories.DiscordMessageRepository
+import net.dv8tion.jda.api.entities.Emote
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.api.events.message.guild.GuildMessageUpdateEvent
 import org.slf4j.LoggerFactory
@@ -57,7 +58,14 @@ constructor(
         if (message.contentDisplay.isNotEmpty() && message.contentDisplay[0] == '!' || message.author.isBot) {
             return
         }
-        val discordMessage = DiscordMessage(message.idLong, message.guild.idLong, message.channel.idLong, message.author.idLong, message.contentDisplay)
+        val discordMessage = DiscordMessage(
+                message.idLong,
+                message.guild.idLong,
+                message.channel.idLong,
+                message.author.idLong,
+                message.contentDisplay,
+                linkEmotes(message.emotes)
+        )
         discordMessageRepository.save(discordMessage)
         if (message.attachments.size > 0) {
             attachmentProxyCreator.proxyMessageAttachments(event)
@@ -96,5 +104,16 @@ constructor(
 
     internal fun getAttachmentsString(id: Long): String? {
         return attachmentProxyCreator.getAttachmentUrl(id)
+    }
+
+    private fun linkEmotes(emotes: MutableList<Emote>): String? {
+        if (emotes.isEmpty()) {
+            return null
+        }
+        val stringBuilder = StringBuilder()
+        emotes.forEach {
+            stringBuilder.append("[" + it.name + "](" + it.imageUrl + ")\n")
+        }
+        return stringBuilder.toString()
     }
 }

@@ -161,7 +161,7 @@ class GuildLogger
                         .setColor(LIGHT_BLUE)
                         .addField("Author", name, true)
                         .addField("Message URL", "[Link](${oldMessage.jumpUrl})", false)
-                // linkEmotes(oldMessage.emotes, logEmbed)
+                        .addField("Emote(s)", oldMessage.emotes, false)
                 guildLoggerExecutor.execute {
                     log(
                             logEmbed,
@@ -228,7 +228,7 @@ class GuildLogger
                         logEmbed.setColor(LIGHT_BLUE)
                     }
                     logEmbed.addField("Message URL", "[Link](${oldMessage.jumpUrl})", false)
-                    // linkEmotes(oldMessage.emotes, logEmbed)
+                            .addField("Emote(s)", oldMessage.emotes, false)
                     log(
                             logEmbed,
                             user,
@@ -276,16 +276,6 @@ class GuildLogger
         return foundModerator
     }
 
-    private fun linkEmotes(emotes: MutableList<Emote>, logEmbed: EmbedBuilder) {
-        if (emotes.isNotEmpty()) {
-            val stringBuilder = StringBuilder()
-            emotes.forEach {
-                stringBuilder.append("[" + it.name + "](" + it.imageUrl + ")\n")
-            }
-            logEmbed.addField("Emote(s)", stringBuilder.toString(), false)
-        }
-    }
-
     @Transactional(readOnly = true)
     override fun onMessageBulkDelete(event: MessageBulkDeleteEvent) {
         val loggingSettings =
@@ -319,14 +309,10 @@ class GuildLogger
                     } else {
                         logWriter.append("\n")
                     }
-                    /*val emotes = message.emotes
-                    if (emotes.isNotEmpty()) {
+                    message.emotes?.let {
                         logWriter.append("Emote(s):\n")
-                        emotes.forEach {
-                            logWriter.append(it.name).append(": ").append(it.imageUrl).append('\n')
-                        }
-                        logWriter.append('\n')
-                    }*/
+                        logWriter.append(it)
+                    }
                 }
             }
         }
