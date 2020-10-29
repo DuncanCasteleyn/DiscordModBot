@@ -106,7 +106,7 @@ class MemberGate(
                 gateTextChannel.sendMessage(
                         """
                         Welcome back ${event.member.asMention}. We stored your last answer for you.
-                        A moderator can review it using ```!review ${event.member.id}
+                        A moderator can review it using ```!review ${memberGateQuestion.id}
                         """.trimIndent()
                 )
             } else {
