@@ -106,9 +106,13 @@ class MemberGate(
                 gateTextChannel.sendMessage(
                         """
                         Welcome back ${event.member.asMention}. We stored your last answer for you.
-                        A moderator can review it using ```!review ${memberGateQuestion.id}
+                        A moderator can review it using `!review ${memberGateQuestion.id}`
                         """.trimIndent()
-                )
+                ).queue { message ->
+                    synchronized(informUserMessageIds) {
+                        informUserMessageIds[memberGateQuestion.id] = message.idLong
+                    }
+                }
             } else {
                 gateTextChannel.sendMessage(
                         "Welcome " + event.member.asMention + ", this server requires you to read the " +
