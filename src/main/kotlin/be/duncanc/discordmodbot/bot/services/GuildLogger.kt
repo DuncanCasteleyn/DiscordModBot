@@ -161,7 +161,10 @@ class GuildLogger
                         .setColor(LIGHT_BLUE)
                         .addField("Author", name, true)
                         .addField("Message URL", "[Link](${oldMessage.jumpUrl})", false)
-                        .addField("Emote(s)", oldMessage.emotes, false)
+                oldMessage.emotes?.let {
+                    logEmbed.addField("Emote(s)", it, false)
+                }
+
                 guildLoggerExecutor.execute {
                     log(
                             logEmbed,
@@ -228,7 +231,9 @@ class GuildLogger
                         logEmbed.setColor(LIGHT_BLUE)
                     }
                     logEmbed.addField("Message URL", "[Link](${oldMessage.jumpUrl})", false)
-                            .addField("Emote(s)", oldMessage.emotes, false)
+                    oldMessage.emotes?.let {
+                        logEmbed.addField("Emote(s)", oldMessage.emotes, false)
+                    }
                     log(
                             logEmbed,
                             user,
@@ -238,7 +243,7 @@ class GuildLogger
                     )
                 }, 1, TimeUnit.SECONDS)
             }
-            }
+        }
     }
 
     private fun findModerator(event: GuildMessageDeleteEvent, oldMessage: DiscordMessage): User? {
@@ -599,10 +604,14 @@ class GuildLogger
                 val guildId = channel.guild.idLong
                 val logSettings = loggingSettingsRepository.findById(guildId).orElse(LoggingSettings(guildId))
                 channel.sendMessage("Enter number of the action you'd like to perform:\n\n" +
-                        "0. Set the mod logging channel. Currently: ${logSettings.modLogChannel?.let { "<#$it>" }
-                                ?: "None (Required to set before setting/changing other setting)"}\n" +
-                        "1. Set the user logging channel. Currently: ${logSettings.userLogChannel?.let { "<#$it>" }
-                                ?: "Using same channel as mod logging"}\n" +
+                        "0. Set the mod logging channel. Currently: ${
+                            logSettings.modLogChannel?.let { "<#$it>" }
+                                    ?: "None (Required to set before setting/changing other setting)"
+                        }\n" +
+                        "1. Set the user logging channel. Currently: ${
+                            logSettings.userLogChannel?.let { "<#$it>" }
+                                    ?: "Using same channel as mod logging"
+                        }\n" +
                         "2. " + (if (logSettings.logMessageUpdate) "Disable" else "Enable ") + " logging for edited messages.\n" +
                         "3. " + (if (logSettings.logMessageDelete) "Disable" else "Enable ") + " logging for deleted messages.\n" +
                         "4. " + (if (logSettings.logMemberJoin) "Disable" else "Enable ") + " logging for members joining.\n" +
