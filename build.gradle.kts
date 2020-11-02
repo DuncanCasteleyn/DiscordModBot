@@ -59,8 +59,8 @@ repositories {
 }
 
 configure<JavaPluginConvention> {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
+    sourceCompatibility = JavaVersion.VERSION_14
+    targetCompatibility = JavaVersion.VERSION_14
 }
 tasks {
     withType<Test> {
@@ -70,11 +70,11 @@ tasks {
         dependsOn(processResources)
         kotlinOptions {
             freeCompilerArgs = listOf("-Xjsr305=strict", "-progressive")
-            jvmTarget = "11"
+            jvmTarget = "14"
         }
     }
     withType<Wrapper> {
-        gradleVersion = "6.6.1"
+        gradleVersion = "6.7"
     }
     withType<JavaCompile> {
         dependsOn(processResources)
