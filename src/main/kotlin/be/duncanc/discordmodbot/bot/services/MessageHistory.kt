@@ -22,7 +22,6 @@ import be.duncanc.discordmodbot.data.repositories.key.value.DiscordMessageReposi
 import net.dv8tion.jda.api.entities.Emote
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.api.events.message.guild.GuildMessageUpdateEvent
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -45,10 +44,6 @@ constructor(
         private val discordMessageRepository: DiscordMessageRepository,
         private val attachmentProxyCreator: AttachmentProxyCreator
 ) {
-    companion object {
-        private val LOG = LoggerFactory.getLogger(MessageHistory::class.java)
-    }
-
     /**
      * Used to add a message to the list
      *
@@ -94,7 +89,7 @@ constructor(
      * @return object Message, returns null if the id is not in the history
      */
     internal fun getMessage(textChannelId: Long, messageId: Long, delete: Boolean = true): DiscordMessage? {
-        val discordMessage = discordMessageRepository.findById(messageId).orElse(null)
+        val discordMessage: DiscordMessage? = discordMessageRepository.findById(messageId).orElse(null)
         if (discordMessage != null && delete) {
             discordMessageRepository.deleteById(messageId)
         }
