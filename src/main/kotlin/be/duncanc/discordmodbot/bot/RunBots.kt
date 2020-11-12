@@ -50,6 +50,7 @@ class RunBots
                 .setBulkDeleteSplittingEnabled(false)
                 .disableCache(CacheFlag.VOICE_STATE)
                 .addEventListeners(*listenerAdapters)
+                .setEnableShutdownHook(false)
                 .build()
     }
 
