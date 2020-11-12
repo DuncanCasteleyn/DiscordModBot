@@ -24,6 +24,7 @@ import net.dv8tion.jda.api.requests.GatewayIntent.*
 import net.dv8tion.jda.api.utils.cache.CacheFlag
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import javax.annotation.PreDestroy
 
 
 @Component
@@ -50,5 +51,12 @@ class RunBots
                 .disableCache(CacheFlag.VOICE_STATE)
                 .addEventListeners(*listenerAdapters)
                 .build()
+    }
+
+    @PreDestroy
+    fun shutdownBots() {
+        runningBots.forEach {
+            it.shutdown()
+        }
     }
 }
