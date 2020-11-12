@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package be.duncanc.discordmodbot.data.repositories
+package be.duncanc.discordmodbot.data.repositories.jpa
 
-import be.duncanc.discordmodbot.data.entities.VoteEmotes
-import org.springframework.data.repository.CrudRepository
+import be.duncanc.discordmodbot.data.entities.BlockedUser
+import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-interface VotingEmotesRepository : CrudRepository<VoteEmotes, Long>
+interface BlockedUserRepository : JpaRepository<BlockedUser, Long>

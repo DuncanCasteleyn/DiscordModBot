@@ -17,7 +17,7 @@
 package be.duncanc.discordmodbot.data.services
 
 import be.duncanc.discordmodbot.data.entities.IAmRolesCategory
-import be.duncanc.discordmodbot.data.repositories.IAmRolesRepository
+import be.duncanc.discordmodbot.data.repositories.jpa.IAmRolesRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

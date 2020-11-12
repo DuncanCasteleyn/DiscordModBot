@@ -17,7 +17,7 @@
 package be.duncanc.discordmodbot.data.services
 
 import be.duncanc.discordmodbot.data.entities.BlockedUser
-import be.duncanc.discordmodbot.data.repositories.BlockedUserRepository
+import be.duncanc.discordmodbot.data.repositories.jpa.BlockedUserRepository
 import net.dv8tion.jda.api.entities.User
 import org.springframework.stereotype.Service
 

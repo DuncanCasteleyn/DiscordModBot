@@ -4,7 +4,7 @@ import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.services.GuildLogger
 import be.duncanc.discordmodbot.bot.utils.messageTimeFormat
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
-import be.duncanc.discordmodbot.data.repositories.MuteRolesRepository
+import be.duncanc.discordmodbot.data.repositories.jpa.MuteRolesRepository
 import be.duncanc.discordmodbot.data.services.ScheduledUnmuteService
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission

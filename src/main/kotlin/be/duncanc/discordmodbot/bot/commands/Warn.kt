@@ -21,7 +21,7 @@ import be.duncanc.discordmodbot.bot.utils.extractReason
 import be.duncanc.discordmodbot.bot.utils.findMemberAndCheckCanInteract
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.entities.GuildWarnPointsSettings
-import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsSettingsRepository
+import be.duncanc.discordmodbot.data.repositories.jpa.GuildWarnPointsSettingsRepository
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission

@@ -18,7 +18,7 @@ package be.duncanc.discordmodbot.bot.sequences
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.data.entities.GuildWarnPointsSettings
-import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsSettingsRepository
+import be.duncanc.discordmodbot.data.repositories.jpa.GuildWarnPointsSettingsRepository
 import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild

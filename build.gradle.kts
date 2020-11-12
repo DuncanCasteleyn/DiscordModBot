@@ -20,7 +20,7 @@ import org.springframework.boot.gradle.tasks.bundling.BootJar
 plugins {
     val kotlinVersion = "1.4.10"
 
-    id("org.springframework.boot") version "2.3.4.RELEASE"
+    id("org.springframework.boot") version "2.3.5.RELEASE"
     id("io.spring.dependency-management") version "1.0.9.RELEASE"
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.spring") version kotlinVersion
@@ -31,6 +31,7 @@ plugins {
 dependencies {
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-data-jpa")
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-validation")
+    implementation(group = "org.springframework.boot", name = "spring-boot-starter-data-redis")
     implementation(group = "org.flywaydb", name = "flyway-core")
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8")
@@ -40,9 +41,6 @@ dependencies {
     }
     implementation(group = "org.apache.commons", name = "commons-collections4", version = "4.2")
     implementation(group = "org.json", name = "json", version = "20190722")
-    implementation(group = "org.jetbrains.kotlin", name = "kotlin-script-runtime")
-    implementation(group = "org.jetbrains.kotlin", name = "kotlin-compiler-embeddable")
-    implementation(group = "org.jetbrains.kotlin", name = "kotlin-script-util")
 
     runtimeOnly(group = "com.h2database", name = "h2")
     runtimeOnly(group = "org.mariadb.jdbc", name = "mariadb-java-client")
@@ -61,8 +59,8 @@ repositories {
 }
 
 configure<JavaPluginConvention> {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
+    sourceCompatibility = JavaVersion.VERSION_14
+    targetCompatibility = JavaVersion.VERSION_14
 }
 tasks {
     withType<Test> {
@@ -72,11 +70,11 @@ tasks {
         dependsOn(processResources)
         kotlinOptions {
             freeCompilerArgs = listOf("-Xjsr305=strict", "-progressive")
-            jvmTarget = "11"
+            jvmTarget = "14"
         }
     }
     withType<Wrapper> {
-        gradleVersion = "6.6.1"
+        gradleVersion = "6.7"
     }
     withType<JavaCompile> {
         dependsOn(processResources)

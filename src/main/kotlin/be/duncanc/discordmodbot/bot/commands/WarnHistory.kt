@@ -19,7 +19,7 @@ package be.duncanc.discordmodbot.bot.commands
 import be.duncanc.discordmodbot.bot.utils.messageTimeFormat
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.entities.GuildWarnPoints
-import be.duncanc.discordmodbot.data.repositories.GuildWarnPointsRepository
+import be.duncanc.discordmodbot.data.repositories.jpa.GuildWarnPointsRepository
 import be.duncanc.discordmodbot.data.services.UserBlockService
 import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission
@@ -33,8 +33,8 @@ import java.util.concurrent.TimeUnit
 
 @Component
 class WarnHistory(
-    val guildWarnPointsRepository: GuildWarnPointsRepository,
-    userBlockService: UserBlockService
+        val guildWarnPointsRepository: GuildWarnPointsRepository,
+        userBlockService: UserBlockService
 ) : CommandModule(
     arrayOf("WarnHistory"),
     null,

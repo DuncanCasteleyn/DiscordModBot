@@ -20,6 +20,8 @@ import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.sequences.Sequence
 import be.duncanc.discordmodbot.bot.utils.limitLessBulkDelete
 import be.duncanc.discordmodbot.data.entities.GuildMemberGate
+import be.duncanc.discordmodbot.data.redis.hash.MemberGateQuestion
+import be.duncanc.discordmodbot.data.repositories.key.value.MemberGateQuestionRepository
 import be.duncanc.discordmodbot.data.services.MemberGateService
 import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission
@@ -28,7 +30,6 @@ import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleAddEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import org.apache.commons.collections4.map.LinkedMap
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.util.*
@@ -41,8 +42,9 @@ import kotlin.collections.ArrayList
  * Welcomes users when the join, get accepted and makes them answer questions before they get accepted.
  */
 @Component
-class MemberGate
-internal constructor(
+@Transactional
+class MemberGate(
+        private val memberGateQuestionRepository: MemberGateQuestionRepository,
         private val memberGateService: MemberGateService
 ) : CommandModule(
         arrayOf("gateConfig", "join", "review"),
@@ -56,7 +58,6 @@ internal constructor(
         private const val CHANNEL_SET = "Channel set"
     }
 
-    val approvalQueue = LinkedMap<Long, String>()
     private val informUserMessageIds = HashMap<Long, Long>()
 
     /**
@@ -71,9 +72,7 @@ internal constructor(
         }
         val welcomeMessage = welcomeMessages[Random().nextInt(welcomeMessages.size)].getWelcomeMessage(event.user)
         memberGateService.getWelcomeChannel(guild.idLong, guild.jda)?.sendMessage(welcomeMessage)?.queue()
-        synchronized(approvalQueue) {
-            approvalQueue.remove(event.user.idLong)
-        }
+        memberGateQuestionRepository.deleteById(event.user.idLong)
         memberGateService.getGateChannel(guild.idLong, guild.jda)?.let { cleanMessagesFromUser(it, event.user) }
     }
 
@@ -102,14 +101,28 @@ internal constructor(
         val gateTextChannel = memberGateService.getGateChannel(event.guild.idLong, event.jda)
         val welcomeChannel = memberGateService.getWelcomeChannel(event.guild.idLong, event.jda)
         if (gateTextChannel != null) {
-            gateTextChannel.sendMessage(
-                    "Welcome " + event.member.asMention + ", this server requires you to read the " +
-                            (memberGateService.getRulesChannel(event.guild.idLong, event.jda)?.asMention
-                                    ?: "rules") +
-                            " and answer a question regarding those before you gain full access.\n\n" +
-                            "If you have read the rules and are ready to answer the question, type ``!" + super.aliases[1] + "`` and follow the instructions from the bot.\n\n" +
-                            "Please read the pinned message for more information."
-            ).queue { message -> message.delete().queueAfter(5, TimeUnit.MINUTES) }
+            val memberGateQuestion = memberGateQuestionRepository.findById(event.user.idLong).orElse(null)
+            if (memberGateQuestion != null) {
+                gateTextChannel.sendMessage(
+                        """
+                        Welcome back ${event.member.asMention}. We stored your last answer for you.
+                        A moderator can review it using `!review ${memberGateQuestion.id}`
+                        """.trimIndent()
+                ).queue { message ->
+                    synchronized(informUserMessageIds) {
+                        informUserMessageIds[memberGateQuestion.id] = message.idLong
+                    }
+                }
+            } else {
+                gateTextChannel.sendMessage(
+                        "Welcome " + event.member.asMention + ", this server requires you to read the " +
+                                (memberGateService.getRulesChannel(event.guild.idLong, event.jda)?.asMention
+                                        ?: "rules") +
+                                " and answer a question regarding those before you gain full access.\n\n" +
+                                "If you have read the rules and are ready to answer the question, type ``!" + super.aliases[1] + "`` and follow the instructions from the bot.\n\n" +
+                                "Please read the pinned message for more information."
+                ).queue { message -> message.delete().queueAfter(5, TimeUnit.MINUTES) }
+            }
         } else if (welcomeChannel != null) {
             val welcomeMessages = memberGateService.getWelcomeMessages(event.guild.idLong).toTypedArray()
             if (welcomeMessages.isNotEmpty()) {
@@ -132,11 +145,6 @@ internal constructor(
             return
         }
         val userId = event.user.idLong
-        synchronized(approvalQueue) {
-            if (approvalQueue.containsKey(userId)) {
-                approvalQueue.remove(userId)
-            }
-        }
         synchronized(informUserMessageIds) {
             val messageToRemove = informUserMessageIds.remove(userId)
             if (messageToRemove != null) {
@@ -182,12 +190,10 @@ internal constructor(
             return
         }
 
-        synchronized(approvalQueue) {
-            if (event.author.idLong in approvalQueue) {
-                event.channel.sendMessage("You have already tried answering a question. A moderator now needs to manually review you. Please state that you have read and agree to the rules and need manual approval.")
-                        .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
-                return
-            }
+        if (memberGateQuestionRepository.existsById(member.idLong)) {
+            event.channel.sendMessage("You have already tried answering a question. A moderator now needs to manually review you. Please be patient.")
+                    .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+            return
         }
         val questions = memberGateService.getQuestions(event.guild.idLong).toList()
         if (questions.isEmpty()) {
@@ -230,9 +236,8 @@ internal constructor(
                 informUserMessageIds[member.user.idLong] = it.idLong
             }
         }
-        synchronized(approvalQueue) {
-            approvalQueue.put(member.user.idLong, question + "\n" + answer)
-        }
+        val memberGateQuestion = MemberGateQuestion(member.user.idLong, question, answer)
+        memberGateQuestionRepository.save(memberGateQuestion)
     }
 
     /**
@@ -580,48 +585,45 @@ internal constructor(
          * Asks the first question and checks if the user is in the review list.
          */
         init {
-            synchronized(approvalQueue) {
-                if (userId in approvalQueue) {
-                    val userQuestionAndAnswer = approvalQueue[userId]
-                    if (userQuestionAndAnswer != null) {
-                        val message: Message =
-                                MessageBuilder().append("The user answered with the following question:\n")
-                                        .appendCodeBlock(userQuestionAndAnswer, "text")
-                                        .append("\nIf you want to approve the user respond with ``approve``, to make the bot request the user to ask a new question respond with ``reject`` or to reject the user and take manual action answer with ``noop``.")
-                                        .build()
-                        channel.sendMessage(message).queue { super.addMessageToCleaner(it) }
-                    } else {
-                        super.destroy()
-                        throw IllegalArgumentException("The user you tried to review is still in the list, but another moderator already declared the question wrong or the user rejoined.")
-                    }
+            memberGateQuestionRepository.findById(userId).ifPresentOrElse({
+                val userQuestionAndAnswer = it.question + '\n' + it.answer
+                if (userQuestionAndAnswer.isNotBlank()) {
+                    val message: Message =
+                            MessageBuilder().append("The user answered with the following question:\n")
+                                    .appendCodeBlock(userQuestionAndAnswer, "text")
+                                    .append("\nIf you want to approve the user respond with ``approve``, to make the bot request the user to ask a new question respond with ``reject`` or to reject the user and take manual action answer with ``noop``.")
+                                    .build()
+                    channel.sendMessage(message).queue { super.addMessageToCleaner(it) }
                 } else {
                     super.destroy()
-                    throw IllegalArgumentException("The user you tried to review is not currently in the manual review list.")
+                    throw IllegalArgumentException("The user you tried to review is still in the list, but another moderator already declared the question wrong or the user rejoined.")
                 }
-            }
+            },
+                    {
+                        super.destroy()
+                        throw IllegalArgumentException("The user you tried to review is not currently in the manual review list.")
+                    })
         }
 
         /**
          * Review logic to approve members.
          */
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
-            synchronized(approvalQueue) {
-                if (userId !in approvalQueue) {
-                    throw IllegalStateException("The user is no longer in the queue; another moderator may have reviewed it already.")
+            if (!memberGateQuestionRepository.existsById(userId)) {
+                throw IllegalStateException("The user is no longer in the queue; another moderator may have reviewed it already.")
+            }
+            when (val messageContent: String = event.message.contentDisplay.toLowerCase()) {
+                "approve", "accept" -> {
+                    accept(event)
                 }
-                when (val messageContent: String = event.message.contentDisplay.toLowerCase()) {
-                    "approve", "accept" -> {
-                        accept(event)
-                    }
-                    "reject", "refuse" -> {
-                        reject(event)
-                    }
-                    "noop" -> {
-                        reject(event, noOp = true)
-                    }
-                    else -> {
-                        throw IllegalArgumentException("Expecting one of the previously mentioned responses, but got \"$messageContent\" as response")
-                    }
+                "reject", "refuse" -> {
+                    reject(event)
+                }
+                "noop" -> {
+                    reject(event, noOp = true)
+                }
+                else -> {
+                    throw IllegalArgumentException("Expecting one of the previously mentioned responses, but got \"$messageContent\" as response")
                 }
             }
         }
@@ -637,7 +639,7 @@ internal constructor(
                 super.channel.sendMessage("The user already left; no further action is needed.")
                         .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
             }
-            approvalQueue.remove(userId)
+            memberGateQuestionRepository.deleteById(userId)
             synchronized(informUserMessageIds) {
                 val messageToRemove = informUserMessageIds.remove(userId)
                 if (messageToRemove != null) {
@@ -660,7 +662,7 @@ internal constructor(
                 super.channel.sendMessage("The user has left; no further action is needed.")
                         .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
             }
-            approvalQueue.remove(userId)
+            memberGateQuestionRepository.deleteById(userId)
             synchronized(informUserMessageIds) {
                 val messageToRemove = informUserMessageIds.remove(userId)
                 if (messageToRemove != null) {

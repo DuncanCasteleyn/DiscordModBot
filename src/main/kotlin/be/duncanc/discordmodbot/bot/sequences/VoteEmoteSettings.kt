@@ -18,7 +18,7 @@ package be.duncanc.discordmodbot.bot.sequences
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.data.entities.VoteEmotes
-import be.duncanc.discordmodbot.data.repositories.VotingEmotesRepository
+import be.duncanc.discordmodbot.data.repositories.jpa.VotingEmotesRepository
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.MessageChannel
 import net.dv8tion.jda.api.entities.User
@@ -41,9 +41,9 @@ class VoteEmoteSettings(
 }
 
 open class VoteEmoteSettingsSequence(
-    private val votingEmotesRepository: VotingEmotesRepository,
-    user: User,
-    channel: MessageChannel
+        private val votingEmotesRepository: VotingEmotesRepository,
+        user: User,
+        channel: MessageChannel
 ) : Sequence(
     user,
     channel,

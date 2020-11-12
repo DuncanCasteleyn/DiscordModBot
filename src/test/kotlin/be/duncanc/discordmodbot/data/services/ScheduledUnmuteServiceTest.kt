@@ -4,9 +4,12 @@ import be.duncanc.discordmodbot.bot.RunBots
 import be.duncanc.discordmodbot.bot.services.GuildLogger
 import be.duncanc.discordmodbot.data.entities.MuteRole
 import be.duncanc.discordmodbot.data.entities.ScheduledUnmute
-import be.duncanc.discordmodbot.data.repositories.MuteRolesRepository
-import be.duncanc.discordmodbot.data.repositories.ScheduledUnmuteRepository
-import com.nhaarman.mockitokotlin2.*
+import be.duncanc.discordmodbot.data.repositories.jpa.MuteRolesRepository
+import be.duncanc.discordmodbot.data.repositories.jpa.ScheduledUnmuteRepository
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
+import com.nhaarman.mockitokotlin2.whenever
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member

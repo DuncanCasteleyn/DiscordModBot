@@ -17,9 +17,9 @@
 package be.duncanc.discordmodbot.data.services
 
 import be.duncanc.discordmodbot.bot.RunBots
-import be.duncanc.discordmodbot.bot.services.MemberGate
 import be.duncanc.discordmodbot.data.entities.GuildMemberGate
-import be.duncanc.discordmodbot.data.repositories.GuildMemberGateRepository
+import be.duncanc.discordmodbot.data.repositories.jpa.GuildMemberGateRepository
+import be.duncanc.discordmodbot.data.repositories.key.value.MemberGateQuestionRepository
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Role
@@ -38,8 +38,7 @@ class MemberGateService(
         private val guildMemberGateRepository: GuildMemberGateRepository,
         @Lazy
         private val runBots: RunBots,
-        @Lazy
-        private val memberGate: MemberGate
+        private val memberGateQuestionRepository: MemberGateQuestionRepository
 ) {
     /**
      * @return null when not configured or channel no longer exists.
@@ -203,7 +202,7 @@ class MemberGateService(
                     if (guildSettings?.removeTimeHours != null && guildSettings.memberRole != null) {
                         guild.members.filter {
                             val reachedTimeLimit = it.timeJoined.isBefore(OffsetDateTime.now().minusHours(guildSettings.removeTimeHours))
-                            val notQueuedForApproval = !memberGate.approvalQueue.containsKey(it.user.idLong)
+                            val notQueuedForApproval = !memberGateQuestionRepository.existsById(it.user.idLong)
                             val noRoles = it.roles.size < 1
                             noRoles && reachedTimeLimit && notQueuedForApproval
                         }.forEach { member ->

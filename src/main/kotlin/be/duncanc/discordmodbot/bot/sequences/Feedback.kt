@@ -19,7 +19,7 @@ package be.duncanc.discordmodbot.bot.sequences
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.entities.ReportChannel
-import be.duncanc.discordmodbot.data.repositories.ReportChannelRepository
+import be.duncanc.discordmodbot.data.repositories.jpa.ReportChannelRepository
 import be.duncanc.discordmodbot.data.services.UserBlockService
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
@@ -40,8 +40,8 @@ import java.util.concurrent.TimeUnit
 @Component
 class Feedback
 @Autowired constructor(
-    private val reportChannelRepository: ReportChannelRepository,
-    userBlockService: UserBlockService
+        private val reportChannelRepository: ReportChannelRepository,
+        userBlockService: UserBlockService
 ) : CommandModule(
     arrayOf("Feedback", "Report", "Complaint"),
     null,

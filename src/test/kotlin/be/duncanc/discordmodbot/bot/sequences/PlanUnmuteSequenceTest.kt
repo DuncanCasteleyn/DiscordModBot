@@ -2,7 +2,7 @@ package be.duncanc.discordmodbot.bot.sequences
 
 import be.duncanc.discordmodbot.bot.services.GuildLogger
 import be.duncanc.discordmodbot.data.entities.MuteRole
-import be.duncanc.discordmodbot.data.repositories.MuteRolesRepository
+import be.duncanc.discordmodbot.data.repositories.jpa.MuteRolesRepository
 import be.duncanc.discordmodbot.data.services.ScheduledUnmuteService
 import com.nhaarman.mockitokotlin2.*
 import net.dv8tion.jda.api.JDA

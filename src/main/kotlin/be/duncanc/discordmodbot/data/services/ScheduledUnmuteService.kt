@@ -6,8 +6,8 @@ import be.duncanc.discordmodbot.bot.services.GuildLogger.LogTypeAction.MODERATOR
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.entities.MuteRole
 import be.duncanc.discordmodbot.data.entities.ScheduledUnmute
-import be.duncanc.discordmodbot.data.repositories.MuteRolesRepository
-import be.duncanc.discordmodbot.data.repositories.ScheduledUnmuteRepository
+import be.duncanc.discordmodbot.data.repositories.jpa.MuteRolesRepository
+import be.duncanc.discordmodbot.data.repositories.jpa.ScheduledUnmuteRepository
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
