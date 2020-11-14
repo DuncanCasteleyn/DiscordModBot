@@ -10,6 +10,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Run Gradle check
-        run: gradlew check
+        run: ./gradlew check
       - name: Build Spring Boot Jar
-        run: gradlew bootJar
+        run: ./gradlew bootJar
