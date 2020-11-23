@@ -33,9 +33,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.exceptions.PermissionException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import org.springframework.transaction.annotation.Transactional
 import java.time.Duration
 import java.time.OffsetDateTime
 import java.util.concurrent.TimeUnit
@@ -70,8 +68,7 @@ class WeeklyActivityReport(
         }
     }
 
-    @Scheduled(cron = "0 0 0 * * MON")
-    @Transactional(readOnly = true)
+    @Deprecated("Broken needs to be fixed")
     fun sendReports() {
         val statsCollectionStartTime = OffsetDateTime.now()
         activityReportSettingsRepository.findAll().forEach { reportSettings ->
