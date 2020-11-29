@@ -1,6 +1,5 @@
 package be.duncanc.discordmodbot.data.services
 
-import be.duncanc.discordmodbot.bot.RunBots
 import be.duncanc.discordmodbot.bot.services.GuildLogger
 import be.duncanc.discordmodbot.bot.services.GuildLogger.LogTypeAction.MODERATOR
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
@@ -9,6 +8,7 @@ import be.duncanc.discordmodbot.data.entities.ScheduledUnmute
 import be.duncanc.discordmodbot.data.repositories.jpa.MuteRolesRepository
 import be.duncanc.discordmodbot.data.repositories.jpa.ScheduledUnmuteRepository
 import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Role
@@ -25,7 +25,7 @@ class ScheduledUnmuteService(
         private val muteRolesRepository: MuteRolesRepository,
         private val guildLogger: GuildLogger,
         @Lazy
-        private val runBots: RunBots
+        private val jda: JDA
 ) {
     @Transactional
     fun planUnmute(guildId: Long, userId: Long, unmuteDateTime: OffsetDateTime) {
@@ -47,10 +47,8 @@ class ScheduledUnmuteService(
     @Transactional
     fun performUnmute() {
         scheduledUnmuteRepository.findAllByUnmuteDateTimeIsBefore(OffsetDateTime.now()).forEach { scheduledUnmute ->
-            runBots.runningBots.forEach { jda ->
-                jda.getGuildById(scheduledUnmute.guildId)?.let { guild ->
-                    getMemberToUnmute(scheduledUnmute, guild)
-                }
+            jda.getGuildById(scheduledUnmute.guildId)?.let { guild ->
+                getMemberToUnmute(scheduledUnmute, guild)
             }
         }
     }

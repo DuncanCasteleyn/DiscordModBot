@@ -16,7 +16,6 @@
 
 package be.duncanc.discordmodbot.data.services
 
-import be.duncanc.discordmodbot.bot.RunBots
 import be.duncanc.discordmodbot.data.entities.GuildMemberGate
 import be.duncanc.discordmodbot.data.repositories.jpa.GuildMemberGateRepository
 import be.duncanc.discordmodbot.data.repositories.key.value.MemberGateQuestionRepository
@@ -37,7 +36,7 @@ import java.util.*
 class MemberGateService(
         private val guildMemberGateRepository: GuildMemberGateRepository,
         @Lazy
-        private val runBots: RunBots,
+        private val jda: JDA,
         private val memberGateQuestionRepository: MemberGateQuestionRepository
 ) {
     /**
@@ -196,29 +195,27 @@ class MemberGateService(
     @Scheduled(fixedDelay = 3600000)
     fun purgeMembersWithoutRoles() {
         try {
-            runBots.runningBots.forEach { jda ->
-                jda.guilds.forEach { guild ->
-                    val guildSettings = guildMemberGateRepository.findById(guild.idLong).orElse(null)
-                    if (guildSettings?.removeTimeHours != null && guildSettings.memberRole != null) {
-                        guild.members.filter {
-                            val reachedTimeLimit = it.timeJoined.isBefore(OffsetDateTime.now().minusHours(guildSettings.removeTimeHours))
-                            val notQueuedForApproval = !memberGateQuestionRepository.existsById(it.user.idLong)
-                            val noRoles = it.roles.size < 1
-                            noRoles && reachedTimeLimit && notQueuedForApproval
-                        }.forEach { member ->
-                            val userKickNotification = EmbedBuilder()
-                                    .setColor(Color.RED)
-                                    .setTitle("${guild.name}: You have been kicked", null)
-                                    .setDescription("Reason: You did not complete the server entry process within ${guildSettings.removeTimeHours} hour(s)")
-                                    .build()
-                            member.user.openPrivateChannel().queue(
-                                    {
-                                        it.sendMessage(userKickNotification).queue({ guild.kick(member).queue() }, { guild.kick(member).queue() })
-                                    },
-                                    {
-                                        guild.kick(member).queue()
-                                    })
-                        }
+            jda.guilds.forEach { guild ->
+                val guildSettings = guildMemberGateRepository.findById(guild.idLong).orElse(null)
+                if (guildSettings?.removeTimeHours != null && guildSettings.memberRole != null) {
+                    guild.members.filter {
+                        val reachedTimeLimit = it.timeJoined.isBefore(OffsetDateTime.now().minusHours(guildSettings.removeTimeHours))
+                        val notQueuedForApproval = !memberGateQuestionRepository.existsById(it.user.idLong)
+                        val noRoles = it.roles.size < 1
+                        noRoles && reachedTimeLimit && notQueuedForApproval
+                    }.forEach { member ->
+                        val userKickNotification = EmbedBuilder()
+                                .setColor(Color.RED)
+                                .setTitle("${guild.name}: You have been kicked", null)
+                                .setDescription("Reason: You did not complete the server entry process within ${guildSettings.removeTimeHours} hour(s)")
+                                .build()
+                        member.user.openPrivateChannel().queue(
+                                {
+                                    it.sendMessage(userKickNotification).queue({ guild.kick(member).queue() }, { guild.kick(member).queue() })
+                                },
+                                {
+                                    guild.kick(member).queue()
+                                })
                     }
                 }
             }

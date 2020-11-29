@@ -1,6 +1,5 @@
 package be.duncanc.discordmodbot.data.services
 
-import be.duncanc.discordmodbot.bot.RunBots
 import be.duncanc.discordmodbot.bot.services.GuildLogger
 import be.duncanc.discordmodbot.data.entities.MuteRole
 import be.duncanc.discordmodbot.data.entities.ScheduledUnmute
@@ -38,12 +37,9 @@ internal class ScheduledUnmuteServiceTest {
     lateinit var muteRolesRepository: MuteRolesRepository
 
     @MockBean
-    lateinit var runBots: RunBots
-
-    @MockBean
     lateinit var guildLogger: GuildLogger
 
-    @Mock
+    @MockBean
     lateinit var jda: JDA
 
     @Mock
@@ -63,7 +59,7 @@ internal class ScheduledUnmuteServiceTest {
 
     @AfterEach
     fun `verify no more interactions with any mock or spy`() {
-        verifyNoMoreInteractions(scheduledUnmuteRepository, muteRolesRepository, runBots, scheduledUnmuteService, jda, guild, role)
+        verifyNoMoreInteractions(scheduledUnmuteRepository, muteRolesRepository, scheduledUnmuteService, jda, guild, role)
     }
 
     @Test
@@ -114,7 +110,7 @@ internal class ScheduledUnmuteServiceTest {
         // Arrange
         val scheduledUnmute = ScheduledUnmute(1, 1, OffsetDateTime.MIN)
         whenever(scheduledUnmuteRepository.findAllByUnmuteDateTimeIsBefore(any())).thenReturn(Collections.singleton(scheduledUnmute))
-        whenever(runBots.runningBots).thenReturn(Collections.singletonList(jda))
+        //whenever(runBots.runningBots).thenReturn(Collections.singletonList(jda))
         val muteRole = Optional.of(MuteRole(1, 1))
         whenever(muteRolesRepository.findById(any())).thenReturn(muteRole)
         whenever(jda.getGuildById(1)).thenReturn(guild)
@@ -127,7 +123,7 @@ internal class ScheduledUnmuteServiceTest {
         verify(scheduledUnmuteService).performUnmute()
         verify(scheduledUnmuteRepository).findAllByUnmuteDateTimeIsBefore(any())
         verify(jda).getGuildById(1)
-        verify(runBots).runningBots
+        //verify(runBots).runningBots
         verify(guild).idLong
         verify(muteRolesRepository).findById(any())
         verify(guild).getRoleById(1)

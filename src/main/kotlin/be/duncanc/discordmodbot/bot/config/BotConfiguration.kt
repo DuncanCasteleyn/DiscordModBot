@@ -1,0 +1,38 @@
+package be.duncanc.discordmodbot.bot.config
+
+import be.duncanc.discordmodbot.data.configs.properties.DiscordModBotConfig
+import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.JDABuilder
+import net.dv8tion.jda.api.hooks.ListenerAdapter
+import net.dv8tion.jda.api.requests.GatewayIntent
+import net.dv8tion.jda.api.utils.cache.CacheFlag
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+
+@Configuration
+class BotConfiguration {
+    companion object {
+        val INTENTS = listOf(
+                GatewayIntent.DIRECT_MESSAGES,
+                GatewayIntent.GUILD_BANS,
+                GatewayIntent.GUILD_EMOJIS,
+                GatewayIntent.GUILD_MEMBERS,
+                GatewayIntent.GUILD_MESSAGES,
+                GatewayIntent.GUILD_MESSAGE_REACTIONS,
+                GatewayIntent.GUILD_PRESENCES
+        )
+    }
+
+    @Bean(destroyMethod = "shutdown")
+    fun jda(
+            listenerAdapters: Array<ListenerAdapter>,
+            discordModBotConfig: DiscordModBotConfig
+    ): JDA {
+        return JDABuilder.create(discordModBotConfig.botToken, INTENTS)
+                .setBulkDeleteSplittingEnabled(false)
+                .disableCache(CacheFlag.VOICE_STATE)
+                .addEventListeners(*listenerAdapters)
+                .setEnableShutdownHook(false)
+                .build()
+    }
+}
