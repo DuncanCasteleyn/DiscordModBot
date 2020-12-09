@@ -18,7 +18,7 @@ package be.duncanc.discordmodbot.bot.services
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.sequences.Sequence
-import be.duncanc.discordmodbot.bot.utils.limitLessBulkDelete
+import be.duncanc.discordmodbot.bot.utils.limitLessBulkDeleteByIds
 import be.duncanc.discordmodbot.data.entities.GuildMemberGate
 import be.duncanc.discordmodbot.data.redis.hash.MemberGateQuestion
 import be.duncanc.discordmodbot.data.repositories.key.value.MemberGateQuestionRepository
@@ -80,14 +80,14 @@ class MemberGate(
      * Cleans the messages from the users and messages containing mentions to the users from the member gate channel.
      */
     private fun cleanMessagesFromUser(gateTextChannel: TextChannel, user: User) {
-        val userMessages: ArrayList<Message> = ArrayList()
+        val userMessages: ArrayList<Long> = ArrayList()
         gateTextChannel.iterableHistory.forEachAsync {
             if (it.author == user || it.contentRaw.contains(user.id)) {
-                userMessages.add(it)
+                userMessages.add(it.idLong)
             }
             true
         }.thenRun {
-            gateTextChannel.limitLessBulkDelete(userMessages)
+            gateTextChannel.limitLessBulkDeleteByIds(userMessages)
         }
     }
 

@@ -17,12 +17,11 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.services.GuildLogger
-import be.duncanc.discordmodbot.bot.utils.limitLessBulkDelete
+import be.duncanc.discordmodbot.bot.utils.limitLessBulkDeleteByIds
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.ChannelType
-import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 import java.awt.Color
@@ -44,11 +43,12 @@ class PurgeChannel : CommandModule(
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         try {
-            event.message.delete().complete()
+            event.message.delete().submit().get(30, TimeUnit.SECONDS)
         } catch (ignored: Exception) {
+            // Ignored
         }
 
-        val args = arguments!!.split(" ".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+        val args = arguments!!.split(" ".toRegex()).dropLastWhile { it.isEmpty }.toTypedArray()
         if (!event.isFromType(ChannelType.TEXT)) {
             event.channel.sendMessage("This command only works in a guild.").queue()
         } else if (event.member?.hasPermission(event.textChannel, Permission.MESSAGE_MANAGE) != true) {
@@ -65,11 +65,11 @@ class PurgeChannel : CommandModule(
             }
 
             val textChannel = event.textChannel
-            val messageList = ArrayList<Message>()
+            val messageList = ArrayList<Long>()
             val targetUsers = event.message.mentionedUsers
             for (m in textChannel.iterableHistory.cache(false)) {
                 if (targetUsers.contains(m.author) && m.timeCreated.isAfter(OffsetDateTime.now().minusWeeks(2))) {
-                    messageList.add(m)
+                    messageList.add(m.idLong)
                 } else if (m.timeCreated.isBefore(OffsetDateTime.now().minusWeeks(2))) {
                     break
                 }
@@ -78,7 +78,7 @@ class PurgeChannel : CommandModule(
                 }
             }
             val amountDeleted = messageList.size
-            textChannel.limitLessBulkDelete(messageList)
+            textChannel.limitLessBulkDeleteByIds(messageList)
             val stringBuilder = StringBuilder(event.author.asMention).append(" deleted ").append(amountDeleted)
                 .append(" most recent messages from ")
             for (i in targetUsers.indices) {
@@ -118,10 +118,10 @@ class PurgeChannel : CommandModule(
             }
 
             val textChannel = event.textChannel
-            val messageList = ArrayList<Message>()
+            val messageList = ArrayList<Long>()
             for (m in textChannel.iterableHistory.cache(false)) {
                 if (m.timeCreated.isAfter(OffsetDateTime.now().minusWeeks(2))) {
-                    messageList.add(m)
+                    messageList.add(m.idLong)
                 } else {
                     break
                 }
@@ -130,9 +130,9 @@ class PurgeChannel : CommandModule(
                 }
             }
             val amountDeleted = messageList.size
-            textChannel.limitLessBulkDelete(messageList)
+            textChannel.limitLessBulkDeleteByIds(messageList)
             textChannel.sendMessage(event.author.asMention + " deleted " + amountDeleted + " most recent messages not older than 2 weeks.")
-                .queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
+                    .queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
 
             val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
             if (guildLogger != null) {

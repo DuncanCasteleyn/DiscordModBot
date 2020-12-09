@@ -17,7 +17,6 @@
 package be.duncanc.discordmodbot.bot.utils
 
 import net.dv8tion.jda.api.entities.Member
-import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.exceptions.PermissionException
@@ -60,33 +59,34 @@ fun String.rot13(): String {
 /**
  * Deletes multiple messages at once, unlike the default method this one will split the ArrayList messages in stacks of 100 messages each automatically
  *
- * @param messages Messages to delete. The list you provide will be emptied for you.
+ * @param messageIdStrings Messages to delete. The list you provide will be emptied for you.
  */
-fun TextChannel.limitLessBulkDelete(messages: ArrayList<Message>) {
-    if (messages.size in 2..100) {
-        this.deleteMessages(messages).queue()
-    } else if (messages.size < 2) {
-        for (message in messages) {
-            message.delete().queue()
+fun TextChannel.limitLessBulkDeleteByIds(messagesIds: ArrayList<Long>) {
+    val messagesIdStrings = ArrayList(messagesIds.map { it.toString() })
+    messagesIds.clear()
+    if (messagesIdStrings.size in 2..100) {
+        this.deleteMessagesByIds(messagesIdStrings).queue()
+    } else if (messagesIdStrings.size < 2) {
+        for (message in messagesIdStrings) {
+            this.deleteMessageById(message).queue()
         }
     } else {
-        var messagesStack = ArrayList<Message>()
-        while (messages.size > 0) {
-            messagesStack.add(messages.removeAt(0))
+        var messagesStack = ArrayList<String>()
+        while (messagesIdStrings.size > 0) {
+            messagesStack.add(messagesIdStrings.removeAt(0))
             if (messagesStack.size == 100) {
-                this.deleteMessages(messagesStack).queue()
+                this.deleteMessagesByIds(messagesStack).queue()
                 messagesStack = ArrayList()
             }
         }
         if (messagesStack.size >= 2) {
-            this.deleteMessages(messagesStack).queue()
+            this.deleteMessagesByIds(messagesStack).queue()
         } else {
             for (message in messagesStack) {
-                message.delete().queue()
+                this.deleteMessageById(message).queue()
             }
         }
     }
-    messages.clear()
 }
 
 fun extractReason(arguments: String?): String {
@@ -103,7 +103,7 @@ private fun extractSentenceIgnoringFirstWord(arguments: String?) =
         arguments!!.substring(getIndexStartOfSecondWord(arguments))
 
 private fun getIndexStartOfSecondWord(arguments: String) =
-        arguments.split(" ").dropLastWhile { it.isEmpty() }.toTypedArray()[0].length + 1
+        arguments.split(" ").dropLastWhile { it.isEmpty }.toTypedArray()[0].length + 1
 
 fun findMemberAndCheckCanInteract(event: MessageReceivedEvent): Member {
     val target = event.guild.getMember(event.message.mentionedUsers[0])!!

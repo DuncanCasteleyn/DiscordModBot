@@ -16,7 +16,7 @@
 
 package be.duncanc.discordmodbot.bot.sequences
 
-import be.duncanc.discordmodbot.bot.utils.limitLessBulkDelete
+import be.duncanc.discordmodbot.bot.utils.limitLessBulkDeleteByIds
 import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageChannel
@@ -47,7 +47,7 @@ abstract class Sequence
         private val LOG = LoggerFactory.getLogger(Sequence::class.java)
     }
 
-    private val cleanAfterSequence: ArrayList<Message>?
+    private val cleanAfterSequence: ArrayList<Long>?
     private val expireInstant: Instant = Instant.now().plus(5, ChronoUnit.MINUTES)
 
     init {
@@ -130,7 +130,7 @@ abstract class Sequence
         cleanAfterSequence?.let {
             synchronized(it) {
                 if (it.isNotEmpty()) {
-                    it[0].textChannel.limitLessBulkDelete(it)
+                    (channel as TextChannel).limitLessBulkDeleteByIds(it)
                 }
             }
         }
@@ -142,7 +142,7 @@ abstract class Sequence
         }
         cleanAfterSequence?.let {
             synchronized(it) {
-                it.add(message)
+                it.add(message.idLong)
             }
         }
     }
