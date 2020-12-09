@@ -48,7 +48,7 @@ class PurgeChannel : CommandModule(
             // Ignored
         }
 
-        val args = arguments!!.split(" ".toRegex()).dropLastWhile { it.isEmpty }.toTypedArray()
+        val args = arguments!!.split(" ".toRegex()).dropLastWhile { it.isBlank() }.toTypedArray()
         if (!event.isFromType(ChannelType.TEXT)) {
             event.channel.sendMessage("This command only works in a guild.").queue()
         } else if (event.member?.hasPermission(event.textChannel, Permission.MESSAGE_MANAGE) != true) {
