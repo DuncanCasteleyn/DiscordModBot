@@ -110,11 +110,8 @@ CREATE TABLE `i_am_roles_category_roles`
     PRIMARY KEY (`iam_roles_category_category_id`, `iam_roles_category_guild_id`, `roles`)
 );
 
-DROP TABLE IF EXISTS `i_am_roles_seq`;
-CREATE TABLE `i_am_roles_seq`
-(
-    `next_val` bigint(20) DEFAULT NULL
-);
+DROP SEQUENCE IF EXISTS `i_am_roles_seq`;
+CREATE SEQUENCE `i_am_roles_seq`;
 
 DROP TABLE IF EXISTS `logging_ignored_channels`;
 CREATE TABLE `logging_ignored_channels`
@@ -190,8 +187,6 @@ CREATE TABLE `voting_emotes`
     PRIMARY KEY (`guild_id`)
 );
 
-alter table i_am_roles_categories
-    add constraint UK_s4cjvx1px5y5nrlfmg55x0jwe unique (category_name);
 alter table user_has_warn_points
     add constraint UK_p2t268egb17qo0ml3axqfb0d6 unique (points_id);
 alter table activity_report_settings_tracked_role_or_member
