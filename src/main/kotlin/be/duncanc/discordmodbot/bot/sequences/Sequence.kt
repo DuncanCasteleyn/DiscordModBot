@@ -130,7 +130,11 @@ abstract class Sequence
         cleanAfterSequence?.let {
             synchronized(it) {
                 if (it.isNotEmpty()) {
-                    (channel as TextChannel).limitLessBulkDeleteByIds(it)
+                    try {
+                        (channel as TextChannel).limitLessBulkDeleteByIds(it)
+                    } catch (e: Exception) {
+                        LOG.error("Was unable to clear messages when destroying sequence", e)
+                    }
                 }
             }
         }
