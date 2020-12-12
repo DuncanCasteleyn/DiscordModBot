@@ -67,7 +67,19 @@ internal class PlanUnmuteSequenceTest {
     fun `Set action for init`() {
         whenever(channel.sendMessage(any<String>())).thenReturn(messageAction)
         planUnmuteSequence = spy(PlanUnmuteSequence(user, channel, scheduledUnmuteService, targetUser, guildLogger))
-        stubs = arrayOf(user, channel, scheduledUnmuteService, targetUser, messageAction, jda, messageReceivedEvent, message, guild, planUnmuteSequence, guildLogger)
+        stubs = arrayOf(
+            user,
+            channel,
+            scheduledUnmuteService,
+            targetUser,
+            messageAction,
+            jda,
+            messageReceivedEvent,
+            message,
+            guild,
+            planUnmuteSequence,
+            guildLogger
+        )
     }
 
 
@@ -88,13 +100,14 @@ internal class PlanUnmuteSequenceTest {
         // Act
         val methodInvocationName = "onMessageReceivedDuringSequence"
         ReflectionTestUtils.invokeMethod<Void>(
-                planUnmuteSequence,
-                methodInvocationName,
-                messageReceivedEvent
+            planUnmuteSequence,
+            methodInvocationName,
+            messageReceivedEvent
         )
         // Verify
         verify(scheduledUnmuteService).planUnmute(any(), any(), any())
-        val onMessageReceivedDuringSequence = mockingDetails(planUnmuteSequence).invocations.filter { it.method.name == methodInvocationName }
+        val onMessageReceivedDuringSequence =
+            mockingDetails(planUnmuteSequence).invocations.filter { it.method.name == methodInvocationName }
         onMessageReceivedDuringSequence.first().markVerified()
         verify(targetUser).idLong
         verify(channel, times(3)).sendMessage(any<String>())
@@ -104,7 +117,14 @@ internal class PlanUnmuteSequenceTest {
         verify(messageAction, times(3)).queue(any<Consumer<Message>>())
         verify(guild).getMember(user)
         verify(guild).getMember(targetUser)
-        verify(guildLogger).log(any(), eq(targetUser), eq(guild), eq(null), eq(GuildLogger.LogTypeAction.MODERATOR), eq(null))
+        verify(guildLogger).log(
+            any(),
+            eq(targetUser),
+            eq(guild),
+            eq(null),
+            eq(GuildLogger.LogTypeAction.MODERATOR),
+            eq(null)
+        )
         verify(jda).removeEventListener(planUnmuteSequence)
     }
 
@@ -117,12 +137,14 @@ internal class PlanUnmuteSequenceTest {
         val methodInvocationName = "onMessageReceivedDuringSequence"
         val numberFormatException = assertThrows<NumberFormatException> {
             ReflectionTestUtils.invokeMethod<Void>(
-                    planUnmuteSequence, methodInvocationName,
-                    messageReceivedEvent)
+                planUnmuteSequence, methodInvocationName,
+                messageReceivedEvent
+            )
         }
         // Verify
         assertEquals("For input string: \"Definitely not a number\"", numberFormatException.message)
-        val onMessageReceivedDuringSequence = mockingDetails(planUnmuteSequence).invocations.filter { it.method.name == methodInvocationName }
+        val onMessageReceivedDuringSequence =
+            mockingDetails(planUnmuteSequence).invocations.filter { it.method.name == methodInvocationName }
         onMessageReceivedDuringSequence.first().markVerified()
         verify(channel, times(2)).sendMessage(any<String>())
         verify(channel).asMention
@@ -139,12 +161,14 @@ internal class PlanUnmuteSequenceTest {
         val methodInvocationName = "onMessageReceivedDuringSequence"
         val illegalArgumentException = assertThrows<IllegalArgumentException> {
             ReflectionTestUtils.invokeMethod<Void>(
-                    planUnmuteSequence, methodInvocationName,
-                    messageReceivedEvent)
+                planUnmuteSequence, methodInvocationName,
+                messageReceivedEvent
+            )
         }
         // Verify
         assertEquals("The numbers of days should not be negative or 0", illegalArgumentException.message)
-        val onMessageReceivedDuringSequence = mockingDetails(planUnmuteSequence).invocations.filter { it.method.name == methodInvocationName }
+        val onMessageReceivedDuringSequence =
+            mockingDetails(planUnmuteSequence).invocations.filter { it.method.name == methodInvocationName }
         onMessageReceivedDuringSequence.first().markVerified()
         verify(channel, times(2)).sendMessage(any<String>())
         verify(channel).asMention
@@ -194,8 +218,10 @@ internal class PlanUnmuteCommandTest {
 
     @AfterEach
     fun `No more interactions with any spy or mocks`() {
-        verifyNoMoreInteractions(jda, planUnmuteCommand, scheduledUnmuteService, message, message, guild, member, user,
-                messageAction, messageChannel, guildLogger, muteRolesRepository)
+        verifyNoMoreInteractions(
+            jda, planUnmuteCommand, scheduledUnmuteService, message, message, guild, member, user,
+            messageAction, messageChannel, guildLogger, muteRolesRepository
+        )
     }
 
     @Test
@@ -222,11 +248,13 @@ internal class PlanUnmuteCommandTest {
         whenever(messageReceivedEvent.jda).thenReturn(jda)
         // Act
         ReflectionTestUtils.invokeMethod<Void>(
-                planUnmuteCommand, "commandExec",
-                messageReceivedEvent, planUnmuteCommand.aliases[0], null)
+            planUnmuteCommand, "commandExec",
+            messageReceivedEvent, planUnmuteCommand.aliases[0], null
+        )
         // Assert
         verify(planUnmuteCommand).aliases
-        val commandExecInvocations = mockingDetails(planUnmuteCommand).invocations.filter { it.method.name == "commandExec" }
+        val commandExecInvocations =
+            mockingDetails(planUnmuteCommand).invocations.filter { it.method.name == "commandExec" }
         assertEquals(1, commandExecInvocations.size, "Expected method commandExec to be executed once.")
         commandExecInvocations.first().markVerified()
         verify(muteRolesRepository).findById(any<Long>())
@@ -250,13 +278,15 @@ internal class PlanUnmuteCommandTest {
         // Act
         val illegalArgumentException = assertThrows<IllegalArgumentException> {
             ReflectionTestUtils.invokeMethod<Void>(
-                    planUnmuteCommand, "commandExec",
-                    messageReceivedEvent, planUnmuteCommand.aliases[0], null)
+                planUnmuteCommand, "commandExec",
+                messageReceivedEvent, planUnmuteCommand.aliases[0], null
+            )
         }
         // Assert
         assertEquals("This command requires a user id or mention", illegalArgumentException.message)
         verify(planUnmuteCommand).aliases
-        val commandExecInvocations = mockingDetails(planUnmuteCommand).invocations.filter { it.method.name == "commandExec" }
+        val commandExecInvocations =
+            mockingDetails(planUnmuteCommand).invocations.filter { it.method.name == "commandExec" }
         assertEquals(1, commandExecInvocations.size, "Expected method commandExec to be executed once.")
         commandExecInvocations.first().markVerified()
         verify(messageReceivedEvent).message
@@ -272,13 +302,15 @@ internal class PlanUnmuteCommandTest {
         // Act & Assert throws
         val illegalArgumentException = assertThrows<IllegalArgumentException> {
             ReflectionTestUtils.invokeMethod<Void>(
-                    planUnmuteCommand, "commandExec",
-                    messageReceivedEvent, planUnmuteCommand.aliases[0], null)
+                planUnmuteCommand, "commandExec",
+                messageReceivedEvent, planUnmuteCommand.aliases[0], null
+            )
         }
         // Assert
         assertEquals("This command requires a user id or mention", illegalArgumentException.message)
         verify(planUnmuteCommand).aliases
-        val commandExecInvocations = mockingDetails(planUnmuteCommand).invocations.filter { it.method.name == "commandExec" }
+        val commandExecInvocations =
+            mockingDetails(planUnmuteCommand).invocations.filter { it.method.name == "commandExec" }
         assertEquals(1, commandExecInvocations.size, "Expected method commandExec to be executed once.")
         commandExecInvocations.first().markVerified()
         verify(messageReceivedEvent).message

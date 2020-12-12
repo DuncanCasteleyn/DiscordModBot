@@ -15,14 +15,14 @@ import java.util.concurrent.TimeUnit
 
 @Component
 class RevokeWarnPoints(
-        val guildWarnPointsRepository: GuildWarnPointsRepository,
-        val muteRole: MuteRole
+    val guildWarnPointsRepository: GuildWarnPointsRepository,
+    val muteRole: MuteRole
 ) : CommandModule(
-        arrayOf("RevokeWarnPoints", "RevokePoints"),
-        "Mention a user",
-        "This command is used to remove points  from a user, the user will be informed about this",
-        requiredPermissions = arrayOf(Permission.KICK_MEMBERS),
-        ignoreWhitelist = true
+    arrayOf("RevokeWarnPoints", "RevokePoints"),
+    "Mention a user",
+    "This command is used to remove points  from a user, the user will be informed about this",
+    requiredPermissions = arrayOf(Permission.KICK_MEMBERS),
+    ignoreWhitelist = true
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         val userId = try {
@@ -30,26 +30,27 @@ class RevokeWarnPoints(
         } catch (stringIndexOutOfBoundsException: StringIndexOutOfBoundsException) {
             throw IllegalArgumentException("A mention is required to use this command", stringIndexOutOfBoundsException)
         }
-        val userGuildWarnPoints = guildWarnPointsRepository.findById(GuildWarnPoints.GuildWarnPointsId(userId, event.guild.idLong))
+        val userGuildWarnPoints =
+            guildWarnPointsRepository.findById(GuildWarnPoints.GuildWarnPointsId(userId, event.guild.idLong))
         userGuildWarnPoints.ifPresentOrElse(
-                {
-                    event.jda.addEventListener(RevokePointsSequence(event.author, event.channel, it))
-                },
-                {
-                    event.channel.sendMessage("This user id has no warnings or the user does not exist.").queue {
-                        it.delete().queueAfter(1, TimeUnit.MINUTES)
-                    }
+            {
+                event.jda.addEventListener(RevokePointsSequence(event.author, event.channel, it))
+            },
+            {
+                event.channel.sendMessage("This user id has no warnings or the user does not exist.").queue {
+                    it.delete().queueAfter(1, TimeUnit.MINUTES)
                 }
+            }
         )
     }
 
     inner class RevokePointsSequence(
-            user: User,
-            channel: MessageChannel,
-            private val userGuildWarnPoints: GuildWarnPoints
+        user: User,
+        channel: MessageChannel,
+        private val userGuildWarnPoints: GuildWarnPoints
     ) : Sequence(
-            user,
-            channel
+        user,
+        channel
     ) {
         init {
             val messageBuilder = MessageBuilder("The user has had the following warnings in the past:\n\n")

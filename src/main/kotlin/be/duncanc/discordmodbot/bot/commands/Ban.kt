@@ -81,7 +81,7 @@ class Ban : CommandModule(
             val userBanNotification = EmbedBuilder()
                 .setColor(Color.red)
                 .setAuthor(event.member?.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
-                    .setTitle(event.guild.name + ": You have been banned by " + event.member!!.nicknameAndUsername, null)
+                .setTitle(event.guild.name + ": You have been banned by " + event.member!!.nicknameAndUsername, null)
                 .setDescription(description.toString())
                 .build()
 
@@ -121,7 +121,7 @@ class Ban : CommandModule(
                 .setTitle("User banned")
                 .addField("UUID", UUID.randomUUID().toString(), false)
                 .addField("User", toBan.nicknameAndUsername, true)
-                    .addField("Moderator", event.member!!.nicknameAndUsername, true)
+                .addField("Moderator", event.member!!.nicknameAndUsername, true)
                 .addField("Reason", reason, false)
 
 

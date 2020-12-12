@@ -13,26 +13,26 @@ import org.springframework.context.annotation.Configuration
 class BotConfiguration {
     companion object {
         val INTENTS = listOf(
-                GatewayIntent.DIRECT_MESSAGES,
-                GatewayIntent.GUILD_BANS,
-                GatewayIntent.GUILD_EMOJIS,
-                GatewayIntent.GUILD_MEMBERS,
-                GatewayIntent.GUILD_MESSAGES,
-                GatewayIntent.GUILD_MESSAGE_REACTIONS,
-                GatewayIntent.GUILD_PRESENCES
+            GatewayIntent.DIRECT_MESSAGES,
+            GatewayIntent.GUILD_BANS,
+            GatewayIntent.GUILD_EMOJIS,
+            GatewayIntent.GUILD_MEMBERS,
+            GatewayIntent.GUILD_MESSAGES,
+            GatewayIntent.GUILD_MESSAGE_REACTIONS,
+            GatewayIntent.GUILD_PRESENCES
         )
     }
 
     @Bean(destroyMethod = "shutdown")
     fun jda(
-            listenerAdapters: Array<ListenerAdapter>,
-            discordModBotConfig: DiscordModBotConfig
+        listenerAdapters: Array<ListenerAdapter>,
+        discordModBotConfig: DiscordModBotConfig
     ): JDA {
         return JDABuilder.create(discordModBotConfig.botToken, INTENTS)
-                .setBulkDeleteSplittingEnabled(false)
-                .disableCache(CacheFlag.VOICE_STATE)
-                .addEventListeners(*listenerAdapters)
-                .setEnableShutdownHook(false)
-                .build()
+            .setBulkDeleteSplittingEnabled(false)
+            .disableCache(CacheFlag.VOICE_STATE)
+            .addEventListeners(*listenerAdapters)
+            .setEnableShutdownHook(false)
+            .build()
     }
 }

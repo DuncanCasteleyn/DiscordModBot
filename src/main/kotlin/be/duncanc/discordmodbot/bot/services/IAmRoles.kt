@@ -213,12 +213,14 @@ class IAmRoles
                                 iAmRolesCategory!!.categoryId!!,
                                 roleId
                             )) {
-                                false -> super.channel.sendMessage(user.asMention + " The role was successfully removed form the category.").queue {
-                                    it.delete().queueAfter(1, TimeUnit.MINUTES)
-                                }
-                                true -> super.channel.sendMessage(user.asMention + " The role was successfully added to the category.").queue {
-                                    it.delete().queueAfter(1, TimeUnit.MINUTES)
-                                }
+                                false -> super.channel.sendMessage(user.asMention + " The role was successfully removed form the category.")
+                                    .queue {
+                                        it.delete().queueAfter(1, TimeUnit.MINUTES)
+                                    }
+                                true -> super.channel.sendMessage(user.asMention + " The role was successfully added to the category.")
+                                    .queue {
+                                        it.delete().queueAfter(1, TimeUnit.MINUTES)
+                                    }
                             }
                             super.destroy()
                         }

@@ -46,8 +46,8 @@ class Help(
      */
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         if (
-                !event.isFromType(ChannelType.PRIVATE) &&
-                (event.isFromType(ChannelType.TEXT) && event.member?.hasPermission(Permission.MESSAGE_MANAGE) != true)
+            !event.isFromType(ChannelType.PRIVATE) &&
+            (event.isFromType(ChannelType.TEXT) && event.member?.hasPermission(Permission.MESSAGE_MANAGE) != true)
         ) {
             throw UnsupportedOperationException("The help command should be executed in private chat")
         }
@@ -57,10 +57,12 @@ class Help(
                 helpEmbeds.add(EmbedBuilder().setTitle("Help part ${helpEmbeds.size + 1}"))
             }
             helpEmbeds[helpEmbeds.lastIndex].addField(
-                "${it.aliases.contentToString().replace("[", "").replace(
-                    "]",
-                    ""
-                )}${if (it.argumentationSyntax != null) " ${it.argumentationSyntax}" else ""}",
+                "${
+                    it.aliases.contentToString().replace("[", "").replace(
+                        "]",
+                        ""
+                    )
+                }${if (it.argumentationSyntax != null) " ${it.argumentationSyntax}" else ""}",
                 (it.description
                     ?: "No description available.") +
                         (if (it.requiredPermissions.isNotEmpty()) "Requires server permissions: ${it.requiredPermissions.contentToString()}" else ""),

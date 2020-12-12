@@ -14,12 +14,12 @@ import java.util.concurrent.TimeUnit.MINUTES
 
 @Component
 class ChannelOrderLocker(
-        val channelOrderLockRepository: ChannelOrderLockRepository
+    val channelOrderLockRepository: ChannelOrderLockRepository
 ) : CommandModule(
-        arrayOf("unlockChannelOrder"),
-        null,
-        "Allows you to change the order of one channel per execution",
-        requiredPermissions = arrayOf(Permission.MANAGE_CHANNEL)
+    arrayOf("unlockChannelOrder"),
+    null,
+    "Allows you to change the order of one channel per execution",
+    requiredPermissions = arrayOf(Permission.MANAGE_CHANNEL)
 ) {
     private val guildChannelPositionCache = HashMap<Long, HashMap<Long, Int>>()
     private val guildChannelParentCache = HashMap<Long, HashMap<Long, Category?>>()
@@ -28,17 +28,18 @@ class ChannelOrderLocker(
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         val guildId = event.guild.idLong
         val channelOrderLock = channelOrderLockRepository.findById(guildId)
-                .orElse(ChannelOrderLock(guildId))
+            .orElse(ChannelOrderLock(guildId))
         if (channelOrderLock.enabled && channelOrderLock.locked) {
             guildChannelPositionCache[guildId] = HashMap()
             guildChannelParentCache[guildId] = HashMap()
             val orderLockUnlock = channelOrderLock.copy(unlocked = true)
             channelOrderLockRepository.save(orderLockUnlock)
-            event.channel.sendMessage("${event.author.asMention} Any moderator can now change the order of channel for 2 minutes.").queue {
-                it.delete().queueAfter(2, MINUTES) {
-                    lockChannels(channelOrderLock)
+            event.channel.sendMessage("${event.author.asMention} Any moderator can now change the order of channel for 2 minutes.")
+                .queue {
+                    it.delete().queueAfter(2, MINUTES) {
+                        lockChannels(channelOrderLock)
+                    }
                 }
-            }
         }
     }
 
@@ -46,7 +47,7 @@ class ChannelOrderLocker(
     override fun onTextChannelUpdatePosition(event: TextChannelUpdatePositionEvent) {
         val guildId = event.guild.idLong
         val channelOrderLock = channelOrderLockRepository.findById(guildId)
-                .orElse(ChannelOrderLock(guildId))
+            .orElse(ChannelOrderLock(guildId))
         if (channelOrderLock.enabled && channelOrderLock.locked) {
             restoreOriginalChannelPosition(event)
         }
@@ -74,7 +75,7 @@ class ChannelOrderLocker(
     override fun onTextChannelUpdateParent(event: TextChannelUpdateParentEvent) {
         val guildId = event.guild.idLong
         val channelOrderLock = channelOrderLockRepository.findById(guildId)
-                .orElse(ChannelOrderLock(guildId))
+            .orElse(ChannelOrderLock(guildId))
         if (channelOrderLock.enabled && channelOrderLock.locked) {
             restoreOriginalParent(event)
         }

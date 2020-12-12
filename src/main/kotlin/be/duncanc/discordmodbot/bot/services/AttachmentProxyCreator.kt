@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit
  */
 @Component
 class AttachmentProxyCreator(
-        private val attachmentProxyRepository: AttachmentProxyRepository
+    private val attachmentProxyRepository: AttachmentProxyRepository
 ) {
     companion object {
         private const val CACHE_CHANNEL = 310006048595509248L
@@ -46,14 +46,14 @@ class AttachmentProxyCreator(
 
     fun getAttachmentUrl(id: Long): String? {
         return attachmentProxyRepository.findById(id)
-                .map {
-                    val attachmentUrlsBuilder = StringBuilder(it.attachmentUrls.joinToString("\n"))
-                    if (it.hadFailedCaches) {
-                        attachmentUrlsBuilder.append("The message either contained (an) attachment(s) larger then 8MB and could not be uploaded again, or failed to create a proxy.")
-                    }
-                    attachmentUrlsBuilder.toString()
+            .map {
+                val attachmentUrlsBuilder = StringBuilder(it.attachmentUrls.joinToString("\n"))
+                if (it.hadFailedCaches) {
+                    attachmentUrlsBuilder.append("The message either contained (an) attachment(s) larger then 8MB and could not be uploaded again, or failed to create a proxy.")
                 }
-                .orElse(null)
+                attachmentUrlsBuilder.toString()
+            }
+            .orElse(null)
     }
 
     @Async
@@ -72,8 +72,8 @@ class AttachmentProxyCreator(
                         IOUtils.copy(inputStream, outputStream)
 
                         event.jda.getTextChannelById(CACHE_CHANNEL)?.sendFile(
-                                outputStream.toByteArray(),
-                                attachment.fileName
+                            outputStream.toByteArray(),
+                            attachment.fileName
                         )?.map { message ->
                             message.attachments.map { messageAttachment ->
                                 "[${messageAttachment.fileName}](${messageAttachment.url})"

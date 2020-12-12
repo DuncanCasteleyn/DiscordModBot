@@ -197,7 +197,7 @@ class WeeklyActivityReport(
                     val guildId = event.guild.idLong
                     val roleOrMemberId = getRoleOrMemberIdFromString(event)
                     val activityReportSettings =
-                            activityReportSettingsRepository.findById(guildId).orElse(ActivityReportSettings(guildId))
+                        activityReportSettingsRepository.findById(guildId).orElse(ActivityReportSettings(guildId))
                     activityReportSettings.trackedRoleOrMember.remove(roleOrMemberId)
                     activityReportSettingsRepository.save(activityReportSettings)
                     channel.sendMessage("Role or member removed.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
@@ -208,9 +208,9 @@ class WeeklyActivityReport(
     }
 
     private fun getRoleOrMemberIdFromString(event: MessageReceivedEvent) =
-            event.message.contentRaw
-                    .replace("<@", "")
-                    .replace("&", "")
-                    .replace(">", "")
-                    .toLong()
+        event.message.contentRaw
+            .replace("<@", "")
+            .replace("&", "")
+            .replace(">", "")
+            .toLong()
 }

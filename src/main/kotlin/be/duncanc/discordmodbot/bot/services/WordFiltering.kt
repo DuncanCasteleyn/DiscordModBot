@@ -21,13 +21,13 @@ import java.util.concurrent.TimeUnit
 
 @Component
 class WordFiltering(
-        val blackListedWordRepository: BlackListedWordRepository,
-        val logger: GuildLogger
+    val blackListedWordRepository: BlackListedWordRepository,
+    val logger: GuildLogger
 ) : CommandModule(
-        arrayOf("AddWordFilter"),
-        "[Word] [${Arrays.toString(FilterMethod.values())}",
-        "Adds a word to the blacklist and filters it based on the supplied filter method",
-        requiredPermissions = arrayOf(Permission.MESSAGE_MANAGE)
+    arrayOf("AddWordFilter"),
+    "[Word] [${Arrays.toString(FilterMethod.values())}",
+    "Adds a word to the blacklist and filters it based on the supplied filter method",
+    requiredPermissions = arrayOf(Permission.MESSAGE_MANAGE)
 ) {
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
@@ -35,9 +35,11 @@ class WordFiltering(
         if (argSplit == null || argSplit.size < 2) {
             throw IllegalArgumentException("You need to specify a word followed by a filtering method")
         }
-        val blackListedWord = BlackListedWord(event.guild.idLong, argSplit[0], FilterMethod.valueOf(argSplit[1].toUpperCase()))
+        val blackListedWord =
+            BlackListedWord(event.guild.idLong, argSplit[0], FilterMethod.valueOf(argSplit[1].toUpperCase()))
         blackListedWordRepository.save(blackListedWord)
-        event.channel.sendMessage("Word has been added to the filter list.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+        event.channel.sendMessage("Word has been added to the filter list.")
+            .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
     }
 
     override fun onGuildMessageUpdate(event: GuildMessageUpdateEvent) {
@@ -81,13 +83,14 @@ class WordFiltering(
         if (containsBlackListedWord) {
             message.delete().reason("Contains blacklisted word(s)").queue()
             val embedBuilder: EmbedBuilder = EmbedBuilder()
-                    .setTitle("#" + channel.name + ": Message was removed due to blacklisted word(s)!")
-                    .setDescription("Old message was:\n" + message.contentDisplay)
-                    .addField("Author", message.member?.nicknameAndUsername, true)
-                    .addField("Message URL", "[Link](${message.jumpUrl})", false)
-                    .setColor(Color.RED)
+                .setTitle("#" + channel.name + ": Message was removed due to blacklisted word(s)!")
+                .setDescription("Old message was:\n" + message.contentDisplay)
+                .addField("Author", message.member?.nicknameAndUsername, true)
+                .addField("Message URL", "[Link](${message.jumpUrl})", false)
+                .setColor(Color.RED)
             logger.log(embedBuilder, message.author, guild, actionType = GuildLogger.LogTypeAction.MODERATOR)
-            channel.sendMessage("${message.author.asMention} Your message has been deleted as it violates discords TOS or our rules.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+            channel.sendMessage("${message.author.asMention} Your message has been deleted as it violates discords TOS or our rules.")
+                .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
         }
     }
 
@@ -96,29 +99,32 @@ class WordFiltering(
     }
 
     inner class RemoveWord : CommandModule(
-            arrayOf("RemoveWordFilter"),
-            "[word]",
-            "Removes the word from the filter",
-            requiredPermissions = arrayOf(Permission.MESSAGE_MANAGE)
+        arrayOf("RemoveWordFilter"),
+        "[word]",
+        "Removes the word from the filter",
+        requiredPermissions = arrayOf(Permission.MESSAGE_MANAGE)
     ) {
         override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
             if (arguments == null || arguments.contains(' ')) {
                 throw IllegalArgumentException("One word is required to remove a word from the filter")
             }
             blackListedWordRepository.deleteById(BlackListedWord.BlackListedWordId(event.guild.idLong, arguments))
-            event.channel.sendMessage("The word has been removed from the filter.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+            event.channel.sendMessage("The word has been removed from the filter.")
+                .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
         }
     }
 
     inner class ListWords : CommandModule(
-            arrayOf("ListWordFilters"),
-            null,
-            "List all the black listed words",
-            requiredPermissions = arrayOf(Permission.MESSAGE_MANAGE)
+        arrayOf("ListWordFilters"),
+        null,
+        "List all the black listed words",
+        requiredPermissions = arrayOf(Permission.MESSAGE_MANAGE)
     ) {
         override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-            val blackListedWords = blackListedWordRepository.findAllByGuildId(event.guild.idLong).toCollection(arrayListOf())
-            event.channel.sendMessage("The following words are blacklisted: \n${blackListedWords.joinToString("\n")}").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+            val blackListedWords =
+                blackListedWordRepository.findAllByGuildId(event.guild.idLong).toCollection(arrayListOf())
+            event.channel.sendMessage("The following words are blacklisted: \n${blackListedWords.joinToString("\n")}")
+                .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
         }
     }
 }

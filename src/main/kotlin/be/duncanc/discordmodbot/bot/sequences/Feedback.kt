@@ -40,8 +40,8 @@ import java.util.concurrent.TimeUnit
 @Component
 class Feedback
 @Autowired constructor(
-        private val reportChannelRepository: ReportChannelRepository,
-        userBlockService: UserBlockService
+    private val reportChannelRepository: ReportChannelRepository,
+    userBlockService: UserBlockService
 ) : CommandModule(
     arrayOf("Feedback", "Report", "Complaint"),
     null,
@@ -71,8 +71,8 @@ class Feedback
         init {
             val validGuilds = reportChannelRepository.findAll()
             selectableGuilds =
-                    jda.guilds.filter { guild -> validGuilds.any { it.guildId == guild.idLong } && guild.isMember(user) }
-                        .toList()
+                jda.guilds.filter { guild -> validGuilds.any { it.guildId == guild.idLong } && guild.isMember(user) }
+                    .toList()
             if (selectableGuilds.isEmpty()) {
                 throw UnsupportedOperationException("None of the servers you are on have this feature enabled.")
             }
@@ -93,9 +93,10 @@ class Feedback
                 channel.sendMessage("Please enter your feedback.").queue()
             } else {
                 val feedbackChannel =
-                        reportChannelRepository.findById(guild!!.idLong).orElseThrow { throw RuntimeException("The feedback feature was disabled during runtime") }.textChannelId
+                    reportChannelRepository.findById(guild!!.idLong)
+                        .orElseThrow { throw RuntimeException("The feedback feature was disabled during runtime") }.textChannelId
                 val embedBuilder = EmbedBuilder()
-                        .setAuthor(guild!!.getMember(user)!!.nicknameAndUsername, null, user.effectiveAvatarUrl)
+                    .setAuthor(guild!!.getMember(user)!!.nicknameAndUsername, null, user.effectiveAvatarUrl)
                     .setDescription(event.message.contentStripped)
                     .setFooter(user.id, null)
                     .setTimestamp(OffsetDateTime.now())
@@ -109,11 +110,11 @@ class Feedback
     }
 
     inner class SetFeedbackChannel : CommandModule(
-            arrayOf("SetFeedbackChannel"),
-            null,
-            "This command sets the current channel as feedback channel enabling the !feedback command for the server.",
-            ignoreWhitelist = true,
-            requiredPermissions = arrayOf(Permission.MANAGE_CHANNEL)
+        arrayOf("SetFeedbackChannel"),
+        null,
+        "This command sets the current channel as feedback channel enabling the !feedback command for the server.",
+        ignoreWhitelist = true,
+        requiredPermissions = arrayOf(Permission.MANAGE_CHANNEL)
     ) {
         override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
             reportChannelRepository.save(ReportChannel(event.guild.idLong, event.textChannel.idLong))
@@ -123,11 +124,11 @@ class Feedback
     }
 
     inner class DisableFeedback : CommandModule(
-            arrayOf("DisableFeedback"),
-            null,
-            "This command disables the feedback system for the server where executed.",
-            ignoreWhitelist = true,
-            requiredPermissions = arrayOf(Permission.MANAGE_CHANNEL)
+        arrayOf("DisableFeedback"),
+        null,
+        "This command disables the feedback system for the server where executed.",
+        ignoreWhitelist = true,
+        requiredPermissions = arrayOf(Permission.MANAGE_CHANNEL)
     ) {
         override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
             reportChannelRepository.deleteById(event.guild.idLong)

@@ -63,7 +63,7 @@ class UserInfo(
             } else {
                 val searchTerms =
                     event.message.contentRaw.substring(command.length + 2).toLowerCase().split("#".toRegex())
-                        .dropLastWhile { it.isEmpty() }.toTypedArray()
+                        .dropLastWhile { it.isEmpty }.toTypedArray()
                 var targetFound = false
                 for (member in event.guild.members) {
                     if (searchTerms[0] == member.user.name.toLowerCase() && searchTerms[1] == member.user.discriminator) {
@@ -77,15 +77,15 @@ class UserInfo(
                             .addField("User id", member.user.id, false)
                             .addField("Discriminator", member.user.discriminator, false)
                             .addField("Online status", member.onlineStatus.name, false)
-                                .addField("In voice channel?", member.voiceState?.inVoiceChannel().toString(), true)
+                            .addField("In voice channel?", member.voiceState?.inVoiceChannel().toString(), true)
                             .addField("Guild owner?", member.isOwner.toString(), true)
                             .addField("is a bot?", member.user.isBot.toString(), true)
                             .addField("Permissions", member.permissions.toString(), false)
                             .addField("Roles", member.roles.toString(), false)
-                                .addField("Guild join date", member.timeJoined.format(DATE_TIME_FORMATTER), true)
+                            .addField("Guild join date", member.timeJoined.format(DATE_TIME_FORMATTER), true)
                             .addField(
                                 "Account creation date",
-                                    member.user.timeCreated.format(DATE_TIME_FORMATTER),
+                                member.user.timeCreated.format(DATE_TIME_FORMATTER),
                                 true
                             )
                             .build()

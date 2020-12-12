@@ -79,15 +79,15 @@ class Mute
                         .setTitle("User muted")
                         .addField("UUID", UUID.randomUUID().toString(), false)
                         .addField("User", toMute.nicknameAndUsername, true)
-                            .addField("Moderator", event.member!!.nicknameAndUsername, true)
+                        .addField("Moderator", event.member!!.nicknameAndUsername, true)
                         .addField("Reason", reason, false)
 
                     guildLogger.log(logEmbed, toMute.user, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)
                 }
                 val userMuteWarning = EmbedBuilder()
                     .setColor(Color.YELLOW)
-                        .setAuthor(event.member!!.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
-                        .setTitle("${event.guild.name}: You have been muted by ${event.member!!.nicknameAndUsername}")
+                    .setAuthor(event.member!!.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
+                    .setTitle("${event.guild.name}: You have been muted by ${event.member!!.nicknameAndUsername}")
                     .addField("Reason", reason, false)
 
                 toMute.user.openPrivateChannel().queue(

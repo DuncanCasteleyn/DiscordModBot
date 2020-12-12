@@ -34,10 +34,10 @@ import java.util.*
 @Service
 @Transactional(readOnly = true)
 class MemberGateService(
-        private val guildMemberGateRepository: GuildMemberGateRepository,
-        @Lazy
-        private val jda: JDA,
-        private val memberGateQuestionRepository: MemberGateQuestionRepository
+    private val guildMemberGateRepository: GuildMemberGateRepository,
+    @Lazy
+    private val jda: JDA,
+    private val memberGateQuestionRepository: MemberGateQuestionRepository
 ) {
     /**
      * @return null when not configured or channel no longer exists.
@@ -165,7 +165,14 @@ class MemberGateService(
         val guildMemberGate: GuildMemberGate? = guildMemberGateRepository.findById(guildId).orElse(null)
         if (guildMemberGate != null) {
             guildMemberGate.questions.clear()
-            guildMemberGateRepository.save(guildMemberGate.copy(gateTextChannel = null, memberRole = null, rulesTextChannel = null, removeTimeHours = null))
+            guildMemberGateRepository.save(
+                guildMemberGate.copy(
+                    gateTextChannel = null,
+                    memberRole = null,
+                    rulesTextChannel = null,
+                    removeTimeHours = null
+                )
+            )
         }
     }
 
@@ -199,23 +206,25 @@ class MemberGateService(
                 val guildSettings = guildMemberGateRepository.findById(guild.idLong).orElse(null)
                 if (guildSettings?.removeTimeHours != null && guildSettings.memberRole != null) {
                     guild.members.filter {
-                        val reachedTimeLimit = it.timeJoined.isBefore(OffsetDateTime.now().minusHours(guildSettings.removeTimeHours))
+                        val reachedTimeLimit =
+                            it.timeJoined.isBefore(OffsetDateTime.now().minusHours(guildSettings.removeTimeHours))
                         val notQueuedForApproval = !memberGateQuestionRepository.existsById(it.user.idLong)
                         val noRoles = it.roles.size < 1
                         noRoles && reachedTimeLimit && notQueuedForApproval
                     }.forEach { member ->
                         val userKickNotification = EmbedBuilder()
-                                .setColor(Color.RED)
-                                .setTitle("${guild.name}: You have been kicked", null)
-                                .setDescription("Reason: You did not complete the server entry process within ${guildSettings.removeTimeHours} hour(s)")
-                                .build()
+                            .setColor(Color.RED)
+                            .setTitle("${guild.name}: You have been kicked", null)
+                            .setDescription("Reason: You did not complete the server entry process within ${guildSettings.removeTimeHours} hour(s)")
+                            .build()
                         member.user.openPrivateChannel().queue(
-                                {
-                                    it.sendMessage(userKickNotification).queue({ guild.kick(member).queue() }, { guild.kick(member).queue() })
-                                },
-                                {
-                                    guild.kick(member).queue()
-                                })
+                            {
+                                it.sendMessage(userKickNotification)
+                                    .queue({ guild.kick(member).queue() }, { guild.kick(member).queue() })
+                            },
+                            {
+                                guild.kick(member).queue()
+                            })
                     }
                 }
             }

@@ -11,12 +11,12 @@ import javax.persistence.IdClass
 @Entity
 @IdClass(BlackListedWordId::class)
 data class BlackListedWord(
-        @Id
-        val guildId: Long,
-        @Id
-        val word: String,
-        @Column(nullable = false)
-        val filterMethod: FilterMethod = EXACT
+    @Id
+    val guildId: Long,
+    @Id
+    val word: String,
+    @Column(nullable = false)
+    val filterMethod: FilterMethod = EXACT
 ) {
 
 
@@ -28,10 +28,10 @@ data class BlackListedWord(
     }
 
     data class BlackListedWordId(
-            @Id
-            val guildId: Long? = null,
-            @Id
-            val word: String? = null
+        @Id
+        val guildId: Long? = null,
+        @Id
+        val word: String? = null
     ) : Serializable
 
     override fun equals(other: Any?): Boolean {

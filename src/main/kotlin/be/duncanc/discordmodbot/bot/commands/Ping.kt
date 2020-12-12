@@ -22,12 +22,12 @@ import org.springframework.stereotype.Component
 
 @Component
 class Ping(
-        userBlockService: UserBlockService
+    userBlockService: UserBlockService
 ) : CommandModule(
-        ALIASES,
-        null,
-        DESCRIPTION,
-        userBlockService = userBlockService
+    ALIASES,
+    null,
+    DESCRIPTION,
+    userBlockService = userBlockService
 ) {
     companion object {
         private val ALIASES = arrayOf("Ping")
@@ -37,7 +37,7 @@ class Ping(
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.jda.restPing.queue {
             event.channel.sendMessage(
-                    """pong!
+                """pong!
 It took Discord ${event.jda.gatewayPing} milliseconds to respond to our last heartbeat (gateway).
 The REST API responded within $it milliseconds"""
             ).queue()

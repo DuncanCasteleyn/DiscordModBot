@@ -39,16 +39,16 @@ import java.util.concurrent.TimeUnit
  */
 @Component
 class Kick : CommandModule(
-        arrayOf("Kick"),
-        "[User mention] [Reason~]",
-        "This command will kick the mentioned users and log this to the log channel. A reason is required.",
-        true,
-        true
+    arrayOf("Kick"),
+    "[User mention] [Reason~]",
+    "This command will kick the mentioned users and log this to the log channel. A reason is required.",
+    true,
+    true
 ) {
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.author.openPrivateChannel().queue(
-                { privateChannel -> commandExec(event, arguments, privateChannel) }
+            { privateChannel -> commandExec(event, arguments, privateChannel) }
         ) { commandExec(event, arguments, null) }
     }
 
@@ -70,8 +70,8 @@ class Kick : CommandModule(
 
             val userKickNotification = EmbedBuilder()
                 .setColor(Color.RED)
-                    .setAuthor(event.member?.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
-                    .setTitle("${event.guild.name}: You have been kicked by ${event.member?.nicknameAndUsername}", null)
+                .setAuthor(event.member?.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
+                .setTitle("${event.guild.name}: You have been kicked by ${event.member?.nicknameAndUsername}", null)
                 .setDescription("Reason: $reason")
                 .build()
 
@@ -104,7 +104,7 @@ class Kick : CommandModule(
                 .setTitle("User kicked")
                 .addField("UUID", UUID.randomUUID().toString(), false)
                 .addField("User", toKick.nicknameAndUsername, true)
-                    .addField("Moderator", event.member!!.nicknameAndUsername, true)
+                .addField("Moderator", event.member!!.nicknameAndUsername, true)
                 .addField("Reason", reason, false)
 
             guildLogger.log(logEmbed, toKick.user, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)

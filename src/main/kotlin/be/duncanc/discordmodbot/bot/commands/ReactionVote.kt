@@ -24,15 +24,15 @@ import org.springframework.stereotype.Component
 
 @Component
 class ReactionVote(
-        private val votingEmotesRepository: VotingEmotesRepository,
-        userBlockService: UserBlockService
+    private val votingEmotesRepository: VotingEmotesRepository,
+    userBlockService: UserBlockService
 ) : CommandModule(
-        arrayOf("ReactionVote", "Vote"),
-        "[message id] [Vote number count]",
-        "Will put reactions to vote yes or no on a message.\nIf no message id is provided the message that contains the command will be used to vote.\nif a number is provided after the id a numeric vote is started with x amount of voting options with a max of 11",
-        cleanCommandMessage = false,
-        ignoreWhitelist = true,
-        userBlockService = userBlockService
+    arrayOf("ReactionVote", "Vote"),
+    "[message id] [Vote number count]",
+    "Will put reactions to vote yes or no on a message.\nIf no message id is provided the message that contains the command will be used to vote.\nif a number is provided after the id a numeric vote is started with x amount of voting options with a max of 11",
+    cleanCommandMessage = false,
+    ignoreWhitelist = true,
+    userBlockService = userBlockService
 ) {
     companion object {
         val numericVoteEmotes = arrayOf("1⃣", "2⃣", "3⃣", "4⃣", "5⃣", "6⃣", "7⃣", "8⃣", "9⃣", "\uD83D\uDD1F", "0⃣")

@@ -100,7 +100,7 @@ class PurgeChannel : CommandModule(
                 val logEmbed = EmbedBuilder()
                     .setColor(Color.YELLOW)
                     .setTitle("Filtered channel purge", null)
-                        .addField("Moderator", event.member!!.nicknameAndUsername, true)
+                    .addField("Moderator", event.member!!.nicknameAndUsername, true)
                     .addField("Channel", textChannel.name, true)
                     .addField("Filter", filterString.toString(), true)
 
@@ -132,14 +132,14 @@ class PurgeChannel : CommandModule(
             val amountDeleted = messageList.size
             textChannel.limitLessBulkDeleteByIds(messageList)
             textChannel.sendMessage(event.author.asMention + " deleted " + amountDeleted + " most recent messages not older than 2 weeks.")
-                    .queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
+                .queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
 
             val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
             if (guildLogger != null) {
                 val logEmbed = EmbedBuilder()
                     .setColor(Color.YELLOW)
                     .setTitle("Channel purge", null)
-                        .addField("Moderator", event.member!!.nicknameAndUsername, true)
+                    .addField("Moderator", event.member!!.nicknameAndUsername, true)
                     .addField("Channel", textChannel.name, true)
 
                 guildLogger.log(logEmbed, event.author, event.guild, null, GuildLogger.LogTypeAction.MODERATOR)

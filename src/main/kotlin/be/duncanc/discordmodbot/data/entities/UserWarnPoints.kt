@@ -31,25 +31,25 @@ import javax.validation.constraints.Positive
 @Entity
 @Table(name = "user_warn_points")
 data class UserWarnPoints(
-        @Id
-        @Column(updatable = false, columnDefinition = "BINARY(16)")
-        val id: UUID = UUID.randomUUID(),
-        @field:Positive
-        @Column(nullable = false, updatable = false)
-        val points: Int,
-        @field:NotNull
-        @Column(nullable = false, updatable = false)
-        val creatorId: Long,
-        @field:NotBlank
-        @Column(nullable = false, updatable = false, columnDefinition = "TEXT")
-        val reason: String,
-        @field:NotNull
-        @Column(nullable = false, updatable = false)
-        val creationDate: OffsetDateTime = OffsetDateTime.now(),
-        @field:Future
-        @field:NotNull
-        @Column(nullable = false, updatable = false)
-        val expireDate: OffsetDateTime
+    @Id
+    @Column(updatable = false, columnDefinition = "BINARY(16)")
+    val id: UUID = UUID.randomUUID(),
+    @field:Positive
+    @Column(nullable = false, updatable = false)
+    val points: Int,
+    @field:NotNull
+    @Column(nullable = false, updatable = false)
+    val creatorId: Long,
+    @field:NotBlank
+    @Column(nullable = false, updatable = false, columnDefinition = "TEXT")
+    val reason: String,
+    @field:NotNull
+    @Column(nullable = false, updatable = false)
+    val creationDate: OffsetDateTime = OffsetDateTime.now(),
+    @field:Future
+    @field:NotNull
+    @Column(nullable = false, updatable = false)
+    val expireDate: OffsetDateTime
 ) {
     init {
         if (points <= 0) {

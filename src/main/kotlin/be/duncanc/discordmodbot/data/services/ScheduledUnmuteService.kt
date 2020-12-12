@@ -21,11 +21,11 @@ import javax.transaction.Transactional
 
 @Service
 class ScheduledUnmuteService(
-        private val scheduledUnmuteRepository: ScheduledUnmuteRepository,
-        private val muteRolesRepository: MuteRolesRepository,
-        private val guildLogger: GuildLogger,
-        @Lazy
-        private val jda: JDA
+    private val scheduledUnmuteRepository: ScheduledUnmuteRepository,
+    private val muteRolesRepository: MuteRolesRepository,
+    private val guildLogger: GuildLogger,
+    @Lazy
+    private val jda: JDA
 ) {
     @Transactional
     fun planUnmute(guildId: Long, userId: Long, unmuteDateTime: OffsetDateTime) {
@@ -65,7 +65,12 @@ class ScheduledUnmuteService(
         }
     }
 
-    private fun getMuteRoleFromGuild(guild: Guild, muteRole: MuteRole, member: Member, scheduledUnmute: ScheduledUnmute) {
+    private fun getMuteRoleFromGuild(
+        guild: Guild,
+        muteRole: MuteRole,
+        member: Member,
+        scheduledUnmute: ScheduledUnmute
+    ) {
         guild.getRoleById(muteRole.roleId)?.let { role ->
             removeMute(guild, member, scheduledUnmute, role)
         }
@@ -81,10 +86,10 @@ class ScheduledUnmuteService(
 
     private fun logUnmute(guild: Guild, member: Member) {
         val logEmbed = EmbedBuilder()
-                .setColor(Color.green)
-                .setTitle("User unmuted")
-                .addField("User", member.nicknameAndUsername, true)
-                .addField("Reason", "Mute expired", false)
+            .setColor(Color.green)
+            .setTitle("User unmuted")
+            .addField("User", member.nicknameAndUsername, true)
+            .addField("Reason", "Mute expired", false)
 
         guildLogger.log(logEmbed, member.user, guild, null, MODERATOR)
     }
@@ -93,15 +98,15 @@ class ScheduledUnmuteService(
         val selfUser = member.jda.selfUser
         val guild = member.guild
         val embed = EmbedBuilder()
-                .setColor(Color.green)
-                .setAuthor(
-                        guild.getMember(selfUser)?.nicknameAndUsername ?: selfUser.name,
-                        null,
-                        selfUser.effectiveAvatarUrl
-                )
-                .setTitle(guild.name + ": Your mute has been removed")
-                .addField("Reason", "Mute expired", false)
-                .build()
+            .setColor(Color.green)
+            .setAuthor(
+                guild.getMember(selfUser)?.nicknameAndUsername ?: selfUser.name,
+                null,
+                selfUser.effectiveAvatarUrl
+            )
+            .setTitle(guild.name + ": Your mute has been removed")
+            .addField("Reason", "Mute expired", false)
+            .build()
         member.user.openPrivateChannel().queue {
             it.sendMessage(embed).queue()
         }

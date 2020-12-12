@@ -26,13 +26,13 @@ import javax.validation.constraints.NotNull
 @Table(name = "report_channels")
 data class ReportChannel
 constructor(
-        @Id
-        @Column(updatable = false)
-        val guildId: Long,
+    @Id
+    @Column(updatable = false)
+    val guildId: Long,
 
-        @Column(nullable = false)
-        @field:NotNull
-        val textChannelId: Long
+    @Column(nullable = false)
+    @field:NotNull
+    val textChannelId: Long
 ) {
 
     override fun equals(other: Any?): Boolean {

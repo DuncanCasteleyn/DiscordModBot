@@ -19,14 +19,14 @@ import java.util.concurrent.TimeUnit
 
 
 open class PlanUnmuteSequence(
-        user: User,
-        channel: MessageChannel,
-        private val scheduledUnmuteService: ScheduledUnmuteService,
-        private val targetUser: User,
-        private val guildLogger: GuildLogger
+    user: User,
+    channel: MessageChannel,
+    private val scheduledUnmuteService: ScheduledUnmuteService,
+    private val targetUser: User,
+    private val guildLogger: GuildLogger
 ) : Sequence(
-        user,
-        channel
+    user,
+    channel
 ) {
     init {
         super.channel.sendMessage("In how much days should the user be unmuted?").queue {
@@ -55,11 +55,11 @@ open class PlanUnmuteSequence(
 
     private fun logScheduledMute(guild: Guild, unmuteDateTime: OffsetDateTime) {
         val logEmbed = EmbedBuilder()
-                .setColor(GuildLogger.LIGHT_BLUE)
-                .setTitle("User unmute planned")
-                .addField("User", guild.getMember(targetUser)?.nicknameAndUsername ?: targetUser.name, true)
-                .addField("Moderator", guild.getMember(user)?.nicknameAndUsername ?: user.name, true)
-                .addField("Unmute planned after", unmuteDateTime.format(messageTimeFormat), false)
+            .setColor(GuildLogger.LIGHT_BLUE)
+            .setTitle("User unmute planned")
+            .addField("User", guild.getMember(targetUser)?.nicknameAndUsername ?: targetUser.name, true)
+            .addField("Moderator", guild.getMember(user)?.nicknameAndUsername ?: user.name, true)
+            .addField("Unmute planned after", unmuteDateTime.format(messageTimeFormat), false)
 
         guildLogger.log(logEmbed, targetUser, guild, null, GuildLogger.LogTypeAction.MODERATOR)
     }
@@ -67,15 +67,15 @@ open class PlanUnmuteSequence(
 
 @Component
 class PlanUnmuteCommand(
-        private val scheduledUnmuteService: ScheduledUnmuteService,
-        private val guildLogger: GuildLogger,
-        private val muteRolesRepository: MuteRolesRepository
+    private val scheduledUnmuteService: ScheduledUnmuteService,
+    private val guildLogger: GuildLogger,
+    private val muteRolesRepository: MuteRolesRepository
 ) : CommandModule(
-        arrayOf("PlanUnmute"),
-        null,
-        null,
-        ignoreWhitelist = true,
-        requiredPermissions = arrayOf(Permission.MANAGE_ROLES)
+    arrayOf("PlanUnmute"),
+    null,
+    null,
+    ignoreWhitelist = true,
+    requiredPermissions = arrayOf(Permission.MANAGE_ROLES)
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         val userId = try {
@@ -90,7 +90,15 @@ class PlanUnmuteCommand(
             val memberById = guild.getMemberById(userId)
             if (memberById != null && memberById.roles.contains(memberById.guild.getRoleById(it.roleId))
             ) {
-                event.jda.addEventListener(PlanUnmuteSequence(event.author, event.channel, scheduledUnmuteService, memberById.user, guildLogger))
+                event.jda.addEventListener(
+                    PlanUnmuteSequence(
+                        event.author,
+                        event.channel,
+                        scheduledUnmuteService,
+                        memberById.user,
+                        guildLogger
+                    )
+                )
             } else {
                 sendUserNotMutedMessage(event)
             }

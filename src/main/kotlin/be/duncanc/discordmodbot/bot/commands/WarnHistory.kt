@@ -33,8 +33,8 @@ import java.util.concurrent.TimeUnit
 
 @Component
 class WarnHistory(
-        val guildWarnPointsRepository: GuildWarnPointsRepository,
-        userBlockService: UserBlockService
+    val guildWarnPointsRepository: GuildWarnPointsRepository,
+    userBlockService: UserBlockService
 ) : CommandModule(
     arrayOf("WarnHistory"),
     null,
@@ -91,8 +91,8 @@ class WarnHistory(
                     message.append("Warned")
                 }
                 message.append(" on ").append(it.creationDate.format(messageTimeFormat)).append(" by ")
-                        .append(guild.getMemberById(it.creatorId)?.nicknameAndUsername)
-                        .append("\n\nReason: ").append(it.reason)
+                    .append(guild.getMemberById(it.creatorId)?.nicknameAndUsername)
+                    .append("\n\nReason: ").append(it.reason)
                 if (moderator) {
                     message.append("\n\nExpires: ").append(it.expireDate.format(messageTimeFormat))
                 }

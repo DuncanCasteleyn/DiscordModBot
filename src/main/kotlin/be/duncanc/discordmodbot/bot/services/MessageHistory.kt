@@ -41,8 +41,8 @@ class MessageHistory
  */
 @Autowired
 constructor(
-        private val discordMessageRepository: DiscordMessageRepository,
-        private val attachmentProxyCreator: AttachmentProxyCreator
+    private val discordMessageRepository: DiscordMessageRepository,
+    private val attachmentProxyCreator: AttachmentProxyCreator
 ) {
     /**
      * Used to add a message to the list
@@ -55,12 +55,12 @@ constructor(
             return
         }
         val discordMessage = DiscordMessage(
-                message.idLong,
-                message.guild.idLong,
-                message.channel.idLong,
-                message.author.idLong,
-                message.contentDisplay,
-                linkEmotes(message.emotes)
+            message.idLong,
+            message.guild.idLong,
+            message.channel.idLong,
+            message.author.idLong,
+            message.contentDisplay,
+            linkEmotes(message.emotes)
         )
         discordMessageRepository.save(discordMessage)
         if (message.attachments.size > 0) {
@@ -76,7 +76,13 @@ constructor(
     fun updateMessage(event: GuildMessageUpdateEvent) {
         if (discordMessageRepository.existsById(event.messageIdLong)) {
             val message = event.message
-            val discordMessage = DiscordMessage(message.idLong, message.guild.idLong, message.channel.idLong, message.author.idLong, message.contentDisplay)
+            val discordMessage = DiscordMessage(
+                message.idLong,
+                message.guild.idLong,
+                message.channel.idLong,
+                message.author.idLong,
+                message.contentDisplay
+            )
             discordMessageRepository.save(discordMessage)
         }
     }

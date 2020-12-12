@@ -31,9 +31,9 @@ import java.util.concurrent.TimeUnit
 class VoteEmoteSettings(
     val votingEmotesRepository: VotingEmotesRepository
 ) : CommandModule(
-        arrayOf("VoteEmoteSettings", "VoteSettings"),
-        null,
-        "Command to change the vote yes and no emotes for a server", requiredPermissions = arrayOf(Permission.MANAGE_EMOTES)
+    arrayOf("VoteEmoteSettings", "VoteSettings"),
+    null,
+    "Command to change the vote yes and no emotes for a server", requiredPermissions = arrayOf(Permission.MANAGE_EMOTES)
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.jda.addEventListener(VoteEmoteSettingsSequence(votingEmotesRepository, event.author, event.channel))
@@ -41,9 +41,9 @@ class VoteEmoteSettings(
 }
 
 open class VoteEmoteSettingsSequence(
-        private val votingEmotesRepository: VotingEmotesRepository,
-        user: User,
-        channel: MessageChannel
+    private val votingEmotesRepository: VotingEmotesRepository,
+    user: User,
+    channel: MessageChannel
 ) : Sequence(
     user,
     channel,
@@ -76,7 +76,7 @@ open class VoteEmoteSettingsSequence(
                 }
                 votingEmotesRepository.save(VoteEmotes(event.guild.idLong, voteYesEmoteId!!, voteNoEmote.idLong))
                 channel.sendMessage("New emotes have been set")
-                        .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                    .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                 destroy()
             }
         }

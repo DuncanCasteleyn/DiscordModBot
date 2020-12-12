@@ -17,8 +17,8 @@ DROP TABLE IF EXISTS `black_listed_word`;
 CREATE TABLE `black_listed_word`
 (
     `word`          varchar(255) NOT NULL,
-    `guild_id`      bigint(20)   NOT NULL,
-    `filter_method` int(11)      NOT NULL,
+    `guild_id`      bigint(20) NOT NULL,
+    `filter_method` int(11) NOT NULL,
     PRIMARY KEY (`word`, `guild_id`)
 );
 
@@ -65,7 +65,7 @@ CREATE TABLE `guild_member_gate_questions`
 DROP TABLE IF EXISTS `guild_member_gate_welcome_messages`;
 CREATE TABLE `guild_member_gate_welcome_messages`
 (
-    `guild_member_gate_guild_id` bigint(20)   NOT NULL,
+    `guild_member_gate_guild_id` bigint(20) NOT NULL,
     `image_url`                  varchar(255) NOT NULL,
     `message`                    varchar(255) NOT NULL,
     PRIMARY KEY (`guild_member_gate_guild_id`, `image_url`, `message`)
@@ -76,9 +76,9 @@ CREATE TABLE `guild_warn_point_settings`
 (
     `guild_id`                      bigint(20) NOT NULL,
     `announce_channel_id`           bigint(20) NOT NULL,
-    `announce_points_summary_limit` int(11)    NOT NULL,
-    `max_points_per_reason`         int(11)    NOT NULL,
-    `override_warn_command`         bit(1)     NOT NULL,
+    `announce_points_summary_limit` int(11) NOT NULL,
+    `max_points_per_reason`         int(11) NOT NULL,
+    `override_warn_command`         bit(1) NOT NULL,
     PRIMARY KEY (`guild_id`)
 );
 
@@ -93,9 +93,9 @@ CREATE TABLE `guild_warn_points`
 DROP TABLE IF EXISTS `i_am_roles_categories`;
 CREATE TABLE `i_am_roles_categories`
 (
-    `category_id`   bigint(20)   NOT NULL,
-    `guild_id`      bigint(20)   NOT NULL,
-    `allowed_roles` int(11)      NOT NULL,
+    `category_id`   bigint(20) NOT NULL,
+    `guild_id`      bigint(20) NOT NULL,
+    `allowed_roles` int(11) NOT NULL,
     `category_name` varchar(255) NOT NULL,
     PRIMARY KEY (`category_id`, `guild_id`),
     UNIQUE KEY (`category_name`)
@@ -127,12 +127,12 @@ DROP TABLE IF EXISTS `logging_settings`;
 CREATE TABLE `logging_settings`
 (
     `guild_id`              bigint(20) NOT NULL,
-    `log_member_ban`        bit(1)     NOT NULL,
-    `log_member_join`       bit(1)     NOT NULL,
-    `log_member_leave`      bit(1)     NOT NULL,
-    `log_member_remove_ban` bit(1)     NOT NULL,
-    `log_message_delete`    bit(1)     NOT NULL,
-    `log_message_update`    bit(1)     NOT NULL,
+    `log_member_ban`        bit(1) NOT NULL,
+    `log_member_join`       bit(1) NOT NULL,
+    `log_member_leave`      bit(1) NOT NULL,
+    `log_member_remove_ban` bit(1) NOT NULL,
+    `log_message_delete`    bit(1) NOT NULL,
+    `log_message_update`    bit(1) NOT NULL,
     `mod_log_channel`       bigint(20) NOT NULL,
     `user_log_channel`      bigint(20) DEFAULT NULL,
     PRIMARY KEY (`guild_id`)
@@ -172,12 +172,12 @@ CREATE TABLE `user_has_warn_points`
 DROP TABLE IF EXISTS `user_warn_points`;
 CREATE TABLE `user_warn_points`
 (
-    `id`            binary(16)  NOT NULL,
+    `id`            binary(16) NOT NULL,
     `creation_date` datetime(6) NOT NULL,
-    `creator_id`    bigint(20)  NOT NULL,
+    `creator_id`    bigint(20) NOT NULL,
     `expire_date`   datetime(6) NOT NULL,
-    `points`        int(11)     NOT NULL,
-    `reason`        text        NOT NULL,
+    `points`        int(11) NOT NULL,
+    `reason`        text NOT NULL,
     PRIMARY KEY (`id`)
 );
 

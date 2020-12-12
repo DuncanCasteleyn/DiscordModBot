@@ -70,14 +70,14 @@ class RemoveMute : CommandModule(
 
             val toRemoveMute = findMemberAndCheckCanInteract(event)
             event.guild.removeRoleFromMember(toRemoveMute, event.guild.getRoleById("221678882342830090")!!)
-                    .queue({ _ ->
+                .queue({ _ ->
                     val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
                     if (guildLogger != null) {
                         val logEmbed = EmbedBuilder()
                             .setColor(Color.GREEN)
                             .setTitle("User's mute was removed", null)
                             .addField("User", toRemoveMute.nicknameAndUsername, true)
-                                .addField("Moderator", event.member!!.nicknameAndUsername, true)
+                            .addField("Moderator", event.member!!.nicknameAndUsername, true)
                             .addField("Reason", reason, false)
 
                         guildLogger.log(
@@ -90,7 +90,7 @@ class RemoveMute : CommandModule(
                     }
                     val muteRemoveNotification = EmbedBuilder()
                         .setColor(Color.green)
-                            .setAuthor(event.member!!.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
+                        .setAuthor(event.member!!.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
                         .setTitle(event.guild.name + ": Your mute has been removed by " + event.member!!.nicknameAndUsername)
                         .addField("Reason", reason, false)
                         .build()

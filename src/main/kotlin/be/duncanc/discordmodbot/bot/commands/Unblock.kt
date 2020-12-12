@@ -23,8 +23,8 @@ import org.springframework.stereotype.Component
 
 @Component
 class Unblock(
-        val blockedUserRepository: BlockedUserRepository,
-        val discordModBotConfig: DiscordModBotConfig
+    val blockedUserRepository: BlockedUserRepository,
+    val discordModBotConfig: DiscordModBotConfig
 ) : CommandModule(
     arrayOf("Unblock"),
     null,

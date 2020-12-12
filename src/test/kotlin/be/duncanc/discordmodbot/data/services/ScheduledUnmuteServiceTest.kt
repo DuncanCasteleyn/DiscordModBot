@@ -59,7 +59,14 @@ internal class ScheduledUnmuteServiceTest {
 
     @AfterEach
     fun `verify no more interactions with any mock or spy`() {
-        verifyNoMoreInteractions(scheduledUnmuteRepository, muteRolesRepository, scheduledUnmuteService, jda, guild, role)
+        verifyNoMoreInteractions(
+            scheduledUnmuteRepository,
+            muteRolesRepository,
+            scheduledUnmuteService,
+            jda,
+            guild,
+            role
+        )
     }
 
     @Test
@@ -69,7 +76,10 @@ internal class ScheduledUnmuteServiceTest {
         val illegalArgumentException = assertThrows<IllegalArgumentException> {
             scheduledUnmuteService.planUnmute(0, 0, unmuteDateTime)
         }
-        assertEquals("An unmute should be planned at least more than 30 minutes in the future", illegalArgumentException.message)
+        assertEquals(
+            "An unmute should be planned at least more than 30 minutes in the future",
+            illegalArgumentException.message
+        )
         verify(scheduledUnmuteService).planUnmute(0, 0, unmuteDateTime)
     }
 
@@ -109,7 +119,11 @@ internal class ScheduledUnmuteServiceTest {
     fun `Performing unmute should work`() {
         // Arrange
         val scheduledUnmute = ScheduledUnmute(1, 1, OffsetDateTime.MIN)
-        whenever(scheduledUnmuteRepository.findAllByUnmuteDateTimeIsBefore(any())).thenReturn(Collections.singleton(scheduledUnmute))
+        whenever(scheduledUnmuteRepository.findAllByUnmuteDateTimeIsBefore(any())).thenReturn(
+            Collections.singleton(
+                scheduledUnmute
+            )
+        )
         val muteRole = Optional.of(MuteRole(1, 1))
         whenever(muteRolesRepository.findById(any())).thenReturn(muteRole)
         whenever(jda.getGuildById(1)).thenReturn(guild)

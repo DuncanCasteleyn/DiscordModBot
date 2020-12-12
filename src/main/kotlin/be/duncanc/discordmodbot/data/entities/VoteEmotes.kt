@@ -24,12 +24,12 @@ import javax.persistence.Table
 @Entity
 @Table(name = "voting_emotes")
 data class VoteEmotes(
-        @Id
-        val guildId: Long,
-        @Column(nullable = false)
-        val voteYesEmote: Long,
-        @Column(nullable = false)
-        val voteNoEmote: Long
+    @Id
+    val guildId: Long,
+    @Column(nullable = false)
+    val voteYesEmote: Long,
+    @Column(nullable = false)
+    val voteNoEmote: Long
 ) {
 
 

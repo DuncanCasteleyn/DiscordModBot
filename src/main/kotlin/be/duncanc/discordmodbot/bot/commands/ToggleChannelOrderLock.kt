@@ -10,21 +10,22 @@ import java.util.concurrent.TimeUnit
 
 @Component
 class ToggleChannelOrderLock(
-        val channelOrderLockRepository: ChannelOrderLockRepository
+    val channelOrderLockRepository: ChannelOrderLockRepository
 ) : CommandModule(
-        arrayOf("ToggleChannelOrderLock"),
-        null,
-        "Enables/disables channel order locking for the guild",
-        requiredPermissions = arrayOf(Permission.MANAGE_CHANNEL)
+    arrayOf("ToggleChannelOrderLock"),
+    null,
+    "Enables/disables channel order locking for the guild",
+    requiredPermissions = arrayOf(Permission.MANAGE_CHANNEL)
 ) {
     @Transactional
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         val guildId = event.guild.idLong
         val channelOrderLock = channelOrderLockRepository.findById(guildId)
-                .orElse(ChannelOrderLock(guildId))
+            .orElse(ChannelOrderLock(guildId))
         val reverseChannelOrderLock = channelOrderLock.copy(enabled = !channelOrderLock.enabled)
         channelOrderLockRepository.save(reverseChannelOrderLock)
         val lockingStatusText = if (reverseChannelOrderLock.enabled) "enabled" else "disabled"
-        event.channel.sendMessage("Channel order locking is now $lockingStatusText.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+        event.channel.sendMessage("Channel order locking is now $lockingStatusText.")
+            .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
     }
 }

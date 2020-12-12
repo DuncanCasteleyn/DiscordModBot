@@ -41,8 +41,8 @@ import java.util.concurrent.TimeUnit
 @Transactional
 class MuteRole
 @Autowired constructor(
-        private val muteRolesRepository: MuteRolesRepository,
-        private val guildLogger: GuildLogger
+    private val muteRolesRepository: MuteRolesRepository,
+    private val guildLogger: GuildLogger
 ) : CommandModule(
     arrayOf("MuteRole"),
     "[Name of the mute role or nothing to remove the role]",
@@ -104,7 +104,7 @@ class MuteRole
     override fun onGuildMemberRemove(event: GuildMemberRemoveEvent) {
         val member = event.member
         val muteRole = muteRolesRepository.findById(event.guild.idLong)
-                .orElse(null)
+            .orElse(null)
         if (muteRole != null && member != null) {
             if (member.roles.contains(muteRole.roleId.let { event.guild.getRoleById(it) })) {
                 muteRole.mutedUsers.add(event.user.idLong)
@@ -126,7 +126,12 @@ class MuteRole
                 .setTitle("User automatically muted")
                 .addField("User", event.member.nicknameAndUsername, true)
                 .addField("Reason", "Previously muted before leaving the server", false)
-            guildLogger.log(guild = event.guild, associatedUser = event.user, logEmbed = logEmbed, actionType = GuildLogger.LogTypeAction.MODERATOR)
+            guildLogger.log(
+                guild = event.guild,
+                associatedUser = event.user,
+                logEmbed = logEmbed,
+                actionType = GuildLogger.LogTypeAction.MODERATOR
+            )
         }
     }
 }

@@ -30,7 +30,8 @@ class IAmRolesService
     private val iAmRolesRepository: IAmRolesRepository
 ) {
     companion object {
-        private val illegalArgumentException = IllegalArgumentException("The entity does not exist within the database.")
+        private val illegalArgumentException =
+            IllegalArgumentException("The entity does not exist within the database.")
     }
 
     fun getAllCategoriesForGuild(guildId: Long): List<IAmRolesCategory> {
@@ -40,7 +41,8 @@ class IAmRolesService
 
     fun getExistingCategoryNames(guildId: Long): Set<String> {
         val list: MutableSet<String> = HashSet()
-        iAmRolesRepository.findByGuildId(guildId).forEach { it.categoryName.let { categoryName -> list.add(categoryName) } }
+        iAmRolesRepository.findByGuildId(guildId)
+            .forEach { it.categoryName.let { categoryName -> list.add(categoryName) } }
         return list
     }
 
@@ -68,7 +70,7 @@ class IAmRolesService
     @Transactional
     fun changeCategoryName(guildId: Long, categoryId: Long, newName: String) {
         val iAmRolesCategory = iAmRolesRepository.findById(IAmRolesCategory.IAmRoleId(guildId, categoryId))
-                .orElseThrow { illegalArgumentException }
+            .orElseThrow { illegalArgumentException }
         iAmRolesCategory.categoryName = newName
         iAmRolesRepository.save(iAmRolesCategory)
     }
@@ -79,7 +81,7 @@ class IAmRolesService
     @Transactional
     fun addOrRemoveRole(guildId: Long, categoryId: Long, roleId: Long): Boolean {
         val iAmRolesCategory = iAmRolesRepository.findById(IAmRolesCategory.IAmRoleId(guildId, categoryId))
-                .orElseThrow { illegalArgumentException }
+            .orElseThrow { illegalArgumentException }
         return if (iAmRolesCategory.roles.contains(roleId)) {
             iAmRolesCategory.roles.remove(roleId)
             false
@@ -92,14 +94,14 @@ class IAmRolesService
     @Transactional
     fun changeAllowedRoles(guildId: Long, categoryId: Long, newAmount: Int) {
         val iAmRolesCategory = iAmRolesRepository.findById(IAmRolesCategory.IAmRoleId(guildId, categoryId))
-                .orElseThrow { illegalArgumentException }
+            .orElseThrow { illegalArgumentException }
         iAmRolesCategory.allowedRoles = newAmount
         iAmRolesRepository.save(iAmRolesCategory)
     }
 
     fun getRoleIds(guildId: Long, categoryId: Long): Set<Long> {
         val iAmRolesCategory = iAmRolesRepository.findById(IAmRolesCategory.IAmRoleId(guildId, categoryId))
-                .orElseThrow { illegalArgumentException }
+            .orElseThrow { illegalArgumentException }
         return HashSet(iAmRolesCategory.roles)
     }
 }

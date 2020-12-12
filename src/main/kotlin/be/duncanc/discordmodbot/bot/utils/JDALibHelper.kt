@@ -100,10 +100,10 @@ fun extractReason(arguments: String?): String {
 }
 
 private fun extractSentenceIgnoringFirstWord(arguments: String?) =
-        arguments!!.substring(getIndexStartOfSecondWord(arguments))
+    arguments!!.substring(getIndexStartOfSecondWord(arguments))
 
 private fun getIndexStartOfSecondWord(arguments: String) =
-        arguments.split(" ").dropLastWhile { it.isBlank() }.toTypedArray()[0].length + 1
+    arguments.split(" ").dropLastWhile { it.isBlank() }.toTypedArray()[0].length + 1
 
 fun findMemberAndCheckCanInteract(event: MessageReceivedEvent): Member {
     val target = event.guild.getMember(event.message.mentionedUsers[0])!!

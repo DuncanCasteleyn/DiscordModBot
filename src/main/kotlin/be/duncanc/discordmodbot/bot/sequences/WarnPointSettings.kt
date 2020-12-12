@@ -34,10 +34,10 @@ import java.util.concurrent.TimeUnit
 class WarnPointSettings(
     val guildWarnPointsSettingsRepository: GuildWarnPointsSettingsRepository
 ) : CommandModule(
-        arrayOf("WarnPointSettings"),
-        null,
-        "This command allows you to modify the settings for the point system.",
-        requiredPermissions = arrayOf(Permission.ADMINISTRATOR)
+    arrayOf("WarnPointSettings"),
+    null,
+    "This command allows you to modify the settings for the point system.",
+    requiredPermissions = arrayOf(Permission.ADMINISTRATOR)
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.jda.addEventListener(PointSettingsSequence(event.author, event.textChannel))
@@ -55,6 +55,7 @@ class WarnPointSettings(
 
         init {
             val guild = (channel as TextChannel).guild
+
             @Suppress("LeakingThis")
             val guildSettings = guildWarnPointsSettings(guild)
 
@@ -62,12 +63,12 @@ class WarnPointSettings(
             val announceChannel = guild.getTextChannelById(announceChannelId)?.name ?: "Chanel no longer exists"
 
             val messageBuilder = MessageBuilder()
-                    .append("What would you like to do?\n")
-                    .append("\n0. Change max points per reason. Current value: ").append(guildSettings.maxPointsPerReason)
-                    .append("\n1. Change the limit before a summary is announced with the users collected points. Current value: ")
-                    .append(guildSettings.announcePointsSummaryLimit)
-                    .append("\n2. Change the channel to announce the summary in. Current channel: ").append(announceChannel)
-                    .append("\n3. Toggle Warn command override by replacing Warn with AddPoints command. Current value: ")
+                .append("What would you like to do?\n")
+                .append("\n0. Change max points per reason. Current value: ").append(guildSettings.maxPointsPerReason)
+                .append("\n1. Change the limit before a summary is announced with the users collected points. Current value: ")
+                .append(guildSettings.announcePointsSummaryLimit)
+                .append("\n2. Change the channel to announce the summary in. Current channel: ").append(announceChannel)
+                .append("\n3. Toggle Warn command override by replacing Warn with AddPoints command. Current value: ")
                 .append(guildSettings.overrideWarnCommand)
             channel.sendMessage(messageBuilder.build()).queue { super.addMessageToCleaner(it) }
         }
@@ -136,5 +137,6 @@ class WarnPointSettings(
     }
 
     private fun guildWarnPointsSettings(guild: Guild) =
-            guildWarnPointsSettingsRepository.findById(guild.idLong).orElse(GuildWarnPointsSettings(guild.idLong, announceChannelId = -1))
+        guildWarnPointsSettingsRepository.findById(guild.idLong)
+            .orElse(GuildWarnPointsSettings(guild.idLong, announceChannelId = -1))
 }

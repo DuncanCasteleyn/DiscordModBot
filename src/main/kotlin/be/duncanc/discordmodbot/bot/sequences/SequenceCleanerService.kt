@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class SequenceCleanerService(
-        private val jda: JDA
+    private val jda: JDA
 ) {
     @Scheduled(fixedDelay = 1000 * 60)
     fun cleanExpiredSequences() {

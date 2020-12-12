@@ -24,15 +24,15 @@ import javax.persistence.*
 @IdClass(GuildWarnPoints.GuildWarnPointsId::class)
 @Table(name = "guild_warn_points")
 data class GuildWarnPoints(
-        @Id
-        @Column(updatable = false)
-        val userId: Long,
-        @Id
-        @Column(updatable = false)
-        val guildId: Long,
-        @OneToMany(fetch = FetchType.EAGER, cascade = [(CascadeType.ALL)], orphanRemoval = true)
-        @JoinTable(name = "user_has_warn_points")
-        val points: MutableSet<UserWarnPoints> = HashSet()
+    @Id
+    @Column(updatable = false)
+    val userId: Long,
+    @Id
+    @Column(updatable = false)
+    val guildId: Long,
+    @OneToMany(fetch = FetchType.EAGER, cascade = [(CascadeType.ALL)], orphanRemoval = true)
+    @JoinTable(name = "user_has_warn_points")
+    val points: MutableSet<UserWarnPoints> = HashSet()
 ) : Comparable<GuildWarnPoints> {
 
     /**
