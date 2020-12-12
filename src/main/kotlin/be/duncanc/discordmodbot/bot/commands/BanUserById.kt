@@ -64,7 +64,7 @@ class BanUserById : CommandModule(
         } else {
             val userId: String
             try {
-                userId = arguments!!.split(" ".toRegex()).dropLastWhile { it.isEmpty }.toTypedArray()[0]
+                userId = arguments!!.split(" ".toRegex()).dropLastWhile { it.isBlank() }.toTypedArray()[0]
             } catch (e: NullPointerException) {
                 throw IllegalArgumentException("No id provided")
             }
@@ -72,7 +72,7 @@ class BanUserById : CommandModule(
             val reason: String
             try {
                 reason =
-                    arguments.substring(arguments.split(" ".toRegex()).dropLastWhile { it.isEmpty }
+                    arguments.substring(arguments.split(" ".toRegex()).dropLastWhile { it.isBlank() }
                         .toTypedArray()[0].length + 1)
             } catch (e: IndexOutOfBoundsException) {
                 throw IllegalArgumentException("No reason provided for this action.")

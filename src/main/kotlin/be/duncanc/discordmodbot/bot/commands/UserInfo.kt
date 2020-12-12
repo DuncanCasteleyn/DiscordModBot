@@ -63,7 +63,7 @@ class UserInfo(
             } else {
                 val searchTerms =
                     event.message.contentRaw.substring(command.length + 2).toLowerCase().split("#".toRegex())
-                        .dropLastWhile { it.isEmpty }.toTypedArray()
+                        .dropLastWhile { it.isBlank() }.toTypedArray()
                 var targetFound = false
                 for (member in event.guild.members) {
                     if (searchTerms[0] == member.user.name.toLowerCase() && searchTerms[1] == member.user.discriminator) {

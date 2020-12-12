@@ -39,7 +39,7 @@ class Quote(
         }
         val channelId = arguments.split(" ")[0]
         val messageToQuote = event.textChannel.retrieveMessageById(channelId).complete()
-        if (messageToQuote.contentDisplay.isEmpty) {
+        if (messageToQuote.contentDisplay.isBlank()) {
             throw IllegalArgumentException("The message you want to quote has no content to quote.")
         }
         val quoteEmbed = EmbedBuilder()
@@ -47,7 +47,7 @@ class Quote(
             .setDescription(messageToQuote.contentDisplay)
             .setFooter(event.author.id, null)
         val response = arguments.substring(channelId.length)
-        val responseEmbed = if (response.isEmpty) {
+        val responseEmbed = if (response.isBlank()) {
             null
         } else {
             EmbedBuilder()

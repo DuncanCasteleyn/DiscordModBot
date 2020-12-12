@@ -62,18 +62,12 @@ open class VoteEmoteSettingsSequence(
         when (voteYesEmoteId) {
             null -> {
                 val voteNotEmote = event.message.emotes[0]
-                if (event.message.emotes[0].isFake) {
-                    throw IllegalArgumentException("The bot can't access this emote")
-                }
                 voteYesEmoteId = voteNotEmote.idLong
                 channel.sendMessage("Please send the emote you want to use for no votes")
                     .queue { addMessageToCleaner(it) }
             }
             else -> {
                 val voteNoEmote = event.message.emotes[0]
-                if (event.message.emotes[0].isFake) {
-                    throw IllegalArgumentException("The bot can't access this emote")
-                }
                 votingEmotesRepository.save(VoteEmotes(event.guild.idLong, voteYesEmoteId!!, voteNoEmote.idLong))
                 channel.sendMessage("New emotes have been set")
                     .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
