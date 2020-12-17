@@ -78,17 +78,24 @@ class MemberGate(
 
     /**
      * Cleans the messages from the users and messages containing mentions to the users from the member gate channel.
+     *
+     * If the channel contains more than 1000 message all messages past 1000 will be ignored.
      */
     private fun cleanMessagesFromUser(gateTextChannel: TextChannel, user: User) {
+        gateTextChannel.history.size()
         val userMessages: ArrayList<Long> = ArrayList()
-        gateTextChannel.iterableHistory.forEachAsync {
-            if (it.author == user || it.contentRaw.contains(user.id)) {
-                userMessages.add(it.idLong)
+        gateTextChannel.iterableHistory
+            .takeAsync(1000)
+            .thenApply { messages ->
+                messages.forEach {
+                    if (it.author == user || it.contentRaw.contains(user.id)) {
+                        userMessages.add(it.idLong)
+                    }
+                }
+                true
+            }.thenRun {
+                gateTextChannel.limitLessBulkDeleteByIds(userMessages)
             }
-            true
-        }.thenRun {
-            gateTextChannel.limitLessBulkDeleteByIds(userMessages)
-        }
     }
 
     /**
