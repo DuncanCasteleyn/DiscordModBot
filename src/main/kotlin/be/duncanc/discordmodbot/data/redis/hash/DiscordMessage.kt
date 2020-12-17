@@ -4,7 +4,7 @@ import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.Transient
 import org.springframework.data.redis.core.RedisHash
 
-@RedisHash("discordMessage", timeToLive = 7200L)
+@RedisHash("discordMessage", timeToLive = 86400L)
 data class DiscordMessage(
     @Id
     val messageId: Long,
