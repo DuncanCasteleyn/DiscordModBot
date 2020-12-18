@@ -82,6 +82,14 @@ class MemberGate(
      * If the channel contains more than 1000 message all messages past 1000 will be ignored.
      */
     private fun cleanMessagesFromUser(gateTextChannel: TextChannel, user: User) {
+        if (!gateTextChannel.guild.selfMember.hasPermission(
+                gateTextChannel,
+                Permission.MESSAGE_MANAGE,
+                Permission.MESSAGE_HISTORY
+            )
+        ) {
+            return
+        }
         gateTextChannel.history.size()
         val userMessages: ArrayList<Long> = ArrayList()
         gateTextChannel.iterableHistory
