@@ -604,12 +604,12 @@ class MemberGate(
             memberGateQuestionRepository.findById(userId).ifPresentOrElse({
                 val userQuestionAndAnswer = it.question + '\n' + it.answer
                 if (userQuestionAndAnswer.isNotBlank()) {
-                    val message: Message =
-                        MessageBuilder().append("The user answered with the following question:\n")
-                            .appendCodeBlock(userQuestionAndAnswer, "text")
-                            .append("\nIf you want to approve the user respond with ``approve``, to make the bot request the user to ask a new question respond with ``reject`` or to reject the user and take manual action answer with ``noop``.")
-                            .build()
-                    channel.sendMessage(message).queue { super.addMessageToCleaner(it) }
+                    MessageBuilder().append("The user answered with the following question:\n")
+                        .appendCodeBlock(userQuestionAndAnswer, "text")
+                        .append("\nIf you want to approve the user respond with ``approve``, to make the bot request the user to ask a new question respond with ``reject`` or to reject the user and take manual action answer with ``noop``.")
+                        .buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { message ->
+                            channel.sendMessage(message).queue { sendMessage -> super.addMessageToCleaner(sendMessage) }
+                        }
                 } else {
                     super.destroy()
                     throw IllegalArgumentException("The user you tried to review is still in the list, but another moderator already declared the question wrong or the user rejoined.")
