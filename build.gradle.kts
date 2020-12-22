@@ -20,7 +20,7 @@ import org.springframework.boot.gradle.tasks.bundling.BootJar
 plugins {
     val kotlinVersion = "1.4.21"
 
-    id("org.springframework.boot") version "2.3.6.RELEASE"
+    id("org.springframework.boot") version "2.4.1"
     id("io.spring.dependency-management") version "1.0.10.RELEASE"
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.spring") version kotlinVersion
@@ -31,7 +31,10 @@ plugins {
 dependencies {
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-data-jpa")
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-validation")
-    implementation(group = "org.springframework.boot", name = "spring-boot-starter-data-redis")
+    implementation(group = "org.springframework.boot", name = "spring-boot-starter-data-redis") {
+        exclude(group = "io.lettuce", module = "lettuce-core")
+    }
+    implementation(group = "redis.clients", name = "jedis")
     implementation(group = "org.flywaydb", name = "flyway-core")
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8")
