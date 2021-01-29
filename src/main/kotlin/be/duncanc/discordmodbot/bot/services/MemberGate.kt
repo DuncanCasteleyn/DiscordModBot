@@ -124,7 +124,7 @@ class MemberGate(
             if (memberGateQuestion != null) {
                 gateTextChannel.sendMessage(
                     """
-                        Welcome back ${event.member.asMention}. We stored your last answer for you.
+                        ${event.member.asMention} Welcome back. We stored your last answer for you.
                         A moderator can review it using `!review ${memberGateQuestion.id}`
                         """.trimIndent()
                 ).queue { message ->
@@ -629,7 +629,7 @@ class MemberGate(
                 if (userQuestionAndAnswer.isNotBlank()) {
                     MessageBuilder().append("The user answered with the following question:\n")
                         .appendCodeBlock(userQuestionAndAnswer, "text")
-                        .append("\nIf you want to approve the user respond with ``approve``, to make the bot request the user to ask a new question respond with ``reject`` or to reject the user and take manual action answer with ``noop`` or use the reactions.")
+                        .append("\nIf you want to approve the user respond with `approve`, to make the bot request the user to ask a new question respond with `reject` or to reject the user and take manual action answer with `noop` or use the reactions.")
                         .buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { message ->
                             channel.sendMessage(message).queue { sendMessage ->
                                 super.addMessageToCleaner(sendMessage)
@@ -718,11 +718,11 @@ class MemberGate(
             val member: Member? = guild.getMemberById(userId)
             if (member != null) {
                 super.channel.sendMessage("The user has been approved.")
-                    .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                    .queue { it.delete().queueAfter(15, TimeUnit.SECONDS) }
                 accept(member)
             } else {
                 super.channel.sendMessage("The user has left; no further action is needed.")
-                    .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                    .queue { it.delete().queueAfter(15, TimeUnit.SECONDS) }
             }
             memberGateQuestionRepository.deleteById(userId)
             synchronized(informUserMessageIds) {
