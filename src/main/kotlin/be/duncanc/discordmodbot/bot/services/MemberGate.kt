@@ -32,6 +32,7 @@ import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleAddEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -127,6 +128,7 @@ class MemberGate(
                         A moderator can review it using `!review ${memberGateQuestion.id}`
                         """.trimIndent()
                 ).queue { message ->
+                    message.addReaction("❔").queue()
                     synchronized(informUserMessageIds) {
                         informUserMessageIds[memberGateQuestion.id] = message.idLong
                     }
@@ -190,14 +192,31 @@ class MemberGate(
                 join(event)
             }
             super.aliases[2].toLowerCase() -> {
-                review(event, arguments)
+                review(event.jda, event.author, event.guild, event.channel, arguments)
             }
         }
     }
 
-    private fun review(event: MessageReceivedEvent, arguments: String?) {
-        if (event.guild.getMember(event.author)?.hasPermission(Permission.MANAGE_ROLES) == true) {
-            event.jda.addEventListener(ReviewSequence(event.author, event.channel, arguments!!.toLong()))
+    override fun onGuildMessageReactionAdd(event: GuildMessageReactionAddEvent) {
+        if (
+            event.reactionEmote.name != "❔" ||
+            event.user == event.jda.selfUser ||
+            event.guild.getMember(event.user)?.hasPermission(Permission.MANAGE_ROLES) != true ||
+            memberGateService.getGateChannel(event.guild.idLong, event.jda) != event.channel
+        ) {
+            return
+        }
+        val message = event.retrieveMessage().submit().get(1, TimeUnit.MINUTES)
+        if (message.author != event.jda.selfUser || !message.contentRaw.contains("!review") || message.mentionedMembers.size != 1) {
+            return
+        }
+        val id = message.contentRaw.split(" ")[0].trimStart('<', '@', '!').trimEnd('>')
+        review(event.jda, event.user, event.guild, event.channel, id)
+    }
+
+    private fun review(jda: JDA, author: User, guild: Guild, channel: MessageChannel, arguments: String?) {
+        if (guild.getMember(author)?.hasPermission(Permission.MANAGE_ROLES) == true) {
+            jda.addEventListener(ReviewSequence(author, channel, arguments!!.toLong()))
         }
     }
 
@@ -248,8 +267,9 @@ class MemberGate(
     private fun informMember(member: Member, question: String, answer: String, textChannel: TextChannel) {
         textChannel.sendMessage(
             member.asMention + " Please wait while a moderator manually checks your answer. You might be asked (an) other question(s).\n\n" +
-                    "A moderator can use ``!" + super.aliases[2] + " " + member.user.idLong + "``"
+                    "A moderator can use `!" + super.aliases[2] + " " + member.user.idLong + "`"
         ).queue {
+            it.addReaction("❔").queue()
             synchronized(informUserMessageIds) {
                 informUserMessageIds[member.user.idLong] = it.idLong
             }
@@ -630,13 +650,10 @@ class MemberGate(
         }
 
         override fun onReactionReceivedDuringSequence(event: MessageReactionAddEvent) {
-            if(event.user == event.jda.selfUser) {
-                return
-            }
             if (!memberGateQuestionRepository.existsById(userId)) {
                 throw IllegalStateException("The user is no longer in the queue; another moderator may have reviewed it already.")
             }
-            when(event.reactionEmote.name) {
+            when (event.reactionEmote.name) {
                 "✅" -> {
                     accept(event.jda, event.guild)
                 }
@@ -672,12 +689,12 @@ class MemberGate(
             }
         }
 
-        private fun reject(jda: JDA, guild: Guild,noOp: Boolean = false) {
+        private fun reject(jda: JDA, guild: Guild, noOp: Boolean = false) {
             val member: Member? = guild.getMemberById(userId)
             val gateChannel = memberGateService.getGateChannel(guild.idLong, jda)
             if (member != null) {
                 if (!noOp) {
-                    gateChannel?.sendMessage("Your answer was incorrect " + member.user.asMention + ".  You can use the ``!join`` command to try again.")
+                    gateChannel?.sendMessage("Your answer was incorrect " + member.user.asMention + ".  You can use the `!join` command to try again.")
                         ?.queue()
                 }
             } else {
