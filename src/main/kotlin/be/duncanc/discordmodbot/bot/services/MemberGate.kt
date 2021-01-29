@@ -17,12 +17,14 @@
 package be.duncanc.discordmodbot.bot.services
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
+import be.duncanc.discordmodbot.bot.sequences.ReactionSequence
 import be.duncanc.discordmodbot.bot.sequences.Sequence
 import be.duncanc.discordmodbot.bot.utils.limitLessBulkDeleteByIds
 import be.duncanc.discordmodbot.data.entities.GuildMemberGate
 import be.duncanc.discordmodbot.data.redis.hash.MemberGateQuestion
 import be.duncanc.discordmodbot.data.repositories.key.value.MemberGateQuestionRepository
 import be.duncanc.discordmodbot.data.services.MemberGateService
+import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.*
@@ -30,6 +32,7 @@ import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleAddEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.util.*
@@ -595,7 +598,7 @@ class MemberGate(
         user: User,
         channel: MessageChannel,
         private val userId: Long
-    ) : Sequence(user, channel) {
+    ) : Sequence(user, channel), ReactionSequence {
 
         /**
          * Asks the first question and checks if the user is in the review list.
@@ -606,9 +609,14 @@ class MemberGate(
                 if (userQuestionAndAnswer.isNotBlank()) {
                     MessageBuilder().append("The user answered with the following question:\n")
                         .appendCodeBlock(userQuestionAndAnswer, "text")
-                        .append("\nIf you want to approve the user respond with ``approve``, to make the bot request the user to ask a new question respond with ``reject`` or to reject the user and take manual action answer with ``noop``.")
+                        .append("\nIf you want to approve the user respond with ``approve``, to make the bot request the user to ask a new question respond with ``reject`` or to reject the user and take manual action answer with ``noop`` or use the reactions.")
                         .buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { message ->
-                            channel.sendMessage(message).queue { sendMessage -> super.addMessageToCleaner(sendMessage) }
+                            channel.sendMessage(message).queue { sendMessage ->
+                                super.addMessageToCleaner(sendMessage)
+                                sendMessage.addReaction("✅").queue()
+                                sendMessage.addReaction("❌").queue()
+                                sendMessage.addReaction("❓").queue()
+                            }
                         }
                 } else {
                     super.destroy()
@@ -621,6 +629,26 @@ class MemberGate(
                 })
         }
 
+        override fun onReactionReceivedDuringSequence(event: MessageReactionAddEvent) {
+            if(event.user == event.jda.selfUser) {
+                return
+            }
+            if (!memberGateQuestionRepository.existsById(userId)) {
+                throw IllegalStateException("The user is no longer in the queue; another moderator may have reviewed it already.")
+            }
+            when(event.reactionEmote.name) {
+                "✅" -> {
+                    accept(event.jda, event.guild)
+                }
+                "❌" -> {
+                    reject(event.jda, event.guild)
+                }
+                "❓" -> {
+                    reject(event.jda, event.guild, noOp = true)
+                }
+            }
+        }
+
         /**
          * Review logic to approve members.
          */
@@ -630,13 +658,13 @@ class MemberGate(
             }
             when (val messageContent: String = event.message.contentDisplay.toLowerCase()) {
                 "approve", "accept" -> {
-                    accept(event)
+                    accept(event.jda, event.guild)
                 }
                 "reject", "refuse" -> {
-                    reject(event)
+                    reject(event.jda, event.guild)
                 }
                 "noop" -> {
-                    reject(event, noOp = true)
+                    reject(event.jda, event.guild, noOp = true)
                 }
                 else -> {
                     throw IllegalArgumentException("Expecting one of the previously mentioned responses, but got \"$messageContent\" as response")
@@ -644,9 +672,9 @@ class MemberGate(
             }
         }
 
-        private fun reject(event: MessageReceivedEvent, noOp: Boolean = false) {
-            val member: Member? = event.guild.getMemberById(userId)
-            val gateChannel = memberGateService.getGateChannel(event.guild.idLong, event.jda)
+        private fun reject(jda: JDA, guild: Guild,noOp: Boolean = false) {
+            val member: Member? = guild.getMemberById(userId)
+            val gateChannel = memberGateService.getGateChannel(guild.idLong, jda)
             if (member != null) {
                 if (!noOp) {
                     gateChannel?.sendMessage("Your answer was incorrect " + member.user.asMention + ".  You can use the ``!join`` command to try again.")
@@ -669,8 +697,8 @@ class MemberGate(
             destroy()
         }
 
-        private fun accept(event: MessageReceivedEvent) {
-            val member: Member? = event.guild.getMemberById(userId)
+        private fun accept(jda: JDA, guild: Guild) {
+            val member: Member? = guild.getMemberById(userId)
             if (member != null) {
                 super.channel.sendMessage("The user has been approved.")
                     .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
@@ -683,7 +711,7 @@ class MemberGate(
             synchronized(informUserMessageIds) {
                 val messageToRemove = informUserMessageIds.remove(userId)
                 if (messageToRemove != null) {
-                    memberGateService.getGateChannel(event.guild.idLong, event.jda)
+                    memberGateService.getGateChannel(guild.idLong, jda)
                         ?.let { gateTextChannel ->
                             gateTextChannel.retrieveMessageById(messageToRemove).queue { it.delete().queue() }
                         }
