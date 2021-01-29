@@ -87,7 +87,7 @@ abstract class Sequence
      * When {@code onMessageReceivedDuringSequence(event)} throws an exception it catches it, send the exception name and message and terminate the sequences.
      */
     override fun onMessageReceived(event: MessageReceivedEvent) {
-        if (event.author != user) {
+        if (event.author != user || event.message.channel != channel) {
             return
         }
         addMessageToCleaner(event.message)
