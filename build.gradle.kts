@@ -20,8 +20,8 @@ import org.springframework.boot.gradle.tasks.bundling.BootJar
 plugins {
     val kotlinVersion = "1.4.21"
 
-    id("org.springframework.boot") version "2.4.1"
-    id("io.spring.dependency-management") version "1.0.10.RELEASE"
+    id("org.springframework.boot") version "2.4.2"
+    id("io.spring.dependency-management") version "1.0.11.RELEASE"
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.spring") version kotlinVersion
     kotlin("plugin.jpa") version kotlinVersion
@@ -77,7 +77,7 @@ tasks {
         }
     }
     withType<Wrapper> {
-        gradleVersion = "6.7.1"
+        gradleVersion = "6.8.1"
     }
     withType<JavaCompile> {
         dependsOn(processResources)
