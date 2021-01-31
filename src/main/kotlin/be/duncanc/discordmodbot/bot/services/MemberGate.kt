@@ -192,7 +192,7 @@ class MemberGate(
                 join(event)
             }
             super.aliases[2].toLowerCase() -> {
-                review(event.jda, event.author, event.guild, event.channel, arguments)
+                arguments?.let { review(event.jda, event.author, event.guild, event.channel, it) }
             }
         }
     }
@@ -214,9 +214,9 @@ class MemberGate(
         review(event.jda, event.user, event.guild, event.channel, id)
     }
 
-    private fun review(jda: JDA, author: User, guild: Guild, channel: MessageChannel, arguments: String?) {
+    private fun review(jda: JDA, author: User, guild: Guild, channel: MessageChannel, arguments: String) {
         if (guild.getMember(author)?.hasPermission(Permission.MANAGE_ROLES) == true) {
-            jda.addEventListener(ReviewSequence(author, channel, arguments!!.toLong()))
+            jda.addEventListener(ReviewSequence(author, channel, arguments.toLong()))
         }
     }
 
