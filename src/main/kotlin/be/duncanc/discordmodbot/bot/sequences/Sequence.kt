@@ -24,6 +24,7 @@ import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -86,7 +87,7 @@ abstract class Sequence
      * When {@code onMessageReceivedDuringSequence(event)} throws an exception it catches it, send the exception name and message and terminate the sequences.
      */
     override fun onMessageReceived(event: MessageReceivedEvent) {
-        if (event.author != user) {
+        if (event.author != user || event.message.channel != channel) {
             return
         }
         addMessageToCleaner(event.message)
@@ -106,6 +107,13 @@ abstract class Sequence
             channel.sendMessage(errorMessage).queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
             return
         }
+    }
+
+    override fun onMessageReactionAdd(event: MessageReactionAddEvent) {
+        if (this !is ReactionSequence || event.user != user) {
+            return
+        }
+        this.onReactionReceivedDuringSequence(event)
     }
 
     override fun onGuildMemberRemove(event: GuildMemberRemoveEvent) {
