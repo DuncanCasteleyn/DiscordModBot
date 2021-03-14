@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
-import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.dao.NonTransientDataAccessException
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.transaction.TestTransaction
 import org.springframework.transaction.annotation.Propagation
@@ -46,11 +46,8 @@ class WelcomeMessageRepositoryTest {
         val welcomeMessage = WelcomeMessage(guildId = 0, imageUrl = "test", message = MAX_SIZE_MESSAGE + "h")
         // When
         val assertThrows =
-            assertThrows<DataIntegrityViolationException> { welcomeMessageRepository.save(welcomeMessage) }
+            assertThrows<NonTransientDataAccessException> { welcomeMessageRepository.save(welcomeMessage) }
         // Then
-        Assertions.assertEquals(
-            "could not execute statement; SQL [n/a]; nested exception is org.hibernate.exception.DataException: could not execute statement",
-            assertThrows.message
-        )
+        assert(assertThrows.message!!.startsWith("could not execute statement;"))
     }
 }
