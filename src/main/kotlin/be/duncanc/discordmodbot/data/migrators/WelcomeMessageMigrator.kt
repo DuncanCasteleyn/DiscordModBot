@@ -24,21 +24,23 @@ class WelcomeMessageMigrator(
 
     @Transactional
     override fun run(args: ApplicationArguments?) {
-        LOGGER.info("Performing migration of welcome messages")
-        val welcomeMessages = memberGateRepository.findAll().flatMap { guildMemberGate ->
-            guildMemberGate.welcomeMessages.stream().map { memberGateWelcomeMessage ->
-                WelcomeMessage(
-                    guildId = guildMemberGate.guildId,
-                    message = memberGateWelcomeMessage.message!!,
-                    imageUrl = memberGateWelcomeMessage.imageUrl!!
-                )
-            }.collect(Collectors.toList())
+        if (memberGateRepository.findAll().stream().mapToInt { it.welcomeMessages.size }.sum() != 0) {
+            LOGGER.info("Performing migration of welcome messages")
+            val welcomeMessages = memberGateRepository.findAll().flatMap { guildMemberGate ->
+                guildMemberGate.welcomeMessages.stream().map { memberGateWelcomeMessage ->
+                    WelcomeMessage(
+                        guildId = guildMemberGate.guildId,
+                        message = memberGateWelcomeMessage.message!!,
+                        imageUrl = memberGateWelcomeMessage.imageUrl!!
+                    )
+                }.collect(Collectors.toList())
+            }
+            welcomeMessageRepository.saveAll(welcomeMessages)
+            val memberGatesWithWelcomeMessagesRemoved = memberGateRepository.findAll().map {
+                it.copy(welcomeMessages = Collections.emptySet())
+            }
+            memberGateRepository.saveAll(memberGatesWithWelcomeMessagesRemoved)
+            LOGGER.info("Completed migration of welcome messages")
         }
-        welcomeMessageRepository.saveAll(welcomeMessages)
-        val memberGatesWithWelcomeMessagesRemoved = memberGateRepository.findAll().map {
-            it.copy(welcomeMessages = Collections.emptySet())
-        }
-        memberGateRepository.saveAll(memberGatesWithWelcomeMessagesRemoved)
-        LOGGER.info("Completed migration of welcome messages")
     }
 }

@@ -21,7 +21,10 @@ import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
 import java.awt.Color
+import java.util.*
 import javax.persistence.*
+import javax.validation.constraints.Size
+import kotlin.collections.HashSet
 
 
 @Entity
@@ -36,7 +39,8 @@ data class GuildMemberGate(
     @Suppress("DEPRECATION")
     @ElementCollection(targetClass = WelcomeMessage::class)
     @Deprecated("To be removed due to length limitations")
-    val welcomeMessages: MutableSet<WelcomeMessage> = HashSet(),
+    @field:Size(max = 0)
+    val welcomeMessages: Set<WelcomeMessage> = Collections.emptySet(),
     @ElementCollection
     @Column(name = "question")
     val questions: MutableSet<String> = HashSet()

@@ -17,6 +17,7 @@
 package be.duncanc.discordmodbot.data.services
 
 import be.duncanc.discordmodbot.data.entities.GuildMemberGate
+import be.duncanc.discordmodbot.data.entities.GuildMemberGate.WelcomeMessage
 import be.duncanc.discordmodbot.data.repositories.jpa.GuildMemberGateRepository
 import be.duncanc.discordmodbot.data.repositories.key.value.MemberGateQuestionRepository
 import net.dv8tion.jda.api.EmbedBuilder
@@ -39,6 +40,10 @@ class MemberGateService(
     private val jda: JDA,
     private val memberGateQuestionRepository: MemberGateQuestionRepository
 ) {
+    companion object {
+        private const val WELCOME_MESSAGE_ERROR = "Saving welcome messages is no longer supported"
+    }
+
     /**
      * @return null when not configured or channel no longer exists.
      */
@@ -136,28 +141,21 @@ class MemberGateService(
         guildMemberGateRepository.save(memberGate)
     }
 
-    fun getWelcomeMessages(guildId: Long): Set<GuildMemberGate.WelcomeMessage> {
-        val memberGate: GuildMemberGate? = guildMemberGateRepository.findById(guildId).orElse(null)
-        memberGate?.welcomeMessages?.size
-        return if (memberGate != null) {
-            Collections.unmodifiableSet(memberGate.welcomeMessages)
-        } else {
-            Collections.emptySet()
-        }
+    @Deprecated(WELCOME_MESSAGE_ERROR, level = DeprecationLevel.ERROR)
+    fun getWelcomeMessages(guildId: Long): Set<WelcomeMessage> {
+        throw UnsupportedOperationException(WELCOME_MESSAGE_ERROR)
     }
 
     @Transactional
-    fun addWelcomeMessage(guildId: Long, welcomeMessage: GuildMemberGate.WelcomeMessage) {
-        val memberGate: GuildMemberGate = guildMemberGateRepository.findById(guildId).orElse(GuildMemberGate(guildId))
-        memberGate.welcomeMessages.add(welcomeMessage)
-        guildMemberGateRepository.save(memberGate)
+    @Deprecated(WELCOME_MESSAGE_ERROR, level = DeprecationLevel.ERROR)
+    fun addWelcomeMessage(guildId: Long, welcomeMessage: WelcomeMessage) {
+        throw UnsupportedOperationException(WELCOME_MESSAGE_ERROR)
     }
 
     @Transactional
-    fun removeWelcomeMessage(guildId: Long, welcomeMessage: GuildMemberGate.WelcomeMessage) {
-        val memberGate: GuildMemberGate = guildMemberGateRepository.findById(guildId).orElse(GuildMemberGate(guildId))
-        memberGate.welcomeMessages.remove(welcomeMessage)
-        guildMemberGateRepository.save(memberGate)
+    @Deprecated(WELCOME_MESSAGE_ERROR, level = DeprecationLevel.ERROR)
+    fun removeWelcomeMessage(guildId: Long, welcomeMessage: WelcomeMessage) {
+        throw UnsupportedOperationException(WELCOME_MESSAGE_ERROR)
     }
 
     @Transactional
@@ -177,12 +175,9 @@ class MemberGateService(
     }
 
     @Transactional
+    @Deprecated(WELCOME_MESSAGE_ERROR, level = DeprecationLevel.ERROR)
     fun resetWelcomeSettings(guildId: Long) {
-        val guildMemberGate: GuildMemberGate? = guildMemberGateRepository.findById(guildId).orElse(null)
-        if (guildMemberGate != null) {
-            guildMemberGate.welcomeMessages.clear()
-            guildMemberGateRepository.save(guildMemberGate.copy(welcomeTextChannel = null))
-        }
+        throw UnsupportedOperationException(WELCOME_MESSAGE_ERROR)
     }
 
     @Transactional
