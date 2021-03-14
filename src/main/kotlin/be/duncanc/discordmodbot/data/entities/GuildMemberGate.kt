@@ -35,7 +35,7 @@ data class GuildMemberGate(
     val removeTimeHours: Long? = null,
     @Suppress("DEPRECATION")
     @ElementCollection(targetClass = WelcomeMessage::class)
-    @Deprecated("To be removed due to length limitations", level = DeprecationLevel.WARNING)
+    @Deprecated("To be removed due to length limitations")
     val welcomeMessages: MutableSet<WelcomeMessage> = HashSet(),
     @ElementCollection
     @Column(name = "question")
@@ -46,12 +46,12 @@ data class GuildMemberGate(
      * class containing a welcome message and url for an image to be used in an embed.
      */
     @Embeddable
-    @Deprecated("To be removed due to length limitations", level = DeprecationLevel.WARNING)
+    @Deprecated("To be removed due to length limitations")
     data class WelcomeMessage(
         @Column(nullable = false)
-        private var imageUrl: String? = null,
+        var imageUrl: String? = null,
         @Column(nullable = false)
-        private var message: String? = null
+        var message: String? = null
     ) {
 
         fun getWelcomeMessage(user: User): Message {
