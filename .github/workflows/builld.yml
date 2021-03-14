@@ -43,4 +43,4 @@ jobs:
           SPRING_DATASOURCE_DRIVERCLASSNAME: 'org.mariadb.jdbc.Driver'
         run: ./gradlew check --info
       - name: Build
-        run: ./gradlew cleanTest build --info
+        run: ./gradlew cleanCheck build --info
