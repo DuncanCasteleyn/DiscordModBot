@@ -23,6 +23,7 @@ import net.dv8tion.jda.api.entities.User
 import java.awt.Color
 import javax.persistence.*
 
+
 @Entity
 data class GuildMemberGate(
     @Id
@@ -32,6 +33,7 @@ data class GuildMemberGate(
     val gateTextChannel: Long? = null,
     val welcomeTextChannel: Long? = null,
     val removeTimeHours: Long? = null,
+    @Suppress("DEPRECATION")
     @ElementCollection(targetClass = WelcomeMessage::class)
     @Deprecated("To be removed due to length limitations", level = DeprecationLevel.WARNING)
     val welcomeMessages: MutableSet<WelcomeMessage> = HashSet(),
