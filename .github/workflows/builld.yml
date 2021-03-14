@@ -7,6 +7,18 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    services:
+      mariadb:
+        image: mariadb:latest
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_DATABASE: discordmodbot
+          MYSQL_ROOT_PASSWORD: test
+        options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
+
+
     steps:
       - uses: actions/checkout@v2
       - name: Setup Java JDK
@@ -22,6 +34,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
       - name: Run Gradle check
+        env:
+          SPRING_DATASOURCE_URL: 'jdbc:mariadb://127.0.0.1:3306/discordmodbot'
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: test
+          SPRING_DATASOURCE_DRIVERCLASSNAME: 'org.mariadb.jdbc.Driver'
         run: ./gradlew check
       - name: Build Spring Boot Jar
-        run: ./gradlew bootJar
+        run: ./gradlew build
