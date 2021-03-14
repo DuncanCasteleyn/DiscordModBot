@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
 import java.util.*
 import java.util.stream.Collectors
 
@@ -18,6 +19,7 @@ class WelcomeMessageMigrator(
 ) : ApplicationRunner {
     val LOGGER = LoggerFactory.getLogger(WelcomeMessageMigrator::class.java)
 
+    @Transactional
     override fun run(args: ApplicationArguments?) {
         LOGGER.info("Performing migration of welcome messages")
         val welcomeMessages = memberGateRepository.findAll().flatMap { guildMemberGate ->
