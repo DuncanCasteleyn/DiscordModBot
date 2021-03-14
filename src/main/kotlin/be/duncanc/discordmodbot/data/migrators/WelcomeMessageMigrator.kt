@@ -3,6 +3,7 @@ package be.duncanc.discordmodbot.data.migrators
 import be.duncanc.discordmodbot.data.entities.WelcomeMessage
 import be.duncanc.discordmodbot.data.repositories.jpa.GuildMemberGateRepository
 import be.duncanc.discordmodbot.data.repositories.jpa.WelcomeMessageRepository
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
@@ -17,7 +18,9 @@ class WelcomeMessageMigrator(
     private val welcomeMessageRepository: WelcomeMessageRepository,
     private val memberGateRepository: GuildMemberGateRepository
 ) : ApplicationRunner {
-    val LOGGER = LoggerFactory.getLogger(WelcomeMessageMigrator::class.java)
+    companion object {
+        val LOGGER: Logger = LoggerFactory.getLogger(WelcomeMessageMigrator::class.java)
+    }
 
     @Transactional
     override fun run(args: ApplicationArguments?) {
