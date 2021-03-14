@@ -41,7 +41,8 @@ class MemberGateService(
     private val memberGateQuestionRepository: MemberGateQuestionRepository
 ) {
     companion object {
-        private const val WELCOME_MESSAGE_ERROR = "Saving welcome messages is no longer supported"
+        private const val WELCOME_MESSAGE_ERROR =
+            "Saving/modifying/deleting welcome messages through this service is no longer supported"
     }
 
     /**
@@ -152,7 +153,6 @@ class MemberGateService(
         throw UnsupportedOperationException(WELCOME_MESSAGE_ERROR)
     }
 
-    @Transactional
     @Deprecated(WELCOME_MESSAGE_ERROR, level = DeprecationLevel.ERROR)
     fun removeWelcomeMessage(guildId: Long, welcomeMessage: WelcomeMessage) {
         throw UnsupportedOperationException(WELCOME_MESSAGE_ERROR)
