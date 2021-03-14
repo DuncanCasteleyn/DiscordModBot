@@ -50,7 +50,7 @@ data class GuildMemberGate(
     data class WelcomeMessage(
         @Column(nullable = false)
         private var imageUrl: String? = null,
-        @Column(nullable = false, length = 2048)
+        @Column(nullable = false)
         private var message: String? = null
     ) {
 

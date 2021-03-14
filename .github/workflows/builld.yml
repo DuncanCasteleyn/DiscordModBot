@@ -41,6 +41,6 @@ jobs:
           SPRING_DATASOURCE_USERNAME: spring
           SPRING_DATASOURCE_PASSWORD: test
           SPRING_DATASOURCE_DRIVERCLASSNAME: 'org.mariadb.jdbc.Driver'
-        run: ./gradlew check
+        run: ./gradlew check --info
       - name: Build
-        run: ./gradlew build
+        run: ./gradlew build --info
