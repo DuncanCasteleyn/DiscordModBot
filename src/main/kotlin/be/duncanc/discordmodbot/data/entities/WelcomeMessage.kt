@@ -1,6 +1,11 @@
 package be.duncanc.discordmodbot.data.entities
 
+import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.MessageBuilder
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.User
 import org.springframework.validation.annotation.Validated
+import java.awt.Color
 import java.io.Serializable
 import javax.persistence.*
 import javax.validation.constraints.NotBlank
@@ -24,6 +29,19 @@ data class WelcomeMessage(
     @field:NotBlank
     val message: String = ""
 ) {
+
+    fun getWelcomeMessage(user: User): Message {
+        val joinEmbed = EmbedBuilder()
+            .setDescription(this.message)
+            .setImage(imageUrl)
+            .setColor(Color.GREEN)
+            .build()
+        return MessageBuilder()
+            .append(user.asMention)
+            .setEmbed(joinEmbed)
+            .build()
+    }
+
     data class WelcomeMessageId(
         private val id: Long? = null,
         private val guildId: Long? = null

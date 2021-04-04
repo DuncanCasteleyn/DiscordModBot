@@ -20,10 +20,11 @@ import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.sequences.ReactionSequence
 import be.duncanc.discordmodbot.bot.sequences.Sequence
 import be.duncanc.discordmodbot.bot.utils.limitLessBulkDeleteByIds
-import be.duncanc.discordmodbot.data.entities.GuildMemberGate
+import be.duncanc.discordmodbot.data.entities.WelcomeMessage
 import be.duncanc.discordmodbot.data.redis.hash.MemberGateQuestion
 import be.duncanc.discordmodbot.data.repositories.key.value.MemberGateQuestionRepository
 import be.duncanc.discordmodbot.data.services.MemberGateService
+import be.duncanc.discordmodbot.data.services.WelcomeMessageService
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission
@@ -49,7 +50,8 @@ import kotlin.collections.ArrayList
 @Transactional
 class MemberGate(
     private val memberGateQuestionRepository: MemberGateQuestionRepository,
-    private val memberGateService: MemberGateService
+    private val memberGateService: MemberGateService,
+    private val welcomeMessageService: WelcomeMessageService
 ) : CommandModule(
     arrayOf("gateConfig", "join", "review"),
     null,
@@ -69,7 +71,7 @@ class MemberGate(
      */
     override fun onGuildMemberRoleAdd(event: GuildMemberRoleAddEvent) {
         val guild = event.guild
-        val welcomeMessages = memberGateService.getWelcomeMessages(guild.idLong).toTypedArray()
+        val welcomeMessages = ArrayList(welcomeMessageService.getWelcomeMessages(guild.idLong))
         val memberRole = memberGateService.getMemberRole(guild.idLong, guild.jda)
         if (welcomeMessages.isEmpty() || event.user.isBot || memberRole !in event.roles) {
             return
@@ -144,7 +146,7 @@ class MemberGate(
                 ).queue { message -> message.delete().queueAfter(5, TimeUnit.MINUTES) }
             }
         } else if (welcomeChannel != null) {
-            val welcomeMessages = memberGateService.getWelcomeMessages(event.guild.idLong).toTypedArray()
+            val welcomeMessages = welcomeMessageService.getWelcomeMessages(event.guild.idLong).toTypedArray()
             if (welcomeMessages.isNotEmpty()) {
                 val welcomeMessage =
                     welcomeMessages[Random().nextInt(welcomeMessages.size)].getWelcomeMessage(event.user)
@@ -371,8 +373,8 @@ class MemberGate(
         Sequence(user, channel) {
         private var sequenceNumber: Byte = 0
         private lateinit var questions: List<String>
-        private lateinit var welcomeMessages: List<GuildMemberGate.WelcomeMessage>
-        private lateinit var welcomeMessage: GuildMemberGate.WelcomeMessage
+        private lateinit var welcomeMessages: List<WelcomeMessage>
+        private lateinit var welcomeMessage: WelcomeMessage
 
         /**
          * Asks first question
@@ -427,22 +429,22 @@ class MemberGate(
                     destroy()
                 }
                 3.toByte() -> {
-                    welcomeMessage = GuildMemberGate.WelcomeMessage(event.message.contentRaw)
+                    val guildId = (channel as TextChannel).guild.idLong
+                    welcomeMessage = WelcomeMessage(guildId = guildId, imageUrl = event.message.contentRaw)
                     channel.sendMessage("Please enter a welcome message.").queue { addMessageToCleaner(it) }
                     sequenceNumber = 4
                 }
                 4.toByte() -> {
-                    welcomeMessage = welcomeMessage.copy(message = event.message.contentRaw)
                     val guildId = (channel as TextChannel).guild.idLong
-                    memberGateService.addWelcomeMessage(guildId, welcomeMessage)
+                    welcomeMessage = welcomeMessage.copy(message = event.message.contentRaw)
+                    welcomeMessageService.addWelcomeMessage(welcomeMessage)
                     channel.sendMessage("The new welcome message has been added.")
                         .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                     destroy()
                 }
                 5.toByte() -> {
                     val welcomeMessage = welcomeMessages[event.message.contentRaw.toInt()]
-                    val guildId = (channel as TextChannel).guild.idLong
-                    memberGateService.removeWelcomeMessage(guildId, welcomeMessage)
+                    welcomeMessageService.removeWelcomeMessage(welcomeMessage)
                     channel.sendMessage("\"$welcomeMessage\" has been deleted.")
                         .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                     destroy()
@@ -535,7 +537,7 @@ class MemberGate(
                     sequenceNumber = 5
                     val welcomeMessageList = MessageBuilder()
                     val guildId = (channel as TextChannel).guild.idLong
-                    welcomeMessages = memberGateService.getWelcomeMessages(guildId).toList()
+                    welcomeMessages = ArrayList(welcomeMessageService.getWelcomeMessages(guildId))
                     for (i in welcomeMessages.indices) {
                         welcomeMessageList.append(i.toString()).append(". ").append(welcomeMessages[i])
                             .append('\n')
@@ -577,6 +579,7 @@ class MemberGate(
                 9.toByte() -> {
                     val guildId = (channel as TextChannel).guild.idLong
                     memberGateService.resetWelcomeSettings(guildId)
+                    welcomeMessageService.removeAllWelcomeMessages(guildId)
                     event.channel.sendMessage("Welcome settings wiped and disabled.").queue {
                         it.delete().queueAfter(1, TimeUnit.MINUTES)
                     }

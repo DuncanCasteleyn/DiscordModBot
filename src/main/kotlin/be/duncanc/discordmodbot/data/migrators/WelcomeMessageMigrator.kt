@@ -24,9 +24,10 @@ class WelcomeMessageMigrator(
 
     @Transactional
     override fun run(args: ApplicationArguments?) {
-        if (memberGateRepository.findAll().stream().mapToInt { it.welcomeMessages.size }.sum() != 0) {
+        val memberGates = memberGateRepository.findAll()
+        if (memberGates.stream().mapToInt { it.welcomeMessages.size }.sum() != 0) {
             LOGGER.info("Performing migration of welcome messages")
-            val welcomeMessages = memberGateRepository.findAll().flatMap { guildMemberGate ->
+            val welcomeMessages = memberGates.flatMap { guildMemberGate ->
                 guildMemberGate.welcomeMessages.stream().map { memberGateWelcomeMessage ->
                     WelcomeMessage(
                         guildId = guildMemberGate.guildId,
@@ -36,7 +37,7 @@ class WelcomeMessageMigrator(
                 }.collect(Collectors.toList())
             }
             welcomeMessageRepository.saveAll(welcomeMessages)
-            val memberGatesWithWelcomeMessagesRemoved = memberGateRepository.findAll().map {
+            val memberGatesWithWelcomeMessagesRemoved = memberGates.map {
                 it.copy(welcomeMessages = Collections.emptySet())
             }
             memberGateRepository.saveAll(memberGatesWithWelcomeMessagesRemoved)

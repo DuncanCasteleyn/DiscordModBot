@@ -175,7 +175,6 @@ class MemberGateService(
     }
 
     @Transactional
-    @Deprecated(WELCOME_MESSAGE_ERROR, level = DeprecationLevel.ERROR)
     fun resetWelcomeSettings(guildId: Long) {
         guildMemberGateRepository.findById(guildId).ifPresent {
             guildMemberGateRepository.save(it.copy(welcomeTextChannel = null))
