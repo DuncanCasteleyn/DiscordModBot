@@ -7,7 +7,6 @@ import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
 import org.springframework.dao.NonTransientDataAccessException
-import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.transaction.TestTransaction
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
@@ -23,20 +22,24 @@ class WelcomeMessageRepositoryTest {
     private lateinit var welcomeMessageRepository: WelcomeMessageRepository
 
     @Test
-    @DirtiesContext
     fun `Welcomes messages can be 2048 characters long`() {
         // Given
         val welcomeMessage = WelcomeMessage(guildId = 0, imageUrl = "test", message = MAX_SIZE_MESSAGE)
         val save = welcomeMessageRepository.save(welcomeMessage)
         TestTransaction.flagForCommit()
         TestTransaction.end()
-        TestTransaction.start()
         // When
+        TestTransaction.start()
         val dbWelcomeMessage =
             welcomeMessageRepository.findById(WelcomeMessage.WelcomeMessageId(save.id, save.guildId)).orElseThrow()
         // Then
         Assertions.assertEquals(welcomeMessage.imageUrl, dbWelcomeMessage.imageUrl)
         Assertions.assertEquals(welcomeMessage.message, dbWelcomeMessage.message)
+        TestTransaction.end()
+        // Cleanup
+        TestTransaction.start()
+        TestTransaction.flagForCommit()
+        welcomeMessageRepository.delete(save)
     }
 
     @Test
