@@ -39,7 +39,6 @@ import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.util.*
 import java.util.concurrent.TimeUnit
-import kotlin.collections.ArrayList
 
 /**
  * Created by Duncan on 30/04/2017.
@@ -435,7 +434,6 @@ class MemberGate(
                     sequenceNumber = 4
                 }
                 4.toByte() -> {
-                    val guildId = (channel as TextChannel).guild.idLong
                     welcomeMessage = welcomeMessage.copy(message = event.message.contentRaw)
                     welcomeMessageService.addWelcomeMessage(welcomeMessage)
                     channel.sendMessage("The new welcome message has been added.")
