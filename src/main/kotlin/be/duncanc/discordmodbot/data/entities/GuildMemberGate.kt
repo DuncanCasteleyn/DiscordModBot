@@ -21,7 +21,11 @@ import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
 import java.awt.Color
+import java.util.*
 import javax.persistence.*
+import javax.validation.constraints.Size
+import kotlin.collections.HashSet
+
 
 @Entity
 data class GuildMemberGate(
@@ -32,8 +36,11 @@ data class GuildMemberGate(
     val gateTextChannel: Long? = null,
     val welcomeTextChannel: Long? = null,
     val removeTimeHours: Long? = null,
+    @Suppress("DEPRECATION")
     @ElementCollection(targetClass = WelcomeMessage::class)
-    val welcomeMessages: MutableSet<WelcomeMessage> = HashSet(),
+    @Deprecated("To be removed due to length limitations")
+    @field:Size(max = 0)
+    val welcomeMessages: Set<WelcomeMessage> = Collections.emptySet(),
     @ElementCollection
     @Column(name = "question")
     val questions: MutableSet<String> = HashSet()
@@ -43,11 +50,12 @@ data class GuildMemberGate(
      * class containing a welcome message and url for an image to be used in an embed.
      */
     @Embeddable
+    @Deprecated("To be removed due to length limitations")
     data class WelcomeMessage(
         @Column(nullable = false)
-        private var imageUrl: String? = null,
+        var imageUrl: String? = null,
         @Column(nullable = false)
-        private var message: String? = null
+        var message: String? = null
     ) {
 
         fun getWelcomeMessage(user: User): Message {

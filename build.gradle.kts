@@ -18,9 +18,9 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 plugins {
-    val kotlinVersion = "1.4.30"
+    val kotlinVersion = "1.4.32"
 
-    id("org.springframework.boot") version "2.4.2"
+    id("org.springframework.boot") version "2.4.4"
     id("io.spring.dependency-management") version "1.0.11.RELEASE"
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.spring") version kotlinVersion
@@ -39,7 +39,7 @@ dependencies {
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-reflect")
-    implementation(group = "net.dv8tion", name = "JDA", version = "4.2.0_215") {
+    implementation(group = "net.dv8tion", name = "JDA", version = "4.2.1_253") {
         exclude(group = "club.minnced", module = "opus-java")
     }
     implementation(group = "org.apache.commons", name = "commons-collections4", version = "4.2")
@@ -57,13 +57,16 @@ dependencies {
 }
 
 repositories {
-    jcenter()
     mavenCentral()
+    maven {
+        name = "m2-dv8tion"
+        setUrl("https://m2.dv8tion.net/releases")
+    }
 }
 
 configure<JavaPluginConvention> {
-    sourceCompatibility = JavaVersion.VERSION_15
-    targetCompatibility = JavaVersion.VERSION_15
+    sourceCompatibility = JavaVersion.VERSION_16
+    targetCompatibility = JavaVersion.VERSION_16
 }
 tasks {
     withType<Test> {
@@ -77,7 +80,7 @@ tasks {
         }
     }
     withType<Wrapper> {
-        gradleVersion = "6.8.1"
+        gradleVersion = "7.0"
     }
     withType<JavaCompile> {
         dependsOn(processResources)

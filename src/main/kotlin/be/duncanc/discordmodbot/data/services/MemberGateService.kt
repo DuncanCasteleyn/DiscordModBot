@@ -39,6 +39,11 @@ class MemberGateService(
     private val jda: JDA,
     private val memberGateQuestionRepository: MemberGateQuestionRepository
 ) {
+    companion object {
+        private const val WELCOME_MESSAGE_ERROR =
+            "Saving/modifying/deleting welcome messages through this service is no longer supported"
+    }
+
     /**
      * @return null when not configured or channel no longer exists.
      */
@@ -136,30 +141,6 @@ class MemberGateService(
         guildMemberGateRepository.save(memberGate)
     }
 
-    fun getWelcomeMessages(guildId: Long): Set<GuildMemberGate.WelcomeMessage> {
-        val memberGate: GuildMemberGate? = guildMemberGateRepository.findById(guildId).orElse(null)
-        memberGate?.welcomeMessages?.size
-        return if (memberGate != null) {
-            Collections.unmodifiableSet(memberGate.welcomeMessages)
-        } else {
-            Collections.emptySet()
-        }
-    }
-
-    @Transactional
-    fun addWelcomeMessage(guildId: Long, welcomeMessage: GuildMemberGate.WelcomeMessage) {
-        val memberGate: GuildMemberGate = guildMemberGateRepository.findById(guildId).orElse(GuildMemberGate(guildId))
-        memberGate.welcomeMessages.add(welcomeMessage)
-        guildMemberGateRepository.save(memberGate)
-    }
-
-    @Transactional
-    fun removeWelcomeMessage(guildId: Long, welcomeMessage: GuildMemberGate.WelcomeMessage) {
-        val memberGate: GuildMemberGate = guildMemberGateRepository.findById(guildId).orElse(GuildMemberGate(guildId))
-        memberGate.welcomeMessages.remove(welcomeMessage)
-        guildMemberGateRepository.save(memberGate)
-    }
-
     @Transactional
     fun resetGateSettings(guildId: Long) {
         val guildMemberGate: GuildMemberGate? = guildMemberGateRepository.findById(guildId).orElse(null)
@@ -178,10 +159,8 @@ class MemberGateService(
 
     @Transactional
     fun resetWelcomeSettings(guildId: Long) {
-        val guildMemberGate: GuildMemberGate? = guildMemberGateRepository.findById(guildId).orElse(null)
-        if (guildMemberGate != null) {
-            guildMemberGate.welcomeMessages.clear()
-            guildMemberGateRepository.save(guildMemberGate.copy(welcomeTextChannel = null))
+        guildMemberGateRepository.findById(guildId).ifPresent {
+            guildMemberGateRepository.save(it.copy(welcomeTextChannel = null))
         }
     }
 
