@@ -65,8 +65,8 @@ repositories {
 }
 
 configure<JavaPluginConvention> {
-    sourceCompatibility = JavaVersion.VERSION_15
-    targetCompatibility = JavaVersion.VERSION_15
+    sourceCompatibility = JavaVersion.VERSION_16
+    targetCompatibility = JavaVersion.VERSION_16
 }
 tasks {
     withType<Test> {
@@ -80,7 +80,7 @@ tasks {
         }
     }
     withType<Wrapper> {
-        gradleVersion = "6.8.3"
+        gradleVersion = "7.0"
     }
     withType<JavaCompile> {
         dependsOn(processResources)
