@@ -17,7 +17,6 @@
 package be.duncanc.discordmodbot.data.services
 
 import be.duncanc.discordmodbot.data.entities.GuildMemberGate
-import be.duncanc.discordmodbot.data.entities.GuildMemberGate.WelcomeMessage
 import be.duncanc.discordmodbot.data.repositories.jpa.GuildMemberGateRepository
 import be.duncanc.discordmodbot.data.repositories.key.value.MemberGateQuestionRepository
 import net.dv8tion.jda.api.EmbedBuilder
@@ -140,22 +139,6 @@ class MemberGateService(
         val memberGate: GuildMemberGate = guildMemberGateRepository.findById(guildId).orElse(GuildMemberGate(guildId))
         memberGate.questions.remove(question)
         guildMemberGateRepository.save(memberGate)
-    }
-
-    @Deprecated(WELCOME_MESSAGE_ERROR, level = DeprecationLevel.ERROR)
-    fun getWelcomeMessages(guildId: Long): Set<WelcomeMessage> {
-        throw UnsupportedOperationException(WELCOME_MESSAGE_ERROR)
-    }
-
-    @Transactional
-    @Deprecated(WELCOME_MESSAGE_ERROR, level = DeprecationLevel.ERROR)
-    fun addWelcomeMessage(guildId: Long, welcomeMessage: WelcomeMessage) {
-        throw UnsupportedOperationException(WELCOME_MESSAGE_ERROR)
-    }
-
-    @Deprecated(WELCOME_MESSAGE_ERROR, level = DeprecationLevel.ERROR)
-    fun removeWelcomeMessage(guildId: Long, welcomeMessage: WelcomeMessage) {
-        throw UnsupportedOperationException(WELCOME_MESSAGE_ERROR)
     }
 
     @Transactional
