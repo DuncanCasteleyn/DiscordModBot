@@ -17,6 +17,7 @@
 package be.duncanc.discordmodbot.bot.services
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
+import be.duncanc.discordmodbot.bot.sequences.MessageSequence
 import be.duncanc.discordmodbot.bot.sequences.ReactionSequence
 import be.duncanc.discordmodbot.bot.sequences.Sequence
 import be.duncanc.discordmodbot.bot.utils.limitLessBulkDeleteByIds
@@ -286,7 +287,7 @@ class MemberGate(
         user: User,
         channel: MessageChannel,
         private val question: String
-    ) : Sequence(user, channel, informUser = false) {
+    ) : Sequence(user, channel, informUser = false), MessageSequence {
         private var sequenceNumber: Byte = 0
 
         /**
@@ -369,7 +370,7 @@ class MemberGate(
      * This sequences allows to configure the gate
      */
     private inner class ConfigureSequence(user: User, channel: MessageChannel) :
-        Sequence(user, channel) {
+        Sequence(user, channel), MessageSequence {
         private var sequenceNumber: Byte = 0
         private lateinit var questions: List<String>
         private lateinit var welcomeMessages: List<WelcomeMessage>
@@ -619,31 +620,32 @@ class MemberGate(
         user: User,
         channel: MessageChannel,
         private val userId: Long
-    ) : Sequence(user, channel), ReactionSequence {
+    ) : Sequence(user, channel), ReactionSequence, MessageSequence {
 
         /**
          * Asks the first question and checks if the user is in the review list.
          */
         init {
-            memberGateQuestionRepository.findById(userId).ifPresentOrElse({
-                val userQuestionAndAnswer = it.question + '\n' + it.answer
-                if (userQuestionAndAnswer.isNotBlank()) {
-                    MessageBuilder().append("The user answered with the following question:\n")
-                        .appendCodeBlock(userQuestionAndAnswer, "text")
-                        .append("\nIf you want to approve the user respond with `approve`, to make the bot request the user to ask a new question respond with `reject` or to reject the user and take manual action answer with `noop` or use the reactions.")
-                        .buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { message ->
-                            channel.sendMessage(message).queue { sendMessage ->
-                                super.addMessageToCleaner(sendMessage)
-                                sendMessage.addReaction("✅").queue()
-                                sendMessage.addReaction("❌").queue()
-                                sendMessage.addReaction("❓").queue()
+            memberGateQuestionRepository.findById(userId).ifPresentOrElse(
+                {
+                    val userQuestionAndAnswer = it.question + '\n' + it.answer
+                    if (userQuestionAndAnswer.isNotBlank()) {
+                        MessageBuilder().append("The user answered with the following question:\n")
+                            .appendCodeBlock(userQuestionAndAnswer, "text")
+                            .append("\nIf you want to approve the user respond with `approve`, to make the bot request the user to ask a new question respond with `reject` or to reject the user and take manual action answer with `noop` or use the reactions.")
+                            .buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { message ->
+                                channel.sendMessage(message).queue { sendMessage ->
+                                    super.addMessageToCleaner(sendMessage)
+                                    sendMessage.addReaction("✅").queue()
+                                    sendMessage.addReaction("❌").queue()
+                                    sendMessage.addReaction("❓").queue()
+                                }
                             }
-                        }
-                } else {
-                    super.destroy()
-                    throw IllegalArgumentException("The user you tried to review is still in the list, but another moderator already declared the question wrong or the user rejoined.")
-                }
-            },
+                    } else {
+                        super.destroy()
+                        throw IllegalArgumentException("The user you tried to review is still in the list, but another moderator already declared the question wrong or the user rejoined.")
+                    }
+                },
                 {
                     super.destroy()
                     throw IllegalArgumentException("The user you tried to review is not currently in the manual review list.")

@@ -29,7 +29,6 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import java.util.*
 import java.util.concurrent.TimeUnit
 
 /**
@@ -52,7 +51,8 @@ abstract class Sequence
     private val expireInstant: Instant = Instant.now().plus(5, ChronoUnit.MINUTES)
 
     init {
-        if (cleanAfterSequence && channel is TextChannel) {
+        @Suppress("LeakingThis")
+        if (this is MessageSequence && cleanAfterSequence && channel is TextChannel) {
             this.cleanAfterSequence = ArrayList()
         } else {
             this.cleanAfterSequence = null
@@ -77,11 +77,6 @@ abstract class Sequence
     }
 
     /**
-     * Will be called after the necessary operations are performed to keep the sequences alive.
-     */
-    protected abstract fun onMessageReceivedDuringSequence(event: MessageReceivedEvent)
-
-    /**
      * Will perform the required actions while in a sequences and then send it to the {@code onMessageReceivedDuringSequence(event)}.
      *
      * When {@code onMessageReceivedDuringSequence(event)} throws an exception it catches it, send the exception name and message and terminate the sequences.
@@ -90,9 +85,14 @@ abstract class Sequence
         if (event.author != user || event.message.channel != channel) {
             return
         }
-        addMessageToCleaner(event.message)
+        if (this is MessageSequence) {
+            addMessageToCleaner(event.message)
+        }
         if (event.message.contentRaw == "STOP") {
             destroy()
+            return
+        }
+        if (this !is MessageSequence) {
             return
         }
         try {

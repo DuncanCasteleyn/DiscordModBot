@@ -64,7 +64,7 @@ class Feedback
     }
 
     inner class FeedbackSequence(user: User, channel: MessageChannel, jda: JDA) :
-        Sequence(user, channel, cleanAfterSequence = false, informUser = true) {
+        Sequence(user, channel, cleanAfterSequence = false, informUser = true), MessageSequence {
         private var guild: Guild? = null
         private val selectableGuilds: List<Guild>
 

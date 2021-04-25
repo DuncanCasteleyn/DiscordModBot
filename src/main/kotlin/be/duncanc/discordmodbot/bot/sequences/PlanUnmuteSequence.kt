@@ -27,7 +27,7 @@ open class PlanUnmuteSequence(
 ) : Sequence(
     user,
     channel
-) {
+), MessageSequence {
     init {
         super.channel.sendMessage("In how much days should the user be unmuted?").queue {
             addMessageToCleaner(it)

@@ -18,6 +18,7 @@ package be.duncanc.discordmodbot.bot.services
 
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
+import be.duncanc.discordmodbot.bot.sequences.MessageSequence
 import be.duncanc.discordmodbot.bot.sequences.Sequence
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.entities.LoggingSettings
@@ -619,7 +620,8 @@ class GuildLogger
             event.jda.addEventListener(SettingsSequence(event.author, event.channel))
         }
 
-        open inner class SettingsSequence(user: User, channel: MessageChannel) : Sequence(user, channel) {
+        open inner class SettingsSequence(user: User, channel: MessageChannel) :
+            Sequence(user, channel), MessageSequence {
             private var sequenceNumber: Byte = 0
 
             init {
@@ -628,21 +630,22 @@ class GuildLogger
                 }
                 val guildId = channel.guild.idLong
                 val logSettings = loggingSettingsRepository.findById(guildId).orElse(LoggingSettings(guildId))
-                channel.sendMessage("Enter number of the action you'd like to perform:\n\n" +
-                        "0. Set the mod logging channel. Currently: ${
-                            logSettings.modLogChannel?.let { "<#$it>" }
-                                ?: "None (Required to set before setting/changing other setting)"
-                        }\n" +
-                        "1. Set the user logging channel. Currently: ${
-                            logSettings.userLogChannel?.let { "<#$it>" }
-                                ?: "Using same channel as mod logging"
-                        }\n" +
-                        "2. " + (if (logSettings.logMessageUpdate) "Disable" else "Enable ") + " logging for edited messages.\n" +
-                        "3. " + (if (logSettings.logMessageDelete) "Disable" else "Enable ") + " logging for deleted messages.\n" +
-                        "4. " + (if (logSettings.logMemberJoin) "Disable" else "Enable ") + " logging for members joining.\n" +
-                        "5. " + (if (logSettings.logMemberLeave) "Disable" else "Enable ") + " logging for members leaving (includes kicks).\n" +
-                        "6. " + (if (logSettings.logMemberBan) "Disable" else "Enable ") + " logging for banning members.\n" +
-                        "7. " + (if (logSettings.logMemberBan) "Disable" else "Enable ") + " logging for removing bans.")
+                channel.sendMessage(
+                    "Enter number of the action you'd like to perform:\n\n" +
+                            "0. Set the mod logging channel. Currently: ${
+                                logSettings.modLogChannel?.let { "<#$it>" }
+                                    ?: "None (Required to set before setting/changing other setting)"
+                            }\n" +
+                            "1. Set the user logging channel. Currently: ${
+                                logSettings.userLogChannel?.let { "<#$it>" }
+                                    ?: "Using same channel as mod logging"
+                            }\n" +
+                            "2. " + (if (logSettings.logMessageUpdate) "Disable" else "Enable ") + " logging for edited messages.\n" +
+                            "3. " + (if (logSettings.logMessageDelete) "Disable" else "Enable ") + " logging for deleted messages.\n" +
+                            "4. " + (if (logSettings.logMemberJoin) "Disable" else "Enable ") + " logging for members joining.\n" +
+                            "5. " + (if (logSettings.logMemberLeave) "Disable" else "Enable ") + " logging for members leaving (includes kicks).\n" +
+                            "6. " + (if (logSettings.logMemberBan) "Disable" else "Enable ") + " logging for banning members.\n" +
+                            "7. " + (if (logSettings.logMemberBan) "Disable" else "Enable ") + " logging for removing bans.")
                     .queue { addMessageToCleaner(it) }
             }
 

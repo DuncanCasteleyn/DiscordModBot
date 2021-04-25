@@ -111,7 +111,7 @@ class AddWarnPoints(
     ) : Sequence(
         user,
         channel
-    ) {
+    ), MessageSequence {
 
         private var reason: String? = null
         private var points: Int? = null

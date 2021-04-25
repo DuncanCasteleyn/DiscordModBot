@@ -17,6 +17,7 @@
 package be.duncanc.discordmodbot.bot.services
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
+import be.duncanc.discordmodbot.bot.sequences.MessageSequence
 import be.duncanc.discordmodbot.bot.sequences.Sequence
 import be.duncanc.discordmodbot.data.entities.IAmRolesCategory
 import be.duncanc.discordmodbot.data.services.IAmRolesService
@@ -65,7 +66,9 @@ class IAmRoles
         iAmRolesService.removeRole(event.guild.idLong, event.role.idLong)
     }
 
-    inner class IAmRolesSequence internal constructor(user: User, channel: MessageChannel) : Sequence(user, channel) {
+    inner class IAmRolesSequence internal constructor(user: User, channel: MessageChannel) :
+        Sequence(user, channel),
+        MessageSequence {
 
         private var sequenceNumber: Byte = 1
         private var newCategoryName: String? = null
@@ -89,7 +92,7 @@ class IAmRoles
             ).queue { message -> super.addMessageToCleaner(message) }
         }
 
-        public override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
+        override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
             when (sequenceNumber) {
                 1.toByte() -> when (java.lang.Byte.parseByte(event.message.contentRaw)) {
                     0.toByte() -> {
@@ -265,7 +268,7 @@ class IAmRoles
     }
 
     internal inner class RoleModificationSequence(user: User, channel: MessageChannel, private val remove: Boolean) :
-        Sequence(user, channel, cleanAfterSequence = true, informUser = true) {
+        Sequence(user, channel, cleanAfterSequence = true, informUser = true), MessageSequence {
         private val iAmRolesCategories: List<IAmRolesCategory>
         private var roles: ArrayList<Long>? = null
         private var assignedRoles: ArrayList<Role>? = null

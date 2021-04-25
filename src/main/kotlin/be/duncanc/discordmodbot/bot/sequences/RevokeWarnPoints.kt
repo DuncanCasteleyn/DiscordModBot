@@ -51,7 +51,7 @@ class RevokeWarnPoints(
     ) : Sequence(
         user,
         channel
-    ) {
+    ), MessageSequence {
         init {
             val messageBuilder = MessageBuilder("The user has had the following warnings in the past:\n\n")
             userGuildWarnPoints.points.forEach { userWarnPoints ->

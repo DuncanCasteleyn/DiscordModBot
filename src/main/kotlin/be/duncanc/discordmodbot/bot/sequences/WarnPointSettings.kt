@@ -50,7 +50,7 @@ class WarnPointSettings(
     ) : Sequence(
         user,
         channel
-    ) {
+    ), MessageSequence {
         var sequenceNumber = 0.toByte()
 
         init {

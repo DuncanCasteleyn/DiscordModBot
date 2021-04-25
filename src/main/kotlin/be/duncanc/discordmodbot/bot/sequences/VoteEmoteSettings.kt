@@ -49,7 +49,7 @@ open class VoteEmoteSettingsSequence(
     channel,
     true,
     false
-) {
+), MessageSequence {
     init {
         channel.sendMessage("${user.asMention} Please send the emote you want to use for yes votes.\nMake sure the bot has access to the server where this emote is hosted.")
             .queue { addMessageToCleaner(it) }

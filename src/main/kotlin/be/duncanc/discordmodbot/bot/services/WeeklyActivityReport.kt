@@ -17,6 +17,7 @@
 package be.duncanc.discordmodbot.bot.services
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
+import be.duncanc.discordmodbot.bot.sequences.MessageSequence
 import be.duncanc.discordmodbot.bot.sequences.Sequence
 import be.duncanc.discordmodbot.data.entities.ActivityReportSettings
 import be.duncanc.discordmodbot.data.repositories.jpa.ActivityReportSettingsRepository
@@ -140,7 +141,7 @@ class WeeklyActivityReport(
         channel,
         true,
         true
-    ) {
+    ), MessageSequence {
         private var sequenceNumber: Byte = 0
 
         init {
