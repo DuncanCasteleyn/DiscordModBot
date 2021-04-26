@@ -11,12 +11,10 @@ class SequenceCleanerService(
     @Scheduled(fixedDelay = 1000 * 60)
     fun cleanExpiredSequences() {
         jda.registeredListeners.filter { listener ->
-            listener::class == Sequence::class
+            listener is Sequence && listener.expired
         }.forEach { sequence ->
             sequence as Sequence
-            if (sequence.sequenceIsExpired()) {
-                sequence.destroy()
-            }
+            sequence.destroy()
         }
     }
 }

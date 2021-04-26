@@ -48,7 +48,11 @@ abstract class Sequence
     }
 
     private val cleanAfterSequence: ArrayList<Long>?
-    private val expireInstant: Instant = Instant.now().plus(5, ChronoUnit.MINUTES)
+    private val expireInstant: Instant
+    val expired: Boolean
+        get() {
+            return Instant.now().isAfter(expireInstant)
+        }
 
     init {
         @Suppress("LeakingThis")
@@ -74,6 +78,7 @@ abstract class Sequence
                 throw e
             }
         }
+        expireInstant = Instant.now().plus(5, ChronoUnit.MINUTES)
     }
 
     /**
@@ -157,9 +162,5 @@ abstract class Sequence
                 it.add(message.idLong)
             }
         }
-    }
-
-    fun sequenceIsExpired(): Boolean {
-        return Instant.now().isAfter(expireInstant)
     }
 }
