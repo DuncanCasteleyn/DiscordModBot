@@ -24,6 +24,7 @@ import net.dv8tion.jda.api.entities.PrivateChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 import java.time.format.DateTimeFormatter
+import java.util.*
 
 /**
  * User info command.
@@ -62,11 +63,12 @@ class UserInfo(
                     .queue()
             } else {
                 val searchTerms =
-                    event.message.contentRaw.substring(command.length + 2).toLowerCase().split("#".toRegex())
+                    event.message.contentRaw.substring(command.length + 2).lowercase(Locale.getDefault())
+                        .split("#".toRegex())
                         .dropLastWhile { it.isBlank() }.toTypedArray()
                 var targetFound = false
                 for (member in event.guild.members) {
-                    if (searchTerms[0] == member.user.name.toLowerCase() && searchTerms[1] == member.user.discriminator) {
+                    if (searchTerms[0] == member.user.name.lowercase(Locale.getDefault()) && searchTerms[1] == member.user.discriminator) {
                         //                                privateChannel.sendMessage("Dates from user " + member.toString() + "\n" +
                         //                                        "Guild join date: " + member.getJoinDate().format(DATE_TIME_FORMATTER) + "\n" +
                         //                                        "Account creation date: " + member.getUser().getCreationTime().format(DATE_TIME_FORMATTER)).queue();

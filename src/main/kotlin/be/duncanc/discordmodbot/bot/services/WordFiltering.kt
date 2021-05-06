@@ -36,7 +36,11 @@ class WordFiltering(
             throw IllegalArgumentException("You need to specify a word followed by a filtering method")
         }
         val blackListedWord =
-            BlackListedWord(event.guild.idLong, argSplit[0], FilterMethod.valueOf(argSplit[1].toUpperCase()))
+            BlackListedWord(
+                event.guild.idLong,
+                argSplit[0],
+                FilterMethod.valueOf(argSplit[1].uppercase(Locale.getDefault()))
+            )
         blackListedWordRepository.save(blackListedWord)
         event.channel.sendMessage("Word has been added to the filter list.")
             .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }

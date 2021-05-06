@@ -185,15 +185,15 @@ class MemberGate(
             return
         }
 
-        when (command.toLowerCase()) {
-            super.aliases[0].toLowerCase() -> {
+        when (command.lowercase(Locale.getDefault())) {
+            super.aliases[0].lowercase(Locale.getDefault()) -> {
                 configure(event)
             }
 
-            super.aliases[1].toLowerCase() -> {
+            super.aliases[1].lowercase(Locale.getDefault()) -> {
                 join(event)
             }
-            super.aliases[2].toLowerCase() -> {
+            super.aliases[2].lowercase(Locale.getDefault()) -> {
                 arguments?.let { review(event.jda, event.author, event.guild, event.channel, it) }
             }
         }
@@ -307,7 +307,7 @@ class MemberGate(
             }
             when (sequenceNumber) {
                 0.toByte() -> {
-                    when (event.message.contentRaw.toLowerCase()) {
+                    when (event.message.contentRaw.lowercase(Locale.getDefault())) {
                         "yes" -> {
                             super.channel.sendMessage("${user.asMention} Do you accept the rules? Answer with `yes` or `no`")
                                 .queue { super.addMessageToCleaner(it) }
@@ -325,7 +325,7 @@ class MemberGate(
                     }
                 }
                 1.toByte() -> {
-                    when (event.message.contentRaw.toLowerCase()) {
+                    when (event.message.contentRaw.lowercase(Locale.getDefault())) {
                         "yes" -> {
                             super.channel.sendMessage(user.asMention + " Please answer the following question:\n" + question)
                                 .queue { super.addMessageToCleaner(it) }
@@ -408,7 +408,7 @@ class MemberGate(
             if (super.user != user || super.channel != channel) {
                 return
             }
-            val messageContent: String = event.message.contentDisplay.toLowerCase()
+            val messageContent: String = event.message.contentDisplay.lowercase(Locale.getDefault())
             when (sequenceNumber) {
                 0.toByte() -> {
                     findDesiredAction(messageContent, event)
@@ -676,7 +676,7 @@ class MemberGate(
             if (!memberGateQuestionRepository.existsById(userId)) {
                 throw IllegalStateException("The user is no longer in the queue; another moderator may have reviewed it already.")
             }
-            when (val messageContent: String = event.message.contentDisplay.toLowerCase()) {
+            when (val messageContent: String = event.message.contentDisplay.lowercase(Locale.getDefault())) {
                 "approve", "accept" -> {
                     accept(event.jda, event.guild)
                 }
