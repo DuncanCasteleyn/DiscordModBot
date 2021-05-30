@@ -48,24 +48,44 @@ class ScheduledUnmuteService(
     fun performUnmute() {
         scheduledUnmuteRepository.findAllByUnmuteDateTimeIsBefore(OffsetDateTime.now()).forEach { scheduledUnmute ->
             jda.getGuildById(scheduledUnmute.guildId)?.let { guild ->
-                getMemberToUnmute(scheduledUnmute, guild)
+                unmuteMembers(scheduledUnmute, guild)
             }
         }
     }
 
-    private fun getMemberToUnmute(scheduledUnmute: ScheduledUnmute, guild: Guild) {
-        guild.getMemberById(scheduledUnmute.userId)?.let { member ->
-            getMuteRoleFromRepository(guild, scheduledUnmute, member)
+    private fun unmuteMembers(scheduledUnmute: ScheduledUnmute, guild: Guild) {
+        val member = guild.getMemberById(scheduledUnmute.userId)
+        if (member != null) {
+            unmuteMember(guild, scheduledUnmute, member)
+        } else {
+            removeMuteFromDb(scheduledUnmute.userId, guild)
         }
     }
 
-    private fun getMuteRoleFromRepository(guild: Guild, scheduledUnmute: ScheduledUnmute, member: Member) {
+    private fun removeMuteFromDb(userId: Long, guild: Guild) {
         muteRolesRepository.findById(guild.idLong).ifPresent { muteRole ->
-            getMuteRoleFromGuild(guild, muteRole, member, scheduledUnmute)
+            muteRole.mutedUsers.remove(userId)
+            muteRolesRepository.save(muteRole)
+            guild.jda.retrieveUserById(userId).queue { user ->
+                val logEmbed = EmbedBuilder()
+                    .setColor(Color.green)
+                    .setTitle("User unmuted")
+                    .addField("User", user.name, true)
+                    .addField("Reason", "Mute expired", false)
+
+                guildLogger.log(logEmbed, user, guild, actionType = MODERATOR)
+            }
+
         }
     }
 
-    private fun getMuteRoleFromGuild(
+    private fun unmuteMember(guild: Guild, scheduledUnmute: ScheduledUnmute, member: Member) {
+        muteRolesRepository.findById(guild.idLong).ifPresent { muteRole ->
+            removeUserFromMuteRole(guild, muteRole, member, scheduledUnmute)
+        }
+    }
+
+    private fun removeUserFromMuteRole(
         guild: Guild,
         muteRole: MuteRole,
         member: Member,
@@ -91,7 +111,7 @@ class ScheduledUnmuteService(
             .addField("User", member.nicknameAndUsername, true)
             .addField("Reason", "Mute expired", false)
 
-        guildLogger.log(logEmbed, member.user, guild, null, MODERATOR)
+        guildLogger.log(logEmbed, member.user, guild, actionType = MODERATOR)
     }
 
     private fun informUserIsUnmuted(member: Member) {
