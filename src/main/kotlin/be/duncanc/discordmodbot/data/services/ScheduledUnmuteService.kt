@@ -43,7 +43,7 @@ class ScheduledUnmuteService(
         scheduledUnmuteRepository.save(scheduledUnmute)
     }
 
-    @Scheduled(fixedRate = 1000 * 60 * 60)
+    @Scheduled(cron = "0 0/20 * * * *")
     @Transactional
     fun performUnmute() {
         scheduledUnmuteRepository.findAllByUnmuteDateTimeIsBefore(OffsetDateTime.now()).forEach { scheduledUnmute ->
@@ -58,14 +58,16 @@ class ScheduledUnmuteService(
         if (member != null) {
             unmuteMember(guild, scheduledUnmute, member)
         } else {
-            removeMuteFromDb(scheduledUnmute.userId, guild)
+            removeMuteFromDb(scheduledUnmute, guild)
         }
     }
 
-    private fun removeMuteFromDb(userId: Long, guild: Guild) {
+    private fun removeMuteFromDb(scheduledUnmute: ScheduledUnmute, guild: Guild) {
         muteRolesRepository.findById(guild.idLong).ifPresent { muteRole ->
+            val userId = scheduledUnmute.userId
             muteRole.mutedUsers.remove(userId)
             muteRolesRepository.save(muteRole)
+            scheduledUnmuteRepository.delete(scheduledUnmute)
             guild.jda.retrieveUserById(userId).queue { user ->
                 val logEmbed = EmbedBuilder()
                     .setColor(Color.green)
