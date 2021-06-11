@@ -142,7 +142,8 @@ class MemberGate(
                                 ?: "rules") +
                             " and answer a question regarding those before you gain full access.\n\n" +
                             "If you have read the rules and are ready to answer the question, type ``!" + super.aliases[1] + "`` and follow the instructions from the bot.\n\n" +
-                            "Please read the pinned message for more information."
+                            "Please read the pinned message for more information." +
+                            "Never ping moderators unless you have issues which prevent you from completing the entry process."
                 ).queue { message -> message.delete().queueAfter(5, TimeUnit.MINUTES) }
             }
         } else if (welcomeChannel != null) {
@@ -698,7 +699,9 @@ class MemberGate(
             if (member != null) {
                 if (!noOp) {
                     gateChannel?.sendMessage("Your answer was incorrect " + member.user.asMention + ".  You can use the `!join` command to try again.")
-                        ?.queue()
+                        ?.queue {
+                            it.delete().queueAfter(1, TimeUnit.HOURS)
+                        }
                 }
             } else {
                 super.channel.sendMessage("The user already left; no further action is needed.")
