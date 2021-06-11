@@ -38,6 +38,7 @@ import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEve
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
+import java.security.SecureRandom
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -62,6 +63,8 @@ class MemberGate(
         private const val MENTION_CHANNEL_TO_SET = "Please mention the channel you want to set."
         private const val NEED_TO_MENTION_CHANNEL = "A channel needs to be mentioned."
         private const val CHANNEL_SET = "Channel set"
+
+        private val random = SecureRandom()
     }
 
     private val informUserMessageIds = HashMap<Long, Long>()
@@ -76,7 +79,7 @@ class MemberGate(
         if (welcomeMessages.isEmpty() || event.user.isBot || memberRole !in event.roles) {
             return
         }
-        val welcomeMessage = welcomeMessages[Random().nextInt(welcomeMessages.size)].getWelcomeMessage(event.user)
+        val welcomeMessage = welcomeMessages[random.nextInt(welcomeMessages.size)].getWelcomeMessage(event.user)
         memberGateService.getWelcomeChannel(guild.idLong, guild.jda)?.sendMessage(welcomeMessage)?.queue()
         memberGateQuestionRepository.deleteById(event.user.idLong)
         memberGateService.getGateChannel(guild.idLong, guild.jda)?.let { cleanMessagesFromUser(it, event.user) }
@@ -150,7 +153,7 @@ class MemberGate(
             val welcomeMessages = welcomeMessageService.getWelcomeMessages(event.guild.idLong).toTypedArray()
             if (welcomeMessages.isNotEmpty()) {
                 val welcomeMessage =
-                    welcomeMessages[Random().nextInt(welcomeMessages.size)].getWelcomeMessage(event.user)
+                    welcomeMessages[random.nextInt(welcomeMessages.size)].getWelcomeMessage(event.user)
                 memberGateService.getWelcomeChannel(event.guild.idLong, event.jda)?.sendMessage(welcomeMessage)?.queue()
             }
         }
@@ -243,7 +246,7 @@ class MemberGate(
                 QuestionSequence(
                     event.author,
                     event.channel,
-                    questions[Random().nextInt(questions.size)]
+                    questions[random.nextInt(questions.size)]
                 )
             )
         }
