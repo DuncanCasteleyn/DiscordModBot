@@ -28,7 +28,7 @@ class Quote(
     userBlockService: UserBlockService
 ) : CommandModule(
     arrayOf("Quote"),
-    "[message id to quote] [response text]",
+    "[message id / message link to quote] [response text]",
     "Will quote text and put a response under it, response text is optional",
     ignoreWhitelist = true,
     userBlockService = userBlockService
