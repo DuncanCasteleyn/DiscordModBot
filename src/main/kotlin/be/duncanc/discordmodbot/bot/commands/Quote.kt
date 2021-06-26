@@ -33,6 +33,9 @@ class Quote(
     ignoreWhitelist = true,
     userBlockService = userBlockService
 ) {
+    companion object {
+        private const val JUMP_URL_PREFIX = "https://discord.com/channels/"
+    }
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         if (arguments == null) {
@@ -42,10 +45,11 @@ class Quote(
         val toQuoteSource = arguments.split(" ")[0]
         // This assumes a standard format of
         // https://discord.com/channels/<SERVER ID>/<CHANNEL ID>/<MESSAGE ID>
-        if (toQuoteSource.startsWith("https://discord.com/channels/")) {
-            toQuoteSource.removePrefix("https://discord.com/channels/")
+        if (toQuoteSource.startsWith(JUMP_URL_PREFIX)) {
             // idArray, as shown above, follows the pattern Server ID, TextChannel ID, Message ID.
-            val idArray = toQuoteSource.split("/")
+            val idArray = toQuoteSource
+                .removePrefix(JUMP_URL_PREFIX)
+                .split("/")
             // make sure we are pulling from a valid place
             val guild = event.jda.getGuildById(idArray[0])
             guild?.getTextChannelById(idArray[1])?.retrieveMessageById(idArray[2])?.queue { messageToQuote ->
@@ -84,14 +88,14 @@ class Quote(
                 quotedMessage.author.effectiveAvatarUrl
             )
             .setDescription(quotedMessage.contentDisplay)
-            .setFooter(event.author.id, event.author.effectiveAvatarUrl)
+            .setFooter("Posted by ${event.author}", event.author.effectiveAvatarUrl)
         val responseEmbed = if (responseString.isBlank()) {
             null
         } else {
             EmbedBuilder()
                 .setAuthor(event.member?.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
                 .setDescription(responseString)
-                .setFooter(event.author.id, null)
+                .setFooter("Posted by ${event.member}", event.author.effectiveAvatarUrl)
         }
         event.textChannel.sendMessage(quoteEmbed.build()).queue()
 
