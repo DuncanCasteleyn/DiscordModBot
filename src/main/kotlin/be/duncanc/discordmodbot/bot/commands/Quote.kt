@@ -39,9 +39,6 @@ class Quote(
             throw IllegalArgumentException("This command requires at least a message id or link.")
         }
 
-        var quotedMessage: Message? = null
-        var responseString = ""
-
         val toQuoteSource = arguments.split(" ")[0]
         // This assumes a standard format of
         // https://discord.com/channels/<SERVER ID>/<CHANNEL ID>/<MESSAGE ID>
@@ -51,52 +48,55 @@ class Quote(
             val idArray = toQuoteSource.split("/")
             // make sure we are pulling from a valid place
             val guild = event.jda.getGuildById(idArray[0])
-            val messageToQuote = guild?.getTextChannelById(idArray[1])?.retrieveMessageById(idArray[2])?.complete()
-            if (messageToQuote != null) {
-                if (messageToQuote.contentDisplay.isBlank()) {
-                    throw IllegalArgumentException("The message you want to quote has no content to quote.")
+            guild?.getTextChannelById(idArray[1])?.retrieveMessageById(idArray[2])?.queue { messageToQuote ->
+                if (messageToQuote != null) {
+                    if (messageToQuote.contentDisplay.isBlank()) {
+                        throw IllegalArgumentException("The message you want to quote has no content to quote.")
+                    }
+                    quoteMessage(event, messageToQuote, arguments.substring(toQuoteSource.length))
+                } else {
+                    throw IllegalArgumentException("This command requires a valid Message Link.")
                 }
-                quotedMessage = messageToQuote
-                // get response
-                responseString = arguments.substring(toQuoteSource.length)
             }
-            else {
-                throw IllegalArgumentException("This command requires a valid Message Link.")
-            }
+
         }
         // In case its a standard MessageID
         else {
-            val channelId = arguments.split(" ")[0]
-            val messageToQuote = event.textChannel.retrieveMessageById(channelId).complete()
-            if (messageToQuote.contentDisplay.isBlank()) {
-                throw IllegalArgumentException("The message you want to quote has no content to quote.")
+            val messageId = arguments.split(" ")[0]
+            event.textChannel.retrieveMessageById(messageId).queue { messageToQuote ->
+                if (messageToQuote.contentDisplay.isBlank()) {
+                    throw IllegalArgumentException("The message you want to quote has no content to quote.")
+                }
+                quoteMessage(event, messageToQuote, arguments.substring(messageId.length))
             }
-            quotedMessage = messageToQuote
-            responseString = arguments.substring(channelId.length)
-
         }
+    }
 
-        // send embed
-        if (quotedMessage == null) {
-            throw IllegalArgumentException("The message you want to quote has no content to quote.")
-        }
-        else {
-            val quoteEmbed = EmbedBuilder()
-                .setAuthor(quotedMessage.member?.nicknameAndUsername, null, quotedMessage.author.effectiveAvatarUrl)
-                .setDescription(quotedMessage.contentDisplay)
+    private fun quoteMessage(
+        event: MessageReceivedEvent,
+        quotedMessage: Message,
+        responseString: String
+    ) {
+        val quoteEmbed = EmbedBuilder()
+            .setAuthor(
+                quotedMessage.member?.nicknameAndUsername,
+                quotedMessage.jumpUrl,
+                quotedMessage.author.effectiveAvatarUrl
+            )
+            .setDescription(quotedMessage.contentDisplay)
+            .setFooter(event.author.id, event.author.effectiveAvatarUrl)
+        val responseEmbed = if (responseString.isBlank()) {
+            null
+        } else {
+            EmbedBuilder()
+                .setAuthor(event.member?.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
+                .setDescription(responseString)
                 .setFooter(event.author.id, null)
-            val responseEmbed = if (responseString.isBlank()) {
-                null
-            } else {
-                EmbedBuilder()
-                    .setAuthor(event.member?.nicknameAndUsername, null, event.author.effectiveAvatarUrl)
-                    .setDescription(responseString)
-                    .setFooter(event.author.id, null)
-            }
-            event.textChannel.sendMessage(quoteEmbed.build()).queue()
-            if (responseEmbed != null) {
-                event.textChannel.sendMessage(responseEmbed.build()).queue()
-            }
+        }
+        event.textChannel.sendMessage(quoteEmbed.build()).queue()
+
+        if (responseEmbed != null) {
+            event.textChannel.sendMessage(responseEmbed.build()).queue()
         }
     }
 }

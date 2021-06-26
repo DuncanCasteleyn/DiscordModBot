@@ -6,14 +6,14 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 
 @Component
-class Spoiler (
+class Spoiler(
     userBlockService: UserBlockService
-): CommandModule(
-        arrayOf("Spoiler"),
-        "[text/attachments attach spoiler]",
-        "Will take message and all its contents and spoiler tag it and send it back.",
-        ignoreWhitelist = true,
-        userBlockService = userBlockService
+) : CommandModule(
+    arrayOf("Spoiler"),
+    "[text/attachments attach spoiler]",
+    "Will take message and all its contents and spoiler tag it and send it back.",
+    ignoreWhitelist = true,
+    userBlockService = userBlockService
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         // TODO: Use a webhook trick in order to send messages "as" the user.
@@ -27,14 +27,10 @@ class Spoiler (
             "||${it.url}||\n"
         }
 
-        // delete message
-        event.message.delete().complete()
-
-        // return messsage
         val returnMessageBuilder = MessageBuilder()
-                .append("From: ${event.message.author.asMention}\n")
-                .append(spoilerTaggedStringMessage)
-                .append(embedLinkList.joinToString { it })
+            .append("From: ${event.message.author.asMention}\n")
+            .append(spoilerTaggedStringMessage)
+            .append(embedLinkList.joinToString { it })
         event.textChannel.sendMessage(returnMessageBuilder.build()).queue()
     }
 }
