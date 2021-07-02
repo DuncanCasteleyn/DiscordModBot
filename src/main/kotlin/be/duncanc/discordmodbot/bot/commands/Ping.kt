@@ -52,13 +52,14 @@ The REST API responded within $it milliseconds"""
 
     override fun onSlashCommand(event: SlashCommandEvent) {
         if (event.name == "ping") {
-            event.jda.restPing.queue {
-                event.reply(
+            event.deferReply().queue {
+                it.editOriginal(
                     """pong!
 It took Discord ${event.jda.gatewayPing} milliseconds to respond to our last heartbeat (gateway).
 The REST API responded within $it milliseconds"""
                 ).queue()
             }
         }
+
     }
 }
