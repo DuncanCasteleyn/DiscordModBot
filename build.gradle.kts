@@ -32,7 +32,6 @@ dependencies {
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-data-jpa")
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-validation")
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-data-redis")
-    implementation(group = "redis.clients", name = "jedis")
     implementation(group = "org.flywaydb", name = "flyway-core")
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8")
@@ -78,7 +77,7 @@ tasks {
         }
     }
     withType<Wrapper> {
-        gradleVersion = "7.0"
+        gradleVersion = "7.1.1"
     }
     withType<JavaCompile> {
         dependsOn(processResources)
