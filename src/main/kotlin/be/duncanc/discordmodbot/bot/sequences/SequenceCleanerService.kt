@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service
 class SequenceCleanerService(
     private val jda: JDA
 ) {
-    @Scheduled(fixedDelay = 1000 * 60)
+    @Scheduled(fixedDelay = 1000L * 60L)
     fun cleanExpiredSequences() {
         jda.registeredListeners.filter { listener ->
             listener is Sequence && listener.expired
