@@ -1,6 +1,5 @@
 package be.duncanc.discordmodbot.bot.commands
 
-import com.nhaarman.mockitokotlin2.*
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -11,6 +10,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.kotlin.*
 
 @ExtendWith(MockitoExtension::class)
 @TestInstance(Lifecycle.PER_CLASS)
