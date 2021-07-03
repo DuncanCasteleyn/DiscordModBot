@@ -45,10 +45,8 @@ dependencies {
     runtimeOnly(group = "com.h2database", name = "h2")
     runtimeOnly(group = "org.mariadb.jdbc", name = "mariadb-java-client")
 
-    testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-test") {
-        exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
-    }
-    testImplementation(group = "com.nhaarman.mockitokotlin2", name = "mockito-kotlin", version = "2.2.0")
+    testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-test")
+    testImplementation(group = "org.mockito.kotlin", name = "mockito-kotlin", version = "3.2.0")
 
     annotationProcessor(group = "org.springframework.boot", name = "spring-boot-configuration-processor")
 }
@@ -61,10 +59,11 @@ repositories {
     }
 }
 
-configure<JavaPluginConvention> {
+configure<JavaPluginExtension> {
     sourceCompatibility = JavaVersion.VERSION_16
     targetCompatibility = JavaVersion.VERSION_16
 }
+
 tasks {
     withType<Test> {
         useJUnitPlatform()
