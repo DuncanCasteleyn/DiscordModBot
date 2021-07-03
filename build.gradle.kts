@@ -18,9 +18,9 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 plugins {
-    val kotlinVersion = "1.5.0"
+    val kotlinVersion = "1.5.20"
 
-    id("org.springframework.boot") version "2.4.6"
+    id("org.springframework.boot") version "2.5.2"
     id("io.spring.dependency-management") version "1.0.11.RELEASE"
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.spring") version kotlinVersion
@@ -31,15 +31,12 @@ plugins {
 dependencies {
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-data-jpa")
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-validation")
-    implementation(group = "org.springframework.boot", name = "spring-boot-starter-data-redis") {
-        exclude(group = "io.lettuce", module = "lettuce-core")
-    }
-    implementation(group = "redis.clients", name = "jedis")
+    implementation(group = "org.springframework.boot", name = "spring-boot-starter-data-redis")
     implementation(group = "org.flywaydb", name = "flyway-core")
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-reflect")
-    implementation(group = "net.dv8tion", name = "JDA", version = "4.2.1_253") {
+    implementation(group = "net.dv8tion", name = "JDA", version = "4.3.0_277") {
         exclude(group = "club.minnced", module = "opus-java")
     }
     implementation(group = "org.apache.commons", name = "commons-collections4", version = "4.2")
@@ -76,11 +73,11 @@ tasks {
         dependsOn(processResources)
         kotlinOptions {
             freeCompilerArgs = listOf("-Xjsr305=strict", "-progressive")
-            jvmTarget = "15"
+            jvmTarget = "16"
         }
     }
     withType<Wrapper> {
-        gradleVersion = "7.0"
+        gradleVersion = "7.1.1"
     }
     withType<JavaCompile> {
         dependsOn(processResources)
