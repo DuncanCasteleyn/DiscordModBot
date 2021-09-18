@@ -178,6 +178,14 @@ class MemberGateService(
         }
     }
 
+    @Transactional
+    fun setReminderTime(guildId: Long, reminderTimeHours: Long?) {
+        val guildMemberGate: GuildMemberGate? = guildMemberGateRepository.findById(guildId).orElse(null)
+        if (guildMemberGate != null) {
+            guildMemberGateRepository.save(guildMemberGate.copy(reminderTimeHours = reminderTimeHours))
+        }
+    }
+
     @Transactional(readOnly = true)
     @Scheduled(cron = "0 0 * * * *")
     fun purgeMembersWithoutRoles() {
