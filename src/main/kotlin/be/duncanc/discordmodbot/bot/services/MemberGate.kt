@@ -400,8 +400,8 @@ class MemberGate(
                         "10. Wipe member gate module settings\n" +
                         "11. Set auto purge time in hours (purges members that don't complete entry process)\n" +
                         "12. Disable auto purge\n" +
-                        "13. Set entry reminder time in hours (reminds people they will be purged)" +
-                        "14. Set entry reminder time in hours (reminds people they will be purged)" +
+                        "13. Set entry reminder time in hours (reminds people they will be purged)\n" +
+                        "14. Disable entry reminder\n" +
                         "\nTo enable the member gate you need to set at least the member gate channel and the member role\n" +
                         "To enable welcome messages you need to set at least a welcome message and the welcome channel"
             ).queue { super.addMessageToCleaner(it) }
