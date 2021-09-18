@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.awt.Color
 import java.time.OffsetDateTime
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 @Service
 @Transactional(readOnly = true)
@@ -177,12 +178,21 @@ class MemberGateService(
         }
     }
 
+    @Transactional
+    fun setReminderTime(guildId: Long, reminderTimeHours: Long?) {
+        val guildMemberGate: GuildMemberGate? = guildMemberGateRepository.findById(guildId).orElse(null)
+        if (guildMemberGate != null) {
+            guildMemberGateRepository.save(guildMemberGate.copy(reminderTimeHours = reminderTimeHours))
+        }
+    }
+
     @Transactional(readOnly = true)
     @Scheduled(cron = "0 0 * * * *")
     fun purgeMembersWithoutRoles() {
         jda.guilds.forEach { guild ->
             val guildSettings = guildMemberGateRepository.findById(guild.idLong).orElse(null)
-            if (guildSettings?.removeTimeHours != null && guildSettings.memberRole != null) {
+
+            if (guildSettings?.removeTimeHours != null && guildSettings.memberRole != null && guildSettings.gateTextChannel != null) {
                 guild.members.filter {
                     val reachedTimeLimit =
                         it.timeJoined.isBefore(OffsetDateTime.now().minusHours(guildSettings.removeTimeHours))
@@ -202,6 +212,44 @@ class MemberGateService(
                         },
                         {
                             guild.kick(member).queue()
+                        })
+                }
+            }
+        }
+    }
+
+
+    @Transactional(readOnly = true)
+    @Scheduled(cron = "0 0 * * * *")
+    fun sendReminders() {
+        jda.guilds.forEach { guild ->
+            val guildSettings: GuildMemberGate? = guildMemberGateRepository.findById(guild.idLong).orElse(null)
+            val gateTextChannel = guildSettings?.gateTextChannel
+
+            if (guildSettings?.removeTimeHours != null && guildSettings.memberRole != null && gateTextChannel != null && guildSettings.reminderTimeHours != null) {
+                guild.members.filter {
+                    val minusHours = OffsetDateTime.now().minusHours(guildSettings.reminderTimeHours)
+                    val shouldBeReminded =
+                        it.timeJoined.isBefore(minusHours) && it.timeJoined.isAfter(minusHours.plusHours(1))
+                    val notQueuedForApproval = !memberGateQuestionRepository.existsById(it.user.idLong)
+                    val noRoles = it.roles.size < 1
+
+                    noRoles && shouldBeReminded && notQueuedForApproval
+
+                }.forEach { member ->
+                    val message = """
+                                | Hi, this is a reminder that you have not completed the entry process on ${guild.name} you will be kicked if you don't complete the entry process.
+                                | 
+                                | Please complete the process in <#$gateTextChannel>.
+                            """.trimMargin()
+
+                    member.user.openPrivateChannel().queue(
+                        {
+                            it.sendMessage(message)
+                        },
+                        {
+                            member.guild.getTextChannelById(gateTextChannel)?.sendMessage(message)
+                                ?.queue { it.delete().queueAfter(1, TimeUnit.HOURS) }
                         })
                 }
             }

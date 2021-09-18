@@ -399,8 +399,10 @@ class MemberGate(
                         "9. Disable welcome messages (wipes your welcomes message and channel settings)\n" +
                         "10. Wipe member gate module settings\n" +
                         "11. Set auto purge time in hours (purges members that don't complete entry process)\n" +
-                        "12. Disable auto purge\n\n" +
-                        "To enable the member gate you need to set at least the member gate channel and the member role\n" +
+                        "12. Disable auto purge\n" +
+                        "13. Set entry reminder time in hours (reminds people they will be purged)" +
+                        "14. Set entry reminder time in hours (reminds people they will be purged)" +
+                        "\nTo enable the member gate you need to set at least the member gate channel and the member role\n" +
                         "To enable welcome messages you need to set at least a welcome message and the welcome channel"
             ).queue { super.addMessageToCleaner(it) }
         }
@@ -505,6 +507,12 @@ class MemberGate(
                     channel.sendMessage("Purge time set").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                     destroy()
                 }
+                11.toByte() -> {
+                    val guildId = (channel as TextChannel).guild.idLong
+                    memberGateService.setReminderTime(guildId, event.message.contentRaw.toLong())
+                    channel.sendMessage("Reminder time set").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+                    destroy()
+                }
             }
         }
 
@@ -606,6 +614,18 @@ class MemberGate(
                 12.toByte() -> {
                     val guildId = (channel as TextChannel).guild.idLong
                     memberGateService.setPurgeTime(guildId, null)
+                    destroy()
+                }
+                13.toByte() -> {
+                    sequenceNumber = 11
+                    channel.sendMessage("Please enter the amount of hour(s) before the user receives a reminder")
+                        .queue {
+                            addMessageToCleaner(it)
+                        }
+                }
+                14.toByte() -> {
+                    val guildId = (channel as TextChannel).guild.idLong
+                    memberGateService.setReminderTime(guildId, null)
                     destroy()
                 }
             }

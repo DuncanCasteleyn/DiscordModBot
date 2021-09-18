@@ -16,15 +16,10 @@
 
 package be.duncanc.discordmodbot.data.entities
 
-import net.dv8tion.jda.api.EmbedBuilder
-import net.dv8tion.jda.api.MessageBuilder
-import net.dv8tion.jda.api.entities.Message
-import net.dv8tion.jda.api.entities.User
-import java.awt.Color
-import java.util.*
-import javax.persistence.*
-import javax.validation.constraints.Size
-import kotlin.collections.HashSet
+import javax.persistence.Column
+import javax.persistence.ElementCollection
+import javax.persistence.Entity
+import javax.persistence.Id
 
 
 @Entity
@@ -36,38 +31,8 @@ data class GuildMemberGate(
     val gateTextChannel: Long? = null,
     val welcomeTextChannel: Long? = null,
     val removeTimeHours: Long? = null,
-    @Suppress("DEPRECATION")
-    @ElementCollection(targetClass = WelcomeMessage::class)
-    @Deprecated("To be removed due to length limitations")
-    @field:Size(max = 0)
-    val welcomeMessages: Set<WelcomeMessage> = Collections.emptySet(),
+    val reminderTimeHours: Long? = null,
     @ElementCollection
     @Column(name = "question")
     val questions: MutableSet<String> = HashSet()
-) {
-
-    /**
-     * class containing a welcome message and url for an image to be used in an embed.
-     */
-    @Embeddable
-    @Deprecated("To be removed due to length limitations")
-    data class WelcomeMessage(
-        @Column(nullable = false)
-        var imageUrl: String? = null,
-        @Column(nullable = false)
-        var message: String? = null
-    ) {
-
-        fun getWelcomeMessage(user: User): Message {
-            val joinEmbed = EmbedBuilder()
-                .setDescription(this.message)
-                .setImage(imageUrl)
-                .setColor(Color.GREEN)
-                .build()
-            return MessageBuilder()
-                .append(user.asMention)
-                .setEmbed(joinEmbed)
-                .build()
-        }
-    }
-}
+)
