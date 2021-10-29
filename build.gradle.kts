@@ -47,7 +47,7 @@ dependencies {
     runtimeOnly(group = "org.mariadb.jdbc", name = "mariadb-java-client")
 
     testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-test")
-    testImplementation(group = "org.mockito.kotlin", name = "mockito-kotlin", version = "3.2.0")
+    testImplementation(group = "org.mockito.kotlin", name = "mockito-kotlin", version = "4.0.0")
 
     annotationProcessor(group = "org.springframework.boot", name = "spring-boot-configuration-processor")
     kapt(group = "org.springframework.boot", name = "spring-boot-configuration-processor")
