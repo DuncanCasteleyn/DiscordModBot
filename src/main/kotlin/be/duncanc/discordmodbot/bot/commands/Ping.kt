@@ -16,21 +16,13 @@
 
 package be.duncanc.discordmodbot.bot.commands
 
-import be.duncanc.discordmodbot.data.services.UserBlockService
 import net.dv8tion.jda.api.events.ReadyEvent
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.hooks.ListenerAdapter
 import org.springframework.stereotype.Component
 
 @Component
-class Ping(
-    userBlockService: UserBlockService
-) : CommandModule(
-    ALIASES,
-    null,
-    DESCRIPTION,
-    userBlockService = userBlockService
-) {
+class Ping : ListenerAdapter() {
     companion object {
         private val ALIASES = arrayOf("Ping")
         private const val DESCRIPTION = "responds with \"pong!\"."
@@ -38,16 +30,6 @@ class Ping(
 
     override fun onReady(event: ReadyEvent) {
         event.jda.upsertCommand("ping", DESCRIPTION).queue()
-    }
-
-    public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-        event.jda.restPing.queue {
-            event.channel.sendMessage(
-                """pong!
-It took Discord ${event.jda.gatewayPing} milliseconds to respond to our last heartbeat (gateway).
-The REST API responded within $it milliseconds"""
-            ).queue()
-        }
     }
 
     override fun onSlashCommand(event: SlashCommandEvent) {
