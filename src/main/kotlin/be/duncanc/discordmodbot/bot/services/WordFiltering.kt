@@ -1,19 +1,24 @@
 package be.duncanc.discordmodbot.bot.services
 
-import be.duncanc.discordmodbot.bot.commands.CommandModule
+import be.duncanc.discordmodbot.bot.commands.Command
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.entities.BlackListedWord
 import be.duncanc.discordmodbot.data.entities.BlackListedWord.FilterMethod
 import be.duncanc.discordmodbot.data.repositories.jpa.BlackListedWordRepository
 import net.dv8tion.jda.api.EmbedBuilder
-import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageChannel
-import net.dv8tion.jda.api.events.ReadyEvent
+import net.dv8tion.jda.api.events.guild.GenericGuildEvent
+import net.dv8tion.jda.api.events.interaction.SlashCommandEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.api.events.message.guild.GuildMessageUpdateEvent
+import net.dv8tion.jda.api.hooks.ListenerAdapter
+import net.dv8tion.jda.api.interactions.commands.OptionType
+import net.dv8tion.jda.api.interactions.commands.build.CommandData
+import net.dv8tion.jda.api.interactions.commands.build.OptionData
+import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
 import org.springframework.stereotype.Component
 import java.awt.Color
 import java.util.*
@@ -23,12 +28,8 @@ import java.util.concurrent.TimeUnit
 class WordFiltering(
     val blackListedWordRepository: BlackListedWordRepository,
     val logger: GuildLogger
-) : CommandModule(
-    arrayOf("AddWordFilter"),
-    "[Word] [${Arrays.toString(FilterMethod.values())}",
-    "Adds a word to the blacklist and filters it based on the supplied filter method",
-    requiredPermissions = arrayOf(Permission.MESSAGE_MANAGE)
-) {
+) : ListenerAdapter(), Command {
+
 
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         val argSplit = arguments?.split(' ')
@@ -46,6 +47,7 @@ class WordFiltering(
             .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
     }
 
+
     override fun onGuildMessageUpdate(event: GuildMessageUpdateEvent) {
         if (event.member?.user == event.jda.selfUser) {
             return
@@ -57,6 +59,10 @@ class WordFiltering(
     }
 
     override fun onGuildMessageReceived(event: GuildMessageReceivedEvent) {
+        doFilter()
+    }
+
+    fun doFilter(event: GenericGuildEvent) {
         if (event.member?.user == event.jda.selfUser) {
             return
         }
@@ -98,17 +104,9 @@ class WordFiltering(
         }
     }
 
-    override fun onReady(event: ReadyEvent) {
-        event.jda.addEventListener(RemoveWord(), ListWords())
-    }
-
-    inner class RemoveWord : CommandModule(
-        arrayOf("RemoveWordFilter"),
-        "[word]",
-        "Removes the word from the filter",
-        requiredPermissions = arrayOf(Permission.MESSAGE_MANAGE)
-    ) {
-        override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+    @Deprecated("TODO remove", level = DeprecationLevel.ERROR)
+    inner class RemoveWord : ListenerAdapter() {
+        fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
             if (arguments == null || arguments.contains(' ')) {
                 throw IllegalArgumentException("One word is required to remove a word from the filter")
             }
@@ -118,17 +116,53 @@ class WordFiltering(
         }
     }
 
-    inner class ListWords : CommandModule(
-        arrayOf("ListWordFilters"),
-        null,
-        "List all the black listed words",
-        requiredPermissions = arrayOf(Permission.MESSAGE_MANAGE)
-    ) {
-        override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+    @Deprecated("TODO remove", level = DeprecationLevel.ERROR)
+    inner class ListWords : ListenerAdapter() {
+        fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
             val blackListedWords =
                 blackListedWordRepository.findAllByGuildId(event.guild.idLong).toCollection(arrayListOf())
             event.channel.sendMessage("The following words are blacklisted: \n${blackListedWords.joinToString("\n")}")
                 .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
         }
+    }
+
+    override fun onSlashCommand(event: SlashCommandEvent) {
+        if (event.guild == null && event.name != "wordFilter") {
+            return
+        }
+
+        if (event.subcommandName == "list") {
+            TODO()
+        }
+
+        if (event.subcommandName == "add") {
+            val regex = event.getOption("regex")?.asString
+            TODO()
+        }
+
+        if (event.subcommandName == "remove") {
+            TODO()
+        }
+    }
+
+    override fun getCommandsData(): List<CommandData> {
+        return listOf(
+            CommandData("wordFilter", "Configure and control word filtering")
+                .addSubcommands(
+                    SubcommandData("list", "lists all the filters"),
+
+                    SubcommandData("add", "add a filter")
+                        .addOptions(OptionData(OptionType.STRING, "regex", "The regex expression to add")),
+
+                    SubcommandData("remove", "remove a filter")
+                        .addOptions(
+                            OptionData(
+                                OptionType.INTEGER,
+                                "index",
+                                "Integer from the list of filters to remove"
+                            )
+                        )
+                )
+        )
     }
 }

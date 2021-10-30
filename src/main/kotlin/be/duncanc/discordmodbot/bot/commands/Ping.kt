@@ -19,12 +19,13 @@ package be.duncanc.discordmodbot.bot.commands
 import net.dv8tion.jda.api.events.ReadyEvent
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
+import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import org.springframework.stereotype.Component
 
 @Component
-class Ping : ListenerAdapter() {
+class Ping : ListenerAdapter(), Command {
     companion object {
-        private val ALIASES = arrayOf("Ping")
+        private const val COMMAND = "ping"
         private const val DESCRIPTION = "responds with \"pong!\"."
     }
 
@@ -47,4 +48,10 @@ The REST API responded within $ping milliseconds"""
         }
 
     }
+
+    override fun getCommandsData(): List<CommandData> {
+        return listOf(CommandData(COMMAND, DESCRIPTION))
+    }
+
+
 }

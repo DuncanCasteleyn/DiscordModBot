@@ -16,6 +16,7 @@
 
 package be.duncanc.discordmodbot.bot.commands
 
+import be.duncanc.discordmodbot.bot.sequences.Sequence
 import be.duncanc.discordmodbot.data.services.UserBlockService
 import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission
@@ -40,13 +41,7 @@ import java.util.concurrent.TimeUnit
  * @property cleanCommandMessage Allows you to enable or disable cleaning up commands.
  * @since 1.0.0
  */
-@Deprecated(
-    "To be replaced with onSlashCommand function from ListenerAdapter",
-    replaceWith = ReplaceWith(
-        "ListenerAdapter()",
-        "net.dv8tion.jda.api.hooks.ListenerAdapter"
-    )
-)
+@Deprecated("To be replaced with onSlashCommand function from ListenerAdapter")
 abstract class CommandModule
 @JvmOverloads protected constructor(
     internal open val aliases: Array<String>,
