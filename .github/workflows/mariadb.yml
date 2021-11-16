@@ -27,6 +27,8 @@ jobs:
         with:
           java-version: 16.x
           distribution: temurin
+      - name: Gradle Wrapper Validation
+        uses: gradle/wrapper-validation-action@v1.0.4
       - uses: actions/cache@v2.1.6
         with:
           path: |
@@ -41,4 +43,4 @@ jobs:
           SPRING_DATASOURCE_USERNAME: spring
           SPRING_DATASOURCE_PASSWORD: test
           SPRING_DATASOURCE_DRIVERCLASSNAME: 'org.mariadb.jdbc.Driver'
-        run: ./gradlew check --no-daemon --info
+        run: ./gradlew check --no-daemon --no-watch-fs --info
