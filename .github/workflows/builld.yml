@@ -14,6 +14,8 @@ jobs:
         with:
           java-version: 16.x
           distribution: temurin
+      - name: Gradle Wrapper Validation
+        uses: gradle/wrapper-validation-action@v1.0.4
       - uses: actions/cache@v2.1.6
         with:
           path: |
@@ -23,4 +25,4 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
       - name: Build
-        run: ./gradlew build --no-daemon --info
+        run: ./gradlew build --no-daemon --no-watch-fs --info
