@@ -25,7 +25,7 @@ jobs:
       - name: Setup Java JDK
         uses: actions/setup-java@v2.3.1
         with:
-          java-version: 16.x
+          java-version: 17.x
           distribution: temurin
       - name: Gradle Wrapper Validation
         uses: gradle/wrapper-validation-action@v1.0.4
