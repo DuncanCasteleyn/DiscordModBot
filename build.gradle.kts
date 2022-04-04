@@ -18,13 +18,14 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 plugins {
-    val kotlinVersion = "1.6.10"
+    val kotlinVersion = "1.6.20"
 
     id("org.springframework.boot") version "2.6.6"
     id("io.spring.dependency-management") version "1.0.11.RELEASE"
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.spring") version kotlinVersion
     kotlin("plugin.jpa") version kotlinVersion
+    kotlin("kapt") version kotlinVersion
 }
 
 
@@ -49,6 +50,13 @@ dependencies {
     testImplementation(group = "org.mockito.kotlin", name = "mockito-kotlin", version = "3.2.0")
 
     annotationProcessor(group = "org.springframework.boot", name = "spring-boot-configuration-processor")
+    kapt(group = "org.springframework.boot", name = "spring-boot-configuration-processor")
+}
+
+configurations {
+    compileOnly {
+        extendsFrom(configurations.annotationProcessor.get())
+    }
 }
 
 repositories {
@@ -69,7 +77,6 @@ tasks {
         useJUnitPlatform()
     }
     withType<KotlinCompile> {
-        dependsOn(processResources)
         kotlinOptions {
             freeCompilerArgs = listOf("-Xjsr305=strict", "-progressive")
             jvmTarget = "17"
@@ -79,7 +86,6 @@ tasks {
         gradleVersion = "7.4.2"
     }
     withType<JavaCompile> {
-        dependsOn(processResources)
         options.encoding = "UTF-8"
         options.compilerArgs.add("-Xlint:deprecation")
     }

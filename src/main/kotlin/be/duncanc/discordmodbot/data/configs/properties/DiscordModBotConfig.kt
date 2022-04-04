@@ -17,17 +17,15 @@
 package be.duncanc.discordmodbot.data.configs.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.stereotype.Component
+import org.springframework.boot.context.properties.ConstructorBinding
 import org.springframework.validation.annotation.Validated
 import javax.validation.constraints.NotEmpty
-import javax.validation.constraints.NotNull
 
-@Component
 @ConfigurationProperties("discord-mod-bot")
+@ConstructorBinding
 @Validated
 class DiscordModBotConfig(
-    @field:NotNull
-    var ownerId: Long? = null,
+    val ownerId: Long = throw IllegalStateException("ownerId not configured"),
     @field:NotEmpty
-    var botToken: String? = null
+    val botToken: String = throw IllegalStateException("botToken not configured"),
 )
