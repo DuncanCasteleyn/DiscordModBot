@@ -34,6 +34,7 @@ dependencies {
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-validation")
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-data-redis")
     implementation(group = "org.flywaydb", name = "flyway-core")
+    implementation(group = "org.flywaydb", name = "flyway-mysql")
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-reflect")
