@@ -18,10 +18,10 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 plugins {
-    val kotlinVersion = "1.6.20"
+    val kotlinVersion = "1.7.10"
 
-    id("org.springframework.boot") version "2.6.6"
-    id("io.spring.dependency-management") version "1.0.11.RELEASE"
+    id("org.springframework.boot") version "2.7.3"
+    id("io.spring.dependency-management") version "1.0.13.RELEASE"
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.spring") version kotlinVersion
     kotlin("plugin.jpa") version kotlinVersion
@@ -40,8 +40,8 @@ dependencies {
     implementation(group = "net.dv8tion", name = "JDA", version = "4.3.0_277") {
         exclude(group = "club.minnced", module = "opus-java")
     }
-    implementation(group = "org.apache.commons", name = "commons-collections4", version = "4.2")
-    implementation(group = "org.json", name = "json", version = "20190722")
+    implementation(group = "org.apache.commons", name = "commons-collections4", version = "4.3")
+    implementation(group = "org.json", name = "json", version = "20200518")
 
     runtimeOnly(group = "com.h2database", name = "h2")
     runtimeOnly(group = "org.mariadb.jdbc", name = "mariadb-java-client")
@@ -83,11 +83,14 @@ tasks {
         }
     }
     withType<Wrapper> {
-        gradleVersion = "7.4.2"
+        gradleVersion = "7.5.1"
     }
     withType<JavaCompile> {
         options.encoding = "UTF-8"
         options.compilerArgs.add("-Xlint:deprecation")
+    }
+    withType<Jar> {
+        enabled = false
     }
     withType<BootJar> {
         requiresUnpack("**/*.jar")
