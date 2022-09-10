@@ -31,7 +31,6 @@ import java.time.Duration
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.TimeUnit
-import kotlin.collections.HashMap
 
 /**
  * an abstract class that can be used to listen for commands.
@@ -42,6 +41,7 @@ import kotlin.collections.HashMap
  * @property cleanCommandMessage Allows you to enable or disable cleaning up commands.
  * @since 1.0.0
  */
+@Deprecated("To be replaced with onSlashCommand function from ListenerAdapter")
 abstract class CommandModule
 @JvmOverloads protected constructor(
     internal open val aliases: Array<String>,

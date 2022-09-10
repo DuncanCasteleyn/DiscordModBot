@@ -1,5 +1,6 @@
 package be.duncanc.discordmodbot.bot.config
 
+import be.duncanc.discordmodbot.bot.commands.Command
 import be.duncanc.discordmodbot.data.configs.properties.DiscordModBotConfig
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.JDABuilder
@@ -26,13 +27,22 @@ class BotConfiguration {
     @Bean(destroyMethod = "shutdown")
     fun jda(
         listenerAdapters: Array<ListenerAdapter>,
+        commands: Array<Command>,
         discordModBotConfig: DiscordModBotConfig
     ): JDA {
-        return JDABuilder.create(discordModBotConfig.botToken, INTENTS)
+        val jda = JDABuilder.create(discordModBotConfig.botToken, INTENTS)
             .setBulkDeleteSplittingEnabled(false)
             .disableCache(CacheFlag.VOICE_STATE)
             .addEventListeners(*listenerAdapters)
             .setEnableShutdownHook(false)
             .build()
+
+        val updateCommands = jda.updateCommands()
+        commands.forEach {
+            updateCommands.addCommands(it.getCommandsData())
+        }
+        updateCommands.queue()
+
+        return jda
     }
 }

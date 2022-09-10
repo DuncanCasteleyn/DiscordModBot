@@ -36,6 +36,9 @@ import java.util.concurrent.TimeUnit
  *
  * @since 1.1.0
  */
+@Deprecated(
+    "To be replaced with onSlashCommand function from ListenerAdapter"
+)
 abstract class Sequence
 @JvmOverloads protected constructor(
     val user: User,

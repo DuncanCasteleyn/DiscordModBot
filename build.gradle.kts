@@ -34,10 +34,11 @@ dependencies {
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-validation")
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-data-redis")
     implementation(group = "org.flywaydb", name = "flyway-core")
+    implementation(group = "org.flywaydb", name = "flyway-mysql")
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-reflect")
-    implementation(group = "net.dv8tion", name = "JDA", version = "4.3.0_277") {
+    implementation(group = "net.dv8tion", name = "JDA", version = "4.3.0_339") {
         exclude(group = "club.minnced", module = "opus-java")
     }
     implementation(group = "org.apache.commons", name = "commons-collections4", version = "4.3")
@@ -47,7 +48,7 @@ dependencies {
     runtimeOnly(group = "org.mariadb.jdbc", name = "mariadb-java-client")
 
     testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-test")
-    testImplementation(group = "org.mockito.kotlin", name = "mockito-kotlin", version = "3.2.0")
+    testImplementation(group = "org.mockito.kotlin", name = "mockito-kotlin", version = "4.0.0")
 
     annotationProcessor(group = "org.springframework.boot", name = "spring-boot-configuration-processor")
     kapt(group = "org.springframework.boot", name = "spring-boot-configuration-processor")
