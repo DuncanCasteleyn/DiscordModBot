@@ -734,16 +734,17 @@ class GuildLogger
                 logEmbed.setFooter(associatedUser.id, associatedUser.effectiveAvatarUrl)
             }
             if (bytes == null) {
-                targetChannel.sendMessage(logEmbed.build()).queue()
+                targetChannel.sendMessageEmbeds(logEmbed.build()).queue()
             } else {
                 targetChannel.sendFile(bytes, "chat.log").queue {
-                    it.editMessage(MessageBuilder().setEmbed(logEmbed.build()).build()).queue()
+                    it.editMessage(MessageBuilder().setEmbeds(logEmbed.build()).build()).queue()
                 }
             }
             if (embeds != null) {
                 for (embed in embeds) {
                     targetChannel.sendMessage(
-                        MessageBuilder().setEmbed(embed).append("The embed below was deleted with the previous message")
+                        MessageBuilder().setEmbeds(embed)
+                            .append("The embed below was deleted with the previous message")
                             .build()
                     )
                         .queue()

@@ -71,7 +71,7 @@ class Help(
         }
 
         helpEmbeds.forEach { embedBuilder ->
-            event.channel.sendMessage(embedBuilder.build()).queue()
+            event.channel.sendMessageEmbeds(embedBuilder.build()).queue()
         }
     }
 }

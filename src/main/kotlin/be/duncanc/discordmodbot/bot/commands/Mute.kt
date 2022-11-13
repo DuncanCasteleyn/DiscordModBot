@@ -92,7 +92,7 @@ class Mute
 
                 toMute.user.openPrivateChannel().queue(
                     { privateChannelUserToMute ->
-                        privateChannelUserToMute.sendMessage(userMuteWarning.build()).queue(
+                        privateChannelUserToMute.sendMessageEmbeds(userMuteWarning.build()).queue(
                             { onSuccessfulInformUser(privateChannel, toMute, userMuteWarning.build()) }
                         ) { throwable -> onFailToInformUser(privateChannel, toMute, throwable) }
                     }
@@ -126,7 +126,7 @@ class Mute
 
         val creatorMessage = MessageBuilder()
             .append("Muted ").append(toMute.toString()).append(".\n\nThe following message was sent to the user:")
-            .setEmbed(userMuteWarning)
+            .setEmbeds(userMuteWarning)
             .build()
         privateChannel.sendMessage(creatorMessage).queue()
     }

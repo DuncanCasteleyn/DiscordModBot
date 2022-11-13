@@ -130,7 +130,7 @@ class ScheduledUnmuteService(
             .addField("Reason", "Mute expired", false)
             .build()
         member.user.openPrivateChannel().queue {
-            it.sendMessage(embed).queue()
+            it.sendMessageEmbeds(embed).queue()
         }
     }
 }

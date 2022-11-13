@@ -77,7 +77,7 @@ class Kick : CommandModule(
 
             toKick.user.openPrivateChannel().queue(
                 { privateChannelUserToMute ->
-                    privateChannelUserToMute.sendMessage(userKickNotification).queue(
+                    privateChannelUserToMute.sendMessageEmbeds(userKickNotification).queue(
                         { message: Message ->
                             onSuccessfulInformUser(event, reason, privateChannel, toKick, message, kickRestAction)
                         }
@@ -127,7 +127,7 @@ class Kick : CommandModule(
 
             val creatorMessage = MessageBuilder()
                 .append("Kicked ").append(toKick.toString()).append(".\n\nThe following message was sent to the user:")
-                .setEmbed(userKickWarning.embeds[0])
+                .setEmbeds(userKickWarning.embeds)
                 .build()
             privateChannel.sendMessage(creatorMessage).queue()
         }) { throwable ->
@@ -140,7 +140,7 @@ class Kick : CommandModule(
                 .append("Kick failed ").append(toKick.toString())
                 .append(throwable.javaClass.simpleName).append(": ").append(throwable.message)
                 .append(".\n\nThe following message was sent to the user but was automatically deleted:")
-                .setEmbed(userKickWarning.embeds[0])
+                .setEmbeds(userKickWarning.embeds)
                 .build()
             privateChannel.sendMessage(creatorMessage).queue()
         }

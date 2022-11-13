@@ -97,10 +97,10 @@ class Quote(
                 .setDescription(responseString)
                 .setFooter("Posted by ${event.member}", event.author.effectiveAvatarUrl)
         }
-        event.textChannel.sendMessage(quoteEmbed.build()).queue()
+        event.textChannel.sendMessageEmbeds(quoteEmbed.build()).queue()
 
         if (responseEmbed != null) {
-            event.textChannel.sendMessage(responseEmbed.build()).queue()
+            event.textChannel.sendMessageEmbeds(responseEmbed.build()).queue()
         }
     }
 }

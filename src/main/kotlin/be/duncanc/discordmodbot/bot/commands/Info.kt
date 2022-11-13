@@ -50,6 +50,6 @@ class Info(
      * Sends information about the bot to the user.
      */
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-        event.author.openPrivateChannel().queue { it.sendMessage(INFO_MESSAGE).queue() }
+        event.author.openPrivateChannel().queue { it.sendMessageEmbeds(INFO_MESSAGE).queue() }
     }
 }

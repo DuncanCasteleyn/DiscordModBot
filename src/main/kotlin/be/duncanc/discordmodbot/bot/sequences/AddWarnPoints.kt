@@ -311,7 +311,7 @@ class AddWarnPoints(
 
         toInform.user.openPrivateChannel().queue(
             { privateChannelUserToWarn ->
-                privateChannelUserToWarn.sendMessage(userWarning.build()).queue(
+                privateChannelUserToWarn.sendMessageEmbeds(userWarning.build()).queue(
                     { onSuccessfulInformUser(moderatorPrivateChannel, toInform, userWarning.build()) }
                 ) { throwable -> onFailToInformUser(moderatorPrivateChannel, toInform, throwable) }
             }
@@ -326,7 +326,7 @@ class AddWarnPoints(
         val creatorMessage = MessageBuilder()
             .append("Added warn points to ").append(toInform.toString())
             .append(".\n\nThe following message was sent to the user:")
-            .setEmbed(informationMessage)
+            .setEmbeds(informationMessage)
             .build()
         privateChannel.sendMessage(creatorMessage).queue()
     }

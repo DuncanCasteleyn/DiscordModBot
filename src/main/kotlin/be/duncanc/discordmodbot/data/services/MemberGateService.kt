@@ -207,7 +207,7 @@ class MemberGateService(
                         .build()
                     member.user.openPrivateChannel().queue(
                         {
-                            it.sendMessage(userKickNotification)
+                            it.sendMessageEmbeds(userKickNotification)
                                 .queue({ guild.kick(member).queue() }, { guild.kick(member).queue() })
                         },
                         {

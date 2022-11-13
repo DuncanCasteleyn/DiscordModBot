@@ -101,7 +101,7 @@ class Feedback
                     .setFooter(user.id, null)
                     .setTimestamp(OffsetDateTime.now())
                     .setColor(Color.GREEN)
-                guild!!.getTextChannelById(feedbackChannel)!!.sendMessage(embedBuilder.build()).queue()
+                guild!!.getTextChannelById(feedbackChannel)!!.sendMessageEmbeds(embedBuilder.build()).queue()
                 channel.sendMessage("Your feedback has been transferred to the moderators.\n\nThank you for helping us.")
                     .queue()
                 super.destroy()

@@ -91,7 +91,7 @@ class UserInfo(
                                 true
                             )
                             .build()
-                        privateChannel.sendMessage(userDateMessage).queue()
+                        privateChannel.sendMessageEmbeds(userDateMessage).queue()
                         targetFound = true
                         break
                     }

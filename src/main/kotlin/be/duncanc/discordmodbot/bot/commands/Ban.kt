@@ -149,7 +149,7 @@ class Ban : CommandModule(
 
             val creatorMessage = MessageBuilder()
                 .append("Banned ").append(toBan.toString()).append(".\n\nThe following message was sent to the user:")
-                .setEmbed(userBanWarning.embeds[0])
+                .setEmbeds(userBanWarning.embeds)
                 .build()
             privateChannel.sendMessage(creatorMessage).queue()
         }) { throwable ->
@@ -162,7 +162,7 @@ class Ban : CommandModule(
                 .append("Ban failed on ").append(toBan.toString())
                 .append(throwable.javaClass.simpleName).append(": ").append(throwable.message)
                 .append(".\n\nThe following message was sent to the user but was automatically deleted:")
-                .setEmbed(userBanWarning.embeds[0])
+                .setEmbeds(userBanWarning.embeds)
                 .build()
             privateChannel.sendMessage(creatorMessage).queue()
         }

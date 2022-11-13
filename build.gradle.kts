@@ -18,10 +18,10 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 plugins {
-    val kotlinVersion = "1.7.10"
+    val kotlinVersion = "1.7.21"
 
-    id("org.springframework.boot") version "2.7.3"
-    id("io.spring.dependency-management") version "1.0.13.RELEASE"
+    id("org.springframework.boot") version "2.7.5"
+    id("io.spring.dependency-management") version "1.1.0"
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.spring") version kotlinVersion
     kotlin("plugin.jpa") version kotlinVersion
@@ -38,11 +38,11 @@ dependencies {
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8")
     implementation(group = "org.jetbrains.kotlin", name = "kotlin-reflect")
-    implementation(group = "net.dv8tion", name = "JDA", version = "4.3.0_339") {
+    implementation(group = "net.dv8tion", name = "JDA", version = "4.4.0_350") {
         exclude(group = "club.minnced", module = "opus-java")
     }
-    implementation(group = "org.apache.commons", name = "commons-collections4", version = "4.3")
-    implementation(group = "org.json", name = "json", version = "20200518")
+    implementation(group = "org.apache.commons", name = "commons-collections4", version = "4.4")
+    implementation(group = "org.json", name = "json", version = "20220924")
 
     runtimeOnly(group = "com.h2database", name = "h2")
     runtimeOnly(group = "org.mariadb.jdbc", name = "mariadb-java-client")

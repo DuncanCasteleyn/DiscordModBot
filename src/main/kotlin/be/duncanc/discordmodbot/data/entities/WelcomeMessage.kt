@@ -38,7 +38,7 @@ data class WelcomeMessage(
             .build()
         return MessageBuilder()
             .append(user.asMention)
-            .setEmbed(joinEmbed)
+            .setEmbeds(joinEmbed)
             .build()
     }
 

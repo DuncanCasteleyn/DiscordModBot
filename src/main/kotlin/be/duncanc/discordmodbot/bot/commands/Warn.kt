@@ -94,7 +94,7 @@ class Warn
 
             toWarn.user.openPrivateChannel().queue(
                 { privateChannelUserToWarn ->
-                    privateChannelUserToWarn.sendMessage(userWarning.build()).queue(
+                    privateChannelUserToWarn.sendMessageEmbeds(userWarning.build()).queue(
                         { onSuccessfulWarnUser(privateChannel!!, toWarn, userWarning.build()) }
                     ) { throwable -> onFailToWarnUser(privateChannel!!, toWarn, throwable) }
                 }
@@ -105,7 +105,7 @@ class Warn
     private fun onSuccessfulWarnUser(privateChannel: PrivateChannel, toWarn: Member, userWarning: MessageEmbed) {
         val creatorMessage = MessageBuilder()
             .append("Warned ").append(toWarn.toString()).append(".\n\nThe following message was sent to the user:")
-            .setEmbed(userWarning)
+            .setEmbeds(userWarning)
             .build()
         privateChannel.sendMessage(creatorMessage).queue()
     }

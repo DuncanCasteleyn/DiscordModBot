@@ -97,7 +97,7 @@ class RemoveMute : CommandModule(
 
                     toRemoveMute.user.openPrivateChannel().queue(
                         { privateChannelUserToRemoveMute ->
-                            privateChannelUserToRemoveMute.sendMessage(muteRemoveNotification).queue(
+                            privateChannelUserToRemoveMute.sendMessageEmbeds(muteRemoveNotification).queue(
                                 { onSuccessfulInformUser(privateChannel, toRemoveMute, muteRemoveNotification) }
                             ) { throwable -> onFailToInformUser(privateChannel, toRemoveMute, throwable) }
                         }
@@ -128,7 +128,7 @@ class RemoveMute : CommandModule(
         val creatorMessage = MessageBuilder()
             .append("Removed mute from ").append(toRemoveMute.toString())
             .append(".\n\nThe following message was sent to the user:")
-            .setEmbed(muteRemoveNotification)
+            .setEmbeds(muteRemoveNotification)
             .build()
         privateChannel.sendMessage(creatorMessage).queue()
     }
