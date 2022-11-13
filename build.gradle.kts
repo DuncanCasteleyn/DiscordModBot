@@ -90,7 +90,7 @@ tasks {
         options.encoding = "UTF-8"
         options.compilerArgs.add("-Xlint:deprecation")
     }
-    withType<Jar> {
+    named<Jar>("jar") {
         enabled = false
     }
     withType<BootJar> {
