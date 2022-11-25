@@ -1,5 +1,7 @@
 package be.duncanc.discordmodbot.data.entities
 
+import jakarta.persistence.*
+import jakarta.validation.constraints.NotBlank
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.entities.Message
@@ -7,8 +9,6 @@ import net.dv8tion.jda.api.entities.User
 import org.springframework.validation.annotation.Validated
 import java.awt.Color
 import java.io.Serializable
-import javax.persistence.*
-import javax.validation.constraints.NotBlank
 
 @IdClass(WelcomeMessage.WelcomeMessageId::class)
 @Validated
