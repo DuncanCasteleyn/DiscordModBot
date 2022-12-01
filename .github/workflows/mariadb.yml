@@ -28,7 +28,7 @@ jobs:
           java-version: 17.x
           distribution: temurin
       - name: Gradle Wrapper Validation
-        uses: gradle/wrapper-validation-action@v1.0.4
+        uses: gradle/wrapper-validation-action@v1.0.5
       - uses: actions/cache@v2.1.7
         with:
           path: |
