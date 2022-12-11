@@ -16,10 +16,10 @@
 
 package be.duncanc.discordmodbot.data.entities
 
-import jakarta.persistence.*
-import jakarta.validation.constraints.NotNull
 import java.io.Serializable
 import java.util.*
+import javax.persistence.*
+import javax.validation.constraints.NotNull
 
 @Entity
 @Table(name = "i_am_roles_categories")
