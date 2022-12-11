@@ -7,6 +7,7 @@ import be.duncanc.discordmodbot.data.entities.MuteRole
 import be.duncanc.discordmodbot.data.entities.ScheduledUnmute
 import be.duncanc.discordmodbot.data.repositories.jpa.MuteRolesRepository
 import be.duncanc.discordmodbot.data.repositories.jpa.ScheduledUnmuteRepository
+import jakarta.transaction.Transactional
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Guild
@@ -17,7 +18,6 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.awt.Color
 import java.time.OffsetDateTime
-import javax.transaction.Transactional
 
 @Service
 class ScheduledUnmuteService(
