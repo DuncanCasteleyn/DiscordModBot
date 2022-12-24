@@ -6,8 +6,8 @@ on:
     branches: [ master ]
 jobs:
   test:
+    timeout-minutes: 30
     runs-on: ubuntu-latest
-
     services:
       mariadb:
         image: mariadb:latest
