@@ -17,7 +17,7 @@ jobs:
           distribution: temurin
       - name: Gradle Wrapper Validation
         uses: gradle/wrapper-validation-action@v1.0.5
-      - uses: actions/cache@v3.2.1
+      - uses: actions/cache@v3.2.2
         with:
           path: |
             ~/.gradle/caches
