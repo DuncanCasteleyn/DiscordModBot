@@ -30,14 +30,15 @@ plugins {
 
 
 dependencies {
+    implementation(kotlin("stdlib"))
+    implementation(kotlin("reflect"))
+
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-data-jpa")
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-validation")
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-data-redis")
     implementation(group = "org.flywaydb", name = "flyway-core")
     implementation(group = "org.flywaydb", name = "flyway-mysql")
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin")
-    implementation(group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8")
-    implementation(group = "org.jetbrains.kotlin", name = "kotlin-reflect")
     implementation(group = "net.dv8tion", name = "JDA", version = "4.4.0_352") {
         exclude(group = "club.minnced", module = "opus-java")
     }
