@@ -1,7 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base"
-  ],
-  "draftPR": true
+    "config:base",
+    ":timezone(Europe/Brussels)",
+    "schedule:nonOfficeHours"
+  ]
 }
