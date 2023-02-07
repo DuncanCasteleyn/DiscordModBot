@@ -1,9 +1,9 @@
 name: Test MariaDB
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 jobs:
   test:
     timeout-minutes: 30
@@ -29,7 +29,7 @@ jobs:
           distribution: temurin
       - name: Gradle Wrapper Validation
         uses: gradle/wrapper-validation-action@v1.0.5
-      - uses: actions/cache@v3.2.3
+      - uses: actions/cache@v3.2.4
         with:
           path: |
             ~/.gradle/caches
