@@ -1,13 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base",
-    ":timezone(Europe/Brussels)",
-    "schedule:nonOfficeHours",
-    ":label(dependencies)",
-    ":automergeMinor",
-    ":automergePr"
-  ],
-  "automergeStrategy": "squash",
-  "platformAutomerge": true
+    "local>DuncanCasteleyn/.github:renovate-config"
+  ]
 }
