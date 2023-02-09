@@ -3,6 +3,11 @@
   "extends": [
     "config:base",
     ":timezone(Europe/Brussels)",
-    "schedule:nonOfficeHours"
-  ]
+    "schedule:nonOfficeHours",
+    ":label(dependencies)",
+    ":automergeMinor",
+    ":automergePr"
+  ],
+  "automergeStrategy": "squash",
+  "platformAutomerge": true
 }
