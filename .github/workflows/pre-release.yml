@@ -26,6 +26,6 @@ jobs:
         with:
           release-type: java
           bootstrap-sha: '19b9ecc915c079bc292b9e2769bcd156657234da'
-          pre-release: true
+          prerelease: true
           extra-files: |
             version.txt
