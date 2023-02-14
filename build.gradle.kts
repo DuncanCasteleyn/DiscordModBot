@@ -102,4 +102,4 @@ tasks {
 }
 
 project.group = "be.duncanc"
-project.version = "2.0.0"
+project.version = file("version.txt").readText().trim()
