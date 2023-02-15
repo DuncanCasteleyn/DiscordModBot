@@ -1,46 +1,49 @@
 name: Test MariaDB
+
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+
+permissions:
+  contents: read
+
 jobs:
   test:
     timeout-minutes: 30
     runs-on: ubuntu-latest
+
     services:
       mariadb:
         image: mariadb:latest
         ports:
           - 3306:3306
         env:
-          MYSQL_USER: spring
-          MYSQL_PASSWORD: test
-          MYSQL_DATABASE: discordmodbot
-          MYSQL_ROOT_PASSWORD: test
+          MYSQL_USER: 'spring'
+          MYSQL_PASSWORD: 'test'
+          MYSQL_DATABASE: 'discordmodbot'
+          MYSQL_ROOT_PASSWORD: 'test'
         options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
 
     steps:
       - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+
       - name: Setup Java JDK
         uses: actions/setup-java@3f07048e3d294f56e9b90ac5ea2c6f74e9ad0f98 # v3.10.0
         with:
-          java-version: 17.x
-          distribution: temurin
+          java-version: '17'
+          distribution: 'temurin'
+
       - name: Gradle Wrapper Validation
         uses: gradle/wrapper-validation-action@55e685c48d84285a5b0418cd094606e199cca3b6 # v1.0.5
-      - uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812 # v3.2.5
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+
       - name: Run Gradle check
+        uses: gradle/gradle-build-action@v2.3.3
         env:
           SPRING_DATASOURCE_URL: 'jdbc:mariadb://127.0.0.1:3306/discordmodbot'
-          SPRING_DATASOURCE_USERNAME: spring
-          SPRING_DATASOURCE_PASSWORD: test
+          SPRING_DATASOURCE_USERNAME: 'spring'
+          SPRING_DATASOURCE_PASSWORD: 'test'
           SPRING_DATASOURCE_DRIVERCLASSNAME: 'org.mariadb.jdbc.Driver'
-        run: ./gradlew check --no-daemon --no-watch-fs --info
+        with:
+          arguments: check
