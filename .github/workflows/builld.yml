@@ -27,6 +27,6 @@ jobs:
         uses: gradle/wrapper-validation-action@55e685c48d84285a5b0418cd094606e199cca3b6 # v1.0.5
 
       - name: Run Gradle check
-        uses: gradle/gradle-build-action@v2.3.3
+        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # v2.3.3
         with:
           arguments: build
