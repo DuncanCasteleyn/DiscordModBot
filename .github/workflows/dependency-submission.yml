@@ -1,0 +1,22 @@
+name: Dependency Submission
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  Dependency_Submission:
+    name: Dependency Submission
+    runs-on: ubuntu-latest
+    
+    permissions: # The Dependency Submission API requires write permission
+      contents: write
+
+    steps:
+      - name: Root Gradle Dependency Submission
+        uses: mikepenz/gradle-dependency-submission@v0.8.4
+        with:
+          gradle-build-module: |-
+            :
+          gradle-build-configuration: |-
+            compileClasspath
