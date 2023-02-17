@@ -1,17 +1,19 @@
-name: 'Validate Renovate config'
+name: Validate Renovate config
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - main
 
 permissions:
   contents: read
 
 jobs:
   validate-renovate-config:
-    name: 'Validate Renovate config'
+    name: Validate Renovate config
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -26,7 +28,7 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3.6.0
         with:
-          node-version: '18'
+          node-version: lts/*
 
       - name: Validate Renovate config
         run: npx --package renovate -c renovate-config-validator
