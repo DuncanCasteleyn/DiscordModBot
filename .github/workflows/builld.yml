@@ -2,9 +2,11 @@ name: Build
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -20,8 +22,8 @@ jobs:
       - name: Setup Java JDK
         uses: actions/setup-java@3f07048e3d294f56e9b90ac5ea2c6f74e9ad0f98 # v3.10.0
         with:
-          java-version: '17'
-          distribution: 'temurin'
+          java-version: 17
+          distribution: liberica
 
       - name: Gradle Wrapper Validation
         uses: gradle/wrapper-validation-action@55e685c48d84285a5b0418cd094606e199cca3b6 # v1.0.5

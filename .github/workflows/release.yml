@@ -1,16 +1,16 @@
-name: 'Create release'
+name: Create release
 
 on:
   push:
     branches:
-      - production
+      - main
 
 concurrency:
   group: ${{ github.workflow }}
 
 jobs:
   release_please:
-    name: "Run Release Please"
+    name: Run Release Please
     runs-on: ubuntu-latest
 
     permissions:
@@ -25,6 +25,6 @@ jobs:
         id: release
         with:
           release-type: java
-          bootstrap-sha: '19b9ecc915c079bc292b9e2769bcd156657234da'
+          bootstrap-sha: 19b9ecc915c079bc292b9e2769bcd156657234da
           extra-files: |
             version.txt

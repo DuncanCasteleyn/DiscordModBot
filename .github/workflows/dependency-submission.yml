@@ -2,7 +2,8 @@ name: Dependency Submission
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
 
 jobs:
   Dependency_Submission:
@@ -18,8 +19,8 @@ jobs:
       - name: Setup Java JDK
         uses: actions/setup-java@3f07048e3d294f56e9b90ac5ea2c6f74e9ad0f98 # v3.10.0
         with:
-          java-version: '17'
-          distribution: 'temurin'
+          java-version: 17
+          distribution: liberica
 
       - name: Root Gradle Dependency Submission
         uses: mikepenz/gradle-dependency-submission@a77cc609d71402e57dc0a6240dd8e4f1c30066aa # v0.8.4
