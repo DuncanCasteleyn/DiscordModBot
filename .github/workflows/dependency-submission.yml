@@ -25,7 +25,5 @@ jobs:
       - name: Root Gradle Dependency Submission
         uses: mikepenz/gradle-dependency-submission@a77cc609d71402e57dc0a6240dd8e4f1c30066aa # v0.8.4
         with:
-          gradle-build-module: |-
-            :
-          gradle-build-configuration: |-
-            compileClasspath
+          gradle-build-module: ':'
+          gradle-build-configuration: compileClasspath

@@ -4,9 +4,13 @@ on:
   push:
     branches:
       - main
+    paths:
+      - renovate.json
   pull_request:
     branches:
       - main
+    paths:
+      - renovate.json
 
 permissions:
   contents: read
