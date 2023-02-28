@@ -23,7 +23,7 @@ jobs:
           distribution: liberica
 
       - name: Root Gradle Dependency Submission
-        uses: mikepenz/gradle-dependency-submission@a77cc609d71402e57dc0a6240dd8e4f1c30066aa # v0.8.4
+        uses: mikepenz/gradle-dependency-submission@5aac1cd48a5099fd4375e5755bd0fdf214d974d1 # v0.8.5
         with:
           gradle-build-module: ':'
           gradle-build-configuration: compileClasspath
