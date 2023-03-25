@@ -16,13 +16,11 @@
 
 package be.duncanc.discordmodbot.data.configs.properties
 
+import jakarta.validation.constraints.NotEmpty
 import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.boot.context.properties.ConstructorBinding
 import org.springframework.validation.annotation.Validated
-import javax.validation.constraints.NotEmpty
 
 @ConfigurationProperties("discord-mod-bot")
-@ConstructorBinding
 @Validated
 class DiscordModBotConfig(
     val ownerId: Long = throw IllegalStateException("ownerId not configured"),
