@@ -103,4 +103,4 @@ tasks {
 }
 
 project.group = "be.duncanc"
-project.version = file("version.txt").readText().trim()
+project.version = file("version.txt").readLines()[1]
