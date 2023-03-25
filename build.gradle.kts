@@ -20,7 +20,7 @@ import org.springframework.boot.gradle.tasks.bundling.BootJar
 plugins {
     val kotlinVersion = "1.8.10"
 
-    id("org.springframework.boot") version "3.0.2"
+    id("org.springframework.boot") version "3.0.5"
     id("io.spring.dependency-management") version "1.1.0"
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.spring") version kotlinVersion
@@ -39,11 +39,11 @@ dependencies {
     implementation(group = "org.flywaydb", name = "flyway-core")
     implementation(group = "org.flywaydb", name = "flyway-mysql")
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin")
-    implementation(group = "net.dv8tion", name = "JDA", version = "4.4.0_352") {
+    implementation(group = "net.dv8tion", name = "JDA", version = "4.4.1_353") {
         exclude(group = "club.minnced", module = "opus-java")
     }
     implementation(group = "org.apache.commons", name = "commons-collections4", version = "4.4")
-    implementation(group = "org.json", name = "json", version = "20220924")
+    implementation(group = "org.json", name = "json", version = "20230227")
 
     runtimeOnly(group = "com.h2database", name = "h2")
     runtimeOnly(group = "org.mariadb.jdbc", name = "mariadb-java-client")
@@ -69,9 +69,10 @@ repositories {
     }
 }
 
-configure<JavaPluginExtension> {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
 }
 
 tasks {
@@ -85,7 +86,7 @@ tasks {
         }
     }
     withType<Wrapper> {
-        gradleVersion = "7.6"
+        gradleVersion = "8.0.2"
     }
     withType<JavaCompile> {
         options.encoding = "UTF-8"
@@ -102,4 +103,4 @@ tasks {
 }
 
 project.group = "be.duncanc"
-project.version = "2.0.0"
+project.version = file("version.txt").readLines()[1]

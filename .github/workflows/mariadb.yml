@@ -1,13 +1,21 @@
 name: Test MariaDB
+
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+
+permissions:
+  contents: read
+
 jobs:
   test:
     timeout-minutes: 30
     runs-on: ubuntu-latest
+
     services:
       mariadb:
         image: mariadb:latest
@@ -21,26 +29,23 @@ jobs:
         options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
 
     steps:
-      - uses: actions/checkout@v3.3.0
-      - name: Setup Java JDK
-        uses: actions/setup-java@v3.9.0
-        with:
-          java-version: 17.x
-          distribution: temurin
+      - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3 # v3.5.0
+
       - name: Gradle Wrapper Validation
-        uses: gradle/wrapper-validation-action@v1.0.5
-      - uses: actions/cache@v3.2.4
+        uses: gradle/wrapper-validation-action@8d49e559aae34d3e0eb16cde532684bc9702762b # v1.0.6
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@3f07048e3d294f56e9b90ac5ea2c6f74e9ad0f98 # v3.10.0
         with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+          java-version: 17
+          distribution: liberica
+
       - name: Run Gradle check
+        uses: gradle/gradle-build-action@6095a76664413da4c8c134ee32e8a8ae900f0f1f # v2.4.0
         env:
-          SPRING_DATASOURCE_URL: 'jdbc:mariadb://127.0.0.1:3306/discordmodbot'
+          SPRING_DATASOURCE_URL: jdbc:mariadb://127.0.0.1:3306/discordmodbot
           SPRING_DATASOURCE_USERNAME: spring
           SPRING_DATASOURCE_PASSWORD: test
-          SPRING_DATASOURCE_DRIVERCLASSNAME: 'org.mariadb.jdbc.Driver'
-        run: ./gradlew check --no-daemon --no-watch-fs --info
+          SPRING_DATASOURCE_DRIVERCLASSNAME: org.mariadb.jdbc.Driver
+        with:
+          arguments: check

@@ -1,0 +1,29 @@
+name: Create release
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}
+
+jobs:
+  release_please:
+    name: Run Release Please
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write  # Required for google-github-actions/release-please-action
+      pull-requests: write # Required for google-github-actions/release-please-action
+
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+
+    steps:
+      - uses: google-github-actions/release-please-action@e0b9d1885d92e9a93d5ce8656de60e3b806e542c # v3.7.5
+        id: release
+        with:
+          release-type: java
+          bootstrap-sha: 19b9ecc915c079bc292b9e2769bcd156657234da
+          extra-files: version.txt
