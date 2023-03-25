@@ -16,7 +16,7 @@
 
 package be.duncanc.discordmodbot.data.entities
 
-import javax.persistence.*
+import jakarta.persistence.*
 
 @Entity
 @Table(name = "activity_report_settings")

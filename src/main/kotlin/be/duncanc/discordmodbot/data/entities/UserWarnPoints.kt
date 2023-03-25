@@ -16,17 +16,17 @@
 
 package be.duncanc.discordmodbot.data.entities
 
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.Id
+import jakarta.persistence.Table
+import jakarta.validation.constraints.Future
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.Positive
 import org.springframework.util.Assert
 import java.time.OffsetDateTime
 import java.util.*
-import javax.persistence.Column
-import javax.persistence.Entity
-import javax.persistence.Id
-import javax.persistence.Table
-import javax.validation.constraints.Future
-import javax.validation.constraints.NotBlank
-import javax.validation.constraints.NotNull
-import javax.validation.constraints.Positive
 
 @Entity
 @Table(name = "user_warn_points")
