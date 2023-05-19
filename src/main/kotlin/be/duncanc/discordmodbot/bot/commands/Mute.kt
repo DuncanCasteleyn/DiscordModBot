@@ -22,13 +22,13 @@ import be.duncanc.discordmodbot.bot.utils.extractReason
 import be.duncanc.discordmodbot.bot.utils.findMemberAndCheckCanInteract
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import net.dv8tion.jda.api.EmbedBuilder
-import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.MessageEmbed
-import net.dv8tion.jda.api.entities.PrivateChannel
+import net.dv8tion.jda.api.entities.channel.ChannelType
+import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Component
@@ -61,7 +61,7 @@ class Mute
             privateChannel?.sendMessage("This command only works in a guild.")?.queue()
         } else if (event.member?.hasPermission(Permission.MANAGE_ROLES) != true) {
             privateChannel?.sendMessage(event.author.asMention + " you need manage roles permission to mute!")?.queue()
-        } else if (event.message.mentionedUsers.size < 1) {
+        } else if (event.message.mentions.members.size < 1) {
             privateChannel?.sendMessage("Illegal argumentation, you need to mention a user that is still in the server.")
                 ?.queue()
         } else {
@@ -103,9 +103,9 @@ class Mute
                     return@queue
                 }
 
-                val creatorMessage = MessageBuilder()
-                    .append("Failed muting ").append(toMute.toString()).append(".\n")
-                    .append(throwable.javaClass.simpleName).append(": ").append(throwable.message)
+                val creatorMessage = MessageCreateBuilder()
+                    .addContent("Failed muting ").addContent(toMute.toString()).addContent(".\n")
+                    .addContent(throwable.javaClass.simpleName).addContent(": ").addContent(throwable.message ?: "")
                     .build()
                 privateChannel.sendMessage(creatorMessage).queue()
             }
@@ -124,8 +124,9 @@ class Mute
             return
         }
 
-        val creatorMessage = MessageBuilder()
-            .append("Muted ").append(toMute.toString()).append(".\n\nThe following message was sent to the user:")
+        val creatorMessage = MessageCreateBuilder()
+            .addContent("Muted ").addContent(toMute.toString())
+            .addContent(".\n\nThe following message was sent to the user:")
             .setEmbeds(userMuteWarning)
             .build()
         privateChannel.sendMessage(creatorMessage).queue()
@@ -143,10 +144,10 @@ class Mute
             return
         }
 
-        val creatorMessage = MessageBuilder()
-            .append("Muted ").append(toMute.toString())
-            .append(".\n\nWas unable to send a DM to the user please inform the user manually.\n")
-            .append(throwable.javaClass.simpleName).append(": ").append(throwable.message)
+        val creatorMessage = MessageCreateBuilder()
+            .addContent("Muted ").addContent(toMute.toString())
+            .addContent(".\n\nWas unable to send a DM to the user please inform the user manually.\n")
+            .addContent(throwable.javaClass.simpleName).addContent(": ").addContent(throwable.message ?: "")
             .build()
         privateChannel.sendMessage(creatorMessage).queue()
     }

@@ -21,13 +21,13 @@ import be.duncanc.discordmodbot.bot.utils.extractReason
 import be.duncanc.discordmodbot.bot.utils.findMemberAndCheckCanInteract
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import net.dv8tion.jda.api.EmbedBuilder
-import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.MessageEmbed
-import net.dv8tion.jda.api.entities.PrivateChannel
+import net.dv8tion.jda.api.entities.channel.ChannelType
+import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
 import org.springframework.stereotype.Component
 import java.awt.Color
 
@@ -50,7 +50,7 @@ class RemoveMute : CommandModule(
      * @param command   The command alias that was used to trigger this commandExec
      * @param arguments The arguments that where entered after the command alias
      */
-    public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+    override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.author.openPrivateChannel().queue(
             { privateChannel -> commandExec(event, arguments, privateChannel) }
         ) { commandExec(event, arguments, null as PrivateChannel?) }
@@ -62,7 +62,7 @@ class RemoveMute : CommandModule(
         } else if (event.member?.hasPermission(Permission.MANAGE_ROLES) != true) {
             privateChannel?.sendMessage(event.author.asMention + " you need manage roles permission to remove a mute!")
                 ?.queue()
-        } else if (event.message.mentionedUsers.size < 1) {
+        } else if (event.message.mentions.members.size < 1) {
             privateChannel?.sendMessage("Illegal argumentation, you need to mention a user that is still in the server.")
                 ?.queue()
         } else {
@@ -107,9 +107,9 @@ class RemoveMute : CommandModule(
                         return@queue
                     }
 
-                    val creatorMessage = MessageBuilder()
-                        .append("Failed removing mute ").append(toRemoveMute.toString()).append(".\n")
-                        .append(throwable.javaClass.simpleName).append(": ").append(throwable.message)
+                    val creatorMessage = MessageCreateBuilder()
+                        .addContent("Failed removing mute ").addContent(toRemoveMute.toString()).addContent(".\n")
+                        .addContent(throwable.javaClass.simpleName).addContent(": ").addContent(throwable.message ?: "")
                         .build()
                     privateChannel.sendMessage(creatorMessage).queue()
                 }
@@ -125,9 +125,9 @@ class RemoveMute : CommandModule(
             return
         }
 
-        val creatorMessage = MessageBuilder()
-            .append("Removed mute from ").append(toRemoveMute.toString())
-            .append(".\n\nThe following message was sent to the user:")
+        val creatorMessage = MessageCreateBuilder()
+            .addContent("Removed mute from ").addContent(toRemoveMute.toString())
+            .addContent(".\n\nThe following message was sent to the user:")
             .setEmbeds(muteRemoveNotification)
             .build()
         privateChannel.sendMessage(creatorMessage).queue()
@@ -138,10 +138,10 @@ class RemoveMute : CommandModule(
             return
         }
 
-        val creatorMessage = MessageBuilder()
-            .append("Removed mute from ").append(toRemoveMute.toString())
-            .append(".\n\nWas unable to send a DM to the user please inform the user manually.\n")
-            .append(throwable.javaClass.simpleName).append(": ").append(throwable.message)
+        val creatorMessage = MessageCreateBuilder()
+            .addContent("Removed mute from ").addContent(toRemoveMute.toString())
+            .addContent(".\n\nWas unable to send a DM to the user please inform the user manually.\n")
+            .addContent(throwable.javaClass.simpleName).addContent(": ").addContent(throwable.message ?: "")
             .build()
         privateChannel.sendMessage(creatorMessage).queue()
     }

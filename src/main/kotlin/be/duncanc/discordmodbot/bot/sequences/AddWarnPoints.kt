@@ -27,10 +27,15 @@ import be.duncanc.discordmodbot.data.entities.UserWarnPoints
 import be.duncanc.discordmodbot.data.repositories.jpa.GuildWarnPointsRepository
 import be.duncanc.discordmodbot.data.repositories.jpa.GuildWarnPointsSettingsRepository
 import net.dv8tion.jda.api.EmbedBuilder
-import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.*
+import net.dv8tion.jda.api.entities.channel.ChannelType
+import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.utils.MarkdownUtil
+import net.dv8tion.jda.api.utils.SplitUtil
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -95,8 +100,8 @@ class AddWarnPoints(
                     t
                 )
                 val exceptionMessage =
-                    MessageBuilder().append("${event.author.asMention} Cannot complete action due to an error; see the message below for details.")
-                        .appendCodeBlock(t.javaClass.simpleName + ": " + t.message, "text").build()
+                    MessageCreateBuilder().addContent("${event.author.asMention} Cannot complete action due to an error; see the message below for details.")
+                        .addContent(MarkdownUtil.codeblock("text", "${t.javaClass.simpleName}: ${t.message}")).build()
                 event.channel.sendMessage(exceptionMessage).queue { it.delete().queueAfter(5, TimeUnit.MINUTES) }
             }
         )
@@ -206,7 +211,7 @@ class AddWarnPoints(
                     member,
                     reason!!,
                     guildWarnPoints.filterExpiredPoints().size,
-                    event.privateChannel,
+                    event.channel.asPrivateChannel(),
                     action
                 )
 
@@ -238,7 +243,7 @@ class AddWarnPoints(
                 .toCollection(mutableSetOf())
         activatePoints.forEach { points += it.points }
         if (points >= guildWarnPointsSettings.announcePointsSummaryLimit) {
-            val messageBuilder = MessageBuilder().append("@everyone ")
+            val messageBuilder = StringBuilder().append("@everyone ")
                 .append(user.asMention)
                 .append(" has reached the limit of points set by your server administrator.\n\n")
                 .append("Summary of active points:")
@@ -249,7 +254,10 @@ class AddWarnPoints(
                     .append("Reason: ").append(it.reason)
                     .append("\nExpires on: ").append(it.expireDate.format(messageTimeFormat))
             }
-            messageBuilder.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach {
+            val messages =
+                SplitUtil.split(messageBuilder.toString(), Message.MAX_CONTENT_LENGTH, SplitUtil.Strategy.NEWLINE)
+
+            messages.forEach {
                 guild.getTextChannelById(guildWarnPointsSettings.announceChannelId)?.sendMessage(it)?.queue()
             }
         }
@@ -323,19 +331,19 @@ class AddWarnPoints(
         toInform: Member,
         informationMessage: MessageEmbed
     ) {
-        val creatorMessage = MessageBuilder()
-            .append("Added warn points to ").append(toInform.toString())
-            .append(".\n\nThe following message was sent to the user:")
+        val creatorMessage = MessageCreateBuilder()
+            .addContent("Added warn points to ").addContent(toInform.toString())
+            .addContent(".\n\nThe following message was sent to the user:")
             .setEmbeds(informationMessage)
             .build()
         privateChannel.sendMessage(creatorMessage).queue()
     }
 
     private fun onFailToInformUser(privateChannel: PrivateChannel, toInform: Member, throwable: Throwable) {
-        val creatorMessage = MessageBuilder()
-            .append("Added warn points to ").append(toInform.toString())
-            .append(".\n\nWas unable to send a DM to the user please inform the user manually.\n")
-            .append(throwable.javaClass.simpleName).append(": ").append(throwable.message)
+        val creatorMessage = MessageCreateBuilder()
+            .addContent("Added warn points to ").addContent(toInform.toString())
+            .addContent(".\n\nWas unable to send a DM to the user please inform the user manually.\n")
+            .addContent(throwable.javaClass.simpleName).addContent(": ").addContent(throwable.message ?: "")
             .build()
         privateChannel.sendMessage(creatorMessage).queue()
     }

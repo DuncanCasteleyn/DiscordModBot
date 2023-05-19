@@ -2,6 +2,8 @@ package be.duncanc.discordmodbot.bot.commands
 
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.*
+import net.dv8tion.jda.api.entities.channel.ChannelType
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.requests.restaction.AuditableRestAction
 import org.junit.jupiter.api.BeforeAll
@@ -38,7 +40,7 @@ internal open class CommandModuleTest : CommandModule(arrayOf("test"), null, nul
         whenever(message.contentDisplay).thenReturn(messageContent)
         val selfUser: SelfUser = mock()
         whenever(jda.selfUser).thenReturn(selfUser)
-        val messageChannel: MessageChannel = mock()
+        val messageChannel: MessageChannelUnion = mock()
         whenever(messageReceivedEvent.channel).thenReturn(messageChannel)
         whenever(messageReceivedEvent.isFromType(ChannelType.TEXT)).thenReturn(true)
         val auditableRestAction = mock<AuditableRestAction<Void>>()

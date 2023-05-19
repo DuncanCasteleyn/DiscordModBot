@@ -26,13 +26,16 @@ import be.duncanc.discordmodbot.data.redis.hash.DiscordMessage
 import be.duncanc.discordmodbot.data.repositories.jpa.LoggingSettingsRepository
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
-import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.audit.ActionType
 import net.dv8tion.jda.api.audit.AuditLogEntry
 import net.dv8tion.jda.api.audit.AuditLogOption
-import net.dv8tion.jda.api.entities.*
-import net.dv8tion.jda.api.events.ReadyEvent
+import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.entities.MessageEmbed
+import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.events.guild.GuildBanEvent
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent
 import net.dv8tion.jda.api.events.guild.GuildUnbanEvent
@@ -40,15 +43,16 @@ import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent
 import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateNicknameEvent
 import net.dv8tion.jda.api.events.message.MessageBulkDeleteEvent
+import net.dv8tion.jda.api.events.message.MessageDeleteEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import net.dv8tion.jda.api.events.message.guild.GuildMessageDeleteEvent
-import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
-import net.dv8tion.jda.api.events.message.guild.GuildMessageUpdateEvent
-import net.dv8tion.jda.api.events.user.update.UserUpdateDiscriminatorEvent
+import net.dv8tion.jda.api.events.message.MessageUpdateEvent
+import net.dv8tion.jda.api.events.session.ReadyEvent
 import net.dv8tion.jda.api.events.user.update.UserUpdateNameEvent
 import net.dv8tion.jda.api.exceptions.PermissionException
 import net.dv8tion.jda.api.hooks.ListenerAdapter
-import net.dv8tion.jda.internal.entities.GuildImpl
+import net.dv8tion.jda.api.utils.FileUpload
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
+import net.dv8tion.jda.api.utils.messages.MessageEditData
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -91,7 +95,7 @@ class GuildLogger
 
 
     private val guildLoggerExecutor: ScheduledExecutorService
-    private val lastCheckedLogEntries: HashMap<Long, AuditLogEntry> //Long key is the guild id and the value is the last checked log entry.
+    private val lastCheckedLogEntries: HashMap<Long, AuditLogEntry?> //Long key is the guild id and the value is the last checked log entry.
 
     init {
         this.guildLoggerExecutor = Executors.newSingleThreadScheduledExecutor { r ->
@@ -103,12 +107,17 @@ class GuildLogger
     }
 
     @Transactional(readOnly = true)
-    override fun onGuildMessageReceived(event: GuildMessageReceivedEvent) {
+    override fun onMessageReceived(event: MessageReceivedEvent) {
+        if (!event.isFromGuild) {
+            return
+        }
         val loggingSettings =
             loggingSettingsRepository.findById(event.guild.idLong).orElse(LoggingSettings(event.guild.idLong))
+
         if (loggingSettings.ignoredChannels.contains(event.channel.idLong)) {
             return
         }
+
         messageHistory.storeMessage(event)
     }
 
@@ -119,31 +128,21 @@ class GuildLogger
             guild ?: return@forEach
             guild.retrieveAuditLogs().limit(1).cache(false).queue { auditLogEntries ->
                 val auditLogEntry = if (auditLogEntries.isEmpty()) {
-                    AuditLogEntry(
-                        ActionType.MESSAGE_DELETE,
-                        -1,
-                        -1,
-                        -1,
-                        guild as GuildImpl,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null
-                    )
-                    //Creating a dummy
+                    null
                 } else {
                     auditLogEntries[0]
                 }
                 guildLoggerExecutor.execute {
-                    lastCheckedLogEntries[auditLogEntry.guild.idLong] = auditLogEntry
+                    if (auditLogEntry != null) {
+                        lastCheckedLogEntries[auditLogEntry.guild.idLong] = auditLogEntry
+                    }
                 }
             }
         }
     }
 
     @Transactional(readOnly = true)
-    override fun onGuildMessageUpdate(event: GuildMessageUpdateEvent) {
+    override fun onMessageUpdate(event: MessageUpdateEvent) {
         val loggingSettings =
             loggingSettingsRepository.findById(event.guild.idLong).orElse(LoggingSettings(event.guild.idLong))
         if (!loggingSettings.logMessageUpdate) {
@@ -191,14 +190,12 @@ class GuildLogger
         }
     }
 
-    /**
-     * This functions will be called each time a message is deleted on a discord
-     * server.
-     *
-     * @param event The event that trigger this method
-     */
     @Transactional(readOnly = true)
-    override fun onGuildMessageDelete(event: GuildMessageDeleteEvent) {
+    override fun onMessageDelete(event: MessageDeleteEvent) {
+        if (!event.isFromGuild) {
+            return
+        }
+
         val loggingSettings =
             loggingSettingsRepository.findById(event.guild.idLong).orElse(LoggingSettings(event.guild.idLong))
         if (!loggingSettings.logMessageDelete) {
@@ -237,7 +234,11 @@ class GuildLogger
                     }
                     logEmbed.addField("Author", name, true)
                     if (moderator != null) {
-                        logEmbed.addField("Deleted by", event.guild.getMember(moderator)?.nicknameAndUsername, true)
+                        logEmbed.addField(
+                            "Deleted by",
+                            event.guild.getMember(moderator)?.nicknameAndUsername ?: "Unkown",
+                            true
+                        )
                             .setColor(Color.YELLOW)
                     } else {
                         logEmbed.setColor(LIGHT_BLUE)
@@ -258,7 +259,7 @@ class GuildLogger
         }
     }
 
-    private fun findModerator(event: GuildMessageDeleteEvent, oldMessage: DiscordMessage): User? {
+    private fun findModerator(event: MessageDeleteEvent, oldMessage: DiscordMessage): User? {
         var foundModerator: User? = null
         var i = 0
         for (logEntry in event.guild.retrieveAuditLogs().cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
@@ -559,27 +560,37 @@ class GuildLogger
                 findModerator
             }
 
-            val logEmbed = EmbedBuilder()
-                .setColor(LIGHT_BLUE)
-                .addField("User", event.member.user.name, false)
-                .addField("Old nickname", if (event.oldNickname != null) event.oldNickname else "None", true)
-                .addField("New nickname", if (event.newNickname != null) event.newNickname else "None", true)
-            if (moderator == null || moderator == event.member.user) {
-                logEmbed.setTitle("User has changed nickname")
-            } else {
-                logEmbed.setTitle("Moderator has changed nickname")
-                    .addField(
-                        "Moderator", event.guild.getMember(moderator)?.nicknameAndUsername
-                            ?: moderator.name, false
-                    )
+            val logEmbed = (if (event.oldNickname != null) event.oldNickname else "None")?.let {
+                (if (event.newNickname != null) event.newNickname else "None")?.let { it1 ->
+                    EmbedBuilder()
+                        .setColor(LIGHT_BLUE)
+                        .addField("User", event.member.user.name, false)
+                        .addField("Old nickname", it, true)
+                        .addField("New nickname", it1, true)
+                }
             }
-            log(
-                logEmbed,
-                event.member.user,
-                event.guild,
-                null,
-                if (moderator == null || moderator == event.member.user) LogTypeAction.USER else LogTypeAction.MODERATOR
-            )
+            if (moderator == null || moderator == event.member.user) {
+                if (logEmbed != null) {
+                    logEmbed.setTitle("User has changed nickname")
+                }
+            } else {
+                if (logEmbed != null) {
+                    logEmbed.setTitle("Moderator has changed nickname")
+                        .addField(
+                            "Moderator", event.guild.getMember(moderator)?.nicknameAndUsername
+                                ?: moderator.name, false
+                        )
+                }
+            }
+            if (logEmbed != null) {
+                log(
+                    logEmbed,
+                    event.member.user,
+                    event.guild,
+                    null,
+                    if (moderator == null || moderator == event.member.user) LogTypeAction.USER else LogTypeAction.MODERATOR
+                )
+            }
         }, 1, TimeUnit.SECONDS)
     }
 
@@ -650,37 +661,46 @@ class GuildLogger
                                     .queue { addMessageToCleaner(it) }
                                 return
                             }
+
                             1.toByte() -> {
                                 sequenceNumber = 2
                                 channel.sendMessage("${user.asMention} Please mention the channel you want to be used as user log.")
                                     .queue { addMessageToCleaner(it) }
                                 return
                             }
+
                             2.toByte() -> {
                                 logSettings.logMessageUpdate = !logSettings.logMessageUpdate
                             }
+
                             3.toByte() -> {
                                 logSettings.logMessageDelete = !logSettings.logMessageDelete
                             }
+
                             4.toByte() -> {
                                 logSettings.logMemberJoin = !logSettings.logMemberJoin
                             }
+
                             5.toByte() -> {
                                 logSettings.logMemberLeave = !logSettings.logMemberLeave
                             }
+
                             6.toByte() -> {
                                 logSettings.logMemberBan = !logSettings.logMemberBan
                             }
+
                             7.toByte() -> {
                                 logSettings.logMemberRemoveBan = !logSettings.logMemberRemoveBan
                             }
                         }
                     }
+
                     1.toByte() -> {
-                        logSettings.modLogChannel = event.message.mentionedChannels[0].idLong
+                        logSettings.modLogChannel = event.message.mentions.channels[0].idLong
                     }
+
                     2.toByte() -> {
-                        logSettings.userLogChannel = event.message.mentionedChannels[0].idLong
+                        logSettings.userLogChannel = event.message.mentions.channels[0].idLong
                     }
                 }
                 loggingSettingsRepository.save(logSettings)
@@ -723,15 +743,15 @@ class GuildLogger
             if (bytes == null) {
                 targetChannel.sendMessageEmbeds(logEmbed.build()).queue()
             } else {
-                targetChannel.sendFile(bytes, "chat.log").queue {
-                    it.editMessage(MessageBuilder().setEmbeds(logEmbed.build()).build()).queue()
+                targetChannel.sendFiles(FileUpload.fromData(bytes, "chat.log")).queue {
+                    it.editMessage(MessageEditData.fromEmbeds(logEmbed.build())).queue()
                 }
             }
             if (embeds != null) {
                 for (embed in embeds) {
                     targetChannel.sendMessage(
-                        MessageBuilder().setEmbeds(embed)
-                            .append("The embed below was deleted with the previous message")
+                        MessageCreateBuilder().setEmbeds(embed)
+                            .addContent("The embed below was deleted with the previous message")
                             .build()
                     )
                         .queue()

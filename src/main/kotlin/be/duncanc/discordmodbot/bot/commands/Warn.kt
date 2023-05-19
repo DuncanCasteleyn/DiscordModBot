@@ -23,12 +23,12 @@ import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.entities.GuildWarnPointsSettings
 import be.duncanc.discordmodbot.data.repositories.jpa.GuildWarnPointsSettingsRepository
 import net.dv8tion.jda.api.EmbedBuilder
-import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.MessageEmbed
-import net.dv8tion.jda.api.entities.PrivateChannel
+import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.awt.Color
@@ -54,7 +54,7 @@ class Warn
 ) {
 
 
-    public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+    override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         val guildWarnPointsSettings = guildWarnPointsSettingsRepository.findById(event.guild.idLong)
             .orElse(GuildWarnPointsSettings(event.guild.idLong, announceChannelId = -1))
         if (guildWarnPointsSettings.overrideWarnCommand) {
@@ -66,7 +66,7 @@ class Warn
     }
 
     private fun commandExec(event: MessageReceivedEvent, arguments: String?, privateChannel: PrivateChannel?) {
-        if (event.message.mentionedUsers.size < 1) {
+        if (event.message.mentions.members.size < 1) {
             privateChannel?.sendMessage("Illegal argumentation, you need to mention a user that is still in the server.")
                 ?.queue()
         } else {
@@ -103,18 +103,19 @@ class Warn
     }
 
     private fun onSuccessfulWarnUser(privateChannel: PrivateChannel, toWarn: Member, userWarning: MessageEmbed) {
-        val creatorMessage = MessageBuilder()
-            .append("Warned ").append(toWarn.toString()).append(".\n\nThe following message was sent to the user:")
+        val creatorMessage = MessageCreateBuilder()
+            .addContent("Warned ").addContent(toWarn.toString())
+            .addContent(".\n\nThe following message was sent to the user:")
             .setEmbeds(userWarning)
             .build()
         privateChannel.sendMessage(creatorMessage).queue()
     }
 
     private fun onFailToWarnUser(privateChannel: PrivateChannel, toWarn: Member, throwable: Throwable) {
-        val creatorMessage = MessageBuilder()
-            .append("Warned ").append(toWarn.toString())
-            .append(".\n\nWas unable to send a DM to the user please inform the user manually.\n")
-            .append(throwable.javaClass.simpleName).append(": ").append(throwable.message)
+        val creatorMessage = MessageCreateBuilder()
+            .addContent("Warned ").addContent(toWarn.toString())
+            .addContent(".\n\nWas unable to send a DM to the user please inform the user manually.\n")
+            .addContent(throwable.javaClass.simpleName).addContent(": ").addContent(throwable.message ?: "")
             .build()
         privateChannel.sendMessage(creatorMessage).queue()
     }

@@ -23,14 +23,15 @@ import be.duncanc.discordmodbot.data.repositories.jpa.ReportChannelRepository
 import be.duncanc.discordmodbot.data.services.UserBlockService
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
-import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.entities.Guild
-import net.dv8tion.jda.api.entities.MessageChannel
+import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
-import net.dv8tion.jda.api.events.ReadyEvent
+import net.dv8tion.jda.api.entities.channel.ChannelType
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.events.session.ReadyEvent
+import net.dv8tion.jda.api.utils.SplitUtil
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.awt.Color
@@ -56,7 +57,7 @@ class Feedback
         if (!event.isFromType(ChannelType.PRIVATE)) {
             throw UnsupportedOperationException("Feedback must be provided in private chat.")
         }
-        event.jda.addEventListener(FeedbackSequence(event.author, event.privateChannel, event.jda))
+        event.jda.addEventListener(FeedbackSequence(event.author, event.channel.asPrivateChannel(), event.jda))
     }
 
     override fun onReady(event: ReadyEvent) {
@@ -77,12 +78,19 @@ class Feedback
                 throw UnsupportedOperationException("None of the servers you are on have this feature enabled.")
             }
 
-            val messageBuilder = MessageBuilder()
+            val messageBuilder = StringBuilder()
             messageBuilder.append("Please select which guild your like to report feedback to:\n\n")
             for (i in selectableGuilds.indices) {
                 messageBuilder.append(i).append(". ").append(selectableGuilds[i].name).append('\n')
             }
-            messageBuilder.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach {
+            val messages =
+                SplitUtil.split(
+                    messageBuilder.toString(),
+                    Message.MAX_CONTENT_LENGTH,
+                    SplitUtil.Strategy.NEWLINE
+                )
+
+            messages.forEach {
                 channel.sendMessage(it).queue()
             }
         }
@@ -117,7 +125,7 @@ class Feedback
         requiredPermissions = arrayOf(Permission.MANAGE_CHANNEL)
     ) {
         override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-            reportChannelRepository.save(ReportChannel(event.guild.idLong, event.textChannel.idLong))
+            reportChannelRepository.save(ReportChannel(event.guild.idLong, event.channel.idLong))
             event.channel.sendMessage("This channel has been set for feedback.")
                 .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
         }

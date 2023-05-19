@@ -19,11 +19,12 @@ package be.duncanc.discordmodbot.bot.commands
 import be.duncanc.discordmodbot.bot.services.GuildLogger
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import net.dv8tion.jda.api.EmbedBuilder
-import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.ChannelType
-import net.dv8tion.jda.api.entities.PrivateChannel
+import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.channel.ChannelType
+import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
 import org.springframework.stereotype.Component
 import java.awt.Color
 import java.util.*
@@ -84,7 +85,7 @@ class BanUserById : CommandModule(
                     privateChannel?.sendMessage("You can't ban a user that you can't interact with.")?.queue()
                     return@queue
                 }
-                event.guild.ban(userId, 1).queue(banQue@{
+                event.guild.ban(User.fromId(userId), 1, TimeUnit.DAYS).queue(banQue@{
                     val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
                     if (guildLogger != null) {
                         val logEmbed = EmbedBuilder()
@@ -102,8 +103,8 @@ class BanUserById : CommandModule(
                         return@banQue
                     }
 
-                    val creatorMessage = MessageBuilder()
-                        .append("Banned ").append(toBan.toString())
+                    val creatorMessage = MessageCreateBuilder()
+                        .addContent("Banned ").addContent(toBan.toString())
                         .build()
                     privateChannel.sendMessage(creatorMessage).queue()
                 }) banQueThrowable@{ throwable ->
@@ -111,9 +112,10 @@ class BanUserById : CommandModule(
                         return@banQueThrowable
                     }
 
-                    val creatorMessage = MessageBuilder()
-                        .append("Banning user failed\n")
-                        .append(throwable.javaClass.simpleName).append(": ").append(throwable.message)
+                    val creatorMessage = MessageCreateBuilder()
+                        .addContent("Banning user failed\n")
+                        .addContent(throwable.javaClass.simpleName).addContent(": ")
+                        .addContent(throwable.message.toString())
                         .build()
                     privateChannel.sendMessage(creatorMessage).queue()
                 }
@@ -122,9 +124,10 @@ class BanUserById : CommandModule(
                     return@queue
                 }
 
-                val creatorMessage = MessageBuilder()
-                    .append("Failed retrieving the user, banning failed.\n")
-                    .append(throwable.javaClass.simpleName).append(": ").append(throwable.message)
+                val creatorMessage = MessageCreateBuilder()
+                    .addContent("Failed retrieving the user, banning failed.\n")
+                    .addContent(throwable.javaClass.simpleName).addContent(": ")
+                    .addContent(throwable.message.toString())
                     .build()
                 privateChannel.sendMessage(creatorMessage).queue()
             }

@@ -21,14 +21,15 @@ import be.duncanc.discordmodbot.bot.utils.extractReason
 import be.duncanc.discordmodbot.bot.utils.findMemberAndCheckCanInteract
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import net.dv8tion.jda.api.EmbedBuilder
-import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
-import net.dv8tion.jda.api.entities.PrivateChannel
+import net.dv8tion.jda.api.entities.channel.ChannelType
+import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.requests.RestAction
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
+import net.dv8tion.jda.api.utils.messages.MessageCreateData
 import org.springframework.stereotype.Component
 import java.awt.Color
 import java.util.*
@@ -64,14 +65,14 @@ class Ban : CommandModule(
         } else if (event.member?.hasPermission(Permission.BAN_MEMBERS) != true) {
             privateChannel?.sendMessage(event.author.asMention + " you don't have permission to ban!")
                 ?.queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
-        } else if (event.message.mentionedUsers.size < 1) {
+        } else if (event.message.mentions.users.size < 1) {
             privateChannel?.sendMessage("Illegal argumentation, you need to mention a user that is still in the server.")
                 ?.queue()
         } else {
             val reason: String = extractReason(arguments)
 
             val toBan = findMemberAndCheckCanInteract(event)
-            val banRestAction = event.guild.ban(toBan, 1)
+            val banRestAction = event.guild.ban(toBan, 7, TimeUnit.DAYS)
             val description = StringBuilder("Reason: $reason")
             if (event.guild.idLong == 175856762677624832L) {
                 description.append("\n\n")
@@ -91,7 +92,7 @@ class Ban : CommandModule(
 
             toBan.user.openPrivateChannel().queue(
                 { privateChannelUserToMute ->
-                    privateChannelUserToMute.sendMessage(userBanNotification).queue(
+                    privateChannelUserToMute.sendMessage(MessageCreateData.fromEmbeds(userBanNotification)).queue(
                         { message ->
                             onSuccessfulInformUser(
                                 event,
@@ -147,8 +148,9 @@ class Ban : CommandModule(
                 return@queue
             }
 
-            val creatorMessage = MessageBuilder()
-                .append("Banned ").append(toBan.toString()).append(".\n\nThe following message was sent to the user:")
+            val creatorMessage = MessageCreateBuilder()
+                .addContent("Banned ").addContent(toBan.toString())
+                .addContent(".\n\nThe following message was sent to the user:")
                 .setEmbeds(userBanWarning.embeds)
                 .build()
             privateChannel.sendMessage(creatorMessage).queue()
@@ -158,10 +160,10 @@ class Ban : CommandModule(
                 return@queue
             }
 
-            val creatorMessage = MessageBuilder()
-                .append("Ban failed on ").append(toBan.toString())
-                .append(throwable.javaClass.simpleName).append(": ").append(throwable.message)
-                .append(".\n\nThe following message was sent to the user but was automatically deleted:")
+            val creatorMessage = MessageCreateBuilder()
+                .addContent("Ban failed on ").addContent(toBan.toString())
+                .addContent(throwable.javaClass.simpleName).addContent(": ").addContent(throwable.message.toString())
+                .addContent(".\n\nThe following message was sent to the user but was automatically deleted:")
                 .setEmbeds(userBanWarning.embeds)
                 .build()
             privateChannel.sendMessage(creatorMessage).queue()
@@ -182,10 +184,10 @@ class Ban : CommandModule(
                 return@queue
             }
 
-            val creatorMessage = MessageBuilder()
-                .append("Banned ").append(toBan.toString())
-                .append(".\n\nWas unable to send a DM to the user please inform the user manually, if possible.\n")
-                .append(throwable.javaClass.simpleName).append(": ").append(throwable.message)
+            val creatorMessage = MessageCreateBuilder()
+                .addContent("Banned ").addContent(toBan.toString())
+                .addContent(".\n\nWas unable to send a DM to the user please inform the user manually, if possible.\n")
+                .addContent(throwable.javaClass.simpleName).addContent(": ").addContent(throwable.message ?: "Unknown")
                 .build()
             privateChannel.sendMessage(creatorMessage).queue()
         }) { banThrowable ->
@@ -193,12 +195,13 @@ class Ban : CommandModule(
                 return@queue
             }
 
-            val creatorMessage = MessageBuilder()
-                .append("Ban failed on ").append(toBan.toString())
-                .append("\n\nWas unable to ban the user\n")
-                .append(banThrowable.javaClass.simpleName).append(": ").append(banThrowable.message)
-                .append(".\n\nWas unable to send a DM to the user.\n")
-                .append(throwable.javaClass.simpleName).append(": ").append(throwable.message)
+            val creatorMessage = MessageCreateBuilder()
+                .addContent("Ban failed on ").addContent(toBan.toString())
+                .addContent("\n\nWas unable to ban the user\n")
+                .addContent(banThrowable.javaClass.simpleName).addContent(": ")
+                .addContent(banThrowable.message ?: "Unknown")
+                .addContent(".\n\nWas unable to send a DM to the user.\n")
+                .addContent(throwable.javaClass.simpleName).addContent(": ").addContent(throwable.message ?: "Unknown")
                 .build()
             privateChannel.sendMessage(creatorMessage).queue()
         }

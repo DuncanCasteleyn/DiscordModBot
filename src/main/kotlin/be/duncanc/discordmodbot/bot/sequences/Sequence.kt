@@ -17,15 +17,15 @@
 package be.duncanc.discordmodbot.bot.sequences
 
 import be.duncanc.discordmodbot.bot.utils.limitLessBulkDeleteByIds
-import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.entities.Message
-import net.dv8tion.jda.api.entities.MessageChannel
-import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -108,9 +108,9 @@ abstract class Sequence
         } catch (t: Throwable) {
             LOG.info("A sequence was terminated due to an exception", t)
             destroy()
-            val errorMessage: Message =
-                MessageBuilder().append(user.asMention + " The sequences has been terminated due to an error; see the message below for more information.")
-                    .appendCodeBlock(t.javaClass.simpleName + ": " + t.message, "text")
+            val errorMessage =
+                MessageCreateBuilder().addContent("${user.asMention} The sequences has been terminated due to an error; see the message below for more information.")
+                    .addContent("```text\n${t.javaClass.simpleName}: ${t.message}\n```")
                     .build()
             channel.sendMessage(errorMessage).queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
             return

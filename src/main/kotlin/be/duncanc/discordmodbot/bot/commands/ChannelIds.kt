@@ -17,11 +17,14 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.data.services.UserBlockService
-import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.ChannelType
-import net.dv8tion.jda.api.entities.TextChannel
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.channel.ChannelType
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.utils.MarkdownUtil
+import net.dv8tion.jda.api.utils.SplitUtil
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
 import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
 
@@ -45,7 +48,7 @@ class ChannelIds(
         private const val DESCRIPTION = "Returns all channel ids of the guild where executed."
     }
 
-    public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+    override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         if (!event.isFromType(ChannelType.TEXT)) {
             event.channel.sendMessage("This command only works in a guild.").queue()
         } else if (event.member?.hasPermission(Permission.MANAGE_CHANNEL) != true) {
@@ -57,9 +60,16 @@ class ChannelIds(
                 result.append(channel.toString()).append("\n")
             }
             event.author.openPrivateChannel().queue { privateChannel ->
-                val messages = MessageBuilder().appendCodeBlock(result.toString(), "text")
-                    .buildAll(MessageBuilder.SplitPolicy.NEWLINE)
-                messages.forEach { message -> privateChannel.sendMessage(message).queue() }
+                val messages = SplitUtil.split(
+                    result.toString(),
+                    Message.MAX_CONTENT_LENGTH - 10,
+                    SplitUtil.Strategy.NEWLINE
+                )
+                messages.forEach { message ->
+                    privateChannel.sendMessage(
+                        MessageCreateBuilder().setContent(MarkdownUtil.codeblock("text", message)).build()
+                    ).queue()
+                }
             }
         }
     }

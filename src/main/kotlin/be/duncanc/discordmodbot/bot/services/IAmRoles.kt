@@ -22,16 +22,17 @@ import be.duncanc.discordmodbot.bot.sequences.Sequence
 import be.duncanc.discordmodbot.data.entities.IAmRolesCategory
 import be.duncanc.discordmodbot.data.services.IAmRolesService
 import be.duncanc.discordmodbot.data.services.UserBlockService
-import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.MessageChannel
+import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.Role
-import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.entities.User
-import net.dv8tion.jda.api.events.ReadyEvent
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.events.role.RoleDeleteEvent
+import net.dv8tion.jda.api.events.session.ReadyEvent
 import net.dv8tion.jda.api.exceptions.PermissionException
+import net.dv8tion.jda.api.utils.SplitUtil
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
@@ -58,7 +59,7 @@ class IAmRoles
 
     private val subCommands = arrayOf(IAm(), IAmNot())
 
-    public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+    override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.jda.addEventListener(IAmRolesSequence(event.author, event.channel))
     }
 
@@ -100,41 +101,55 @@ class IAmRoles
                             .queue { message -> super.addMessageToCleaner(message) }
                         sequenceNumber = 2
                     }
+
                     1.toByte() -> {
                         if (iAmRolesCategories.isEmpty()) {
                             throw IllegalStateException("No categories have been set up, there is nothing to delete.")
                         }
                         val deleteCategoryMessage =
-                            MessageBuilder().append("Please select which role category you'd like to delete.")
+                            StringBuilder().append("Please select which role category you'd like to delete.")
                         for (i in iAmRolesCategories.indices) {
                             deleteCategoryMessage.append('\n').append(i).append(". ")
                                 .append(iAmRolesCategories[i].categoryName)
                         }
-                        deleteCategoryMessage.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { message ->
-                            super.channel.sendMessage(message).queue { message1 -> super.addMessageToCleaner(message1) }
+
+                        SplitUtil.split(
+                            deleteCategoryMessage.toString(),
+                            Message.MAX_CONTENT_LENGTH,
+                            SplitUtil.Strategy.NEWLINE
+                        ).forEach { message ->
+                            super.channel.sendMessage(message)
+                                .queue { message1 -> super.addMessageToCleaner(message1) }
                         }
                         sequenceNumber = 3
                     }
+
                     2.toByte() -> {
                         if (iAmRolesCategories.isEmpty()) {
                             throw IllegalStateException("No categories have been set up, there is nothing to modify.")
                         }
                         val modifyCategoryMessage =
-                            MessageBuilder().append("Please select which role category you'd like to modify.")
+                            StringBuilder().append("Please select which role category you'd like to modify.")
                         for (i in iAmRolesCategories.indices) {
                             modifyCategoryMessage.append('\n').append(i).append(". ")
                                 .append(iAmRolesCategories[i].categoryName)
                         }
-                        modifyCategoryMessage.buildAll(MessageBuilder.SplitPolicy.NEWLINE)
-                            .forEach { super.channel.sendMessage(it).queue { super.addMessageToCleaner(it) } }
+
+                        SplitUtil.split(
+                            modifyCategoryMessage.toString(),
+                            Message.MAX_CONTENT_LENGTH,
+                            SplitUtil.Strategy.NEWLINE
+                        ).forEach { super.channel.sendMessage(it).queue { super.addMessageToCleaner(it) } }
                         sequenceNumber = 4
                     }
+
                     else -> channel.sendMessage("Wrong answer please answer with a valid number").queue {
                         super.addMessageToCleaner(
                             it
                         )
                     }
                 }
+
                 2.toByte() -> if (newCategoryName == null) {
                     val existingCategoryNames = iAmRolesService.getExistingCategoryNames(event.guild.idLong)
                     if (existingCategoryNames.contains(event.message.contentRaw)) {
@@ -155,6 +170,7 @@ class IAmRoles
                         .queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
                     super.destroy()
                 }
+
                 3.toByte() -> {
                     synchronized(iAmRolesCategories) {
                         iAmRolesService.removeCategory(
@@ -166,6 +182,7 @@ class IAmRoles
                         .queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
                     super.destroy()
                 }
+
                 4.toByte() -> {
                     iAmRolesCategory = iAmRolesCategories.elementAt(Integer.parseInt(event.message.contentRaw))
                     super.channel.sendMessage(
@@ -176,23 +193,27 @@ class IAmRoles
                     ).queue { super.addMessageToCleaner(it) }
                     sequenceNumber = 5
                 }
+
                 5.toByte() -> when (java.lang.Byte.parseByte(event.message.contentRaw)) {
                     0.toByte() -> {
                         super.channel.sendMessage("Please enter a new name for the category.")
                             .queue { message -> super.addMessageToCleaner(message) }
                         sequenceNumber = 6
                     }
+
                     1.toByte() -> {
                         super.channel.sendMessage("Please enter a new value for the amount of allowed roles.")
                             .queue { super.addMessageToCleaner(it) }
                         sequenceNumber = 8
                     }
+
                     2.toByte() -> {
                         super.channel.sendMessage("Please enter the full name of the role you'd like to remove or add. This will automatically detect if the role is already in the list and remove or add it.")
                             .queue { super.addMessageToCleaner(it) }
                         sequenceNumber = 7
                     }
                 }
+
                 6.toByte() -> {
                     iAmRolesService.changeCategoryName(
                         event.guild.idLong,
@@ -203,6 +224,7 @@ class IAmRoles
                         .queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
                     super.destroy()
                 }
+
                 7.toByte() -> {
                     val matchedRoles =
                         (super.channel as TextChannel).guild.getRolesByName(event.message.contentRaw, true)
@@ -220,6 +242,7 @@ class IAmRoles
                                     .queue {
                                         it.delete().queueAfter(1, TimeUnit.MINUTES)
                                     }
+
                                 true -> super.channel.sendMessage(user.asMention + " The role was successfully added to the category.")
                                     .queue {
                                         it.delete().queueAfter(1, TimeUnit.MINUTES)
@@ -229,6 +252,7 @@ class IAmRoles
                         }
                     }
                 }
+
                 8.toByte() -> {
                     iAmRolesService.changeAllowedRoles(
                         event.guild.idLong,
@@ -252,7 +276,7 @@ class IAmRoles
      */
     internal inner class IAm : CommandModule(ALIASES_I_AM, null, DESCRIPTION_I_AM) {
 
-        public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+        override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
             event.jda.addEventListener(RoleModificationSequence(event.author, event.channel, remove = false))
         }
     }
@@ -262,7 +286,7 @@ class IAmRoles
      */
     internal inner class IAmNot : CommandModule(ALIASES_I_AM_NOT, null, DESCRIPTION_I_AM_NOT) {
 
-        public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+        override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
             event.jda.addEventListener(RoleModificationSequence(event.author, event.channel, remove = true))
         }
     }
@@ -280,7 +304,7 @@ class IAmRoles
                 throw UnsupportedOperationException("This command must be executed in a guild.")
             }
             iAmRolesCategories = iAmRolesService.getAllCategoriesForGuild(channel.guild.idLong)
-            val message = MessageBuilder()
+            val message = StringBuilder()
             if (remove) {
                 message.append(user.asMention + " Please select from which category you'd like to remove roles.")
             } else {
@@ -289,7 +313,8 @@ class IAmRoles
             for (i in iAmRolesCategories.indices) {
                 message.append('\n').append(i).append(". ").append(iAmRolesCategories[i].categoryName)
             }
-            message.buildAll(MessageBuilder.SplitPolicy.NEWLINE)
+
+            SplitUtil.split(message.toString(), Message.MAX_CONTENT_LENGTH, SplitUtil.Strategy.NEWLINE)
                 .forEach { super.channel.sendMessage(it).queue { super.addMessageToCleaner(it) } }
         }
 
@@ -313,7 +338,7 @@ class IAmRoles
                     }
                     roles!!.removeIf { roleId -> assignedRoles!!.any { it.idLong == roleId } }
 
-                    val message = MessageBuilder(user.asMention)
+                    val message = StringBuilder(user.asMention)
                     message.append(" Please select which role(s) you'd like to ")
                         .append(if (remove) "remove" else "add")
                         .append(". For multiple roles put each number on a new line (shift enter).\n")
@@ -341,9 +366,11 @@ class IAmRoles
                             message.append('\n').append(i).append(". ").append(role?.name)
                         }
                     }
-                    message.buildAll(MessageBuilder.SplitPolicy.NEWLINE)
+
+                    SplitUtil.split(message.toString(), Message.MAX_CONTENT_LENGTH, SplitUtil.Strategy.NEWLINE)
                         .forEach { super.channel.sendMessage(it).queue { super.addMessageToCleaner(it) } }
                 }
+
                 else -> {
                     val requestedRoles = event.message.contentRaw.split('\n')
                     if (requestedRoles.isEmpty()) {

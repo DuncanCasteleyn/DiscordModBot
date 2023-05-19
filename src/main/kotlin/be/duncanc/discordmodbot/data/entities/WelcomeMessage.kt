@@ -3,9 +3,9 @@ package be.duncanc.discordmodbot.data.entities
 import jakarta.persistence.*
 import jakarta.validation.constraints.NotBlank
 import net.dv8tion.jda.api.EmbedBuilder
-import net.dv8tion.jda.api.MessageBuilder
-import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
+import net.dv8tion.jda.api.utils.messages.MessageCreateData
 import org.springframework.validation.annotation.Validated
 import java.awt.Color
 import java.io.Serializable
@@ -30,14 +30,14 @@ data class WelcomeMessage(
     val message: String = ""
 ) {
 
-    fun getWelcomeMessage(user: User): Message {
+    fun getWelcomeMessage(user: User): MessageCreateData {
         val joinEmbed = EmbedBuilder()
             .setDescription(this.message)
             .setImage(imageUrl)
             .setColor(Color.GREEN)
             .build()
-        return MessageBuilder()
-            .append(user.asMention)
+        return MessageCreateBuilder()
+            .addContent(user.asMention)
             .setEmbeds(joinEmbed)
             .build()
     }

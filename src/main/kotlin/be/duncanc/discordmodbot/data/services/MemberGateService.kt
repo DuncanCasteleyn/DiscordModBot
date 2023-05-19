@@ -22,7 +22,7 @@ import be.duncanc.discordmodbot.data.repositories.key.value.MemberGateQuestionRe
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Role
-import net.dv8tion.jda.api.entities.TextChannel
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import org.springframework.context.annotation.Lazy
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
@@ -40,10 +40,6 @@ class MemberGateService(
     private val jda: JDA,
     private val memberGateQuestionRepository: MemberGateQuestionRepository
 ) {
-    companion object {
-        private const val WELCOME_MESSAGE_ERROR =
-            "Saving/modifying/deleting welcome messages through this service is no longer supported"
-    }
 
     /**
      * @return null when not configured or channel no longer exists.
@@ -84,7 +80,7 @@ class MemberGateService(
     /**
      * @return null when not configured or channel no longer exists.
      */
-    fun getRulesChannel(guildId: Long, jda: JDA): TextChannel? {
+    fun getRuleChannel(guildId: Long, jda: JDA): TextChannel? {
         val memberGate: GuildMemberGate? = guildMemberGateRepository.findById(guildId).orElse(null)
         return if (memberGate != null) {
             memberGate.rulesTextChannel?.let { jda.getTextChannelById(it) }

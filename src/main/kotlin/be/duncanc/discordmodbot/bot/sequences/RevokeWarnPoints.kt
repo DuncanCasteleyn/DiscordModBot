@@ -4,11 +4,12 @@ import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.bot.services.MuteRole
 import be.duncanc.discordmodbot.data.entities.GuildWarnPoints
 import be.duncanc.discordmodbot.data.repositories.jpa.GuildWarnPointsRepository
-import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.MessageChannel
+import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.utils.SplitUtil
 import org.springframework.stereotype.Component
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -53,15 +54,16 @@ class RevokeWarnPoints(
         channel
     ), MessageSequence {
         init {
-            val messageBuilder = MessageBuilder("The user has had the following warnings in the past:\n\n")
+            val messageBuilder = StringBuilder("The user has had the following warnings in the past:\n\n")
             userGuildWarnPoints.points.forEach { userWarnPoints ->
                 messageBuilder.append("$userWarnPoints\n\n")
             }
             messageBuilder.append("\n\nPlease enter the ID of the warning to revoke it.")
-            messageBuilder.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach {
-                channel.sendMessage(it).queue { sendMessage -> super.addMessageToCleaner(sendMessage) }
-            }
 
+            SplitUtil.split(messageBuilder.toString(), Message.MAX_CONTENT_LENGTH, SplitUtil.Strategy.NEWLINE)
+                .forEach {
+                    channel.sendMessage(it).queue { sendMessage -> super.addMessageToCleaner(sendMessage) }
+                }
         }
 
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {

@@ -17,7 +17,7 @@
 package be.duncanc.discordmodbot.bot.utils
 
 import net.dv8tion.jda.api.entities.Member
-import net.dv8tion.jda.api.entities.TextChannel
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.exceptions.PermissionException
 import java.time.format.DateTimeFormatter
@@ -106,7 +106,7 @@ private fun getIndexStartOfSecondWord(arguments: String) =
     arguments.split(" ").dropLastWhile { it.isBlank() }.toTypedArray()[0].length + 1
 
 fun findMemberAndCheckCanInteract(event: MessageReceivedEvent): Member {
-    val target = event.guild.getMember(event.message.mentionedUsers[0])!!
+    val target = event.message.mentions.members[0]
     if (event.member?.canInteract(target) != true) {
         throw PermissionException("You can't interact with this member")
     }
