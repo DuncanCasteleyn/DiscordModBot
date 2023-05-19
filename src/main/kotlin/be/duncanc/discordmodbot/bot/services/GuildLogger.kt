@@ -536,19 +536,6 @@ class GuildLogger
         }
     }
 
-    override fun onUserUpdateDiscriminator(event: UserUpdateDiscriminatorEvent) {
-        for (guild in getGuildsWithLogging(event.jda)) {
-            guild ?: continue
-            guild.getMember(event.user) ?: continue
-            val logEmbed = EmbedBuilder()
-                .setColor(LIGHT_BLUE)
-                .setTitle("User's discriminator changed")
-                .addField("Old discriminator", event.oldDiscriminator, false)
-                .addField("New discriminator", event.newDiscriminator, false)
-            guildLoggerExecutor.execute { log(logEmbed, event.user, guild, null, LogTypeAction.USER) }
-        }
-    }
-
     private fun getGuildsWithLogging(jda: JDA): Set<Guild?> =
         loggingSettingsRepository.findAll().map { it.guildId.let { id -> jda.getGuildById(id) } }.toHashSet()
 
