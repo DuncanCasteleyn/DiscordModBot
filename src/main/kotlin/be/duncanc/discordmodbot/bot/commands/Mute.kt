@@ -50,7 +50,7 @@ class Mute
     true
 ) {
 
-    public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+    override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.author.openPrivateChannel().queue(
             { privateChannel -> commandExec(event, arguments, privateChannel) }
         ) { commandExec(event, arguments, null as PrivateChannel?) }

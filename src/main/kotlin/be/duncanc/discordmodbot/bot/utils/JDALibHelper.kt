@@ -39,27 +39,9 @@ val Member.nicknameAndUsername: String
     }
 
 /**
- * Applies the rot13 function on the String
- */
-fun String.rot13(): String {
-    val sb = StringBuilder()
-    for (i in 0 until this.length) {
-        var c = this[i]
-        when (c) {
-            in 'a'..'m' -> c += 13
-            in 'A'..'M' -> c += 13
-            in 'n'..'z' -> c -= 13
-            in 'N'..'Z' -> c -= 13
-        }
-        sb.append(c)
-    }
-    return sb.toString()
-}
-
-/**
- * Deletes multiple messages at once, unlike the default method this one will split the ArrayList messages in stacks of 100 messages each automatically
+ * Deletes multiple messages at once, unlike the default method, this one will split the ArrayList messages in stacks of 100 messages each automatically
  *
- * @param messageIdStrings Messages to delete. The list you provide will be emptied for you.
+ * @param messagesIds Messages to delete. The list you provide will be emptied for you.
  */
 fun TextChannel.limitLessBulkDeleteByIds(messagesIds: ArrayList<Long>) {
     val messagesIdStrings = ArrayList(messagesIds.map { it.toString() })

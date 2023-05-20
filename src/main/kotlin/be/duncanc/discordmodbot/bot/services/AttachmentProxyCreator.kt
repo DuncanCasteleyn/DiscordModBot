@@ -68,7 +68,7 @@ class AttachmentProxyCreator(
         event.message.attachments.forEach { attachment ->
             try {
                 if (attachment.size < 8 shl 20) {  //8MB
-                    attachment.retrieveInputStream().get(30, TimeUnit.SECONDS).let { inputStream: InputStream ->
+                    attachment.proxy.download().get(30, TimeUnit.SECONDS).let { inputStream: InputStream ->
                         val outputStream = ByteArrayOutputStream()
                         IOUtils.copy(inputStream, outputStream)
 

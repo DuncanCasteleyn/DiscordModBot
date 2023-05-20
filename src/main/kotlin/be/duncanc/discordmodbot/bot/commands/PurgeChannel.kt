@@ -41,7 +41,7 @@ class PurgeChannel : CommandModule(
     ignoreWhitelist = true
 ) {
 
-    public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+    override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         try {
             event.message.delete().submit().get(30, TimeUnit.SECONDS)
         } catch (ignored: Exception) {

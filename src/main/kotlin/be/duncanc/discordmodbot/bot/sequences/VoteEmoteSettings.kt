@@ -34,7 +34,7 @@ class VoteEmoteSettings(
     arrayOf("VoteEmoteSettings", "VoteSettings"),
     null,
     "Command to change the vote yes and no emotes for a server",
-    requiredPermissions = arrayOf(Permission.MANAGE_EMOJIS_AND_STICKERS)
+    requiredPermissions = arrayOf(Permission.MANAGE_GUILD_EXPRESSIONS)
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.jda.addEventListener(VoteEmoteSettingsSequence(votingEmotesRepository, event.author, event.channel))

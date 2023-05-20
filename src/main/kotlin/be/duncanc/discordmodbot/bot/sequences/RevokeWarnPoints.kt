@@ -1,7 +1,6 @@
 package be.duncanc.discordmodbot.bot.sequences
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
-import be.duncanc.discordmodbot.bot.services.MuteRole
 import be.duncanc.discordmodbot.data.entities.GuildWarnPoints
 import be.duncanc.discordmodbot.data.repositories.jpa.GuildWarnPointsRepository
 import net.dv8tion.jda.api.Permission
@@ -16,8 +15,7 @@ import java.util.concurrent.TimeUnit
 
 @Component
 class RevokeWarnPoints(
-    val guildWarnPointsRepository: GuildWarnPointsRepository,
-    val muteRole: MuteRole
+    val guildWarnPointsRepository: GuildWarnPointsRepository
 ) : CommandModule(
     arrayOf("RevokeWarnPoints", "RevokePoints"),
     "Mention a user",
