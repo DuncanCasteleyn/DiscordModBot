@@ -24,6 +24,7 @@ import jakarta.validation.constraints.Future
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Positive
+import org.hibernate.Hibernate
 import org.springframework.util.Assert
 import java.time.OffsetDateTime
 import java.util.*
@@ -59,5 +60,20 @@ data class UserWarnPoints(
             throw IllegalArgumentException("UserWarnPoints can't expire before the date it was created.")
         }
         Assert.hasLength(reason, "The reason can not be empty.")
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || Hibernate.getClass(this) != Hibernate.getClass(other)) return false
+        other as UserWarnPoints
+
+        return id == other.id
+    }
+
+    override fun hashCode(): Int = javaClass.hashCode()
+
+    @Override
+    override fun toString(): String {
+        return this::class.simpleName + "(id = $id )"
     }
 }
