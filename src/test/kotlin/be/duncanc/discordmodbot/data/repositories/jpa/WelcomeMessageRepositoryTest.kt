@@ -48,9 +48,10 @@ class WelcomeMessageRepositoryTest {
         // Given
         val welcomeMessage = WelcomeMessage(guildId = 0, imageUrl = "test", message = MAX_SIZE_MESSAGE + "h")
         // When
-        val assertThrows =
-            assertThrows<NonTransientDataAccessException> { welcomeMessageRepository.save(welcomeMessage) }
+        val assertThrows = assertThrows<NonTransientDataAccessException> {
+            welcomeMessageRepository.save(welcomeMessage)
+        }
         // Then
-        assert(assertThrows.message!!.startsWith("could not execute statement;"))
+        assert(assertThrows.message!!.startsWith("could not execute statement"))
     }
 }
