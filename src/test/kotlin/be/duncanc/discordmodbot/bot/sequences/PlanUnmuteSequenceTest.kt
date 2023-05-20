@@ -98,22 +98,23 @@ internal class PlanUnmuteSequenceTest {
         whenever(user.name).thenReturn("A moderator")
         whenever(user.jda).thenReturn(jda)
         // Act
-        val methodInvocationName = "onMessageReceivedDuringSequence"
-        ReflectionTestUtils.invokeMethod<Void>(
-            planUnmuteSequence,
-            methodInvocationName,
-            messageReceivedEvent
-        )
+        planUnmuteSequence.onMessageReceivedDuringSequence(messageReceivedEvent)
         // Verify
-        verify(scheduledUnmuteService).planUnmute(any(), any(), any())
-        val onMessageReceivedDuringSequence =
-            mockingDetails(planUnmuteSequence).invocations.filter { it.method.name == methodInvocationName }
-        onMessageReceivedDuringSequence.first().markVerified()
+        verify(planUnmuteSequence).onMessageReceivedDuringSequence(messageReceivedEvent)
+        verify(planUnmuteSequence, times(3)).channel
+        verify(planUnmuteSequence, times(2)).user
+        verify(planUnmuteSequence).destroy()
+        verify(scheduledUnmuteService).planUnmute(anyOrNull(), anyOrNull(), anyOrNull())
         verify(targetUser).idLong
         verify(channel, times(3)).sendMessage(any<String>())
         verify(channel).asMention
+        verify(channel, times(2)).guild
         verify(user).asMention
         verify(guild).idLong
+        verify(guild).getMember(targetUser)
+        verify(guild).getMember(user)
+        verify(user).name
+        verify(targetUser).name
         verify(messageAction, times(3)).queue(any<Consumer<Message>>())
         verify(guild).getMember(user)
         verify(guild).getMember(targetUser)
@@ -134,18 +135,12 @@ internal class PlanUnmuteSequenceTest {
         whenever(messageReceivedEvent.message).thenReturn(message)
         whenever(message.contentRaw).thenReturn("Definitely not a number")
         // Act
-        val methodInvocationName = "onMessageReceivedDuringSequence"
         val numberFormatException = assertThrows<NumberFormatException> {
-            ReflectionTestUtils.invokeMethod<Void>(
-                planUnmuteSequence, methodInvocationName,
-                messageReceivedEvent
-            )
+            planUnmuteSequence.onMessageReceivedDuringSequence(messageReceivedEvent)
         }
         // Verify
         assertEquals("For input string: \"Definitely not a number\"", numberFormatException.message)
-        val onMessageReceivedDuringSequence =
-            mockingDetails(planUnmuteSequence).invocations.filter { it.method.name == methodInvocationName }
-        onMessageReceivedDuringSequence.first().markVerified()
+        verify(planUnmuteSequence).onMessageReceivedDuringSequence(messageReceivedEvent)
         verify(channel, times(2)).sendMessage(any<String>())
         verify(channel).asMention
         verify(user).asMention

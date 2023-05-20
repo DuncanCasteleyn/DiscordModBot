@@ -51,6 +51,6 @@ class WelcomeMessageRepositoryTest {
         val assertThrows =
             assertThrows<NonTransientDataAccessException> { welcomeMessageRepository.save(welcomeMessage) }
         // Then
-        assert(assertThrows.message!!.startsWith("could not execute statement;"))
+        assert(assertThrows.message!!.startsWith("could not execute statement [Value too long for column"))
     }
 }
