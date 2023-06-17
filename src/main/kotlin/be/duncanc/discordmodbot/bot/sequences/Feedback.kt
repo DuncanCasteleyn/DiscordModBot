@@ -81,7 +81,7 @@ class Feedback
             val messageBuilder = StringBuilder()
             messageBuilder.append("Please select which guild your like to report feedback to:\n\n")
             for (i in selectableGuilds.indices) {
-                messageBuilder.append(i).append(". ").append(selectableGuilds[i].name).append('\n')
+                messageBuilder.append(i).append(": ").append(selectableGuilds[i].name).append('\n')
             }
             val messages =
                 SplitUtil.split(

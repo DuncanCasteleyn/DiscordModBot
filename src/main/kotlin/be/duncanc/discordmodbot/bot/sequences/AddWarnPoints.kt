@@ -173,7 +173,7 @@ class AddWarnPoints(
                         processSequence(event, guildPointsSettings)
                         return
                     }
-                    channel.sendMessage("Should an action be performed with this warn?\n0. None\n1. Mute$muteText\n2. Kick")
+                    channel.sendMessage("Should an action be performed with this warn?\n0: None\n1: Mute$muteText\n2. Kick")
                         .queue()
                 }
 

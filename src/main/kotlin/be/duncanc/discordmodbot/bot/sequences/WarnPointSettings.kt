@@ -64,13 +64,13 @@ class WarnPointSettings(
 
             val messageBuilder = MessageCreateBuilder()
                 .addContent("What would you like to do?\n")
-                .addContent("\n0. Change max points per reason. Current value: ")
+                .addContent("\n0: Change max points per reason. Current value: ")
                 .addContent(guildSettings.maxPointsPerReason.toString())
-                .addContent("\n1. Change the limit before a summary is announced with the users collected points. Current value: ")
+                .addContent("\n1: Change the limit before a summary is announced with the users collected points. Current value: ")
                 .addContent(guildSettings.announcePointsSummaryLimit.toString())
-                .addContent("\n2. Change the channel to announce the summary in. Current channel: ")
+                .addContent("\n2: Change the channel to announce the summary in. Current channel: ")
                 .addContent(announceChannel)
-                .addContent("\n3. Toggle Warn command override by replacing Warn with AddPoints command. Current value: ")
+                .addContent("\n3: Toggle Warn command override by replacing Warn with AddPoints command. Current value: ")
                 .addContent(guildSettings.overrideWarnCommand.toString())
             channel.sendMessage(messageBuilder.build()).queue { super.addMessageToCleaner(it) }
         }

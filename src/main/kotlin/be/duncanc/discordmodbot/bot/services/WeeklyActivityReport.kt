@@ -150,9 +150,9 @@ class WeeklyActivityReport(
         init {
             channel.sendMessage(
                 "Please selection the action you want to perform:\n\n" +
-                        "0. Set report channel\n" +
-                        "1. add tracked member or role\n" +
-                        "2. remove tracked member or role"
+                        "0: Set report channel\n" +
+                        "1: add tracked member or role\n" +
+                        "2: remove tracked member or role"
             ).queue { addMessageToCleaner(it) }
         }
 

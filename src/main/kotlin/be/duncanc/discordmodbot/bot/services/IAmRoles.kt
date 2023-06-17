@@ -87,9 +87,9 @@ class IAmRoles
             iAmRolesCategories = iAmRolesService.getAllCategoriesForGuild(channel.guild.idLong)
             super.channel.sendMessage(
                 "Please select which action you want to perform:\n" +
-                        "0. Add a new category\n" +
-                        "1. Remove an existing category\n" +
-                        "2. Modify an existing category"
+                        "0: Add a new category\n" +
+                        "1: Remove an existing category\n" +
+                        "2: Modify an existing category"
             ).queue { message -> super.addMessageToCleaner(message) }
         }
 
@@ -109,7 +109,7 @@ class IAmRoles
                         val deleteCategoryMessage =
                             StringBuilder().append("Please select which role category you'd like to delete.")
                         for (i in iAmRolesCategories.indices) {
-                            deleteCategoryMessage.append('\n').append(i).append(". ")
+                            deleteCategoryMessage.append('\n').append(i).append(": ")
                                 .append(iAmRolesCategories[i].categoryName)
                         }
 
@@ -131,7 +131,7 @@ class IAmRoles
                         val modifyCategoryMessage =
                             StringBuilder().append("Please select which role category you'd like to modify.")
                         for (i in iAmRolesCategories.indices) {
-                            modifyCategoryMessage.append('\n').append(i).append(". ")
+                            modifyCategoryMessage.append('\n').append(i).append(": ")
                                 .append(iAmRolesCategories[i].categoryName)
                         }
 
@@ -187,9 +187,9 @@ class IAmRoles
                     iAmRolesCategory = iAmRolesCategories.elementAt(Integer.parseInt(event.message.contentRaw))
                     super.channel.sendMessage(
                         "Please enter the number of the action you'd like to perform.\n" +
-                                "0. Modify the name. Current value: " + iAmRolesCategory!!.categoryName + "\n" +
-                                "1. Change how much roles you can assign from the category. Current value: " + iAmRolesCategory!!.allowedRoles + "\n" +
-                                "2. Add or remove roles."
+                                "0: Modify the name. Current value: " + iAmRolesCategory!!.categoryName + "\n" +
+                                "1: Change how much roles you can assign from the category. Current value: " + iAmRolesCategory!!.allowedRoles + "\n" +
+                                "2: Add or remove roles."
                     ).queue { super.addMessageToCleaner(it) }
                     sequenceNumber = 5
                 }
@@ -311,7 +311,7 @@ class IAmRoles
                 message.append(user.asMention + " Please select from which category you'd like to assign (a) role(s).")
             }
             for (i in iAmRolesCategories.indices) {
-                message.append('\n').append(i).append(". ").append(iAmRolesCategories[i].categoryName)
+                message.append('\n').append(i).append(": ").append(iAmRolesCategories[i].categoryName)
             }
 
             SplitUtil.split(message.toString(), Message.MAX_CONTENT_LENGTH, SplitUtil.Strategy.NEWLINE)
@@ -353,7 +353,7 @@ class IAmRoles
                             throw IllegalStateException("You have no roles to remove from this category.")
                         }
                         for (i in assignedRoles!!.indices) {
-                            message.append('\n').append(i).append(". ").append(assignedRoles!![i].name)
+                            message.append('\n').append(i).append(": ").append(assignedRoles!![i].name)
                         }
                     } else {
                         if (roles!!.isEmpty()) {
@@ -363,7 +363,7 @@ class IAmRoles
                         }
                         for (i in roles!!.indices) {
                             val role = (channel as TextChannel).guild.getRoleById(roles!![i])
-                            message.append('\n').append(i).append(". ").append(role?.name)
+                            message.append('\n').append(i).append(": ").append(role?.name)
                         }
                     }
 

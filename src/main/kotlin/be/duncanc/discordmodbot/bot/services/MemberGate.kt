@@ -392,21 +392,21 @@ class MemberGate(
             channel.sendMessage(
                 user.asMention + " Welcome to the member gate configuration sequences.\n\n" +
                         "Select an action to perform:\n" +
-                        "0. add a question\n" +
-                        "1. remove a question\n" +
-                        "2. Add welcome message\n" +
-                        "3. Remove welcome message\n" +
-                        "4. Change welcome channel\n" +
-                        "5. Change member gate chanel\n" +
-                        "6. Change member role\n" +
-                        "7. Change rules channel\n" +
-                        "8. Disable member approval gate (wipes your questions, member role, gate channel and rule channel settings)\n" +
-                        "9. Disable welcome messages (wipes your welcomes message and channel settings)\n" +
-                        "10. Wipe member gate module settings\n" +
-                        "11. Set auto purge time in hours (purges members that don't complete entry process)\n" +
-                        "12. Disable auto purge\n" +
-                        "13. Set entry reminder time in hours (reminds people they will be purged)\n" +
-                        "14. Disable entry reminder\n" +
+                        "0: add a question\n" +
+                        "1: remove a question\n" +
+                        "2: Add welcome message\n" +
+                        "3: Remove welcome message\n" +
+                        "4: Change welcome channel\n" +
+                        "5: Change member gate chanel\n" +
+                        "6: Change member role\n" +
+                        "7: Change rules channel\n" +
+                        "8: Disable member approval gate (wipes your questions, member role, gate channel and rule channel settings)\n" +
+                        "9: Disable welcome messages (wipes your welcomes message and channel settings)\n" +
+                        "10: Wipe member gate module settings\n" +
+                        "11: Set auto purge time in hours (purges members that don't complete entry process)\n" +
+                        "12: Disable auto purge\n" +
+                        "13: Set entry reminder time in hours (reminds people they will be purged)\n" +
+                        "14: Disable entry reminder\n" +
                         "\nTo enable the member gate you need to set at least the member gate channel and the member role\n" +
                         "To enable welcome messages you need to set at least a welcome message and the welcome channel"
             ).queue { super.addMessageToCleaner(it) }
@@ -552,7 +552,7 @@ class MemberGate(
                     val guildId = (channel as TextChannel).guild.idLong
                     questions = memberGateService.getQuestions(guildId).toList()
                     for (i in questions.indices) {
-                        questionListMessage.addContent(i.toString()).addContent(". ").addContent(questions[i])
+                        questionListMessage.addContent(i.toString()).addContent(": ").addContent(questions[i])
                             .addContent("\n")
                     }
                     questionListMessage.addContent("\n").addContent("Respond with the question number to remove it.")
@@ -571,7 +571,7 @@ class MemberGate(
                     val guildId = (channel as TextChannel).guild.idLong
                     welcomeMessages = ArrayList(welcomeMessageService.getWelcomeMessages(guildId))
                     for (i in welcomeMessages.indices) {
-                        welcomeMessageList.append(i.toString()).append(". ").append(welcomeMessages[i])
+                        welcomeMessageList.append(i.toString()).append(": ").append(welcomeMessages[i])
                             .append('\n')
                     }
                     welcomeMessageList.append('\n')
