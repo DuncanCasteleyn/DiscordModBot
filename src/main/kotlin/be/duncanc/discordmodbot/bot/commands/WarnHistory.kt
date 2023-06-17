@@ -18,17 +18,18 @@ package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.utils.messageTimeFormat
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
-import be.duncanc.discordmodbot.data.entities.GuildWarnPoints
+import be.duncanc.discordmodbot.data.entities.GuildWarnPoint
 import be.duncanc.discordmodbot.data.repositories.jpa.GuildWarnPointsRepository
 import be.duncanc.discordmodbot.data.services.UserBlockService
-import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.channel.ChannelType
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.utils.SplitUtil
 import org.springframework.stereotype.Component
+import java.time.OffsetDateTime
 import java.util.concurrent.TimeUnit
 
 @Component
@@ -45,33 +46,33 @@ class WarnHistory(
         if (!event.isFromType(ChannelType.TEXT)) {
             throw IllegalArgumentException("This command can only be used in a guild/server channel.")
         }
-        if (event.message.mentionedUsers.size == 1 && event.member?.hasPermission(Permission.KICK_MEMBERS) == true) {
+        if (event.message.mentions.members.size == 1 && event.member?.hasPermission(Permission.KICK_MEMBERS) == true) {
             val requestedUserPoints = guildWarnPointsRepository.findById(
-                GuildWarnPoints.GuildWarnPointsId(
-                    event.message.mentionedUsers[0].idLong,
+                GuildWarnPoint.GuildWarnPointId(
+                    event.message.mentions.members[0].idLong,
                     event.guild.idLong
                 )
             )
             if (requestedUserPoints.isPresent) {
                 informUserOfPoints(event.author, requestedUserPoints.get(), event.guild, true)
-                event.textChannel.sendMessage("The list of points the user collected has been send in a private message for privacy reason")
+                event.guildChannel.sendMessage("The list of points the user collected has been send in a private message for privacy reason")
                     .queue(cleanUp())
             } else {
-                event.textChannel.sendMessage("The user has not received any points.").queue(cleanUp())
+                event.guildChannel.sendMessage("The user has not received any points.").queue(cleanUp())
             }
         } else {
             val userPoints = guildWarnPointsRepository.findById(
-                GuildWarnPoints.GuildWarnPointsId(
+                GuildWarnPoint.GuildWarnPointId(
                     event.author.idLong,
                     event.guild.idLong
                 )
             )
             if (userPoints.isPresent) {
                 informUserOfPoints(event.author, userPoints.get(), event.guild, false)
-                event.textChannel.sendMessage("Your list of points has been send in a private message to you for privacy reasons, if you didn't receive any messages make sure you have enabled dm from server members on this server before executing this command.")
+                event.guildChannel.sendMessage("Your list of points has been send in a private message to you for privacy reasons, if you didn't receive any messages make sure you have enabled dm from server members on this server before executing this command.")
                     .queue(cleanUp())
             } else {
-                event.textChannel.sendMessage("You haven't received any points. Good job!").queue(cleanUp())
+                event.guildChannel.sendMessage("You haven't received any points. Good job!").queue(cleanUp())
             }
         }
     }
@@ -79,11 +80,20 @@ class WarnHistory(
     private fun cleanUp(): (Message) -> Unit =
         { it.delete().queueAfter(1, TimeUnit.MINUTES) }
 
-    private fun informUserOfPoints(user: User, warnPoints: GuildWarnPoints, guild: Guild, moderator: Boolean) {
+    private fun informUserOfPoints(user: User, warnPoints: GuildWarnPoint, guild: Guild, moderator: Boolean) {
+        val warnedUser = user.jda.getUserById(warnPoints.userId)!!
         user.openPrivateChannel().queue { privateChannel ->
-            val message = MessageBuilder()
-            message.append("Warning history for ").append(user.jda.getUserById(warnPoints.userId)).append(':')
-            warnPoints.points.forEach {
+            val message = StringBuilder()
+            message.append("Warning history for ").append(warnedUser).append(':')
+
+            val warnings =
+                guildWarnPointsRepository.findAllByGuildIdAndUserIdAndExpireDateAfter(
+                    guild.idLong,
+                    warnedUser.idLong,
+                    OffsetDateTime.now()
+                )
+
+            warnings.forEach {
                 message.append("\n\n")
                 if (moderator) {
                     message.append(it.points).append(" point(s)")
@@ -97,7 +107,9 @@ class WarnHistory(
                     message.append("\n\nExpires: ").append(it.expireDate.format(messageTimeFormat))
                 }
             }
-            message.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach {
+            val messages = SplitUtil.split(message.toString(), Message.MAX_CONTENT_LENGTH, SplitUtil.Strategy.NEWLINE)
+
+            messages.forEach {
                 privateChannel.sendMessage(it).queue()
             }
         }

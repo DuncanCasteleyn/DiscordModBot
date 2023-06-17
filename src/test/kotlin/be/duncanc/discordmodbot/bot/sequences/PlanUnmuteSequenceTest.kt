@@ -6,8 +6,10 @@ import be.duncanc.discordmodbot.data.repositories.jpa.MuteRolesRepository
 import be.duncanc.discordmodbot.data.services.ScheduledUnmuteService
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.*
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import net.dv8tion.jda.api.requests.restaction.MessageAction
+import net.dv8tion.jda.api.requests.restaction.MessageCreateAction
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -41,7 +43,7 @@ internal class PlanUnmuteSequenceTest {
     private lateinit var targetUser: User
 
     @Mock
-    private lateinit var messageAction: MessageAction
+    private lateinit var messageCreateAction: MessageCreateAction
 
     @Mock
     private lateinit var jda: JDA
@@ -65,14 +67,14 @@ internal class PlanUnmuteSequenceTest {
 
     @BeforeEach
     fun `Set action for init`() {
-        whenever(channel.sendMessage(any<String>())).thenReturn(messageAction)
+        whenever(channel.sendMessage(any<String>())).thenReturn(messageCreateAction)
         planUnmuteSequence = spy(PlanUnmuteSequence(user, channel, scheduledUnmuteService, targetUser, guildLogger))
         stubs = arrayOf(
             user,
             channel,
             scheduledUnmuteService,
             targetUser,
-            messageAction,
+            messageCreateAction,
             jda,
             messageReceivedEvent,
             message,
@@ -115,7 +117,7 @@ internal class PlanUnmuteSequenceTest {
         verify(guild).getMember(user)
         verify(user).name
         verify(targetUser).name
-        verify(messageAction, times(3)).queue(any<Consumer<Message>>())
+        verify(messageCreateAction, times(3)).queue(any<Consumer<Message>>())
         verify(guild).getMember(user)
         verify(guild).getMember(targetUser)
         verify(guildLogger).log(
@@ -144,7 +146,7 @@ internal class PlanUnmuteSequenceTest {
         verify(channel, times(2)).sendMessage(any<String>())
         verify(channel).asMention
         verify(user).asMention
-        verify(messageAction, times(2)).queue(any())
+        verify(messageCreateAction, times(2)).queue(any())
     }
 
     @Test
@@ -168,7 +170,7 @@ internal class PlanUnmuteSequenceTest {
         verify(channel, times(2)).sendMessage(any<String>())
         verify(channel).asMention
         verify(user).asMention
-        verify(messageAction, times(2)).queue(any())
+        verify(messageCreateAction, times(2)).queue(any())
     }
 }
 
@@ -206,16 +208,16 @@ internal class PlanUnmuteCommandTest {
     private lateinit var user: User
 
     @Mock
-    private lateinit var messageAction: MessageAction
+    private lateinit var messageCreateAction: MessageCreateAction
 
     @Mock
-    private lateinit var messageChannel: MessageChannel
+    private lateinit var messageChannelUnion: MessageChannelUnion
 
     @AfterEach
     fun `No more interactions with any spy or mocks`() {
         verifyNoMoreInteractions(
             jda, planUnmuteCommand, scheduledUnmuteService, message, message, guild, member, user,
-            messageAction, messageChannel, guildLogger, muteRolesRepository
+            messageCreateAction, messageChannelUnion, guildLogger, muteRolesRepository
         )
     }
 
@@ -238,8 +240,8 @@ internal class PlanUnmuteCommandTest {
         whenever(guild.getMemberById(1)).thenReturn(member)
         whenever(member.user).thenReturn(user)
         whenever(messageReceivedEvent.author).thenReturn(user)
-        whenever(messageReceivedEvent.channel).thenReturn(messageChannel)
-        whenever(messageChannel.sendMessage(anyString())).thenReturn(messageAction)
+        whenever(messageReceivedEvent.channel).thenReturn(messageChannelUnion)
+        whenever(messageChannelUnion.sendMessage(anyString())).thenReturn(messageCreateAction)
         whenever(messageReceivedEvent.jda).thenReturn(jda)
         // Act
         ReflectionTestUtils.invokeMethod<Void>(
@@ -260,7 +262,7 @@ internal class PlanUnmuteCommandTest {
         verify(member).user
         verify(jda).addEventListener(any<PlanUnmuteSequence>())
         verify(user).asMention
-        verify(messageAction, times(2)).queue(any())
+        verify(messageCreateAction, times(2)).queue(any())
     }
 
     @Test

@@ -15,8 +15,8 @@ class BotConfiguration {
     companion object {
         val INTENTS = listOf(
             GatewayIntent.DIRECT_MESSAGES,
-            GatewayIntent.GUILD_BANS,
-            GatewayIntent.GUILD_EMOJIS,
+            GatewayIntent.GUILD_MODERATION,
+            GatewayIntent.GUILD_EMOJIS_AND_STICKERS,
             GatewayIntent.GUILD_MEMBERS,
             GatewayIntent.GUILD_MESSAGES,
             GatewayIntent.GUILD_MESSAGE_REACTIONS,

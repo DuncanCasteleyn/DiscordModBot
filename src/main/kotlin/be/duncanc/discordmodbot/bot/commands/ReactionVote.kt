@@ -19,6 +19,7 @@ package be.duncanc.discordmodbot.bot.commands
 import be.duncanc.discordmodbot.data.repositories.jpa.VotingEmotesRepository
 import be.duncanc.discordmodbot.data.services.UserBlockService
 import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.emoji.Emoji
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 
@@ -43,7 +44,7 @@ class ReactionVote(
             val split = arguments.split(" ", limit = 2)
             try {
                 val messageId = split[0].toLong()
-                event.textChannel.retrieveMessageById(messageId).queue {
+                event.guildChannel.retrieveMessageById(messageId).queue {
                     if (split.size == 1) {
                         it.addYesOrNoVoteReactions()
                     } else {
@@ -61,11 +62,11 @@ class ReactionVote(
 
     private fun Message.addYesOrNoVoteReactions() {
         votingEmotesRepository.findById(guild.idLong).ifPresentOrElse({
-            addReaction(jda.getEmoteById(it.voteYesEmote)!!).queue()
-            addReaction(jda.getEmoteById(it.voteNoEmote)!!).queue()
+            addReaction(jda.getEmojiById(it.voteYesEmote)!!).queue()
+            addReaction(jda.getEmojiById(it.voteNoEmote)!!).queue()
         }, {
-            addReaction("✅").queue()
-            addReaction("❎").queue()
+            addReaction(Emoji.fromUnicode("✅")).queue()
+            addReaction(Emoji.fromUnicode("❎")).queue()
         })
     }
 
@@ -74,7 +75,7 @@ class ReactionVote(
         require(maxReactions > 1) { "A value below 1 is not supported" }
 
         for (x in 0 until maxReactions) {
-            addReaction(numericVoteEmotes[x]).queue()
+            addReaction(Emoji.fromUnicode(numericVoteEmotes[x])).queue()
         }
     }
 }

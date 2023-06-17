@@ -27,26 +27,29 @@ import be.duncanc.discordmodbot.data.repositories.key.value.MemberGateQuestionRe
 import be.duncanc.discordmodbot.data.services.MemberGateService
 import be.duncanc.discordmodbot.data.services.WelcomeMessageService
 import net.dv8tion.jda.api.JDA
-import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.*
+import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.channel.ChannelType
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
+import net.dv8tion.jda.api.entities.emoji.Emoji
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleAddEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent
+import net.dv8tion.jda.api.utils.MarkdownUtil
+import net.dv8tion.jda.api.utils.SplitUtil
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.security.SecureRandom
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-/**
- * Created by Duncan on 30/04/2017.
- * <p>
- * Welcomes users when the join, get accepted and makes them answer questions before they get accepted.
- */
 @Component
 @Transactional
 class MemberGate(
@@ -88,7 +91,7 @@ class MemberGate(
     /**
      * Cleans the messages from the users and messages containing mentions to the users from the member gate channel.
      *
-     * If the channel contains more than 1000 message all messages past 1000 will be ignored.
+     * If the channel contains more than 1000 messages, all messages past 1000 will be ignored.
      */
     private fun cleanMessagesFromUser(gateTextChannel: TextChannel, user: User) {
         if (!gateTextChannel.guild.selfMember.hasPermission(
@@ -133,7 +136,7 @@ class MemberGate(
                         A moderator can review it using `!review ${memberGateQuestion.id}`
                         """.trimIndent()
                 ).queue { message ->
-                    message.addReaction("❔").queue()
+                    message.addReaction(Emoji.fromUnicode("❔")).queue()
                     synchronized(informUserMessageIds) {
                         informUserMessageIds[memberGateQuestion.id] = message.idLong
                     }
@@ -141,7 +144,7 @@ class MemberGate(
             } else {
                 gateTextChannel.sendMessage(
                     "Welcome " + event.member.asMention + ", this server requires you to read the " +
-                            (memberGateService.getRulesChannel(event.guild.idLong, event.jda)?.asMention
+                            (memberGateService.getRuleChannel(event.guild.idLong, event.jda)?.asMention
                                 ?: "rules") +
                             " and answer a question regarding those before you gain full access.\n\n" +
                             "If you have read the rules and are ready to answer the question, type ``!" + super.aliases[1] + "`` and follow the instructions from the bot.\n\n" +
@@ -197,27 +200,29 @@ class MemberGate(
             super.aliases[1].lowercase(Locale.getDefault()) -> {
                 join(event)
             }
+
             super.aliases[2].lowercase(Locale.getDefault()) -> {
                 arguments?.let { review(event.jda, event.author, event.guild, event.channel, it) }
             }
         }
     }
 
-    override fun onGuildMessageReactionAdd(event: GuildMessageReactionAddEvent) {
+
+    override fun onMessageReactionAdd(event: MessageReactionAddEvent) {
         if (
-            event.reactionEmote.name != "❔" ||
+            event.reaction.emoji.asUnicode() != Emoji.fromUnicode("❔") ||
             event.user == event.jda.selfUser ||
-            event.guild.getMember(event.user)?.hasPermission(Permission.MANAGE_ROLES) != true ||
+            event.member?.hasPermission(Permission.MANAGE_ROLES) != true ||
             memberGateService.getGateChannel(event.guild.idLong, event.jda) != event.channel
         ) {
             return
         }
         val message = event.retrieveMessage().submit().get(1, TimeUnit.MINUTES)
-        if (message.author != event.jda.selfUser || !message.contentRaw.contains("!review") || message.mentionedMembers.size != 1) {
+        if (message.author != event.jda.selfUser || !message.contentRaw.contains("!review") || message.mentions.members.size != 1) {
             return
         }
         val id = message.contentRaw.split(" ")[0].trimStart('<', '@', '!').trimEnd('>')
-        review(event.jda, event.user, event.guild, event.channel, id)
+        event.user?.let { review(event.jda, it, event.guild, event.channel, id) }
     }
 
     private fun review(jda: JDA, author: User, guild: Guild, channel: MessageChannel, arguments: String) {
@@ -258,9 +263,6 @@ class MemberGate(
         }
     }
 
-    /**
-     * Grants a user access to the accepted role.
-     */
     private fun accept(member: Member) {
         val guild = member.guild
         memberGateService.getMemberRole(guild.idLong, member.jda)
@@ -275,7 +277,7 @@ class MemberGate(
             member.asMention + " Please wait while a moderator manually checks your answer. You might be asked (an) other question(s).\n\n" +
                     "A moderator can use `!" + super.aliases[2] + " " + member.user.idLong + "`"
         ).queue {
-            it.addReaction("❔").queue()
+            it.addReaction(Emoji.fromUnicode("❔")).queue()
             synchronized(informUserMessageIds) {
                 informUserMessageIds[member.user.idLong] = it.idLong
             }
@@ -317,17 +319,20 @@ class MemberGate(
                                 .queue { super.addMessageToCleaner(it) }
                             sequenceNumber = 1
                         }
+
                         "no" -> {
                             destroy()
                             super.channel.sendMessage("${user.asMention} Please read the rules, before using this command.")
                                 .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                         }
+
                         else -> {
                             super.channel.sendMessage("${user.asMention} Invalid response! Answer with `yes` or `no`!")
                                 .queue { super.addMessageToCleaner(it) }
                         }
                     }
                 }
+
                 1.toByte() -> {
                     when (event.message.contentRaw.lowercase(Locale.getDefault())) {
                         "yes" -> {
@@ -335,6 +340,7 @@ class MemberGate(
                                 .queue { super.addMessageToCleaner(it) }
                             sequenceNumber = 2
                         }
+
                         "no" -> {
                             destroy()
                             val reason = "Doesn't agree with the rules."
@@ -350,12 +356,14 @@ class MemberGate(
                                 )
                             }
                         }
+
                         else -> {
                             super.channel.sendMessage(user.asMention + " Invalid response! Answer with \"yes\" or \"no\"!")
                                 .queue { super.addMessageToCleaner(it) }
                         }
                     }
                 }
+
                 else -> {
                     destroy()
                     val member = event.guild.getMemberById(user.idLong)!!
@@ -363,16 +371,13 @@ class MemberGate(
                         member = member,
                         question = question,
                         answer = event.message.contentDisplay,
-                        textChannel = event.textChannel
+                        textChannel = event.channel.asTextChannel()
                     )
                 }
             }
         }
     }
 
-    /**
-     * This sequences allows to configure the gate
-     */
     private inner class ConfigureSequence(user: User, channel: MessageChannel) :
         Sequence(user, channel), MessageSequence {
         private var sequenceNumber: Byte = 0
@@ -419,6 +424,7 @@ class MemberGate(
                 0.toByte() -> {
                     findDesiredAction(messageContent, event)
                 }
+
                 1.toByte() -> {
                     val guildId = (channel as TextChannel).guild.idLong
                     memberGateService.addQuestion(guildId, event.message.contentRaw)
@@ -426,6 +432,7 @@ class MemberGate(
                         .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                     destroy()
                 }
+
                 2.toByte() -> {
                     val number: Int = event.message.contentDisplay.toInt()
                     val guildId = (channel as TextChannel).guild.idLong
@@ -434,12 +441,14 @@ class MemberGate(
                         .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                     destroy()
                 }
+
                 3.toByte() -> {
                     val guildId = (channel as TextChannel).guild.idLong
                     welcomeMessage = WelcomeMessage(guildId = guildId, imageUrl = event.message.contentRaw)
                     channel.sendMessage("Please enter a welcome message.").queue { addMessageToCleaner(it) }
                     sequenceNumber = 4
                 }
+
                 4.toByte() -> {
                     welcomeMessage = welcomeMessage.copy(message = event.message.contentRaw)
                     welcomeMessageService.addWelcomeMessage(welcomeMessage)
@@ -447,6 +456,7 @@ class MemberGate(
                         .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                     destroy()
                 }
+
                 5.toByte() -> {
                     val welcomeMessage = welcomeMessages[event.message.contentRaw.toInt()]
                     welcomeMessageService.removeWelcomeMessage(welcomeMessage)
@@ -454,8 +464,9 @@ class MemberGate(
                         .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                     destroy()
                 }
+
                 6.toByte() -> {
-                    val mentionedChannels = event.message.getMentions(Message.MentionType.CHANNEL)
+                    val mentionedChannels = event.message.mentions.channels
                     if (mentionedChannels.isNotEmpty()) {
                         val guildId = (channel as TextChannel).guild.idLong
                         memberGateService.setWelcomeChannel(guildId, mentionedChannels[0] as TextChannel)
@@ -465,8 +476,9 @@ class MemberGate(
                         throw IllegalArgumentException(NEED_TO_MENTION_CHANNEL)
                     }
                 }
+
                 7.toByte() -> {
-                    val mentionedChannels = event.message.getMentions(Message.MentionType.CHANNEL)
+                    val mentionedChannels = event.message.mentions.channels
                     if (mentionedChannels.isNotEmpty()) {
                         val guildId = (channel as TextChannel).guild.idLong
                         memberGateService.setGateChannel(guildId, mentionedChannels[0] as TextChannel)
@@ -476,6 +488,7 @@ class MemberGate(
                         throw IllegalArgumentException(NEED_TO_MENTION_CHANNEL)
                     }
                 }
+
                 8.toByte() -> {
                     val targetRoles = event.guild.getRolesByName(event.message.contentRaw, true)
                     when {
@@ -485,13 +498,15 @@ class MemberGate(
                             channel.sendMessage("Role set").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                             destroy()
                         }
+
                         targetRoles.isEmpty() -> throw IllegalArgumentException("Couldn't find any roles with that name.")
                         else -> throw IllegalArgumentException("More then 1 match, please rename the role temporary.")
                     }
 
                 }
+
                 9.toByte() -> {
-                    val mentionedChannels = event.message.getMentions(Message.MentionType.CHANNEL)
+                    val mentionedChannels = event.message.mentions.channels
                     if (mentionedChannels.isNotEmpty()) {
                         val guildId = (channel as TextChannel).guild.idLong
                         memberGateService.setRulesChannel(guildId, mentionedChannels[0] as TextChannel)
@@ -501,12 +516,14 @@ class MemberGate(
                         throw IllegalArgumentException("A channel needs to be mentioned.")
                     }
                 }
+
                 10.toByte() -> {
                     val guildId = (channel as TextChannel).guild.idLong
                     memberGateService.setPurgeTime(guildId, event.message.contentRaw.toLong())
                     channel.sendMessage("Purge time set").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                     destroy()
                 }
+
                 11.toByte() -> {
                     val guildId = (channel as TextChannel).guild.idLong
                     memberGateService.setReminderTime(guildId, event.message.contentRaw.toLong())
@@ -523,30 +540,34 @@ class MemberGate(
             when (messageContent.toByte()) {
                 0.toByte() -> {
                     sequenceNumber = 1
-                    val addAQuestionMessage: MessageBuilder = MessageBuilder()
-                        .append("Please send the question to add:\n")
+                    val addAQuestionMessage: MessageCreateBuilder = MessageCreateBuilder()
+                        .addContent("Please send the question to add:\n")
                     super.channel.sendMessage(addAQuestionMessage.build())
                         .queue { super.addMessageToCleaner(it) }
                 }
+
                 1.toByte() -> {
                     sequenceNumber = 2
-                    val questionListMessage = MessageBuilder()
+                    val questionListMessage = MessageCreateBuilder()
                     val guildId = (channel as TextChannel).guild.idLong
                     questions = memberGateService.getQuestions(guildId).toList()
                     for (i in questions.indices) {
-                        questionListMessage.append(i.toString()).append(". ").append(questions[i]).append('\n')
+                        questionListMessage.addContent(i.toString()).addContent(". ").addContent(questions[i])
+                            .addContent("\n")
                     }
-                    questionListMessage.append('\n').append("Respond with the question number to remove it.")
+                    questionListMessage.addContent("\n").addContent("Respond with the question number to remove it.")
                     channel.sendMessage(questionListMessage.build()).queue { super.addMessageToCleaner(it) }
                 }
+
                 2.toByte() -> {
                     sequenceNumber = 3
                     channel.sendMessage("Please send a url (that will stay online) to an image to be used as welcome image.")
                         .queue { addMessageToCleaner(it) }
                 }
+
                 3.toByte() -> {
                     sequenceNumber = 5
-                    val welcomeMessageList = MessageBuilder()
+                    val welcomeMessageList = StringBuilder()
                     val guildId = (channel as TextChannel).guild.idLong
                     welcomeMessages = ArrayList(welcomeMessageService.getWelcomeMessages(guildId))
                     for (i in welcomeMessages.indices) {
@@ -555,30 +576,40 @@ class MemberGate(
                     }
                     welcomeMessageList.append('\n')
                         .append("Respond with the welcome message number to remove it.")
-                    welcomeMessageList.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { message ->
+
+                    SplitUtil.split(
+                        welcomeMessageList.toString(),
+                        Message.MAX_CONTENT_LENGTH,
+                        SplitUtil.Strategy.NEWLINE
+                    ).forEach { message ->
                         channel.sendMessage(message).queue { super.addMessageToCleaner(it) }
                     }
                 }
+
                 4.toByte() -> {
                     channel.sendMessage(MENTION_CHANNEL_TO_SET)
                         .queue { addMessageToCleaner(it) }
                     sequenceNumber = 6
                 }
+
                 5.toByte() -> {
                     channel.sendMessage(MENTION_CHANNEL_TO_SET)
                         .queue { addMessageToCleaner(it) }
                     sequenceNumber = 7
                 }
+
                 6.toByte() -> {
                     channel.sendMessage("Please type the exact role name you want to set (please make sure the role name is unique).")
                         .queue { addMessageToCleaner(it) }
                     sequenceNumber = 8
                 }
+
                 7.toByte() -> {
                     channel.sendMessage("Please mention the channel you want to set.")
                         .queue { addMessageToCleaner(it) }
                     sequenceNumber = 9
                 }
+
                 8.toByte() -> {
                     val guildId = (channel as TextChannel).guild.idLong
                     memberGateService.resetGateSettings(guildId)
@@ -587,6 +618,7 @@ class MemberGate(
                     }
                     destroy()
                 }
+
                 9.toByte() -> {
                     val guildId = (channel as TextChannel).guild.idLong
                     memberGateService.resetWelcomeSettings(guildId)
@@ -596,6 +628,7 @@ class MemberGate(
                     }
                     destroy()
                 }
+
                 10.toByte() -> {
                     val guildId = (channel as TextChannel).guild.idLong
                     memberGateService.resetAllSettings(guildId)
@@ -604,6 +637,7 @@ class MemberGate(
                     }
                     destroy()
                 }
+
                 11.toByte() -> {
                     sequenceNumber = 10
                     channel.sendMessage("Please enter the amount of hour(s) a user has to complete the joining process")
@@ -611,11 +645,13 @@ class MemberGate(
                             addMessageToCleaner(it)
                         }
                 }
+
                 12.toByte() -> {
                     val guildId = (channel as TextChannel).guild.idLong
                     memberGateService.setPurgeTime(guildId, null)
                     destroy()
                 }
+
                 13.toByte() -> {
                     sequenceNumber = 11
                     channel.sendMessage("Please enter the amount of hour(s) before the user receives a reminder")
@@ -623,6 +659,7 @@ class MemberGate(
                             addMessageToCleaner(it)
                         }
                 }
+
                 14.toByte() -> {
                     val guildId = (channel as TextChannel).guild.idLong
                     memberGateService.setReminderTime(guildId, null)
@@ -654,15 +691,15 @@ class MemberGate(
                 {
                     val userQuestionAndAnswer = it.question + '\n' + it.answer
                     if (userQuestionAndAnswer.isNotBlank()) {
-                        MessageBuilder().append("The user answered with the following question:\n")
-                            .appendCodeBlock(userQuestionAndAnswer, "text")
-                            .append("\nIf you want to approve the user respond with `approve`, to make the bot request the user to ask a new question respond with `reject` or to reject the user and take manual action answer with `noop` or use the reactions.")
-                            .buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach { message ->
+                        MessageCreateBuilder().addContent("The user answered with the following question:\n")
+                            .addContent(MarkdownUtil.codeblock("text", userQuestionAndAnswer))
+                            .addContent("\nIf you want to approve the user respond with `approve`, to make the bot request the user to ask a new question respond with `reject` or to reject the user and take manual action answer with `noop` or use the reactions.")
+                            .build().let { message ->
                                 channel.sendMessage(message).queue { sendMessage ->
                                     super.addMessageToCleaner(sendMessage)
-                                    sendMessage.addReaction("✅").queue()
-                                    sendMessage.addReaction("❌").queue()
-                                    sendMessage.addReaction("❓").queue()
+                                    sendMessage.addReaction(Emoji.fromUnicode("✅")).queue()
+                                    sendMessage.addReaction(Emoji.fromUnicode("❌")).queue()
+                                    sendMessage.addReaction(Emoji.fromUnicode("❓")).queue()
                                 }
                             }
                     } else {
@@ -677,17 +714,23 @@ class MemberGate(
         }
 
         override fun onReactionReceivedDuringSequence(event: MessageReactionAddEvent) {
+            if (event.emoji.type != Emoji.Type.UNICODE) {
+                return
+            }
+
             if (!memberGateQuestionRepository.existsById(userId)) {
                 throw IllegalStateException("The user is no longer in the queue; another moderator may have reviewed it already.")
             }
-            when (event.reactionEmote.name) {
-                "✅" -> {
+            when (event.emoji.asUnicode()) {
+                Emoji.fromUnicode("✅") -> {
                     accept(event.jda, event.guild)
                 }
-                "❌" -> {
+
+                Emoji.fromUnicode("❌") -> {
                     reject(event.jda, event.guild)
                 }
-                "❓" -> {
+
+                Emoji.fromUnicode("❓") -> {
                     reject(event.jda, event.guild, noOp = true)
                 }
             }
@@ -704,12 +747,15 @@ class MemberGate(
                 "approve", "accept" -> {
                     accept(event.jda, event.guild)
                 }
+
                 "reject", "refuse" -> {
                     reject(event.jda, event.guild)
                 }
+
                 "noop" -> {
                     reject(event.jda, event.guild, noOp = true)
                 }
+
                 else -> {
                     throw IllegalArgumentException("Expecting one of the previously mentioned responses, but got \"$messageContent\" as response")
                 }

@@ -21,7 +21,7 @@ import be.duncanc.discordmodbot.bot.utils.limitLessBulkDeleteByIds
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.ChannelType
+import net.dv8tion.jda.api.entities.channel.ChannelType
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 import java.awt.Color
@@ -41,7 +41,7 @@ class PurgeChannel : CommandModule(
     ignoreWhitelist = true
 ) {
 
-    public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+    override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         try {
             event.message.delete().submit().get(30, TimeUnit.SECONDS)
         } catch (ignored: Exception) {
@@ -51,10 +51,10 @@ class PurgeChannel : CommandModule(
         val args = arguments!!.split(" ".toRegex()).dropLastWhile { it.isBlank() }.toTypedArray()
         if (!event.isFromType(ChannelType.TEXT)) {
             event.channel.sendMessage("This command only works in a guild.").queue()
-        } else if (event.member?.hasPermission(event.textChannel, Permission.MESSAGE_MANAGE) != true) {
+        } else if (event.member?.hasPermission(event.guildChannel.asTextChannel(), Permission.MESSAGE_MANAGE) != true) {
             event.channel.sendMessage(event.author.asMention + " you need manage messages permission in this channel to use this command.")
                 .queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
-        } else if (event.message.mentionedUsers.size > 0) {
+        } else if (event.message.mentions.users.size > 0) {
             val amount: Int
             try {
                 amount = parseAmountOfMessages(args[0])
@@ -64,9 +64,9 @@ class PurgeChannel : CommandModule(
                 return
             }
 
-            val textChannel = event.textChannel
+            val textChannel = event.guildChannel.asTextChannel()
             val messageList = ArrayList<Long>()
-            val targetUsers = event.message.mentionedUsers
+            val targetUsers = event.message.mentions.users
             for (m in textChannel.iterableHistory.cache(false)) {
                 if (targetUsers.contains(m.author) && m.timeCreated.isAfter(OffsetDateTime.now().minusWeeks(2))) {
                     messageList.add(m.idLong)
@@ -117,7 +117,7 @@ class PurgeChannel : CommandModule(
                 return
             }
 
-            val textChannel = event.textChannel
+            val textChannel = event.guildChannel.asTextChannel()
             val messageList = ArrayList<Long>()
             for (m in textChannel.iterableHistory.cache(false)) {
                 if (m.timeCreated.isAfter(OffsetDateTime.now().minusWeeks(2))) {

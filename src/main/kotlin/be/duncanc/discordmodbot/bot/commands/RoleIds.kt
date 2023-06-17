@@ -17,11 +17,12 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.data.services.UserBlockService
-import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.ChannelType
+import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.Role
+import net.dv8tion.jda.api.entities.channel.ChannelType
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.utils.SplitUtil
 import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
 
@@ -42,7 +43,7 @@ class RoleIds(
         private const val DESCRIPTION = "Get all the role ids of the guild where executed."
     }
 
-    public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+    override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         if (!event.isFromType(ChannelType.TEXT)) {
             event.channel.sendMessage("This command only works in a guild.")
                 .queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
@@ -53,7 +54,11 @@ class RoleIds(
             val result = StringBuilder()
             event.guild.roles.forEach { role: Role -> result.append(role.toString()).append("\n") }
             event.author.openPrivateChannel().queue { privateChannel ->
-                val messages = MessageBuilder().append(result.toString()).buildAll(MessageBuilder.SplitPolicy.NEWLINE)
+                val messages = SplitUtil.split(
+                    result.toString(),
+                    Message.MAX_CONTENT_LENGTH - 10,
+                    SplitUtil.Strategy.NEWLINE
+                )
                 messages.forEach { message -> privateChannel.sendMessage(message).queue() }
             }
         }

@@ -67,7 +67,7 @@ class Quote(
         // In case its a standard MessageID
         else {
             val messageId = arguments.split(" ")[0]
-            event.textChannel.retrieveMessageById(messageId).queue { messageToQuote ->
+            event.guildChannel.retrieveMessageById(messageId).queue { messageToQuote ->
                 if (messageToQuote.contentDisplay.isBlank()) {
                     throw IllegalArgumentException("The message you want to quote has no content to quote.")
                 }
@@ -97,10 +97,10 @@ class Quote(
                 .setDescription(responseString)
                 .setFooter("Posted by ${event.member}", event.author.effectiveAvatarUrl)
         }
-        event.textChannel.sendMessageEmbeds(quoteEmbed.build()).queue()
+        event.guildChannel.sendMessageEmbeds(quoteEmbed.build()).queue()
 
         if (responseEmbed != null) {
-            event.textChannel.sendMessageEmbeds(responseEmbed.build()).queue()
+            event.guildChannel.sendMessageEmbeds(responseEmbed.build()).queue()
         }
     }
 }

@@ -1,8 +1,8 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.data.services.UserBlockService
-import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
 import org.springframework.stereotype.Component
 
 @Component
@@ -27,10 +27,10 @@ class Spoiler(
             "||${it.url}||\n"
         }
 
-        val returnMessageBuilder = MessageBuilder()
-            .append("From: ${event.message.author.asMention}\n")
-            .append(spoilerTaggedStringMessage)
-            .append(embedLinkList.joinToString { it })
-        event.textChannel.sendMessage(returnMessageBuilder.build()).queue()
+        val returnMessageCreateBuilder = MessageCreateBuilder()
+            .addContent("From: ${event.message.author.asMention}\n")
+            .addContent(spoilerTaggedStringMessage)
+            .addContent(embedLinkList.joinToString { it })
+        event.guildChannel.sendMessage(returnMessageCreateBuilder.build()).queue()
     }
 }

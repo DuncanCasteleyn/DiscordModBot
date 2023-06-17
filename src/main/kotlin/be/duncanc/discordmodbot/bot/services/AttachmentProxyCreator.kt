@@ -19,13 +19,14 @@ package be.duncanc.discordmodbot.bot.services
 import be.duncanc.discordmodbot.bot.utils.IOUtils
 import be.duncanc.discordmodbot.data.redis.hash.AttachmentProxy
 import be.duncanc.discordmodbot.data.repositories.key.value.AttachmentProxyRepository
-import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.utils.FileUpload
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Async
-import org.springframework.scheduling.annotation.AsyncResult
 import org.springframework.stereotype.Component
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
 
@@ -57,9 +58,9 @@ class AttachmentProxyCreator(
     }
 
     @Async
-    fun proxyMessageAttachments(event: GuildMessageReceivedEvent): AsyncResult<Unit> {
-        if (event.author.isBot) {
-            return AsyncResult(Unit)
+    fun proxyMessageAttachments(event: MessageReceivedEvent): CompletableFuture<Unit> {
+        if (!event.isFromGuild || event.author.isBot) {
+            return CompletableFuture.completedFuture(Unit)
         }
 
         val attachments = ArrayList<String>()
@@ -67,13 +68,12 @@ class AttachmentProxyCreator(
         event.message.attachments.forEach { attachment ->
             try {
                 if (attachment.size < 8 shl 20) {  //8MB
-                    attachment.retrieveInputStream().get(30, TimeUnit.SECONDS).let { inputStream: InputStream ->
+                    attachment.proxy.download().get(30, TimeUnit.SECONDS).let { inputStream: InputStream ->
                         val outputStream = ByteArrayOutputStream()
                         IOUtils.copy(inputStream, outputStream)
 
-                        event.jda.getTextChannelById(CACHE_CHANNEL)?.sendFile(
-                            outputStream.toByteArray(),
-                            attachment.fileName
+                        event.jda.getTextChannelById(CACHE_CHANNEL)?.sendFiles(
+                            FileUpload.fromData(outputStream.toByteArray(), attachment.fileName)
                         )?.map { message ->
                             message.attachments.map { messageAttachment ->
                                 "[${messageAttachment.fileName}](${messageAttachment.url})"
@@ -95,14 +95,16 @@ class AttachmentProxyCreator(
             attachments.isNotEmpty() -> {
                 AttachmentProxy(event.messageIdLong, attachments, hadFailures)
             }
+
             hadFailures -> {
                 AttachmentProxy(event.messageIdLong, emptyList(), hadFailures)
             }
+
             else -> {
                 null
             }
         }
         attachmentProxy?.let { attachmentProxyRepository.save(it) }
-        return AsyncResult(Unit)
+        return CompletableFuture.completedFuture(Unit)
     }
 }

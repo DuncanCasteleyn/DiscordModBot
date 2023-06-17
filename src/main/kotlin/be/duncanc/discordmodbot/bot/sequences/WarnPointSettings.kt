@@ -19,13 +19,13 @@ package be.duncanc.discordmodbot.bot.sequences
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.data.entities.GuildWarnPointsSettings
 import be.duncanc.discordmodbot.data.repositories.jpa.GuildWarnPointsSettingsRepository
-import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
-import net.dv8tion.jda.api.entities.MessageChannel
-import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.util.concurrent.TimeUnit
@@ -40,7 +40,7 @@ class WarnPointSettings(
     requiredPermissions = arrayOf(Permission.ADMINISTRATOR)
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-        event.jda.addEventListener(PointSettingsSequence(event.author, event.textChannel))
+        event.jda.addEventListener(PointSettingsSequence(event.author, event.channel))
     }
 
     @Transactional
@@ -62,14 +62,16 @@ class WarnPointSettings(
             val announceChannelId = guildSettings.announceChannelId
             val announceChannel = guild.getTextChannelById(announceChannelId)?.name ?: "Chanel no longer exists"
 
-            val messageBuilder = MessageBuilder()
-                .append("What would you like to do?\n")
-                .append("\n0. Change max points per reason. Current value: ").append(guildSettings.maxPointsPerReason)
-                .append("\n1. Change the limit before a summary is announced with the users collected points. Current value: ")
-                .append(guildSettings.announcePointsSummaryLimit)
-                .append("\n2. Change the channel to announce the summary in. Current channel: ").append(announceChannel)
-                .append("\n3. Toggle Warn command override by replacing Warn with AddPoints command. Current value: ")
-                .append(guildSettings.overrideWarnCommand)
+            val messageBuilder = MessageCreateBuilder()
+                .addContent("What would you like to do?\n")
+                .addContent("\n0. Change max points per reason. Current value: ")
+                .addContent(guildSettings.maxPointsPerReason.toString())
+                .addContent("\n1. Change the limit before a summary is announced with the users collected points. Current value: ")
+                .addContent(guildSettings.announcePointsSummaryLimit.toString())
+                .addContent("\n2. Change the channel to announce the summary in. Current channel: ")
+                .addContent(announceChannel)
+                .addContent("\n3. Toggle Warn command override by replacing Warn with AddPoints command. Current value: ")
+                .addContent(guildSettings.overrideWarnCommand.toString())
             channel.sendMessage(messageBuilder.build()).queue { super.addMessageToCleaner(it) }
         }
 
@@ -123,7 +125,7 @@ class WarnPointSettings(
                 3.toByte() -> {
                     val guild = (channel as TextChannel).guild
                     val guildSettings = guildWarnPointsSettings(guild)
-                    guildSettings.announceChannelId = event.message.mentionedChannels[0].idLong
+                    guildSettings.announceChannelId = event.message.mentions.channels[0].idLong
                     guildWarnPointsSettingsRepository.save(guildSettings)
                     saveSuccessMessage()
                     super.destroy()

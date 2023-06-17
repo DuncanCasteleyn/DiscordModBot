@@ -19,8 +19,8 @@ package be.duncanc.discordmodbot.bot.commands
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
 import be.duncanc.discordmodbot.data.services.UserBlockService
 import net.dv8tion.jda.api.EmbedBuilder
-import net.dv8tion.jda.api.entities.ChannelType
-import net.dv8tion.jda.api.entities.PrivateChannel
+import net.dv8tion.jda.api.entities.channel.ChannelType
+import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 import java.time.format.DateTimeFormatter
@@ -52,7 +52,7 @@ class UserInfo(
      * @param command   The command alias that was used to trigger this commandExec
      * @param arguments The arguments that where entered after the command alias
      */
-    public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
+    override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         if (event.isFromType(ChannelType.TEXT)) {
             val privateChannel: PrivateChannel = event.author.openPrivateChannel().complete()
             if (arguments == null) {
@@ -79,7 +79,7 @@ class UserInfo(
                             .addField("User id", member.user.id, false)
                             .addField("Discriminator", member.user.discriminator, false)
                             .addField("Online status", member.onlineStatus.name, false)
-                            .addField("In voice channel?", member.voiceState?.inVoiceChannel().toString(), true)
+                            .addField("In voice channel?", member.voiceState?.inAudioChannel().toString(), true)
                             .addField("Guild owner?", member.isOwner.toString(), true)
                             .addField("is a bot?", member.user.isBot.toString(), true)
                             .addField("Permissions", member.permissions.toString(), false)
