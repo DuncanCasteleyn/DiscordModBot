@@ -1,3 +1,0 @@
-x-release-please-start-version
-1.0.2-SNAPSHOT
-x-release-please-end

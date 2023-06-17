@@ -26,4 +26,4 @@ jobs:
         with:
           release-type: java
           bootstrap-sha: 19b9ecc915c079bc292b9e2769bcd156657234da
-          extra-files: version.txt
+          extra-files: build.gradle.kts

@@ -99,4 +99,4 @@ tasks {
 }
 
 project.group = "be.duncanc"
-project.version = file("version.txt").readLines()[1]
+project.version = "1.0.2-SNAPSHOT" // x-release-please-version
