@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.0.0...v2.0.1) (2023-06-17)
+
+
+### Bug Fixes
+
+* selection menu's should not be numeric formatted ([e74bccb](https://github.com/DuncanCasteleyn/DiscordModBot/commit/e74bccbf16d080c7dbdaa8cfb6121a6acbe80646))
+
 ## [2.0.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v1.0.0...v2.0.0) (2023-06-17)
 
 
