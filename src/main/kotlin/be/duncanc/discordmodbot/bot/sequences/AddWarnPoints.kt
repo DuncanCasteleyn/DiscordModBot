@@ -21,9 +21,8 @@ import be.duncanc.discordmodbot.bot.services.GuildLogger
 import be.duncanc.discordmodbot.bot.services.MuteRole
 import be.duncanc.discordmodbot.bot.utils.messageTimeFormat
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
-import be.duncanc.discordmodbot.data.entities.GuildWarnPoints
+import be.duncanc.discordmodbot.data.entities.GuildWarnPoint
 import be.duncanc.discordmodbot.data.entities.GuildWarnPointsSettings
-import be.duncanc.discordmodbot.data.entities.UserWarnPoints
 import be.duncanc.discordmodbot.data.repositories.jpa.GuildWarnPointsRepository
 import be.duncanc.discordmodbot.data.repositories.jpa.GuildWarnPointsSettingsRepository
 import net.dv8tion.jda.api.EmbedBuilder
@@ -151,6 +150,7 @@ class AddWarnPoints(
                             .queue { super.addMessageToCleaner(it) }
                     }
                 }
+
                 points == null -> {
                     val inputPoints = event.message.contentRaw.toInt()
                     if (inputPoints > guildPointsSettings.maxPointsPerReason) {
@@ -159,6 +159,7 @@ class AddWarnPoints(
                     points = inputPoints
                     askForExpireTime()
                 }
+
                 expireDate == null -> {
                     val days = event.message.contentRaw.toLong()
                     expireDate = OffsetDateTime.now().plusDays(days)
@@ -175,6 +176,7 @@ class AddWarnPoints(
                     channel.sendMessage("Should an action be performed with this warn?\n0. None\n1. Mute$muteText\n2. Kick")
                         .queue()
                 }
+
                 else -> {
                     processSequence(event, guildPointsSettings)
                 }
@@ -187,30 +189,37 @@ class AddWarnPoints(
 
         private fun processSequence(event: MessageReceivedEvent, guildPointsSettings: GuildWarnPointsSettings) {
             val action = event.message.contentRaw.toByte()
-            val guildWarnPoints = guildWarnPointsRepository.findById(
-                GuildWarnPoints.GuildWarnPointsId(
+            val guildWarnPoint = guildWarnPointsRepository.findById(
+                GuildWarnPoint.GuildWarnPointId(
                     targetUser.idLong,
                     guild.idLong
                 )
-            ).orElse(GuildWarnPoints(targetUser.idLong, guild.idLong))
-            val userWarnPoints = UserWarnPoints(
-                points = points!!,
-                creatorId = user.idLong,
-                reason = reason!!,
-                expireDate = expireDate!!
+            ).orElse(
+                GuildWarnPoint(
+                    targetUser.idLong, guild.idLong, points = points!!,
+                    creatorId = user.idLong,
+                    reason = reason!!,
+                    expireDate = expireDate!!
+                )
             )
-            guildWarnPoints.points.add(userWarnPoints)
-            guildWarnPointsRepository.save(guildWarnPoints)
-            performChecks(guildWarnPoints, guildPointsSettings, targetUser, guild)
+            val warnPoints = guildWarnPointsRepository.save(guildWarnPoint)
+            performChecks(guildWarnPoint, guildPointsSettings, targetUser, guild)
             val moderator = guild.getMember(user)!!
-            logAddPoints(moderator, targetUser, reason!!, points!!, userWarnPoints.id, expireDate!!, action)
+            logAddPoints(moderator, targetUser, reason!!, points!!, warnPoints.id, expireDate!!, action)
             val member = guild.getMember(targetUser)
+
+
+
             if (member != null) {
                 informUserAndModerator(
                     moderator,
                     member,
                     reason!!,
-                    guildWarnPoints.filterExpiredPoints().size,
+                    guildWarnPointsRepository.countAllByGuildIdAndUserIdAndExpireDateAfter(
+                        guild.idLong,
+                        member.idLong,
+                        OffsetDateTime.now()
+                    ),
                     event.channel.asPrivateChannel(),
                     action
                 )
@@ -221,6 +230,7 @@ class AddWarnPoints(
                         member,
                         muteRole.getMuteRole(guild)
                     ).reason(reason).queue()
+
                     2.toByte() -> {
 
                         guild.kick(member).reason(reason).queue()
@@ -232,22 +242,28 @@ class AddWarnPoints(
     }
 
     private fun performChecks(
-        guildWarnPoints: GuildWarnPoints,
+        guildWarnPoint: GuildWarnPoint,
         guildWarnPointsSettings: GuildWarnPointsSettings,
         user: User,
         guild: Guild
     ) {
-        var points = 0
-        val activatePoints =
-            guildWarnPoints.points.asSequence().filter { it.expireDate.isAfter(OffsetDateTime.now()) }
-                .toCollection(mutableSetOf())
-        activatePoints.forEach { points += it.points }
+        val points = guildWarnPointsRepository.countAllByGuildIdAndUserIdAndExpireDateAfter(
+            guild.idLong,
+            user.idLong,
+            OffsetDateTime.now()
+        )
+
         if (points >= guildWarnPointsSettings.announcePointsSummaryLimit) {
             val messageBuilder = StringBuilder().append("@everyone ")
                 .append(user.asMention)
                 .append(" has reached the limit of points set by your server administrator.\n\n")
                 .append("Summary of active points:")
-            activatePoints.forEach {
+
+            guildWarnPointsRepository.findAllByGuildIdAndUserIdAndExpireDateAfter(
+                guild.idLong,
+                user.idLong,
+                OffsetDateTime.now()
+            ).forEach {
                 messageBuilder.append("\n\n").append(it.points).append(" point(s) added by ")
                     .append(guild.getMemberById(it.creatorId)?.nicknameAndUsername)
                     .append(" on ").append(it.creationDate.format(messageTimeFormat)).append('\n')

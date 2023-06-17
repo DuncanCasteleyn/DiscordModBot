@@ -18,7 +18,7 @@ package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.utils.messageTimeFormat
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
-import be.duncanc.discordmodbot.data.entities.GuildWarnPoints
+import be.duncanc.discordmodbot.data.entities.GuildWarnPoint
 import be.duncanc.discordmodbot.data.repositories.jpa.GuildWarnPointsRepository
 import be.duncanc.discordmodbot.data.services.UserBlockService
 import net.dv8tion.jda.api.Permission
@@ -29,6 +29,7 @@ import net.dv8tion.jda.api.entities.channel.ChannelType
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.utils.SplitUtil
 import org.springframework.stereotype.Component
+import java.time.OffsetDateTime
 import java.util.concurrent.TimeUnit
 
 @Component
@@ -47,7 +48,7 @@ class WarnHistory(
         }
         if (event.message.mentions.members.size == 1 && event.member?.hasPermission(Permission.KICK_MEMBERS) == true) {
             val requestedUserPoints = guildWarnPointsRepository.findById(
-                GuildWarnPoints.GuildWarnPointsId(
+                GuildWarnPoint.GuildWarnPointId(
                     event.message.mentions.members[0].idLong,
                     event.guild.idLong
                 )
@@ -61,7 +62,7 @@ class WarnHistory(
             }
         } else {
             val userPoints = guildWarnPointsRepository.findById(
-                GuildWarnPoints.GuildWarnPointsId(
+                GuildWarnPoint.GuildWarnPointId(
                     event.author.idLong,
                     event.guild.idLong
                 )
@@ -79,11 +80,20 @@ class WarnHistory(
     private fun cleanUp(): (Message) -> Unit =
         { it.delete().queueAfter(1, TimeUnit.MINUTES) }
 
-    private fun informUserOfPoints(user: User, warnPoints: GuildWarnPoints, guild: Guild, moderator: Boolean) {
+    private fun informUserOfPoints(user: User, warnPoints: GuildWarnPoint, guild: Guild, moderator: Boolean) {
+        val warnedUser = user.jda.getUserById(warnPoints.userId)!!
         user.openPrivateChannel().queue { privateChannel ->
             val message = StringBuilder()
-            message.append("Warning history for ").append(user.jda.getUserById(warnPoints.userId)).append(':')
-            warnPoints.points.forEach {
+            message.append("Warning history for ").append(warnedUser).append(':')
+
+            val warnings =
+                guildWarnPointsRepository.findAllByGuildIdAndUserIdAndExpireDateAfter(
+                    guild.idLong,
+                    warnedUser.idLong,
+                    OffsetDateTime.now()
+                )
+
+            warnings.forEach {
                 message.append("\n\n")
                 if (moderator) {
                     message.append(it.points).append(" point(s)")
