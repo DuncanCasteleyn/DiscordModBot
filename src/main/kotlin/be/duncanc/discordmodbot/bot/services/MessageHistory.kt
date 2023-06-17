@@ -19,9 +19,9 @@ package be.duncanc.discordmodbot.bot.services
 
 import be.duncanc.discordmodbot.data.redis.hash.DiscordMessage
 import be.duncanc.discordmodbot.data.repositories.key.value.DiscordMessageRepository
-import net.dv8tion.jda.api.entities.Emote
-import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
-import net.dv8tion.jda.api.events.message.guild.GuildMessageUpdateEvent
+import net.dv8tion.jda.api.entities.emoji.CustomEmoji
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.events.message.MessageUpdateEvent
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -29,9 +29,6 @@ import org.springframework.transaction.annotation.Transactional
 /**
  * This class provides a buffer that will store Message objects so that they can
  * be accessed after being deleted on discord.
- *
- * @author Dunciboy
- * @version 22 October 2016
  */
 @Component
 @Transactional
@@ -49,7 +46,11 @@ constructor(
      *
      * @param event The event that triggered this method
      */
-    fun storeMessage(event: GuildMessageReceivedEvent) {
+    fun storeMessage(event: MessageReceivedEvent) {
+        if (!event.isFromGuild) {
+            return
+        }
+
         val message = event.message
         if (message.contentDisplay.isNotEmpty() && message.contentDisplay[0] == '!' || message.author.isBot) {
             return
@@ -60,7 +61,7 @@ constructor(
             message.channel.idLong,
             message.author.idLong,
             message.contentDisplay,
-            linkEmotes(message.emotes)
+            linkEmotes(message.mentions.customEmojis)
         )
         discordMessageRepository.save(discordMessage)
         if (message.attachments.size > 0) {
@@ -73,7 +74,11 @@ constructor(
      *
      * @param event The event that triggered this method.
      */
-    fun updateMessage(event: GuildMessageUpdateEvent) {
+    fun updateMessage(event: MessageUpdateEvent) {
+        if (!event.isFromGuild) {
+            return
+        }
+
         if (discordMessageRepository.existsById(event.messageIdLong)) {
             val message = event.message
             val discordMessage = DiscordMessage(
@@ -106,7 +111,7 @@ constructor(
         return attachmentProxyCreator.getAttachmentUrl(id)
     }
 
-    private fun linkEmotes(emotes: MutableList<Emote>): String? {
+    private fun linkEmotes(emotes: MutableList<CustomEmoji>): String? {
         if (emotes.isEmpty()) {
             return null
         }

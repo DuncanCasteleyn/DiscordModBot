@@ -18,13 +18,13 @@ package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.sequences.Sequence
 import be.duncanc.discordmodbot.data.services.UserBlockService
-import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.channel.ChannelType
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.exceptions.PermissionException
 import net.dv8tion.jda.api.hooks.ListenerAdapter
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
@@ -77,7 +77,7 @@ abstract class CommandModule
      * @param command The command that was used.
      * @param arguments The arguments that where provided with the command.
      */
-    protected abstract fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?)
+    public abstract fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?)
 
     /**
      * When a message is received it will decide if the message is a command that should be handled by the command executor.
@@ -111,7 +111,7 @@ abstract class CommandModule
                     if (event.isFromType(ChannelType.TEXT) && !ignoreWhitelist) {
                         val commandTextChannelsWhitelist =
                             event.jda.registeredListeners.find { it is CommandTextChannelsWhitelist } as CommandTextChannelsWhitelist?
-                        if (commandTextChannelsWhitelist?.isWhitelisted(event.textChannel) == false) {
+                        if (commandTextChannelsWhitelist?.isWhitelisted(event.channel.asTextChannel()) == false) {
                             throw IllegalTextChannelException()
                         }
                     }
@@ -130,8 +130,8 @@ abstract class CommandModule
                 } catch (pe: PermissionException) {
                     LOG.warn("Bot ${event.jda.selfUser} on channel ${if (event.channelType == ChannelType.TEXT) "${event.guild} " else ""}${event.channel.name} failed executing ${event.message.contentStripped} command from user ${event.author}")
                     val exceptionMessage =
-                        MessageBuilder().append("${event.author.asMention} Cannot complete action due to a permission issue; see the message below for details.")
-                            .appendCodeBlock(pe.javaClass.simpleName + ": " + pe.message, "text").build()
+                        MessageCreateBuilder().addContent("${event.author.asMention} Cannot complete action due to a permission issue; see the message below for details.")
+                            .addContent("```text\n${pe.javaClass.simpleName}: ${pe.message}\n```").build()
                     event.channel.sendMessage(exceptionMessage).queue { it.delete().queueAfter(5, TimeUnit.MINUTES) }
                 } catch (t: Throwable) {
                     LOG.error(
@@ -139,8 +139,9 @@ abstract class CommandModule
                         t
                     )
                     val exceptionMessage =
-                        MessageBuilder().append("${event.author.asMention} Cannot complete action due to an error; see the message below for details.")
-                            .appendCodeBlock(t.javaClass.simpleName + ": " + t.message, "text").build()
+                        MessageCreateBuilder().addContent("${event.author.asMention} Cannot complete action due to an error; see the message below for details.")
+                            .addContent("```text\n${t.javaClass.simpleName}: ${t.message}\n```")
+                            .build()
                     event.channel.sendMessage(exceptionMessage).queue { it.delete().queueAfter(5, TimeUnit.MINUTES) }
                 }
 
@@ -167,6 +168,7 @@ abstract class CommandModule
                     antiSpamMap.clear()
                     lastAntiSpamCountReset = Instant.now()
                 }
+
                 antiSpamMap.containsKey(userId) -> {
                     var value = antiSpamMap[userId]!!
                     if (value > ANTI_SPAM_LIMIT) {
@@ -174,6 +176,7 @@ abstract class CommandModule
                     }
                     antiSpamMap[userId] = ++value
                 }
+
                 else -> antiSpamMap[userId] = 1
             }
         }

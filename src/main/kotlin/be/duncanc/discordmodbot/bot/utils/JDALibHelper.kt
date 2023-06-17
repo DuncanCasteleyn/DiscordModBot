@@ -17,7 +17,7 @@
 package be.duncanc.discordmodbot.bot.utils
 
 import net.dv8tion.jda.api.entities.Member
-import net.dv8tion.jda.api.entities.TextChannel
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.exceptions.PermissionException
 import java.time.format.DateTimeFormatter
@@ -39,27 +39,9 @@ val Member.nicknameAndUsername: String
     }
 
 /**
- * Applies the rot13 function on the String
- */
-fun String.rot13(): String {
-    val sb = StringBuilder()
-    for (i in 0 until this.length) {
-        var c = this[i]
-        when (c) {
-            in 'a'..'m' -> c += 13
-            in 'A'..'M' -> c += 13
-            in 'n'..'z' -> c -= 13
-            in 'N'..'Z' -> c -= 13
-        }
-        sb.append(c)
-    }
-    return sb.toString()
-}
-
-/**
- * Deletes multiple messages at once, unlike the default method this one will split the ArrayList messages in stacks of 100 messages each automatically
+ * Deletes multiple messages at once, unlike the default method, this one will split the ArrayList messages in stacks of 100 messages each automatically
  *
- * @param messageIdStrings Messages to delete. The list you provide will be emptied for you.
+ * @param messagesIds Messages to delete. The list you provide will be emptied for you.
  */
 fun TextChannel.limitLessBulkDeleteByIds(messagesIds: ArrayList<Long>) {
     val messagesIdStrings = ArrayList(messagesIds.map { it.toString() })
@@ -106,7 +88,7 @@ private fun getIndexStartOfSecondWord(arguments: String) =
     arguments.split(" ").dropLastWhile { it.isBlank() }.toTypedArray()[0].length + 1
 
 fun findMemberAndCheckCanInteract(event: MessageReceivedEvent): Member {
-    val target = event.guild.getMember(event.message.mentionedUsers[0])!!
+    val target = event.message.mentions.members[0]
     if (event.member?.canInteract(target) != true) {
         throw PermissionException("You can't interact with this member")
     }

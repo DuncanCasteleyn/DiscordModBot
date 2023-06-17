@@ -16,24 +16,29 @@
 
 package be.duncanc.discordmodbot.data.entities
 
-import jakarta.persistence.Column
-import jakarta.persistence.Entity
-import jakarta.persistence.Id
-import jakarta.persistence.Table
+import jakarta.persistence.*
 import jakarta.validation.constraints.Future
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Positive
 import org.hibernate.Hibernate
 import org.springframework.util.Assert
+import java.io.Serializable
 import java.time.OffsetDateTime
 import java.util.*
 
 @Entity
-@Table(name = "user_warn_points")
-data class UserWarnPoints(
+@IdClass(GuildWarnPoint.GuildWarnPointId::class)
+@Table(name = "guild_warn_points")
+data class GuildWarnPoint(
     @Id
-    @Column(updatable = false, columnDefinition = "BINARY(16)")
+    @Column(updatable = false)
+    val userId: Long,
+    @Id
+    @Column(updatable = false)
+    val guildId: Long,
+    @Id
+    @Column(updatable = false, columnDefinition = "BINARY(16)", unique = true)
     val id: UUID = UUID.randomUUID(),
     @field:Positive
     @Column(nullable = false, updatable = false)
@@ -52,6 +57,7 @@ data class UserWarnPoints(
     @Column(nullable = false, updatable = false)
     val expireDate: OffsetDateTime
 ) {
+
     init {
         if (points <= 0) {
             throw IllegalArgumentException("Points need to be a positive number")
@@ -65,15 +71,27 @@ data class UserWarnPoints(
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || Hibernate.getClass(this) != Hibernate.getClass(other)) return false
-        other as UserWarnPoints
+        other as GuildWarnPoint
 
-        return id == other.id
+        return userId == other.userId
+                && guildId == other.guildId
+                && id == other.id
     }
 
-    override fun hashCode(): Int = javaClass.hashCode()
+    override fun hashCode(): Int = Objects.hash(userId, guildId, id)
 
     @Override
     override fun toString(): String {
-        return this::class.simpleName + "(id = $id )"
+        return this::class.simpleName + "(userId = $userId , guildId = $guildId , id = $id )"
     }
+
+
+    data class GuildWarnPointId(
+        @Id
+        val userId: Long? = null,
+        @Id
+        val guildId: Long? = null,
+        @Id
+        val id: UUID? = null,
+    ) : Serializable
 }

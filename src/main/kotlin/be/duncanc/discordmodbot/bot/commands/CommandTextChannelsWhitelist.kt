@@ -20,7 +20,7 @@ import be.duncanc.discordmodbot.data.entities.GuildCommandChannels
 import be.duncanc.discordmodbot.data.repositories.jpa.GuildCommandChannelsRepository
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Message
-import net.dv8tion.jda.api.entities.TextChannel
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -43,8 +43,8 @@ class CommandTextChannelsWhitelist
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         val guildCommandChannels = guildCommandChannelsRepository.findById(event.guild.idLong).orElse(null)
         val mutableSet = guildCommandChannels?.whitelistedChannels
-        if (mutableSet?.contains(event.textChannel.idLong) == true) {
-            mutableSet.remove(event.textChannel.idLong)
+        if (mutableSet?.contains(event.channel.idLong) == true) {
+            mutableSet.remove(event.channel.idLong)
             if (mutableSet.isEmpty()) {
                 guildCommandChannelsRepository.findById(event.guild.idLong)
                 event.channel.sendMessage("The channel was removed from the whitelist. There are no channels left on the whitelist commands can be used in all channels now.")
@@ -54,13 +54,13 @@ class CommandTextChannelsWhitelist
             }
         } else if (mutableSet == null) {
             val newHashSet = HashSet<Long>()
-            newHashSet.add(event.textChannel.idLong)
+            newHashSet.add(event.channel.idLong)
             val newGuildCommandChannels = GuildCommandChannels(event.guild.idLong, newHashSet)
             guildCommandChannelsRepository.save(newGuildCommandChannels)
             event.channel.sendMessage("The channel was added to the whitelist. Commands can now only be used in whitelisted channels.")
                 .queue(cleanMessages())
         } else {
-            mutableSet.add(event.textChannel.idLong)
+            mutableSet.add(event.channel.idLong)
             guildCommandChannelsRepository.save(guildCommandChannels)
             event.channel.sendMessage("The channel was added to the whitelist.").queue(cleanMessages())
         }

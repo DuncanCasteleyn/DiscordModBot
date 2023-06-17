@@ -3,12 +3,14 @@ package be.duncanc.discordmodbot.data.entities
 import jakarta.persistence.*
 import jakarta.validation.constraints.NotBlank
 import net.dv8tion.jda.api.EmbedBuilder
-import net.dv8tion.jda.api.MessageBuilder
-import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
+import net.dv8tion.jda.api.utils.messages.MessageCreateData
+import org.hibernate.Hibernate
 import org.springframework.validation.annotation.Validated
 import java.awt.Color
 import java.io.Serializable
+import java.util.*
 
 @IdClass(WelcomeMessage.WelcomeMessageId::class)
 @Validated
@@ -30,14 +32,14 @@ data class WelcomeMessage(
     val message: String = ""
 ) {
 
-    fun getWelcomeMessage(user: User): Message {
+    fun getWelcomeMessage(user: User): MessageCreateData {
         val joinEmbed = EmbedBuilder()
             .setDescription(this.message)
             .setImage(imageUrl)
             .setColor(Color.GREEN)
             .build()
-        return MessageBuilder()
-            .append(user.asMention)
+        return MessageCreateBuilder()
+            .addContent(user.asMention)
             .setEmbeds(joinEmbed)
             .build()
     }
@@ -46,4 +48,20 @@ data class WelcomeMessage(
         private val id: Long? = null,
         private val guildId: Long? = null
     ) : Serializable
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || Hibernate.getClass(this) != Hibernate.getClass(other)) return false
+        other as WelcomeMessage
+
+        return id == other.id
+                && guildId == other.guildId
+    }
+
+    override fun hashCode(): Int = Objects.hash(id, guildId)
+
+    @Override
+    override fun toString(): String {
+        return this::class.simpleName + "(id = $id , guildId = $guildId )"
+    }
 }

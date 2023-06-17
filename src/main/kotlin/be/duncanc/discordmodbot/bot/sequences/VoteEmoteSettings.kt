@@ -20,8 +20,8 @@ import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.data.entities.VoteEmotes
 import be.duncanc.discordmodbot.data.repositories.jpa.VotingEmotesRepository
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.MessageChannel
 import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -33,7 +33,8 @@ class VoteEmoteSettings(
 ) : CommandModule(
     arrayOf("VoteEmoteSettings", "VoteSettings"),
     null,
-    "Command to change the vote yes and no emotes for a server", requiredPermissions = arrayOf(Permission.MANAGE_EMOTES)
+    "Command to change the vote yes and no emotes for a server",
+    requiredPermissions = arrayOf(Permission.MANAGE_GUILD_EXPRESSIONS)
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         event.jda.addEventListener(VoteEmoteSettingsSequence(votingEmotesRepository, event.author, event.channel))
@@ -61,13 +62,13 @@ open class VoteEmoteSettingsSequence(
     override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
         when (voteYesEmoteId) {
             null -> {
-                val voteNotEmote = event.message.emotes[0]
+                val voteNotEmote = event.message.reactions[0].emoji.asCustom()
                 voteYesEmoteId = voteNotEmote.idLong
                 channel.sendMessage("Please send the emote you want to use for no votes")
                     .queue { addMessageToCleaner(it) }
             }
             else -> {
-                val voteNoEmote = event.message.emotes[0]
+                val voteNoEmote = event.message.reactions[0].emoji.asCustom()
                 votingEmotesRepository.save(VoteEmotes(event.guild.idLong, voteYesEmoteId!!, voteNoEmote.idLong))
                 channel.sendMessage("New emotes have been set")
                     .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }

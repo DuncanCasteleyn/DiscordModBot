@@ -22,16 +22,17 @@ import be.duncanc.discordmodbot.bot.sequences.Sequence
 import be.duncanc.discordmodbot.data.entities.ActivityReportSettings
 import be.duncanc.discordmodbot.data.repositories.jpa.ActivityReportSettingsRepository
 import net.dv8tion.jda.api.JDA
-import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Member
-import net.dv8tion.jda.api.entities.MessageChannel
-import net.dv8tion.jda.api.entities.TextChannel
+import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
-import net.dv8tion.jda.api.events.ReadyEvent
-import net.dv8tion.jda.api.events.ShutdownEvent
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.events.session.ReadyEvent
+import net.dv8tion.jda.api.events.session.ShutdownEvent
 import net.dv8tion.jda.api.exceptions.PermissionException
+import net.dv8tion.jda.api.utils.SplitUtil
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -72,17 +73,17 @@ class WeeklyActivityReport(
     @Deprecated("Broken needs to be fixed")
     fun sendReports() {
         val statsCollectionStartTime = OffsetDateTime.now()
-        activityReportSettingsRepository.findAll().forEach { reportSettings ->
-            val guild = reportSettings.guildId.let { guildId ->
+        activityReportSettingsRepository.findAll().forEach { (idOfGuild, reportChannel, trackedRoleOrMember) ->
+            val guild = idOfGuild.let { guildId ->
                 instances.stream().filter { jda ->
                     jda.getGuildById(guildId) != null
                 }.findFirst().orElse(null)?.getGuildById(guildId)
             }
             if (guild != null) {
-                val textChannel = reportSettings.reportChannel?.let { guild.getTextChannelById(it) }
+                val textChannel = reportChannel?.let { guild.getTextChannelById(it) }
                 if (textChannel != null) {
                     val trackedMembers = HashSet<Member>()
-                    reportSettings.trackedRoleOrMember.forEach {
+                    trackedRoleOrMember.forEach {
                         val role = guild.getRoleById(it)
                         if (role != null) {
                             val members = guild.getMembersWithRoles(role)
@@ -113,7 +114,7 @@ class WeeklyActivityReport(
                             LOG.warn("Insufficient permissions to retrieve history from $it")
                         }
                     }
-                    val message = MessageBuilder()
+                    val message = StringBuilder()
                     message.append("**Message statistics of the past 7 days**\n")
                     stats.forEach { (channel, channelStats) ->
                         message.append("\n***${channel.asMention}***\n\n")
@@ -121,14 +122,16 @@ class WeeklyActivityReport(
                             message.append("${member.user.name}: $count\n")
                         }
                     }
-                    message.buildAll(MessageBuilder.SplitPolicy.NEWLINE).forEach {
-                        textChannel.sendMessage(it).queue()
-                    }
+
+                    SplitUtil.split(message.toString(), Message.MAX_CONTENT_LENGTH, SplitUtil.Strategy.NEWLINE)
+                        .forEach {
+                            textChannel.sendMessage(it).queue()
+                        }
                 } else {
-                    LOG.warn("The text channel with id ${reportSettings.reportChannel} was not found on the server/guild. Configure another channel.")
+                    LOG.warn("The text channel with id $reportChannel was not found on the server/guild. Configure another channel.")
                 }
             } else {
-                LOG.warn("The guild with id ${reportSettings.guildId} was not found, maybe the bot was removed or maybe you shut down the bot responsible for this server.")
+                LOG.warn("The guild with id $idOfGuild was not found, maybe the bot was removed or maybe you shut down the bot responsible for this server.")
             }
         }
     }
@@ -162,11 +165,13 @@ class WeeklyActivityReport(
                             channel.sendMessage("Please mention the channel or send the id of the channel")
                                 .queue { addMessageToCleaner(it) }
                         }
+
                         1.toByte() -> {
                             sequenceNumber = 2
                             channel.sendMessage("Please mention the user or role or send the id of the role or user")
                                 .queue { addMessageToCleaner(it) }
                         }
+
                         2.toByte() -> {
                             sequenceNumber = 3
                             channel.sendMessage("Please mention the user or role or send the id of the role or user")
@@ -174,6 +179,7 @@ class WeeklyActivityReport(
                         }
                     }
                 }
+
                 1.toByte() -> {
                     val channelId = event.message.contentRaw.replace("<#", "").replace(">", "").toLong()
                     val guildId = event.guild.idLong
@@ -184,6 +190,7 @@ class WeeklyActivityReport(
                     channel.sendMessage("Channel configured.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                     destroy()
                 }
+
                 2.toByte() -> {
                     val roleOrMemberId = getRoleOrMemberIdFromString(event)
                     val guildId = event.guild.idLong
@@ -194,6 +201,7 @@ class WeeklyActivityReport(
                     channel.sendMessage("Role or member added.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
                     destroy()
                 }
+
                 3.toByte() -> {
                     val guildId = event.guild.idLong
                     val roleOrMemberId = getRoleOrMemberIdFromString(event)

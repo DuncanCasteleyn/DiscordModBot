@@ -16,11 +16,28 @@
 
 package be.duncanc.discordmodbot.data.repositories.jpa
 
-import be.duncanc.discordmodbot.data.entities.GuildWarnPoints
+import be.duncanc.discordmodbot.data.entities.GuildWarnPoint
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
+import java.time.OffsetDateTime
+import java.util.*
 
 @Repository
-interface GuildWarnPointsRepository : JpaRepository<GuildWarnPoints, GuildWarnPoints.GuildWarnPointsId> {
-    fun findAllByGuildId(guildId: Long): Iterable<GuildWarnPoints>
+interface GuildWarnPointsRepository : JpaRepository<GuildWarnPoint, GuildWarnPoint.GuildWarnPointId> {
+
+    fun countAllByGuildIdAndUserIdAndExpireDateAfter(guildId: Long, userId: Long, expireDate: OffsetDateTime): Int
+
+    fun findAllById(id: UUID): GuildWarnPoint
+
+    fun findAllByGuildIdAndExpireDateAfter(guildId: Long, expireDate: OffsetDateTime): Collection<GuildWarnPoint>
+
+    fun findAllByGuildIdAndUserId(guildId: Long, userId: Long): Collection<GuildWarnPoint>
+
+    fun findAllByGuildIdAndUserIdAndExpireDateAfter(
+        guildId: Long,
+        userId: Long,
+        expireDate: OffsetDateTime
+    ): Collection<GuildWarnPoint>
+
+    fun deleteAllById(id: UUID)
 }

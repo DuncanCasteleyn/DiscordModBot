@@ -16,8 +16,8 @@
 
 package be.duncanc.discordmodbot.bot.commands
 
-import net.dv8tion.jda.api.events.ReadyEvent
-import net.dv8tion.jda.api.events.interaction.SlashCommandEvent
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.events.session.ReadyEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import org.springframework.stereotype.Component
@@ -33,7 +33,7 @@ class Ping : ListenerAdapter(), Command {
         event.jda.upsertCommand("ping", DESCRIPTION).queue()
     }
 
-    override fun onSlashCommand(event: SlashCommandEvent) {
+    override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
         if (event.name == "ping") {
             event.deferReply().queue { hook ->
                 event.jda.restPing.queue { ping ->
@@ -46,11 +46,10 @@ The REST API responded within $ping milliseconds"""
 
             }
         }
-
     }
 
     override fun getCommandsData(): List<CommandData> {
-        return listOf(CommandData(COMMAND, DESCRIPTION))
+        return listOf() // TODO rework
     }
 
 
