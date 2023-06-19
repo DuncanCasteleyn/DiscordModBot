@@ -43,7 +43,7 @@ dependencies {
         exclude(group = "club.minnced", module = "opus-java")
     }
     implementation(group = "org.apache.commons", name = "commons-collections4", version = "4.4")
-    implementation(group = "org.json", name = "json", version = "20230227")
+    implementation(group = "org.json", name = "json", version = "20230618")
 
     runtimeOnly(group = "com.h2database", name = "h2")
     runtimeOnly(group = "org.mariadb.jdbc", name = "mariadb-java-client")
