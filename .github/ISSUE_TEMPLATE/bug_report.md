@@ -23,10 +23,5 @@ assignees: DuncanCasteleyn
 **Screenshots**
 <!-- If applicable, add screenshots to help explain your problem. -->
 
-**Environment**
- - OS: [e.g. Linux]
- - OS version:
- - Project version:
-
 **Additional context**
 <!-- Add any other context about the problem here. -->
