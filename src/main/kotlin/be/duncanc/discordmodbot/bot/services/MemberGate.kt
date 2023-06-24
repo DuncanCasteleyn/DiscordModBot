@@ -210,19 +210,21 @@ class MemberGate(
 
     override fun onMessageReactionAdd(event: MessageReactionAddEvent) {
         if (
+            event.reaction.emoji.type != Emoji.Type.UNICODE ||
             event.reaction.emoji.asUnicode() != Emoji.fromUnicode("❔") ||
             event.user == event.jda.selfUser ||
-            event.member?.hasPermission(Permission.MANAGE_ROLES) != true ||
+            event.member?.hasPermission(Permission.KICK_MEMBERS) != true ||
             memberGateService.getGateChannel(event.guild.idLong, event.jda) != event.channel
         ) {
             return
         }
-        val message = event.retrieveMessage().submit().get(1, TimeUnit.MINUTES)
-        if (message.author != event.jda.selfUser || !message.contentRaw.contains("!review") || message.mentions.members.size != 1) {
-            return
+        event.retrieveMessage().queue { message ->
+            if (message.author != event.jda.selfUser || !message.contentRaw.contains("!review") || message.mentions.users.size != 1) {
+                return@queue
+            }
+            val userToReview = message.mentions.users[0]
+            event.user?.let { review(event.jda, it, event.guild, event.channel, userToReview.id) }
         }
-        val id = message.contentRaw.split(" ")[0].trimStart('<', '@', '!').trimEnd('>')
-        event.user?.let { review(event.jda, it, event.guild, event.channel, id) }
     }
 
     private fun review(jda: JDA, author: User, guild: Guild, channel: MessageChannel, arguments: String) {
