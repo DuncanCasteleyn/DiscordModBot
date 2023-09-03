@@ -18,7 +18,7 @@ jobs:
 
     services:
       mariadb:
-        image: mariadb:10.11.5@sha256:97e1303681ef1c14cd0d0abb836c9899283151622d2f766378095670c5244eba
+        image: mariadb:10.11.5@sha256:3e8f15fd6328340f4024fcb7005cce0da1fa5065554b7c420626f803b67ddc12
         ports:
           - 3306:3306
         env:
