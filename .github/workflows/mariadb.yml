@@ -26,7 +26,11 @@ jobs:
           MARIADB_PASSWORD: test
           MARIADB_DATABASE: discordmodbot
           MARIADB_ROOT_PASSWORD: test
-        options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
+        options: >-
+          --health-cmd "/usr/local/bin/healthcheck.sh --su-mysql --connect --innodb_initialized"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
