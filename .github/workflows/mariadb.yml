@@ -22,10 +22,10 @@ jobs:
         ports:
           - 3306:3306
         env:
-          MYSQL_USER: spring
-          MYSQL_PASSWORD: test
-          MYSQL_DATABASE: discordmodbot
-          MYSQL_ROOT_PASSWORD: test
+          MARIADB_USER: spring
+          MARIADB_PASSWORD: test
+          MARIADB_DATABASE: discordmodbot
+          MARIADB_ROOT_PASSWORD: test
         options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
 
     steps:
