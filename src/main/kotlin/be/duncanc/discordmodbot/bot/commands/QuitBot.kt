@@ -24,6 +24,7 @@ import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.context.annotation.Scope
 import org.springframework.stereotype.Component
 import java.util.*
+import kotlin.collections.ArrayList
 
 /**
  * Quit command for the bot
@@ -45,11 +46,7 @@ class QuitBot
         private const val DESCRIPTION = "Shuts down the bot."
     }
 
-    private val callBeforeBotQuit: MutableList<BeforeBotQuit>
-
-    init {
-        callBeforeBotQuit = ArrayList()
-    }
+    private val callBeforeBotQuit: MutableList<BeforeBotQuit> = ArrayList()
 
     public override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
         if (event.author.idLong == 159419654148718593L) {
