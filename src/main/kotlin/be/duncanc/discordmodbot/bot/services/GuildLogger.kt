@@ -64,6 +64,7 @@ import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import kotlin.collections.HashMap
 import kotlin.concurrent.thread
 
 /**
@@ -94,17 +95,12 @@ class GuildLogger
     }
 
 
-    private val guildLoggerExecutor: ScheduledExecutorService
-    private val lastCheckedLogEntries: HashMap<Long, AuditLogEntry?> //Long key is the guild id and the value is the last checked log entry.
-
-    init {
-        this.guildLoggerExecutor = Executors.newSingleThreadScheduledExecutor { r ->
-            thread(name = GuildLogger::class.java.simpleName, start = false, isDaemon = false) {
-                r.run()
-            }
+    private val guildLoggerExecutor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor { r ->
+        thread(name = GuildLogger::class.java.simpleName, start = false, isDaemon = false) {
+            r.run()
         }
-        this.lastCheckedLogEntries = HashMap()
     }
+    private val lastCheckedLogEntries: HashMap<Long, AuditLogEntry?> = HashMap() //Long key is the guild id and the value is the last checked log entry.
 
     @Transactional(readOnly = true)
     override fun onMessageReceived(event: MessageReceivedEvent) {
