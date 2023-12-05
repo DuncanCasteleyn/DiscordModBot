@@ -313,7 +313,6 @@ gradle-app.setting
 .gradletasknamecache
 
 #################
-## Config files
+## database files
 #################
-*.json
 *.db
