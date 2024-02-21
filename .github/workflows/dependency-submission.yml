@@ -22,8 +22,7 @@ jobs:
           java-version: 17
           distribution: liberica
 
-      - name: Root Gradle Dependency Submission
-        uses: mikepenz/gradle-dependency-submission@e39d996cbb20c65ff32b7129c0e2be9caefa8f7a # v0.9.2
-        with:
-          gradle-build-module: ':'
-          gradle-build-configuration: compileClasspath
+      - name: Generate and submit dependency graph
+        uses: gradle/actions/dependency-submission@v3.1.0
+        env:
+          DEPENDENCY_GRAPH_RUNTIME_INCLUDE_CONFIGURATIONS: runtimeClasspath
