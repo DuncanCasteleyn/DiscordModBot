@@ -23,6 +23,6 @@ jobs:
           distribution: liberica
 
       - name: Generate and submit dependency graph
-        uses: gradle/actions/dependency-submission@417ae3ccd767c252f5661f1ace9f835f9654f2b5 # v3.1.0
+        uses: gradle/actions/dependency-submission@e24011a3b5db78bd5ab798036042d9312002f252 # v3.2.0
         env:
           DEPENDENCY_GRAPH_RUNTIME_INCLUDE_CONFIGURATIONS: runtimeClasspath
