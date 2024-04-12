@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.0.7](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.0.6...v2.0.7) (2024-04-12)
+
+
+### Bug Fixes
+
+* **deps:** update dependency net.dv8tion:jda to v5.0.0-beta.21 ([cd0f4ae](https://github.com/DuncanCasteleyn/DiscordModBot/commit/cd0f4ae9c63cbb9255b58e7cc2bc4247c834cd01))
+* **deps:** update dependency net.dv8tion:jda to v5.0.0-beta.22 ([100d245](https://github.com/DuncanCasteleyn/DiscordModBot/commit/100d2450dbb2b8744f43929bb126bc5e97ed71a8))
+* **deps:** update dependency org.json:json to v20240303 ([#270](https://github.com/DuncanCasteleyn/DiscordModBot/issues/270)) ([56eb896](https://github.com/DuncanCasteleyn/DiscordModBot/commit/56eb896c963524b1ce98038574d3a5fb968a4dea))
+* **deps:** update dependency org.mockito.kotlin:mockito-kotlin to v5.3.1 ([844fd72](https://github.com/DuncanCasteleyn/DiscordModBot/commit/844fd7263cd21cf8cac73eee426140748402f577))
+* **deps:** update kotlin monorepo to v1.9.23 ([d9167be](https://github.com/DuncanCasteleyn/DiscordModBot/commit/d9167be5f9b73d4ce22e7c72fc39ac1c9e53ad56))
+* **deps:** update plugin org.springframework.boot to v3.2.3 ([b807fff](https://github.com/DuncanCasteleyn/DiscordModBot/commit/b807fff5728692563a3dc485765f04b548aae4af))
+* **deps:** update plugin org.springframework.boot to v3.2.4 ([642926c](https://github.com/DuncanCasteleyn/DiscordModBot/commit/642926c754714083c37f6c81c8f020831e2a4401))
+
 ## [2.0.6](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.0.5...v2.0.6) (2024-02-21)
 
 
