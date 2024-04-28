@@ -27,8 +27,6 @@ interface GuildWarnPointsRepository : JpaRepository<GuildWarnPoint, GuildWarnPoi
 
     fun countAllByGuildIdAndUserIdAndExpireDateAfter(guildId: Long, userId: Long, expireDate: OffsetDateTime): Int
 
-    fun findAllById(id: UUID): GuildWarnPoint
-
     fun findAllByGuildIdAndExpireDateAfter(guildId: Long, expireDate: OffsetDateTime): Collection<GuildWarnPoint>
 
     fun findAllByGuildIdAndUserId(guildId: Long, userId: Long): Collection<GuildWarnPoint>
@@ -40,4 +38,6 @@ interface GuildWarnPointsRepository : JpaRepository<GuildWarnPoint, GuildWarnPoi
     ): Collection<GuildWarnPoint>
 
     fun deleteAllById(id: UUID)
+
+    fun existsByGuildIdAndUserId(guildId: Long, userId: Long): Boolean
 }
