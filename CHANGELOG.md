@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.0.8](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.0.7...v2.0.8) (2024-04-28)
+
+
+### Bug Fixes
+
+* **deps:** update dependency net.dv8tion:jda to v5.0.0-beta.23 ([afff838](https://github.com/DuncanCasteleyn/DiscordModBot/commit/afff838561136aa9b75c6958661773ad03460e3e))
+* **deps:** update plugin org.springframework.boot to v3.2.5 ([9ad5580](https://github.com/DuncanCasteleyn/DiscordModBot/commit/9ad5580295f1fa616ca3735795482018618bfecf))
+* revoke & list warn points work again ([#300](https://github.com/DuncanCasteleyn/DiscordModBot/issues/300)) ([1552519](https://github.com/DuncanCasteleyn/DiscordModBot/commit/1552519f5b9f034b51bfb9e1e8aed4798fd210de))
+
 ## [2.0.7](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.0.6...v2.0.7) (2024-04-12)
 
 
