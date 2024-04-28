@@ -18,7 +18,6 @@ package be.duncanc.discordmodbot.bot.commands
 
 import be.duncanc.discordmodbot.bot.utils.messageTimeFormat
 import be.duncanc.discordmodbot.bot.utils.nicknameAndUsername
-import be.duncanc.discordmodbot.data.entities.GuildWarnPoint
 import be.duncanc.discordmodbot.data.repositories.jpa.GuildWarnPointsRepository
 import be.duncanc.discordmodbot.data.services.UserBlockService
 import net.dv8tion.jda.api.Permission
@@ -46,29 +45,26 @@ class WarnHistory(
         if (!event.isFromType(ChannelType.TEXT)) {
             throw IllegalArgumentException("This command can only be used in a guild/server channel.")
         }
-        if (event.message.mentions.members.size == 1 && event.member?.hasPermission(Permission.KICK_MEMBERS) == true) {
-            val requestedUserPoints = guildWarnPointsRepository.findById(
-                GuildWarnPoint.GuildWarnPointId(
-                    event.message.mentions.members[0].idLong,
-                    event.guild.idLong
-                )
-            )
-            if (requestedUserPoints.isPresent) {
-                informUserOfPoints(event.author, requestedUserPoints.get(), event.guild, true)
+
+        val guild = event.guild
+        val guildId = guild.idLong
+        val author = event.author
+
+        if (event.message.mentions.users.size == 1 && event.member?.hasPermission(Permission.KICK_MEMBERS) == true) {
+            val userId = event.message.mentions.users[0].idLong
+
+            if (guildWarnPointsRepository.existsByGuildIdAndUserId(guildId, userId)) {
+                informUserOfPoints(author, userId, guild, true)
                 event.guildChannel.sendMessage("The list of points the user collected has been send in a private message for privacy reason")
                     .queue(cleanUp())
             } else {
                 event.guildChannel.sendMessage("The user has not received any points.").queue(cleanUp())
             }
         } else {
-            val userPoints = guildWarnPointsRepository.findById(
-                GuildWarnPoint.GuildWarnPointId(
-                    event.author.idLong,
-                    event.guild.idLong
-                )
-            )
-            if (userPoints.isPresent) {
-                informUserOfPoints(event.author, userPoints.get(), event.guild, false)
+            val authorId = author.idLong
+
+            if (guildWarnPointsRepository.existsByGuildIdAndUserId(guildId, authorId)) {
+                informUserOfPoints(author, authorId, guild, false)
                 event.guildChannel.sendMessage("Your list of points has been send in a private message to you for privacy reasons, if you didn't receive any messages make sure you have enabled dm from server members on this server before executing this command.")
                     .queue(cleanUp())
             } else {
@@ -80,18 +76,24 @@ class WarnHistory(
     private fun cleanUp(): (Message) -> Unit =
         { it.delete().queueAfter(1, TimeUnit.MINUTES) }
 
-    private fun informUserOfPoints(user: User, warnPoints: GuildWarnPoint, guild: Guild, moderator: Boolean) {
-        val warnedUser = user.jda.getUserById(warnPoints.userId)!!
+    private fun informUserOfPoints(user: User, warnedUserId: Long, guild: Guild, moderator: Boolean) {
+        val warnedUser = user.jda.getUserById(warnedUserId)
         user.openPrivateChannel().queue { privateChannel ->
             val message = StringBuilder()
             message.append("Warning history for ").append(warnedUser).append(':')
 
             val warnings =
-                guildWarnPointsRepository.findAllByGuildIdAndUserIdAndExpireDateAfter(
-                    guild.idLong,
-                    warnedUser.idLong,
-                    OffsetDateTime.now()
-                )
+                warnedUser?.let {
+                    guildWarnPointsRepository.findAllByGuildIdAndUserIdAndExpireDateAfter(
+                        guild.idLong,
+                        it.idLong,
+                        OffsetDateTime.now()
+                    )
+                }
+
+            if (warnings.isNullOrEmpty()) {
+                return@queue
+            }
 
             warnings.forEach {
                 message.append("\n\n")

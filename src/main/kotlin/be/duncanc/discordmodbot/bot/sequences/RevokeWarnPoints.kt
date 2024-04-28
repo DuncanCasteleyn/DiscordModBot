@@ -24,13 +24,16 @@ class RevokeWarnPoints(
     ignoreWhitelist = true
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-        val userId = try {
-            event.message.contentRaw.substring(command.length + 2).trimStart('<', '@', '!').trimEnd('>').toLong()
-        } catch (stringIndexOutOfBoundsException: StringIndexOutOfBoundsException) {
-            throw IllegalArgumentException("A mention is required to use this command", stringIndexOutOfBoundsException)
+        if (event.message.mentions.users.size != 1) {
+            throw IllegalArgumentException("A single mention is required to use this command")
         }
-        val userGuildWarnPoints =
-            guildWarnPointsRepository.findAllByGuildIdAndUserId(userId, event.guild.idLong)
+
+        val userId = event.message.mentions.users[0].idLong
+        val guildId = event.guild.idLong
+
+        val userGuildWarnPoints = guildWarnPointsRepository.findAllByGuildIdAndUserId(
+            guildId, userId
+        )
 
         if (userGuildWarnPoints.isNotEmpty()) {
             event.jda.addEventListener(RevokePointsSequence(event.author, event.channel, userGuildWarnPoints))
