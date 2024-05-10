@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.0.9](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.0.8...v2.0.9) (2024-05-10)
+
+
+### Bug Fixes
+
+* create service to prevent persistence errors ([#311](https://github.com/DuncanCasteleyn/DiscordModBot/issues/311)) ([a933c86](https://github.com/DuncanCasteleyn/DiscordModBot/commit/a933c86fc97616d8fd2d4cccb814cfc98e3f9a03))
+* **deps:** update kotlin monorepo to v1.9.24 ([0c1e397](https://github.com/DuncanCasteleyn/DiscordModBot/commit/0c1e3975e684cc3cef867339cc3c0ae7d72eb734))
+
 ## [2.0.8](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.0.7...v2.0.8) (2024-04-28)
 
 
