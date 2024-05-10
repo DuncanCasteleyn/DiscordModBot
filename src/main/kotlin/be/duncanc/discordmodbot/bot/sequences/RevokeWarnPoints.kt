@@ -2,7 +2,7 @@ package be.duncanc.discordmodbot.bot.sequences
 
 import be.duncanc.discordmodbot.bot.commands.CommandModule
 import be.duncanc.discordmodbot.data.entities.GuildWarnPoint
-import be.duncanc.discordmodbot.data.repositories.jpa.GuildWarnPointsRepository
+import be.duncanc.discordmodbot.data.services.GuildWarnPointsService
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit
 
 @Component
 class RevokeWarnPoints(
-    val guildWarnPointsRepository: GuildWarnPointsRepository
+    val guildWarnPointsService: GuildWarnPointsService
 ) : CommandModule(
     arrayOf("RevokeWarnPoints", "RevokePoints"),
     "Mention a user",
@@ -28,14 +28,15 @@ class RevokeWarnPoints(
             throw IllegalArgumentException("A single mention is required to use this command")
         }
 
-        val userId = event.message.mentions.users[0].idLong
         val guildId = event.guild.idLong
+        val userId = event.message.mentions.users[0].idLong
 
-        val userGuildWarnPoints = guildWarnPointsRepository.findAllByGuildIdAndUserId(
-            guildId, userId
-        )
 
-        if (userGuildWarnPoints.isNotEmpty()) {
+        if (guildWarnPointsService.userHasGuildWarnings(guildId, userId)) {
+            val userGuildWarnPoints = guildWarnPointsService.getGuildWarningsFromUser(
+                guildId, userId
+            )
+
             event.jda.addEventListener(RevokePointsSequence(event.author, event.channel, userGuildWarnPoints))
         } else {
             event.channel.sendMessage("This user id has no warnings or the user does not exist.").queue {
@@ -69,7 +70,7 @@ class RevokeWarnPoints(
         override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
             val selectedUUID: UUID = UUID.fromString(event.message.contentRaw)
 
-            guildWarnPointsRepository.deleteAllById(selectedUUID)
+            guildWarnPointsService.revokePoint(selectedUUID)
 
             channel.sendMessage("The warning has been revoked.").queue {
                 it.delete().queueAfter(1, TimeUnit.MINUTES)
