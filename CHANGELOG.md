@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.10](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.0.9...v2.0.10) (2024-06-20)
+
+
+### Bug Fixes
+
+* **deps:** update dependency net.dv8tion:jda to v5.0.0-beta.24 ([2b9344c](https://github.com/DuncanCasteleyn/DiscordModBot/commit/2b9344cbe7c7640ccfd093c407204d4fe101243d))
+* **deps:** update kotlin monorepo to v2 (major) ([#317](https://github.com/DuncanCasteleyn/DiscordModBot/issues/317)) ([147799e](https://github.com/DuncanCasteleyn/DiscordModBot/commit/147799e3c71ca5e55661b4f99832fc61d34d01eb))
+* **deps:** update plugin org.springframework.boot to v3.2.6 ([29d65c8](https://github.com/DuncanCasteleyn/DiscordModBot/commit/29d65c813e0c24d6a7c6101a8fce6cefbbb77bab))
+* **deps:** update plugin org.springframework.boot to v3.3.0 ([3fc1d11](https://github.com/DuncanCasteleyn/DiscordModBot/commit/3fc1d118cdb497c82c9bb2d9baf88c1f21882f60))
+* **deps:** update plugin org.springframework.boot to v3.3.1 ([0e43126](https://github.com/DuncanCasteleyn/DiscordModBot/commit/0e43126f0cb2e9d7c4d44cd56c647002327c4eea))
+
 ## [2.0.9](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.0.8...v2.0.9) (2024-05-10)
 
 
