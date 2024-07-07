@@ -39,7 +39,7 @@ dependencies {
     implementation(group = "org.flywaydb", name = "flyway-core")
     implementation(group = "org.flywaydb", name = "flyway-mysql")
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin")
-    implementation(group = "net.dv8tion", name = "JDA", version = "5.0.0-beta.24") {
+    implementation(group = "net.dv8tion", name = "JDA", version = "5.0.0") {
         exclude(group = "club.minnced", module = "opus-java")
     }
     implementation(group = "org.apache.commons", name = "commons-collections4", version = "4.4")
