@@ -37,7 +37,17 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
 
+@Deprecated(
+    message = """
+    This is being replaced with a new modern system Roles class slowly.
+    
+    Only security and bug fixes should be applied to this class, slowly parts will be removed or disabled from this class.
+"""
+)
 @Component
+/**
+ *
+ */
 class IAmRoles
 @Autowired constructor(
     private val iAmRolesService: IAmRolesService,

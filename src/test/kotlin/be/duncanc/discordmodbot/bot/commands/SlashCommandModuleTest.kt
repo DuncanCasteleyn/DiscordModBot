@@ -1,7 +1,9 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import net.dv8tion.jda.api.JDA
-import net.dv8tion.jda.api.entities.*
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.SelfUser
+import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.channel.ChannelType
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -16,9 +18,9 @@ import org.mockito.kotlin.*
 
 @ExtendWith(MockitoExtension::class)
 @TestInstance(Lifecycle.PER_CLASS)
-internal open class CommandModuleTest : CommandModule(arrayOf("test"), null, null) {
+internal open class SlashCommandModuleTest : CommandModule(arrayOf("test"), null, null) {
 
-    private lateinit var commandModule: CommandModuleTest
+    private lateinit var commandModule: SlashCommandModuleTest
 
     @BeforeAll
     fun `Spy ourselves`() {
