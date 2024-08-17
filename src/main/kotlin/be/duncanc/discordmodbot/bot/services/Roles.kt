@@ -120,7 +120,7 @@ class Roles(
         reply.sendMessage("Select the role you would like to get assigned, it's possible this might remove other roles")
             .addActionRow(roleSelectMenu.build())
             .addActionRow(
-                Button.primary("$MORE_BUTTON_ID_PREFIX$categoryId-0", "More roles")
+                Button.primary("$MORE_BUTTON_ID_PREFIX$categoryId-$page", "More roles")
                     .withDisabled(chunkedRoles.size <= page + 1)
             )
             .queue()
