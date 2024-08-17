@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.0.10](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.0.9...v2.0.10) (2024-08-17)
+
+
+### Bug Fixes
+
+* **deps:** update dependency net.dv8tion:jda to v5.0.0 ([35538cf](https://github.com/DuncanCasteleyn/DiscordModBot/commit/35538cf9d54d215b7819a25d2aad2b77d8015a73))
+* **deps:** update dependency net.dv8tion:jda to v5.0.0-beta.24 ([2b9344c](https://github.com/DuncanCasteleyn/DiscordModBot/commit/2b9344cbe7c7640ccfd093c407204d4fe101243d))
+* **deps:** update dependency net.dv8tion:jda to v5.0.1 ([00e1606](https://github.com/DuncanCasteleyn/DiscordModBot/commit/00e160657982ef9bfd48077986b798dc5109d9e0))
+* **deps:** update dependency net.dv8tion:jda to v5.0.2 ([385ea12](https://github.com/DuncanCasteleyn/DiscordModBot/commit/385ea12009bed9d1f27b61a4cb796239bc658a04))
+* **deps:** update dependency org.mockito.kotlin:mockito-kotlin to v5.4.0 ([55cc9e4](https://github.com/DuncanCasteleyn/DiscordModBot/commit/55cc9e4ff1185097d26ee61a46ac64a047ef1ff9))
+* **deps:** update kotlin monorepo to v2 (major) ([#317](https://github.com/DuncanCasteleyn/DiscordModBot/issues/317)) ([147799e](https://github.com/DuncanCasteleyn/DiscordModBot/commit/147799e3c71ca5e55661b4f99832fc61d34d01eb))
+* **deps:** update kotlin monorepo to v2.0.10 ([efbeaff](https://github.com/DuncanCasteleyn/DiscordModBot/commit/efbeafffddcb5d1e4f945abfb8621afc38ac282a))
+* **deps:** update plugin org.springframework.boot to v3.2.6 ([29d65c8](https://github.com/DuncanCasteleyn/DiscordModBot/commit/29d65c813e0c24d6a7c6101a8fce6cefbbb77bab))
+* **deps:** update plugin org.springframework.boot to v3.3.0 ([3fc1d11](https://github.com/DuncanCasteleyn/DiscordModBot/commit/3fc1d118cdb497c82c9bb2d9baf88c1f21882f60))
+* **deps:** update plugin org.springframework.boot to v3.3.1 ([0e43126](https://github.com/DuncanCasteleyn/DiscordModBot/commit/0e43126f0cb2e9d7c4d44cd56c647002327c4eea))
+* **deps:** update plugin org.springframework.boot to v3.3.2 ([2d801c6](https://github.com/DuncanCasteleyn/DiscordModBot/commit/2d801c659548bc8607f0df2ec2d97d87081b7d8a))
+
 ## [2.0.9](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.0.8...v2.0.9) (2024-05-10)
 
 
