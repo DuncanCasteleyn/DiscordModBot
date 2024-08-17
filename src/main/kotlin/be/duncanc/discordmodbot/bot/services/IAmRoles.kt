@@ -45,9 +45,6 @@ import java.util.concurrent.TimeUnit
 """
 )
 @Component
-/**
- *
- */
 class IAmRoles
 @Autowired constructor(
     private val iAmRolesService: IAmRolesService,
