@@ -3,6 +3,7 @@ package be.duncanc.discordmodbot.bot.services
 import be.duncanc.discordmodbot.bot.commands.SlashCommand
 import be.duncanc.discordmodbot.data.services.IAmRolesService
 import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.Role
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent
@@ -78,8 +79,32 @@ class Roles(
 
         if (componentId == ROLE_COMPONENT_ID) {
             event.deferReply(true).queue { reply ->
+                val roleId = event.values.first().toLong()
 
-                TODO("Need to implement role assigment logic")
+                val roleCategory = iAmRolesService.getCategoryByRoleId(guild.idLong, roleId)
+
+                val member = event.member ?: return@queue
+
+                val assignedRolesFromCategory = member.roles.count { role: Role? ->
+                    if (role == null) {
+                        return@count false
+                    }
+
+                    roleCategory.roles.contains(role.idLong)
+                }
+
+                if (assignedRolesFromCategory >= roleCategory.allowedRoles) {
+                    reply.sendMessage("You already have the max mount of roles from this category.").queue()
+                    return@queue
+                }
+
+
+                guild.getRoleById(roleId)?.let {
+                    guild.addRoleToMember(event.user, it)
+                        .reason("User request role through \"/role assign\" slash command").queue {
+                            reply.sendMessage("You're role was assigned")
+                        }
+                }
             }
 
         }
