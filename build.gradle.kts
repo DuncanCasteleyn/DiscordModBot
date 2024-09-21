@@ -71,7 +71,7 @@ repositories {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(JavaVersion.VERSION_17.majorVersion))
+        languageVersion.set(JavaLanguageVersion.of(JavaVersion.VERSION_21.majorVersion))
     }
 }
 
@@ -84,7 +84,7 @@ tasks {
             freeCompilerArgs.add("-Xjsr305=strict")
             freeCompilerArgs.add("-progressive")
 
-            jvmTarget = JvmTarget.JVM_17
+            jvmTarget = JvmTarget.JVM_21
         }
     }
     withType<Wrapper> {
