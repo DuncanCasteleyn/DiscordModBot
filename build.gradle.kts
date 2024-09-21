@@ -19,16 +19,19 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 plugins {
-    val kotlinVersion = "2.0.20"
 
-    id("org.springframework.boot") version "3.3.4"
-    id("io.spring.dependency-management") version "1.1.6"
-    kotlin("jvm") version kotlinVersion
-    kotlin("plugin.spring") version kotlinVersion
-    kotlin("plugin.jpa") version kotlinVersion
-    kotlin("kapt") version kotlinVersion
+    id("org.springframework.boot")
+    id("io.spring.dependency-management")
+    kotlin("jvm")
+    kotlin("plugin.spring")
+    kotlin("plugin.jpa")
+    kotlin("kapt")
 }
 
+val jdaVersion: String by project
+val commonsCollections4Version: String by project
+val orgJSONVersion: String by project
+val mockitoKotlinVersion: String by project
 
 dependencies {
     implementation(kotlin("stdlib"))
@@ -40,17 +43,17 @@ dependencies {
     implementation(group = "org.flywaydb", name = "flyway-core")
     implementation(group = "org.flywaydb", name = "flyway-mysql")
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin")
-    implementation(group = "net.dv8tion", name = "JDA", version = "5.1.0") {
+    implementation(group = "net.dv8tion", name = "JDA", version = jdaVersion) {
         exclude(group = "club.minnced", module = "opus-java")
     }
-    implementation(group = "org.apache.commons", name = "commons-collections4", version = "4.4")
-    implementation(group = "org.json", name = "json", version = "20240303")
+    implementation(group = "org.apache.commons", name = "commons-collections4", version = commonsCollections4Version)
+    implementation(group = "org.json", name = "json", version = orgJSONVersion)
 
     runtimeOnly(group = "com.h2database", name = "h2")
     runtimeOnly(group = "org.mariadb.jdbc", name = "mariadb-java-client")
 
     testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-test")
-    testImplementation(group = "org.mockito.kotlin", name = "mockito-kotlin", version = "5.4.0")
+    testImplementation(group = "org.mockito.kotlin", name = "mockito-kotlin", version = mockitoKotlinVersion)
 
     annotationProcessor(group = "org.springframework.boot", name = "spring-boot-configuration-processor")
     kapt(group = "org.springframework.boot", name = "spring-boot-configuration-processor")
@@ -68,7 +71,7 @@ repositories {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
+        languageVersion.set(JavaLanguageVersion.of(JavaVersion.VERSION_17.majorVersion))
     }
 }
 
