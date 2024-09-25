@@ -24,5 +24,5 @@ jobs:
 
       - name: Generate and submit dependency graph
         uses: gradle/actions/dependency-submission@d156388eb19639ec20ade50009f3d199ce1e2808 # v4.1.0
-        env:
-          DEPENDENCY_GRAPH_RUNTIME_INCLUDE_CONFIGURATIONS: runtimeClasspath
+        with:
+          dependency-graph-include-configurations: 'RuntimeClasspath'
