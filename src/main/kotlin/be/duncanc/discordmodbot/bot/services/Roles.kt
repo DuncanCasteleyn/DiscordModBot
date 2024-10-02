@@ -80,9 +80,7 @@ class Roles(
         }
 
         if (componentId == ROLE_COMPONENT_ID) {
-            val ephemeral = event.user.idLong != discordModBotConfig.ownerId
-
-            event.deferReply(ephemeral).queue { reply ->
+            event.deferReply(true).queue { reply ->
                 val roleId = event.values.first().toLong()
 
                 val roleCategory = iAmRolesService.getCategoryByRoleId(guild.idLong, roleId)
