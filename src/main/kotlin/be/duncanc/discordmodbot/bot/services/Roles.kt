@@ -1,6 +1,7 @@
 package be.duncanc.discordmodbot.bot.services
 
 import be.duncanc.discordmodbot.bot.commands.SlashCommand
+import be.duncanc.discordmodbot.data.configs.properties.DiscordModBotConfig
 import be.duncanc.discordmodbot.data.services.IAmRolesService
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Role
@@ -22,7 +23,8 @@ private const val MORE_BUTTON_ID_PREFIX = "role-more-"
 
 @Component
 class Roles(
-    private val iAmRolesService: IAmRolesService
+    private val iAmRolesService: IAmRolesService,
+    private val discordModBotConfig: DiscordModBotConfig
 ) : ListenerAdapter(), SlashCommand {
     override fun getCommandsData(): List<SlashCommandData> {
         return listOf(
@@ -78,7 +80,9 @@ class Roles(
         }
 
         if (componentId == ROLE_COMPONENT_ID) {
-            event.deferReply(true).queue { reply ->
+            val ephemeral = event.user.idLong != discordModBotConfig.ownerId
+
+            event.deferReply(ephemeral).queue { reply ->
                 val roleId = event.values.first().toLong()
 
                 val roleCategory = iAmRolesService.getCategoryByRoleId(guild.idLong, roleId)
@@ -94,15 +98,15 @@ class Roles(
                 }
 
                 if (assignedRolesFromCategory >= roleCategory.allowedRoles) {
-                    reply.sendMessage("You already have the max mount of roles from this category.").queue()
+                    reply.sendMessage("You already have the max amount of roles from this category.").queue()
                     return@queue
                 }
 
 
                 guild.getRoleById(roleId)?.let {
                     guild.addRoleToMember(event.user, it)
-                        .reason("User request role through \"/role assign\" slash command").queue {
-                            reply.sendMessage("You're role was assigned")
+                        .reason("User request role through \"/role assign\" slash command.").queue {
+                            reply.sendMessage("You're role was assigned.").queue()
                         }
                 }
             }
@@ -116,7 +120,9 @@ class Roles(
 
         if (!componentId.startsWith(MORE_BUTTON_ID_PREFIX) || guild == null) return
 
-        event.deferReply(true).queue { reply ->
+        val ephemeral = event.user.idLong != discordModBotConfig.ownerId
+
+        event.deferReply(ephemeral).queue { reply ->
             val metaData = componentId.removePrefix(MORE_BUTTON_ID_PREFIX).split("-")
 
             val categoryId = metaData[0].toLong()
@@ -142,7 +148,7 @@ class Roles(
             roleSelectMenu.addOption(it.name, it.id)
         }
 
-        reply.sendMessage("Select the role you would like to get assigned, it's possible this might remove other roles")
+        reply.sendMessage("Select the role you would like to get assigned.")
             .addActionRow(roleSelectMenu.build())
             .addActionRow(
                 Button.primary("$MORE_BUTTON_ID_PREFIX$categoryId-$page", "More roles")
