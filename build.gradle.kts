@@ -104,4 +104,4 @@ tasks {
 }
 
 project.group = "be.duncanc"
-project.version = "2.0.11-SNAPSHOT" // x-release-please-version
+project.version = "2.1.0" // x-release-please-version

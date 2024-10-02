@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.1.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.0.10...v2.1.0) (2024-10-02)
+
+
+### Features
+
+* add ability to choose roles with slash commands. ([#351](https://github.com/DuncanCasteleyn/DiscordModBot/issues/351)) ([1cb9dcc](https://github.com/DuncanCasteleyn/DiscordModBot/commit/1cb9dcccec41b6aedcb570cd573e29c8cb0d9a21))
+
+
+### Bug Fixes
+
+* **deps:** update dependency net.dv8tion:jda to v5.1.0 ([33ba65e](https://github.com/DuncanCasteleyn/DiscordModBot/commit/33ba65edf47f486e219750a8be6307fb0cdd2d19))
+* **deps:** update dependency net.dv8tion:jda to v5.1.1 ([6ecefaa](https://github.com/DuncanCasteleyn/DiscordModBot/commit/6ecefaac5bbea3cd40ff30124d06d8baf5655f00))
+* **deps:** update kotlin monorepo to v2.0.20 ([ff6f3bd](https://github.com/DuncanCasteleyn/DiscordModBot/commit/ff6f3bd2e47771874b1ebcbefbd07a399029640a))
+* **deps:** update plugin org.springframework.boot to v3.3.3 ([52b5775](https://github.com/DuncanCasteleyn/DiscordModBot/commit/52b5775d532ed3c226e01ceb1851cfc069303354))
+* **deps:** update plugin org.springframework.boot to v3.3.4 ([f2c2146](https://github.com/DuncanCasteleyn/DiscordModBot/commit/f2c214646df1c4f21da3835af94606c570222cee))
+* Upgrade to Java 21 ([d048524](https://github.com/DuncanCasteleyn/DiscordModBot/commit/d048524c666cd0b1137f70e7257b8effdd797cf7))
+
 ## [2.0.10](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.0.9...v2.0.10) (2024-08-17)
 
 
