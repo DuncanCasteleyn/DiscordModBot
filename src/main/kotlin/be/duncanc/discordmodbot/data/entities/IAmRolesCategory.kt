@@ -19,13 +19,11 @@ package be.duncanc.discordmodbot.data.entities
 import jakarta.persistence.*
 import jakarta.validation.constraints.NotNull
 import java.io.Serializable
-import java.util.*
 
 @Entity
 @Table(name = "i_am_roles_categories")
 @IdClass(IAmRolesCategory.IAmRoleId::class)
-data class IAmRolesCategory
-constructor(
+data class IAmRolesCategory(
     @Id
     @Column(updatable = false)
     val guildId: Long,
@@ -46,7 +44,7 @@ constructor(
     @Column(nullable = false)
     @field:NotNull
     @CollectionTable(name = "i_am_roles_category_roles")
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     val roles: MutableSet<Long> = HashSet()
 ) {
 

@@ -21,7 +21,8 @@ import be.duncanc.discordmodbot.data.repositories.jpa.IAmRolesRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.util.*
+
+private const val ENTITY_DOES_NOT_EXIST_MESSAGE = "The entity does not exist within the database."
 
 @Transactional(readOnly = true)
 @Service
@@ -29,10 +30,6 @@ class IAmRolesService
 @Autowired constructor(
     private val iAmRolesRepository: IAmRolesRepository
 ) {
-    companion object {
-        private val illegalArgumentException =
-            IllegalArgumentException("The entity does not exist within the database.")
-    }
 
     fun getAllCategoriesForGuild(guildId: Long): List<IAmRolesCategory> {
         return iAmRolesRepository.findByGuildId(guildId).toList()
@@ -70,7 +67,7 @@ class IAmRolesService
     @Transactional
     fun changeCategoryName(guildId: Long, categoryId: Long, newName: String) {
         val iAmRolesCategory = iAmRolesRepository.findById(IAmRolesCategory.IAmRoleId(guildId, categoryId))
-            .orElseThrow { illegalArgumentException }
+            .orElseThrow { IllegalArgumentException(ENTITY_DOES_NOT_EXIST_MESSAGE) }
         iAmRolesCategory.categoryName = newName
         iAmRolesRepository.save(iAmRolesCategory)
     }
@@ -81,7 +78,7 @@ class IAmRolesService
     @Transactional
     fun addOrRemoveRole(guildId: Long, categoryId: Long, roleId: Long): Boolean {
         val iAmRolesCategory = iAmRolesRepository.findById(IAmRolesCategory.IAmRoleId(guildId, categoryId))
-            .orElseThrow { illegalArgumentException }
+            .orElseThrow { IllegalArgumentException(ENTITY_DOES_NOT_EXIST_MESSAGE) }
         return if (iAmRolesCategory.roles.contains(roleId)) {
             iAmRolesCategory.roles.remove(roleId)
             false
@@ -94,14 +91,19 @@ class IAmRolesService
     @Transactional
     fun changeAllowedRoles(guildId: Long, categoryId: Long, newAmount: Int) {
         val iAmRolesCategory = iAmRolesRepository.findById(IAmRolesCategory.IAmRoleId(guildId, categoryId))
-            .orElseThrow { illegalArgumentException }
+            .orElseThrow { IllegalArgumentException(ENTITY_DOES_NOT_EXIST_MESSAGE) }
         iAmRolesCategory.allowedRoles = newAmount
         iAmRolesRepository.save(iAmRolesCategory)
     }
 
     fun getRoleIds(guildId: Long, categoryId: Long): Set<Long> {
         val iAmRolesCategory = iAmRolesRepository.findById(IAmRolesCategory.IAmRoleId(guildId, categoryId))
-            .orElseThrow { illegalArgumentException }
+            .orElseThrow { IllegalArgumentException(ENTITY_DOES_NOT_EXIST_MESSAGE) }
         return HashSet(iAmRolesCategory.roles)
+    }
+
+    fun getCategoryByRoleId(guildId: Long, role: Long): IAmRolesCategory {
+        return iAmRolesRepository.findByRolesContainsAndGuildId(mutableSetOf(role), guildId).firstOrNull()
+            ?: throw IllegalArgumentException(ENTITY_DOES_NOT_EXIST_MESSAGE)
     }
 }

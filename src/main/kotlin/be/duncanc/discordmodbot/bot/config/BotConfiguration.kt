@@ -1,6 +1,6 @@
 package be.duncanc.discordmodbot.bot.config
 
-import be.duncanc.discordmodbot.bot.commands.Command
+import be.duncanc.discordmodbot.bot.commands.SlashCommand
 import be.duncanc.discordmodbot.data.configs.properties.DiscordModBotConfig
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.JDABuilder
@@ -28,7 +28,7 @@ class BotConfiguration {
     @Bean(destroyMethod = "shutdown")
     fun jda(
         listenerAdapters: Array<ListenerAdapter>,
-        commands: Array<Command>,
+        slashCommands: Array<SlashCommand>,
         discordModBotConfig: DiscordModBotConfig
     ): JDA {
         val jda = JDABuilder.create(discordModBotConfig.botToken, INTENTS)
@@ -39,7 +39,7 @@ class BotConfiguration {
             .build()
 
         val updateCommands = jda.updateCommands()
-        commands.forEach {
+        slashCommands.forEach {
             updateCommands.addCommands(it.getCommandsData())
         }
         updateCommands.queue()

@@ -25,4 +25,7 @@ import org.springframework.transaction.annotation.Transactional
 interface IAmRolesRepository : JpaRepository<IAmRolesCategory, IAmRolesCategory.IAmRoleId> {
     @Transactional(readOnly = true)
     fun findByGuildId(guildId: Long): Iterable<IAmRolesCategory>
+
+    @Transactional(readOnly = true)
+    fun findByRolesContainsAndGuildId(roles: MutableSet<Long>, guildId: Long): Iterable<IAmRolesCategory>
 }

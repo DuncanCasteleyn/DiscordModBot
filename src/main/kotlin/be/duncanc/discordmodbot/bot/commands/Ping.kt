@@ -17,39 +17,36 @@
 package be.duncanc.discordmodbot.bot.commands
 
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
-import net.dv8tion.jda.api.events.session.ReadyEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
-import net.dv8tion.jda.api.interactions.commands.build.CommandData
+import net.dv8tion.jda.api.interactions.commands.build.Commands
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import org.springframework.stereotype.Component
 
 @Component
-class Ping : ListenerAdapter(), Command {
+class Ping : ListenerAdapter(), SlashCommand {
     companion object {
         private const val COMMAND = "ping"
         private const val DESCRIPTION = "responds with \"pong!\"."
     }
 
-    override fun onReady(event: ReadyEvent) {
-        event.jda.upsertCommand("ping", DESCRIPTION).queue()
-    }
-
     override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
-        if (event.name == "ping") {
-            event.deferReply().queue { hook ->
-                event.jda.restPing.queue { ping ->
-                    hook.editOriginal(
-                        """pong!
+        if (event.name != "ping") return
+
+        event.deferReply().queue { hook ->
+            event.jda.restPing.queue { ping ->
+                hook.editOriginal(
+                    """pong!
 It took Discord ${event.jda.gatewayPing} milliseconds to respond to our last heartbeat (gateway).
 The REST API responded within $ping milliseconds"""
-                    ).queue()
-                }
-
+                ).queue()
             }
+
         }
+
     }
 
-    override fun getCommandsData(): List<CommandData> {
-        return listOf() // TODO rework
+    override fun getCommandsData(): List<SlashCommandData> {
+        return listOf(Commands.slash("ping", DESCRIPTION))
     }
 
 

@@ -176,7 +176,7 @@ internal class PlanUnmuteSequenceTest {
 
 @SpringBootTest(classes = [PlanUnmuteCommand::class])
 @ExtendWith(MockitoExtension::class)
-internal class PlanUnmuteCommandTest {
+internal class PlanUnmuteSlashCommandTest {
     @MockBean
     private lateinit var scheduledUnmuteService: ScheduledUnmuteService
 

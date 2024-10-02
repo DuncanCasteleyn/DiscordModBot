@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  database:
+    image: mariadb:11.5.2@sha256:4b812bbd9a025569fbe5a7a70e4a3cd3af53aa36621fecb1c2e108af2113450a
+    ports:
+      - "3306:3306"
+    volumes:
+      - .:/srv/jekyll
+    environment:
+      MARIADB_USER: spring
+      MARIADB_PASSWORD: test
+      MARIADB_DATABASE: discordmodbot
+      MARIADB_ROOT_PASSWORD: test
+  redis:
+    image: redis:7.4.0@sha256:878983f8f5045b28384fc300268cec62bca3b14d5e1a448bec21f28cfcc7bf78
+    ports:
+      - "6379:6379"

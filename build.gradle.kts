@@ -55,8 +55,7 @@ dependencies {
     testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-test")
     testImplementation(group = "org.mockito.kotlin", name = "mockito-kotlin", version = mockitoKotlinVersion)
 
-    annotationProcessor(group = "org.springframework.boot", name = "spring-boot-configuration-processor")
-    kapt(group = "org.springframework.boot", name = "spring-boot-configuration-processor")
+    developmentOnly("org.springframework.boot:spring-boot-docker-compose")
 }
 
 configurations {
