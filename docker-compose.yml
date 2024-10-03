@@ -2,7 +2,7 @@ version: '3'
 
 services:
   database:
-    image: mariadb:11.5.2@sha256:4b812bbd9a025569fbe5a7a70e4a3cd3af53aa36621fecb1c2e108af2113450a
+    image: mariadb:11.5.2@sha256:9e7695800ab8fa72d75053fe536b090d0c9373465b32a073c73bc7940a2e8dbe
     ports:
       - "3306:3306"
     volumes:
