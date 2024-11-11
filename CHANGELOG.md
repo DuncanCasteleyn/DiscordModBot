@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.1.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.1.0...v2.1.1) (2024-11-10)
+
+
+### Bug Fixes
+
+* **deps:** update dependency net.dv8tion:jda to v5.1.2 ([5aec9ea](https://github.com/DuncanCasteleyn/DiscordModBot/commit/5aec9eab1aee9ffb9ec95a2e0e4b71cdbdf5e14c))
+* **deps:** update dependency net.dv8tion:jda to v5.2.0 ([9c6a164](https://github.com/DuncanCasteleyn/DiscordModBot/commit/9c6a164c6be0e0261d37fd4aaf4c52ddd75a7569))
+* **deps:** update dependency net.dv8tion:jda to v5.2.1 ([#388](https://github.com/DuncanCasteleyn/DiscordModBot/issues/388)) ([4abd9c8](https://github.com/DuncanCasteleyn/DiscordModBot/commit/4abd9c883abf3a7a4fab5de24e0a69ba6dda43fb))
+* **deps:** update kotlin monorepo to v2.0.21 ([9c495ae](https://github.com/DuncanCasteleyn/DiscordModBot/commit/9c495aeac3630e63b81ff7d6999ab83edd5ee110))
+* **deps:** update plugin org.springframework.boot to v3.3.5 ([78e29dd](https://github.com/DuncanCasteleyn/DiscordModBot/commit/78e29dd43918c4b30bb8c5ca1dbcafe05ea9c2a5))
+* don't show role assign message for owner ([c2075d3](https://github.com/DuncanCasteleyn/DiscordModBot/commit/c2075d347ea4e904ce7458ff75d79282f12f4c3b))
+
 ## [2.1.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.0.10...v2.1.0) (2024-10-02)
 
 
