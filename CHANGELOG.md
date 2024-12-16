@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.1.2](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.1.1...v2.1.2) (2024-12-03)
+
+
+### Bug Fixes
+
+* **deps:** update kotlin monorepo to v2.1.0 (minor) ([#403](https://github.com/DuncanCasteleyn/DiscordModBot/issues/403)) ([baea137](https://github.com/DuncanCasteleyn/DiscordModBot/commit/baea137d1c373233a3110e753bac0f217769cc76))
+* **deps:** update plugin org.springframework.boot to v3.4.0 ([#399](https://github.com/DuncanCasteleyn/DiscordModBot/issues/399)) ([40024a0](https://github.com/DuncanCasteleyn/DiscordModBot/commit/40024a0ab8b4ff34f795f07decf091f14e3edd26))
+
+
+### Reverts
+
+* downgrade gradle to 8.10.2 as 8.11.x is completely broken on windows ([9505cbc](https://github.com/DuncanCasteleyn/DiscordModBot/commit/9505cbcc243529b435ce2bec33a74fbffebc9c57))
+
 ## [2.1.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.1.0...v2.1.1) (2024-11-10)
 
 
