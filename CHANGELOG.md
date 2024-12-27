@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.3](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.1.2...v2.1.3) (2024-12-27)
+
+
+### Bug Fixes
+
+* **deps:** update dependency net.dv8tion:jda to v5.2.2 ([#415](https://github.com/DuncanCasteleyn/DiscordModBot/issues/415)) ([5c81200](https://github.com/DuncanCasteleyn/DiscordModBot/commit/5c8120028363da1492bcccf285c0d175d593ba02))
+* **deps:** update plugin org.springframework.boot to v3.4.1 ([#411](https://github.com/DuncanCasteleyn/DiscordModBot/issues/411)) ([fbca64e](https://github.com/DuncanCasteleyn/DiscordModBot/commit/fbca64e3e7e7245c87d14a9a93cedd23260bbada))
+
 ## [2.1.2](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.1.1...v2.1.2) (2024-12-03)
 
 
