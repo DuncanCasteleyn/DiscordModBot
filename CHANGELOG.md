@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.1.3](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.1.2...v2.1.3) (2025-03-30)
+
+
+### Bug Fixes
+
+* **deps:** update dependency net.dv8tion:jda to v5.2.2 ([#415](https://github.com/DuncanCasteleyn/DiscordModBot/issues/415)) ([5c81200](https://github.com/DuncanCasteleyn/DiscordModBot/commit/5c8120028363da1492bcccf285c0d175d593ba02))
+* **deps:** update dependency net.dv8tion:jda to v5.2.3 ([#421](https://github.com/DuncanCasteleyn/DiscordModBot/issues/421)) ([0942941](https://github.com/DuncanCasteleyn/DiscordModBot/commit/0942941d686d4cc192743c6913e66d91d3a441e7))
+* **deps:** update dependency net.dv8tion:jda to v5.3.0 ([#426](https://github.com/DuncanCasteleyn/DiscordModBot/issues/426)) ([bcf331c](https://github.com/DuncanCasteleyn/DiscordModBot/commit/bcf331c9c884f0067bcf33bf240a8a0b76488eb6))
+* **deps:** update dependency net.dv8tion:jda to v5.3.1 ([#438](https://github.com/DuncanCasteleyn/DiscordModBot/issues/438)) ([fd387ee](https://github.com/DuncanCasteleyn/DiscordModBot/commit/fd387eee4a87d139d0ba835a09ac24ecfc61477d))
+* **deps:** update dependency org.json:json to v20250107 ([#418](https://github.com/DuncanCasteleyn/DiscordModBot/issues/418)) ([d9b4a1f](https://github.com/DuncanCasteleyn/DiscordModBot/commit/d9b4a1f3583d9bfc0b50ba85957cb2a60a1c0044))
+* **deps:** update kotlin monorepo to v2.1.10 (patch) ([#422](https://github.com/DuncanCasteleyn/DiscordModBot/issues/422)) ([a0115ba](https://github.com/DuncanCasteleyn/DiscordModBot/commit/a0115ba8ca51ef64c830c0ed86c890ab5025df55))
+* **deps:** update kotlin monorepo to v2.1.20 (patch) ([#435](https://github.com/DuncanCasteleyn/DiscordModBot/issues/435)) ([6442e68](https://github.com/DuncanCasteleyn/DiscordModBot/commit/6442e686f37225af45f3865feb66b5c4694e697a))
+* **deps:** update plugin org.springframework.boot to v3.4.1 ([#411](https://github.com/DuncanCasteleyn/DiscordModBot/issues/411)) ([fbca64e](https://github.com/DuncanCasteleyn/DiscordModBot/commit/fbca64e3e7e7245c87d14a9a93cedd23260bbada))
+* **deps:** update plugin org.springframework.boot to v3.4.2 ([#420](https://github.com/DuncanCasteleyn/DiscordModBot/issues/420)) ([73cbd48](https://github.com/DuncanCasteleyn/DiscordModBot/commit/73cbd4898648ec3d1afb8aa7abea1e64f731c895))
+* **deps:** update plugin org.springframework.boot to v3.4.3 ([#430](https://github.com/DuncanCasteleyn/DiscordModBot/issues/430)) ([bbb8756](https://github.com/DuncanCasteleyn/DiscordModBot/commit/bbb8756c42cd25a892d9c153f8920543068a917f))
+* **deps:** update plugin org.springframework.boot to v3.4.4 ([#436](https://github.com/DuncanCasteleyn/DiscordModBot/issues/436)) ([beac66a](https://github.com/DuncanCasteleyn/DiscordModBot/commit/beac66ab0ef36c0691d8c0f66da004c4e445b894))
+
 ## [2.1.2](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.1.1...v2.1.2) (2024-12-03)
 
 
