@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.4](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.1.3...v2.1.4) (2025-04-09)
+
+
+### Bug Fixes
+
+* **deps:** update dependency net.dv8tion:jda to v5.3.2 ([#440](https://github.com/DuncanCasteleyn/DiscordModBot/issues/440)) ([83bc008](https://github.com/DuncanCasteleyn/DiscordModBot/commit/83bc008fec4086d990f32d9fd0745db73ed3d6f9))
+
 ## [2.1.3](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.1.2...v2.1.3) (2025-03-30)
 
 
