@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.1.4](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.1.3...v2.1.4) (2025-05-13)
+
+
+### Bug Fixes
+
+* **deps:** update dependency net.dv8tion:jda to v5.3.2 ([#440](https://github.com/DuncanCasteleyn/DiscordModBot/issues/440)) ([83bc008](https://github.com/DuncanCasteleyn/DiscordModBot/commit/83bc008fec4086d990f32d9fd0745db73ed3d6f9))
+* **deps:** update kotlin monorepo to v2.1.21 (patch) ([#455](https://github.com/DuncanCasteleyn/DiscordModBot/issues/455)) ([1d06285](https://github.com/DuncanCasteleyn/DiscordModBot/commit/1d06285d189bd7a2d5e3908a305328cf185bd34e))
+* **deps:** update plugin org.springframework.boot to v3.4.5 ([#449](https://github.com/DuncanCasteleyn/DiscordModBot/issues/449)) ([61ae2e0](https://github.com/DuncanCasteleyn/DiscordModBot/commit/61ae2e027d027a8359ea9294f5e2414021171d41))
+
 ## [2.1.3](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.1.2...v2.1.3) (2025-03-30)
 
 
