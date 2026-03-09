@@ -40,7 +40,7 @@ import java.util.*
 )
 @MockitoSpyBean(types = [ScheduledUnmuteService::class])
 @ExtendWith(MockitoExtension::class)
-internal class ScheduledUnmuteServiceTest(
+class ScheduledUnmuteServiceTest(
     private val scheduledUnmuteService: ScheduledUnmuteService,
     private val scheduledUnmuteRepository: ScheduledUnmuteRepository,
     private val muteRolesRepository: MuteRolesRepository,

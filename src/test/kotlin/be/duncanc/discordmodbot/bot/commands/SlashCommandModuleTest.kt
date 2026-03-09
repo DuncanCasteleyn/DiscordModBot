@@ -18,7 +18,7 @@ import org.mockito.kotlin.*
 
 @ExtendWith(MockitoExtension::class)
 @TestInstance(Lifecycle.PER_CLASS)
-internal open class SlashCommandModuleTest : CommandModule(arrayOf("test"), null, null) {
+class SlashCommandModuleTest : CommandModule(arrayOf("test"), null, null) {
 
     private lateinit var commandModule: SlashCommandModuleTest
 

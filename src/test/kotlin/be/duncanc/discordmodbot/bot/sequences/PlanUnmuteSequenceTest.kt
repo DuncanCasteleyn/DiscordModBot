@@ -25,7 +25,7 @@ import java.util.*
 import java.util.function.Consumer
 
 @ExtendWith(MockitoExtension::class)
-internal class PlanUnmuteSequenceTest {
+class PlanUnmuteSequenceTest {
 
     @Mock
     private lateinit var user: User
