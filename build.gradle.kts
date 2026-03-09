@@ -87,7 +87,7 @@ tasks {
         }
     }
     withType<Wrapper> {
-        gradleVersion = "9.2.1"
+        gradleVersion = "9.4.0"
     }
     withType<JavaCompile> {
         options.encoding = "UTF-8"
