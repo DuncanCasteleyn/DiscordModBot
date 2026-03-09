@@ -3,18 +3,18 @@ package be.duncanc.discordmodbot.data.repositories.jpa
 import be.duncanc.discordmodbot.data.entities.GuildWarnPoint
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest
 import org.springframework.test.annotation.Commit
+import org.springframework.test.context.TestConstructor
 import org.springframework.test.context.transaction.TestTransaction
 import java.time.OffsetDateTime
 
 @Disabled("Known hibernate issue with no direct fix")
 @DataJpaTest
-class GuildWarnPointRepositoryTest {
-
-    @Autowired
-    private lateinit var guildWarnPointsRepository: GuildWarnPointsRepository
+@TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
+class GuildWarnPointRepositoryTest(
+    private val guildWarnPointsRepository: GuildWarnPointsRepository
+) {
 
     @Test
     @Commit
@@ -31,7 +31,7 @@ class GuildWarnPointRepositoryTest {
         guildWarnPointsRepository.save(data)
 
         // When
-        val save = guildWarnPointsRepository.save(data)
+        guildWarnPointsRepository.save(data)
         TestTransaction.end()
         // Then
         val guildWarnPoints = guildWarnPointsRepository.findAllByGuildIdAndUserIdAndExpireDateAfter(

@@ -55,6 +55,7 @@ dependencies {
     runtimeOnly(group = "org.mariadb.jdbc", name = "mariadb-java-client")
 
     testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-test")
+    testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-data-jpa-test")
     testImplementation(group = "org.mockito.kotlin", name = "mockito-kotlin", version = mockitoKotlinVersion)
 
     developmentOnly("org.springframework.boot:spring-boot-docker-compose")
