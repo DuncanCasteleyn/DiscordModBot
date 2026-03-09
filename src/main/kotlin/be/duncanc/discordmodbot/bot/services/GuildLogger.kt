@@ -64,7 +64,6 @@ import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
-import kotlin.collections.HashMap
 import kotlin.concurrent.thread
 
 /**
@@ -122,7 +121,7 @@ class GuildLogger
             loggingSettingsRepository.findAll().map { it.guildId.let { id -> event.jda.getGuildById(id) } }.toHashSet()
         guilds.forEach { guild ->
             guild ?: return@forEach
-            guild.retrieveAuditLogs().limit(1).cache(false).queue { auditLogEntries ->
+            guild.retrieveAuditLogs().limit(1).cache(false).queue { auditLogEntries: List<AuditLogEntry?> ->
                 val auditLogEntry = if (auditLogEntries.isEmpty()) {
                     null
                 } else {

@@ -32,6 +32,7 @@ val jdaVersion: String by project
 val commonsCollections4Version: String by project
 val orgJSONVersion: String by project
 val mockitoKotlinVersion: String by project
+val jetbrainsAnnotationsVersion: String by project
 
 dependencies {
     implementation(kotlin("stdlib"))
@@ -46,6 +47,7 @@ dependencies {
     implementation(group = "net.dv8tion", name = "JDA", version = jdaVersion) {
         exclude(group = "club.minnced", module = "opus-java")
     }
+    compileOnly(group = "org.jetbrains", name = "annotations", version = jetbrainsAnnotationsVersion)
     implementation(group = "org.apache.commons", name = "commons-collections4", version = commonsCollections4Version)
     implementation(group = "org.json", name = "json", version = orgJSONVersion)
 
