@@ -346,7 +346,9 @@ class MemberGate(
                         "no" -> {
                             destroy()
                             val reason = "Doesn't agree with the rules."
-                            event.guild.kick(event.member!!, reason).queue()
+                            event.guild.kick(event.member!!)
+                                .reason(reason)
+                                .queue()
                             val logToChannel = event.jda.registeredListeners.firstOrNull { it is GuildLogger }
                             if (logToChannel != null) {
                                 logToChannel as GuildLogger
