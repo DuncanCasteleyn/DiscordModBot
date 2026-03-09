@@ -3,18 +3,21 @@ package be.duncanc.discordmodbot.bot.services
 import be.duncanc.discordmodbot.bot.commands.SlashCommand
 import be.duncanc.discordmodbot.data.configs.properties.DiscordModBotConfig
 import be.duncanc.discordmodbot.data.services.IAmRolesService
+import net.dv8tion.jda.api.components.actionrow.ActionRow
+import net.dv8tion.jda.api.components.buttons.Button
+import net.dv8tion.jda.api.components.selections.StringSelectMenu
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Role
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
+import net.dv8tion.jda.api.interactions.InteractionContextType
 import net.dv8tion.jda.api.interactions.InteractionHook
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
-import net.dv8tion.jda.api.interactions.components.buttons.Button
-import net.dv8tion.jda.api.interactions.components.selections.StringSelectMenu
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
 import org.springframework.stereotype.Component
 
 private const val CATEGORY_COMPONENT_ID = "role-choose-category"
@@ -32,7 +35,7 @@ class Roles(
                 .addSubcommands(
                     SubcommandData("assign", "assign yourself a role")
                 )
-                .setGuildOnly(true)
+                .setContexts(InteractionContextType.GUILD)
         )
     }
 
@@ -51,9 +54,11 @@ class Roles(
                         categoryMenu.addOption(category.categoryName, category.categoryId.toString())
                     }
 
-                    it.sendMessage("Select the category you would like a role from")
-                        .addActionRow(categoryMenu.build())
-                        .queue()
+                    val message = MessageCreateBuilder()
+                        .setContent("Select the category you would like a role from")
+                        .addComponents(listOf(ActionRow.of(categoryMenu.build())))
+                        .build()
+                    it.sendMessage(message).queue()
                 }
             }
 
@@ -146,13 +151,19 @@ class Roles(
             roleSelectMenu.addOption(it.name, it.id)
         }
 
-        reply.sendMessage("Select the role you would like to get assigned.")
-            .addActionRow(roleSelectMenu.build())
-            .addActionRow(
-                Button.primary("$MORE_BUTTON_ID_PREFIX$categoryId-$page", "More roles")
-                    .withDisabled(chunkedRoles.size <= page + 1)
+        val message = MessageCreateBuilder()
+            .setContent("Select the role you would like to get assigned.")
+            .addComponents(
+                listOf(
+                    ActionRow.of(roleSelectMenu.build()),
+                    ActionRow.of(
+                        Button.primary("$MORE_BUTTON_ID_PREFIX$categoryId-$page", "More roles")
+                            .withDisabled(chunkedRoles.size <= page + 1)
+                    )
+                )
             )
-            .queue()
+            .build()
+        reply.sendMessage(message).queue()
     }
 
     private fun getChunkedRoles(
