@@ -187,11 +187,12 @@ class MemberGateService(
     fun purgeMembersWithoutRoles() {
         jda.guilds.forEach { guild ->
             val guildSettings = guildMemberGateRepository.findById(guild.idLong).orElse(null)
+            val removeTimeHours = guildSettings?.removeTimeHours
 
-            if (guildSettings?.removeTimeHours != null && guildSettings.memberRole != null && guildSettings.gateTextChannel != null) {
+            if (removeTimeHours != null && guildSettings.memberRole != null && guildSettings.gateTextChannel != null) {
                 guild.members.filter {
                     val reachedTimeLimit =
-                        it.timeJoined.isBefore(OffsetDateTime.now().minusHours(guildSettings.removeTimeHours))
+                        it.timeJoined.isBefore(OffsetDateTime.now().minusHours(removeTimeHours))
                     val notQueuedForApproval = !memberGateQuestionRepository.existsById(it.user.idLong)
                     val noRoles = it.roles.size < 1
                     noRoles && reachedTimeLimit && notQueuedForApproval
@@ -221,10 +222,11 @@ class MemberGateService(
         jda.guilds.forEach { guild ->
             val guildSettings: GuildMemberGate? = guildMemberGateRepository.findById(guild.idLong).orElse(null)
             val gateTextChannel = guildSettings?.gateTextChannel
+            val removeTimeHours = guildSettings?.removeTimeHours
 
-            if (guildSettings?.removeTimeHours != null && guildSettings.memberRole != null && gateTextChannel != null && guildSettings.reminderTimeHours != null) {
+            if (removeTimeHours != null && guildSettings.memberRole != null && gateTextChannel != null && guildSettings.reminderTimeHours != null) {
                 guild.members.filter {
-                    val minusHours = OffsetDateTime.now().minusHours(guildSettings.reminderTimeHours)
+                    val minusHours = OffsetDateTime.now().minusHours(removeTimeHours)
                     val shouldBeReminded =
                         it.timeJoined.isBefore(minusHours) && it.timeJoined.isAfter(minusHours.plusHours(1))
                     val notQueuedForApproval = !memberGateQuestionRepository.existsById(it.user.idLong)

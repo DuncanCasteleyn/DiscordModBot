@@ -19,9 +19,9 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 plugins {
-
     id("org.springframework.boot")
     id("io.spring.dependency-management")
+
     kotlin("jvm")
     kotlin("plugin.spring")
     kotlin("plugin.jpa")
@@ -33,10 +33,14 @@ val commonsCollections4Version: String by project
 val orgJSONVersion: String by project
 val mockitoKotlinVersion: String by project
 val jetbrainsAnnotationsVersion: String by project
+val springModulithVersion: String by project
 
 dependencies {
+    annotationProcessor(group = "org.springframework.boot", name = "spring-boot-configuration-processor")
+
     implementation(kotlin("stdlib"))
     implementation(kotlin("reflect"))
+    implementation(kotlin("test"))
 
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-data-jpa")
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-validation")
@@ -47,9 +51,12 @@ dependencies {
     implementation(group = "net.dv8tion", name = "JDA", version = jdaVersion) {
         exclude(group = "club.minnced", module = "opus-java")
     }
-    compileOnly(group = "org.jetbrains", name = "annotations", version = jetbrainsAnnotationsVersion)
     implementation(group = "org.apache.commons", name = "commons-collections4", version = commonsCollections4Version)
     implementation(group = "org.json", name = "json", version = orgJSONVersion)
+
+    implementation(group = "org.springframework.modulith", name = "spring-modulith-starter-core")
+
+    compileOnly(group = "org.jetbrains", name = "annotations", version = jetbrainsAnnotationsVersion)
 
     runtimeOnly(group = "com.h2database", name = "h2")
     runtimeOnly(group = "org.mariadb.jdbc", name = "mariadb-java-client")
@@ -60,12 +67,18 @@ dependencies {
     testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-flyway-test")
     testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-data-redis-test")
     testImplementation(group = "org.mockito.kotlin", name = "mockito-kotlin", version = mockitoKotlinVersion)
-
+    testImplementation(group = "org.springframework.modulith", name = "spring-modulith-starter-test")
     testImplementation(group = "org.jetbrains.kotlin", name = "kotlin-test-junit5")
 
     testRuntimeOnly(group = "org.junit.platform", name = "junit-platform-launcher")
 
     developmentOnly("org.springframework.boot:spring-boot-docker-compose")
+}
+
+dependencyManagement {
+    imports {
+        mavenBom("org.springframework.modulith:spring-modulith-bom:${springModulithVersion}")
+    }
 }
 
 configurations {
@@ -91,6 +104,7 @@ tasks {
     withType<KotlinCompile> {
         compilerOptions {
             freeCompilerArgs.add("-Xjsr305=strict")
+            freeCompilerArgs.add("-Xannotation-default-target=param-property")
             freeCompilerArgs.add("-progressive")
 
             jvmTarget = JvmTarget.JVM_21
@@ -109,6 +123,12 @@ tasks {
     withType<BootJar> {
         archiveFileName.set("DiscordModBot.jar")
     }
+}
+
+allOpen {
+    annotation("jakarta.persistence.Entity")
+    annotation("jakarta.persistence.MappedSuperclass")
+    annotation("jakarta.persistence.Embeddable")
 }
 
 project.group = "be.duncanc"
