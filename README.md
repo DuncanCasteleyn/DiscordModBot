@@ -1,10 +1,52 @@
 # DiscordModBot
+
 A Discord bot that helps with managing a Discord server/guild.
 
 The current purpose of this project is to provide services to the Fairy tail guild and Re: zero guild.
 
 You are free to modify the code to make it work on your own guild, but right now no support will be offered. The plan is
 to make things less hard coded in the future where possible and make everything more configurable.
+
+## Configuration
+
+Spring Boot configuration can be provided through `application.properties`, environment variables, or command-line args.
+For environment variables, convert property names to uppercase and replace `.`/`-` with `_`.
+
+### Required bot properties
+
+These are bound from `discord-mod-bot.*` and the application will fail to start if they are missing.
+
+| Property                    | Environment Variable        | Required | Description                                                      |
+|-----------------------------|-----------------------------|----------|------------------------------------------------------------------|
+| `discord-mod-bot.owner-id`  | `DISCORD_MOD_BOT_OWNER_ID`  | Yes      | Discord user ID for the bot owner (used for owner-only actions). |
+| `discord-mod-bot.bot-token` | `DISCORD_MOD_BOT_BOT_TOKEN` | Yes      | Discord bot token used to connect to the Discord gateway.        |
+
+### Default runtime properties
+
+These defaults are defined in `src/main/resources/application.properties`.
+
+| Property                              | Default                                                          | Description                             |
+|---------------------------------------|------------------------------------------------------------------|-----------------------------------------|
+| `spring.profiles.active`              | `production`                                                     | Active Spring profile.                  |
+| `logging.level.root`                  | `info`                                                           | Root logging level.                     |
+| `spring.h2.console.enabled`           | `false`                                                          | Enables/disables H2 web console.        |
+| `spring.h2.console.path`              | `/h2`                                                            | Path for H2 web console.                |
+| `spring.datasource.url`               | `jdbc:h2:file:./discordModBot;MODE=MySQL;DATABASE_TO_LOWER=TRUE` | Default datasource URL (file-based H2). |
+| `spring.datasource.username`          | `sa`                                                             | Database username.                      |
+| `spring.datasource.password`          | *(empty)*                                                        | Database password.                      |
+| `spring.datasource.driver-class-name` | `org.h2.Driver`                                                  | JDBC driver class.                      |
+| `spring.jpa.hibernate.ddl-auto`       | `none`                                                           | Hibernate schema management mode.       |
+
+### Example (environment variables)
+
+```bash
+export DISCORD_MOD_BOT_OWNER_ID=123456789012345678
+export DISCORD_MOD_BOT_BOT_TOKEN=your-token-here
+export SPRING_DATASOURCE_URL=jdbc:mariadb://127.0.0.1:3306/discordmodbot
+export SPRING_DATASOURCE_USERNAME=spring
+export SPRING_DATASOURCE_PASSWORD=test
+export SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.mariadb.jdbc.Driver
+```
 
 ## Running on Linux (systemd, jar)
 
