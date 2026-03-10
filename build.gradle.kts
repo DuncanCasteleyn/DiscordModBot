@@ -41,7 +41,7 @@ dependencies {
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-data-jpa")
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-validation")
     implementation(group = "org.springframework.boot", name = "spring-boot-starter-data-redis")
-    implementation(group = "org.flywaydb", name = "flyway-core")
+    implementation(group = "org.springframework.boot", name = "spring-boot-starter-flyway")
     implementation(group = "org.flywaydb", name = "flyway-mysql")
     implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin")
     implementation(group = "net.dv8tion", name = "JDA", version = jdaVersion) {
@@ -56,7 +56,14 @@ dependencies {
 
     testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-test")
     testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-data-jpa-test")
+    testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-data-redis-test")
+    testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-flyway-test")
+    testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-data-redis-test")
     testImplementation(group = "org.mockito.kotlin", name = "mockito-kotlin", version = mockitoKotlinVersion)
+
+    testImplementation(group = "org.jetbrains.kotlin", name = "kotlin-test-junit5")
+
+    testRuntimeOnly(group = "org.junit.platform", name = "junit-platform-launcher")
 
     developmentOnly("org.springframework.boot:spring-boot-docker-compose")
 }
