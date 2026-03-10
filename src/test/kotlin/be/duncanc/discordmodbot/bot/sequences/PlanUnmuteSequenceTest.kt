@@ -20,15 +20,12 @@ import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.*
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.test.util.ReflectionTestUtils
 import java.util.*
 import java.util.function.Consumer
 
 @ExtendWith(MockitoExtension::class)
-internal class PlanUnmuteSequenceTest {
+class PlanUnmuteSequenceTest {
 
     @Mock
     private lateinit var user: User
@@ -174,19 +171,17 @@ internal class PlanUnmuteSequenceTest {
     }
 }
 
-@SpringBootTest(classes = [PlanUnmuteCommand::class])
 @ExtendWith(MockitoExtension::class)
 internal class PlanUnmuteSlashCommandTest {
-    @MockBean
+    @Mock
     private lateinit var scheduledUnmuteService: ScheduledUnmuteService
 
-    @MockBean
+    @Mock
     private lateinit var guildLogger: GuildLogger
 
-    @MockBean
+    @Mock
     private lateinit var muteRolesRepository: MuteRolesRepository
 
-    @SpyBean
     private lateinit var planUnmuteCommand: PlanUnmuteCommand
 
     @Mock
@@ -212,6 +207,11 @@ internal class PlanUnmuteSlashCommandTest {
 
     @Mock
     private lateinit var messageChannelUnion: MessageChannelUnion
+
+    @BeforeEach
+    fun `Set action for init`() {
+        planUnmuteCommand = spy(PlanUnmuteCommand(scheduledUnmuteService, guildLogger, muteRolesRepository))
+    }
 
     @AfterEach
     fun `No more interactions with any spy or mocks`() {
@@ -244,10 +244,7 @@ internal class PlanUnmuteSlashCommandTest {
         whenever(messageChannelUnion.sendMessage(anyString())).thenReturn(messageCreateAction)
         whenever(messageReceivedEvent.jda).thenReturn(jda)
         // Act
-        ReflectionTestUtils.invokeMethod<Void>(
-            planUnmuteCommand, "commandExec",
-            messageReceivedEvent, planUnmuteCommand.aliases[0], null
-        )
+        planUnmuteCommand.commandExec(messageReceivedEvent, planUnmuteCommand.aliases[0], null)
         // Assert
         verify(planUnmuteCommand).aliases
         val commandExecInvocations =
@@ -274,10 +271,7 @@ internal class PlanUnmuteSlashCommandTest {
         whenever(message.contentRaw).thenReturn(messageContent)
         // Act
         val illegalArgumentException = assertThrows<IllegalArgumentException> {
-            ReflectionTestUtils.invokeMethod<Void>(
-                planUnmuteCommand, "commandExec",
-                messageReceivedEvent, planUnmuteCommand.aliases[0], null
-            )
+            planUnmuteCommand.commandExec(messageReceivedEvent, planUnmuteCommand.aliases[0], null)
         }
         // Assert
         assertEquals("This command requires a user id or mention", illegalArgumentException.message)
@@ -298,10 +292,7 @@ internal class PlanUnmuteSlashCommandTest {
         whenever(message.contentRaw).thenReturn(messageContent)
         // Act & Assert throws
         val illegalArgumentException = assertThrows<IllegalArgumentException> {
-            ReflectionTestUtils.invokeMethod<Void>(
-                planUnmuteCommand, "commandExec",
-                messageReceivedEvent, planUnmuteCommand.aliases[0], null
-            )
+            planUnmuteCommand.commandExec(messageReceivedEvent, planUnmuteCommand.aliases[0], null)
         }
         // Assert
         assertEquals("This command requires a user id or mention", illegalArgumentException.message)

@@ -22,26 +22,30 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.boot.test.mock.mockito.SpyBean
+import org.springframework.test.context.TestConstructor
+import org.springframework.test.context.bean.override.mockito.MockitoBean
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import java.time.OffsetDateTime
 import java.util.*
 
 @SpringBootTest(classes = [ScheduledUnmuteService::class])
+@TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
+@MockitoBean(
+    types = [
+        ScheduledUnmuteRepository::class,
+        MuteRolesRepository::class,
+        GuildLogger::class,
+        JDA::class
+    ]
+)
+@MockitoSpyBean(types = [ScheduledUnmuteService::class])
 @ExtendWith(MockitoExtension::class)
-internal class ScheduledUnmuteServiceTest {
-    @MockBean
-    lateinit var scheduledUnmuteRepository: ScheduledUnmuteRepository
-
-    @MockBean
-    lateinit var muteRolesRepository: MuteRolesRepository
-
-    @MockBean
-    lateinit var guildLogger: GuildLogger
-
-    @MockBean
-    lateinit var jda: JDA
-
+class ScheduledUnmuteServiceTest(
+    private val scheduledUnmuteService: ScheduledUnmuteService,
+    private val scheduledUnmuteRepository: ScheduledUnmuteRepository,
+    private val muteRolesRepository: MuteRolesRepository,
+    private val jda: JDA
+) {
     @Mock
     lateinit var guild: Guild
 
@@ -53,9 +57,6 @@ internal class ScheduledUnmuteServiceTest {
 
     @Mock
     lateinit var auditableRestAction: AuditableRestAction<Void>
-
-    @SpyBean
-    lateinit var scheduledUnmuteService: ScheduledUnmuteService
 
     @AfterEach
     fun `verify no more interactions with any mock or spy`() {
