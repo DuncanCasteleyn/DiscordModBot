@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.5](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.1.4...v2.1.5) (2026-03-10)
+
+
+### Bug Fixes
+
+* **deps:** update plugin org.springframework.boot to v4 ([#477](https://github.com/DuncanCasteleyn/DiscordModBot/issues/477)) ([9c18394](https://github.com/DuncanCasteleyn/DiscordModBot/commit/9c183949a9f93b2dda7edd1465f3c1cba35e1589))
+
 ## [2.1.4](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.1.3...v2.1.4) (2026-03-10)
 
 
