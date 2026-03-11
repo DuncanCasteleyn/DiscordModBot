@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package be.duncanc.discordmodbot
+package be.duncanc.discordmodbot.moderation.persistence
 
-import org.springframework.boot.autoconfigure.SpringBootApplication
-import org.springframework.boot.runApplication
-import org.springframework.modulith.Modulithic
+import jakarta.persistence.Entity
+import jakarta.persistence.Id
+import jakarta.persistence.Table
 
-@Modulithic(sharedModules = ["bootstrap", "discord"])
-@SpringBootApplication
-class Application
-
-fun main(args: Array<String>) {
-    runApplication<Application>(*args)
-}
+@Entity
+@Table(name = "blocked_users")
+data class BlockedUser
+    (
+    @Id
+    val userId: Long
+)

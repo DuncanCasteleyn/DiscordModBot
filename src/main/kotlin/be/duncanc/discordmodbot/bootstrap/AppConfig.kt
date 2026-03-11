@@ -14,16 +14,13 @@
  * limitations under the License.
  */
 
-package be.duncanc.discordmodbot
+package be.duncanc.discordmodbot.bootstrap
 
-import org.springframework.boot.autoconfigure.SpringBootApplication
-import org.springframework.boot.runApplication
-import org.springframework.modulith.Modulithic
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan
+import org.springframework.context.annotation.Configuration
+import org.springframework.scheduling.annotation.EnableScheduling
 
-@Modulithic(sharedModules = ["bootstrap", "discord"])
-@SpringBootApplication
-class Application
-
-fun main(args: Array<String>) {
-    runApplication<Application>(*args)
-}
+@Configuration
+@EnableScheduling
+@ConfigurationPropertiesScan("be.duncanc.discordmodbot")
+class AppConfig

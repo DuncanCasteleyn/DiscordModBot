@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package be.duncanc.discordmodbot
+package be.duncanc.discordmodbot.roles.persistence
 
-import org.springframework.boot.autoconfigure.SpringBootApplication
-import org.springframework.boot.runApplication
-import org.springframework.modulith.Modulithic
+import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.stereotype.Repository
+import org.springframework.transaction.annotation.Transactional
 
-@Modulithic(sharedModules = ["bootstrap", "discord"])
-@SpringBootApplication
-class Application
+@Repository
+interface IAmRolesRepository : JpaRepository<IAmRolesCategory, IAmRolesCategory.IAmRoleId> {
+    @Transactional(readOnly = true)
+    fun findByGuildId(guildId: Long): Iterable<IAmRolesCategory>
 
-fun main(args: Array<String>) {
-    runApplication<Application>(*args)
+    @Transactional(readOnly = true)
+    fun findByRolesContainsAndGuildId(roles: MutableSet<Long>, guildId: Long): Iterable<IAmRolesCategory>
 }

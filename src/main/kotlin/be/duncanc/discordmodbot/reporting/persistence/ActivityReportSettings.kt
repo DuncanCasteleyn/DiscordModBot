@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package be.duncanc.discordmodbot
+package be.duncanc.discordmodbot.reporting.persistence
 
-import org.springframework.boot.autoconfigure.SpringBootApplication
-import org.springframework.boot.runApplication
-import org.springframework.modulith.Modulithic
+import jakarta.persistence.*
 
-@Modulithic(sharedModules = ["bootstrap", "discord"])
-@SpringBootApplication
-class Application
-
-fun main(args: Array<String>) {
-    runApplication<Application>(*args)
-}
+@Entity
+@Table(name = "activity_report_settings")
+data class ActivityReportSettings(
+    @Id
+    val guildId: Long,
+    var reportChannel: Long? = null,
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Column(name = "tracked")
+    val trackedRoleOrMember: MutableSet<Long> = HashSet()
+)

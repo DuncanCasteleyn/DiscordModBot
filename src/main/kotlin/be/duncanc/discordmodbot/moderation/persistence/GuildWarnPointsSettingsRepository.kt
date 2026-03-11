@@ -14,16 +14,10 @@
  * limitations under the License.
  */
 
-package be.duncanc.discordmodbot
+package be.duncanc.discordmodbot.moderation.persistence
 
-import org.springframework.boot.autoconfigure.SpringBootApplication
-import org.springframework.boot.runApplication
-import org.springframework.modulith.Modulithic
+import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.stereotype.Repository
 
-@Modulithic(sharedModules = ["bootstrap", "discord"])
-@SpringBootApplication
-class Application
-
-fun main(args: Array<String>) {
-    runApplication<Application>(*args)
-}
+@Repository
+interface GuildWarnPointsSettingsRepository : JpaRepository<GuildWarnPointsSettings, Long>
