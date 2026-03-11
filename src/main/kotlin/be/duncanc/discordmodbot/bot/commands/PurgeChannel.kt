@@ -26,7 +26,6 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 import java.awt.Color
 import java.time.OffsetDateTime
-import java.util.*
 import java.util.concurrent.TimeUnit
 
 /**
@@ -36,7 +35,7 @@ import java.util.concurrent.TimeUnit
 class PurgeChannel : CommandModule(
     arrayOf("PurgeChannel", "Purge"),
     "[Amount of messages] (Mention user(s) to filter on)",
-    "Cleans the amount of messages given as argument in the channel where executed. If (a) user(s) are/is mentioned at the end of this command only their/his messages will be deleted, but due to limitations in the discord api this **only works on users that are present in the server**, mentioning a user that is not on the server will causes the command to think you mentioned nobody wiping everyone's messages. (Messages older than 2 weeks are ignored due to api issues.)",
+    "Cleans the amount of messages given as argument in the channel where executed. If (a) user(s) are/is mentioned at the end of this command only their/his messages will be deleted. (Messages older than 2 weeks are ignored due to api issues.)",
     cleanCommandMessage = false,
     ignoreWhitelist = true
 ) {
@@ -49,12 +48,14 @@ class PurgeChannel : CommandModule(
         }
 
         val args = arguments!!.split(" ".toRegex()).dropLastWhile { it.isBlank() }.toTypedArray()
+        val targetUserIds = extractMentionedUserIds(event.message.contentRaw)
+
         if (!event.isFromType(ChannelType.TEXT)) {
             event.channel.sendMessage("This command only works in a guild.").queue()
         } else if (event.member?.hasPermission(event.guildChannel.asTextChannel(), Permission.MESSAGE_MANAGE) != true) {
             event.channel.sendMessage(event.author.asMention + " you need manage messages permission in this channel to use this command.")
                 .queue { message -> message.delete().queueAfter(1, TimeUnit.MINUTES) }
-        } else if (event.message.mentions.users.size > 0) {
+        } else if (targetUserIds.isNotEmpty()) {
             val amount: Int
             try {
                 amount = parseAmountOfMessages(args[0])
@@ -66,9 +67,11 @@ class PurgeChannel : CommandModule(
 
             val textChannel = event.guildChannel.asTextChannel()
             val messageList = ArrayList<Long>()
-            val targetUsers = event.message.mentions.users
             for (m in textChannel.iterableHistory.cache(false)) {
-                if (targetUsers.contains(m.author) && m.timeCreated.isAfter(OffsetDateTime.now().minusWeeks(2))) {
+                if (targetUserIds.contains(m.author.idLong) && m.timeCreated.isAfter(
+                        OffsetDateTime.now().minusWeeks(2)
+                    )
+                ) {
                     messageList.add(m.idLong)
                 } else if (m.timeCreated.isBefore(OffsetDateTime.now().minusWeeks(2))) {
                     break
@@ -81,9 +84,10 @@ class PurgeChannel : CommandModule(
             textChannel.limitLessBulkDeleteByIds(messageList)
             val stringBuilder = StringBuilder(event.author.asMention).append(" deleted ").append(amountDeleted)
                 .append(" most recent messages from ")
-            for (i in targetUsers.indices) {
-                stringBuilder.append(targetUsers[i].asMention)
-                if (i != targetUsers.size - 1) {
+            val targetUserMentions = targetUserIds.map { "<@$it>" }
+            for (i in targetUserMentions.indices) {
+                stringBuilder.append(targetUserMentions[i])
+                if (i != targetUserMentions.size - 1) {
                     stringBuilder.append(", ")
                 } else {
                     stringBuilder.append('.')
@@ -96,7 +100,7 @@ class PurgeChannel : CommandModule(
             val logToChannel = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
             if (logToChannel != null) {
                 val filterString = StringBuilder()
-                targetUsers.forEach { user -> filterString.append(user.asMention).append("\n") }
+                targetUserIds.forEach { userId -> filterString.append("<@").append(userId).append(">").append("\n") }
                 val logEmbed = EmbedBuilder()
                     .setColor(Color.YELLOW)
                     .setTitle("Filtered channel purge", null)
@@ -156,5 +160,15 @@ class PurgeChannel : CommandModule(
             throw NumberFormatException("Expected number between 1 and 1000 got $amount.")
         }
         return amount
+    }
+
+    private fun extractMentionedUserIds(contentRaw: String): Set<Long> {
+        return USER_MENTION_REGEX.findAll(contentRaw)
+            .mapNotNull { it.groupValues.getOrNull(1)?.toLongOrNull() }
+            .toSet()
+    }
+
+    companion object {
+        private val USER_MENTION_REGEX = Regex("<@!?(\\d+)>")
     }
 }
