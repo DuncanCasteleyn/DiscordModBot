@@ -24,12 +24,13 @@ class RevokeWarnPoints(
     ignoreWhitelist = true
 ) {
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-        if (event.message.mentions.users.size != 1) {
+        val mentionedUserIds = extractMentionedUserIds(event.message.contentRaw)
+        if (mentionedUserIds.size != 1) {
             throw IllegalArgumentException("A single mention is required to use this command")
         }
 
         val guildId = event.guild.idLong
-        val userId = event.message.mentions.users[0].idLong
+        val userId = mentionedUserIds.first()
 
 
         if (guildWarnPointsService.userHasGuildWarnings(guildId, userId)) {
@@ -77,5 +78,15 @@ class RevokeWarnPoints(
             }
             super.destroy()
         }
+    }
+
+    private fun extractMentionedUserIds(contentRaw: String): Set<Long> {
+        return USER_MENTION_REGEX.findAll(contentRaw)
+            .mapNotNull { it.groupValues.getOrNull(1)?.toLongOrNull() }
+            .toSet()
+    }
+
+    companion object {
+        private val USER_MENTION_REGEX = Regex("<@!?(\\d+)>")
     }
 }
