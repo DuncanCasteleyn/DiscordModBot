@@ -35,6 +35,7 @@ val mockitoKotlinVersion: String by project
 val jetbrainsAnnotationsVersion: String by project
 val springModulithVersion: String by project
 
+val mockitoAgent = configurations.create("mockitoAgent")
 dependencies {
     annotationProcessor(group = "org.springframework.boot", name = "spring-boot-configuration-processor")
 
@@ -73,6 +74,8 @@ dependencies {
     testRuntimeOnly(group = "org.junit.platform", name = "junit-platform-launcher")
 
     developmentOnly("org.springframework.boot:spring-boot-docker-compose")
+
+    mockitoAgent("org.mockito:mockito-core") { isTransitive = false }
 }
 
 dependencyManagement {
@@ -99,6 +102,8 @@ java {
 
 tasks {
     withType<Test> {
+        jvmArgs.add("-javaagent:${mockitoAgent.asPath}")
+
         useJUnitPlatform()
     }
     withType<KotlinCompile> {
