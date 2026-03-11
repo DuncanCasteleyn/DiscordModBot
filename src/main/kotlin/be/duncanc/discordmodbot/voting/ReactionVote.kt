@@ -17,10 +17,10 @@
 package be.duncanc.discordmodbot.voting
 
 import be.duncanc.discordmodbot.discord.CommandModule
-import be.duncanc.discordmodbot.moderation.UserBlockService
+import be.duncanc.discordmodbot.discord.UserBlockService
 import be.duncanc.discordmodbot.voting.persistence.VotingEmotesRepository
-import net.dv8tion.jda.api.entities.emoji.Emoji
 import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.emoji.Emoji
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
 

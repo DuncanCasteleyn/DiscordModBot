@@ -17,15 +17,15 @@
 package be.duncanc.discordmodbot.utility
 
 import be.duncanc.discordmodbot.discord.CommandModule
-import be.duncanc.discordmodbot.moderation.UserBlockService
-import java.util.concurrent.TimeUnit
-import net.dv8tion.jda.api.entities.channel.ChannelType
+import be.duncanc.discordmodbot.discord.UserBlockService
+import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.Role
+import net.dv8tion.jda.api.entities.channel.ChannelType
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.utils.SplitUtil
 import org.springframework.stereotype.Component
+import java.util.concurrent.TimeUnit
 
 /**
  * Commands to get all role ids of the current guild where executed.

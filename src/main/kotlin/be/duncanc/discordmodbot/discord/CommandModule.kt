@@ -15,22 +15,19 @@
  */
 
 package be.duncanc.discordmodbot.discord
-
-import be.duncanc.discordmodbot.moderation.UserBlockService
-import be.duncanc.discordmodbot.serverconfig.CommandTextChannelsWhitelist
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.channel.ChannelType
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.exceptions.PermissionException
+import net.dv8tion.jda.api.hooks.ListenerAdapter
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.TimeUnit
-import net.dv8tion.jda.api.entities.channel.ChannelType
-import net.dv8tion.jda.api.entities.User
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import net.dv8tion.jda.api.exceptions.PermissionException
-import net.dv8tion.jda.api.hooks.ListenerAdapter
-import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 /**
  * an abstract class that can be used to listen for commands.
@@ -77,7 +74,7 @@ abstract class CommandModule
      * @param command The command that was used.
      * @param arguments The arguments that where provided with the command.
      */
-    public abstract fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?)
+    abstract fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?)
 
     /**
      * When a message is received it will decide if the message is a command that should be handled by the command executor.
@@ -110,7 +107,7 @@ abstract class CommandModule
                 try {
                     if (event.isFromType(ChannelType.TEXT) && !ignoreWhitelist) {
                         val commandTextChannelsWhitelist =
-                            event.jda.registeredListeners.find { it is CommandTextChannelsWhitelist } as CommandTextChannelsWhitelist?
+                            event.jda.registeredListeners.find { it is CommandChannelWhitelist } as CommandChannelWhitelist?
                         if (commandTextChannelsWhitelist?.isWhitelisted(event.channel.asTextChannel()) == false) {
                             throw IllegalTextChannelException()
                         }

@@ -17,12 +17,12 @@
 package be.duncanc.discordmodbot.utility
 
 import be.duncanc.discordmodbot.discord.CommandModule
-import be.duncanc.discordmodbot.moderation.UserBlockService
-import java.awt.Color
+import be.duncanc.discordmodbot.discord.UserBlockService
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
+import java.awt.Color
 
 /**
  * Information commands for the bot.

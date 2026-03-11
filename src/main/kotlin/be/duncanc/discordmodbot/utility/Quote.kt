@@ -17,8 +17,8 @@
 package be.duncanc.discordmodbot.utility
 
 import be.duncanc.discordmodbot.discord.CommandModule
+import be.duncanc.discordmodbot.discord.UserBlockService
 import be.duncanc.discordmodbot.discord.nicknameAndUsername
-import be.duncanc.discordmodbot.moderation.UserBlockService
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent

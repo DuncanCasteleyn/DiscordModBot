@@ -17,15 +17,15 @@
 package be.duncanc.discordmodbot.utility
 
 import be.duncanc.discordmodbot.discord.CommandModule
+import be.duncanc.discordmodbot.discord.UserBlockService
 import be.duncanc.discordmodbot.discord.nicknameAndUsername
-import be.duncanc.discordmodbot.moderation.UserBlockService
-import java.time.format.DateTimeFormatter
-import java.util.*
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.channel.ChannelType
 import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.stereotype.Component
+import java.time.format.DateTimeFormatter
+import java.util.*
 
 /**
  * User info command.

@@ -16,17 +16,18 @@
 
 package be.duncanc.discordmodbot.serverconfig
 
+import be.duncanc.discordmodbot.discord.CommandChannelWhitelist
 import be.duncanc.discordmodbot.discord.CommandModule
 import be.duncanc.discordmodbot.serverconfig.persistence.GuildCommandChannels
 import be.duncanc.discordmodbot.serverconfig.persistence.GuildCommandChannelsRepository
-import java.util.concurrent.TimeUnit
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
-import net.dv8tion.jda.api.entities.Message
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
+import java.util.concurrent.TimeUnit
 
 @Component
 class CommandTextChannelsWhitelist
@@ -38,7 +39,7 @@ class CommandTextChannelsWhitelist
     "Whitelists the channel so commands can be used in it.",
     ignoreWhitelist = true,
     requiredPermissions = arrayOf(Permission.MANAGE_CHANNEL)
-) {
+), CommandChannelWhitelist {
 
     @Transactional
     override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
@@ -71,7 +72,7 @@ class CommandTextChannelsWhitelist
         { it.delete().queueAfter(1, TimeUnit.MINUTES) }
 
     @Transactional(readOnly = true)
-    fun isWhitelisted(textChannel: TextChannel): Boolean {
+    override fun isWhitelisted(textChannel: TextChannel): Boolean {
         val contains = guildCommandChannelsRepository.findById(textChannel.guild.idLong).orElse(null)
             ?.whitelistedChannels?.contains(textChannel.idLong)
         return contains == true || contains == null

@@ -1,7 +1,7 @@
 package be.duncanc.discordmodbot.utility
 
 import be.duncanc.discordmodbot.discord.CommandModule
-import be.duncanc.discordmodbot.moderation.UserBlockService
+import be.duncanc.discordmodbot.discord.UserBlockService
 
 
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
