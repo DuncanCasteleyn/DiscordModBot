@@ -14,41 +14,36 @@
  * limitations under the License.
  */
 
-package be.duncanc.discordmodbot.membergate
+package be.duncanc.discordmodbot.member.gate
 
-import be.duncanc.discordmodbot.discord.CommandModule
-import be.duncanc.discordmodbot.discord.limitLessBulkDeleteByIds
-import be.duncanc.discordmodbot.discord.MessageSequence
-import be.duncanc.discordmodbot.discord.ReactionSequence
-import be.duncanc.discordmodbot.discord.Sequence
+import be.duncanc.discordmodbot.discord.*
 import be.duncanc.discordmodbot.logging.GuildLogger
-import be.duncanc.discordmodbot.membergate.persistence.GuildMemberGate
-import be.duncanc.discordmodbot.membergate.persistence.MemberGateQuestion
-import be.duncanc.discordmodbot.membergate.persistence.MemberGateQuestionRepository
-import be.duncanc.discordmodbot.membergate.persistence.WelcomeMessage
-import java.security.SecureRandom
-import java.util.*
-import java.util.concurrent.TimeUnit
-import net.dv8tion.jda.api.entities.channel.ChannelType
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
-import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
-import net.dv8tion.jda.api.entities.emoji.Emoji
+import be.duncanc.discordmodbot.member.gate.persistence.MemberGateQuestion
+import be.duncanc.discordmodbot.member.gate.persistence.MemberGateQuestionRepository
+import be.duncanc.discordmodbot.member.gate.persistence.WelcomeMessage
+import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.channel.ChannelType
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
+import net.dv8tion.jda.api.entities.emoji.Emoji
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleAddEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent
-import net.dv8tion.jda.api.JDA
-import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.utils.MarkdownUtil
-import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
 import net.dv8tion.jda.api.utils.SplitUtil
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
+import java.security.SecureRandom
+import java.util.*
+import java.util.concurrent.TimeUnit
 
 @Component
 @Transactional
@@ -817,4 +812,3 @@ class MemberGate(
         }
     }
 }
-

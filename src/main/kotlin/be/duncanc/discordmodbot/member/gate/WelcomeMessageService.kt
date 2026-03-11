@@ -1,7 +1,7 @@
-package be.duncanc.discordmodbot.membergate
+package be.duncanc.discordmodbot.member.gate
 
-import be.duncanc.discordmodbot.membergate.persistence.WelcomeMessage
-import be.duncanc.discordmodbot.membergate.persistence.WelcomeMessageRepository
+import be.duncanc.discordmodbot.member.gate.persistence.WelcomeMessage
+import be.duncanc.discordmodbot.member.gate.persistence.WelcomeMessageRepository
 
 
 import org.springframework.stereotype.Service

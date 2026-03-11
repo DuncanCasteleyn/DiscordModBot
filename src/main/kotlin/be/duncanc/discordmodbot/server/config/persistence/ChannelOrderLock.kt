@@ -1,4 +1,4 @@
-package be.duncanc.discordmodbot.serverconfig.persistence
+package be.duncanc.discordmodbot.server.config.persistence
 
 
 import jakarta.persistence.Entity

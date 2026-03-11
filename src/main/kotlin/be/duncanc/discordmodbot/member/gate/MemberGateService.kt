@@ -14,23 +14,23 @@
  * limitations under the License.
  */
 
-package be.duncanc.discordmodbot.membergate
+package be.duncanc.discordmodbot.member.gate
 
-import be.duncanc.discordmodbot.membergate.persistence.GuildMemberGate
-import be.duncanc.discordmodbot.membergate.persistence.GuildMemberGateRepository
-import be.duncanc.discordmodbot.membergate.persistence.MemberGateQuestionRepository
-import java.awt.Color
-import java.time.OffsetDateTime
-import java.util.*
-import java.util.concurrent.TimeUnit
+import be.duncanc.discordmodbot.member.gate.persistence.GuildMemberGate
+import be.duncanc.discordmodbot.member.gate.persistence.GuildMemberGateRepository
+import be.duncanc.discordmodbot.member.gate.persistence.MemberGateQuestionRepository
 import net.dv8tion.jda.api.EmbedBuilder
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
-import net.dv8tion.jda.api.entities.Role
 import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.entities.Role
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import org.springframework.context.annotation.Lazy
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.awt.Color
+import java.time.OffsetDateTime
+import java.util.*
+import java.util.concurrent.TimeUnit
 
 @Service
 @Transactional(readOnly = true)

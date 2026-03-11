@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package be.duncanc.discordmodbot.membergate.persistence
+package be.duncanc.discordmodbot.member.gate.persistence
 
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository

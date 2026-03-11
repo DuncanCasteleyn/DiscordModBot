@@ -1,4 +1,4 @@
-package be.duncanc.discordmodbot.membergate.persistence
+package be.duncanc.discordmodbot.member.gate.persistence
 
 
 import jakarta.persistence.*

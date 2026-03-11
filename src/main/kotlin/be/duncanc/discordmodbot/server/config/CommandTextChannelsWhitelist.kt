@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package be.duncanc.discordmodbot.serverconfig
+package be.duncanc.discordmodbot.server.config
 
 import be.duncanc.discordmodbot.discord.CommandChannelWhitelist
 import be.duncanc.discordmodbot.discord.CommandModule
-import be.duncanc.discordmodbot.serverconfig.persistence.GuildCommandChannels
-import be.duncanc.discordmodbot.serverconfig.persistence.GuildCommandChannelsRepository
+import be.duncanc.discordmodbot.server.config.persistence.GuildCommandChannels
+import be.duncanc.discordmodbot.server.config.persistence.GuildCommandChannelsRepository
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel

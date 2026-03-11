@@ -1,8 +1,8 @@
-package be.duncanc.discordmodbot.membergate
+package be.duncanc.discordmodbot.server.config
 
 import org.springframework.modulith.ApplicationModule
 import org.springframework.modulith.PackageInfo
 
 @PackageInfo
-@ApplicationModule(allowedDependencies = ["logging"])
+@ApplicationModule(allowedDependencies = [])
 class ModuleMetadata

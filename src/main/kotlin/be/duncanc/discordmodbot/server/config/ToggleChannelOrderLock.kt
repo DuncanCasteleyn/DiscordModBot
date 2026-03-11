@@ -1,8 +1,8 @@
-package be.duncanc.discordmodbot.serverconfig
+package be.duncanc.discordmodbot.server.config
 
 import be.duncanc.discordmodbot.discord.CommandModule
-import be.duncanc.discordmodbot.serverconfig.persistence.ChannelOrderLock
-import be.duncanc.discordmodbot.serverconfig.persistence.ChannelOrderLockRepository
+import be.duncanc.discordmodbot.server.config.persistence.ChannelOrderLock
+import be.duncanc.discordmodbot.server.config.persistence.ChannelOrderLockRepository
 
 
 import net.dv8tion.jda.api.Permission

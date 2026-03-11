@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package be.duncanc.discordmodbot.serverconfig.persistence
+package be.duncanc.discordmodbot.server.config.persistence
 
 import jakarta.persistence.*
 
 @Entity
 @Table(name = "guild_command_channels")
-data class GuildCommandChannels
-constructor(
+data class GuildCommandChannels(
     @Id
     @Column(updatable = false)
     val guildId: Long,
