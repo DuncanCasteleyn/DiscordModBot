@@ -16,27 +16,23 @@
 
 package be.duncanc.discordmodbot.member.gate
 
-import be.duncanc.discordmodbot.discord.*
+import be.duncanc.discordmodbot.discord.CommandModule
+import be.duncanc.discordmodbot.discord.MessageSequence
+import be.duncanc.discordmodbot.discord.Sequence
+import be.duncanc.discordmodbot.discord.limitLessBulkDeleteByIds
 import be.duncanc.discordmodbot.logging.GuildLogger
-import be.duncanc.discordmodbot.member.gate.persistence.MemberGateQuestion
-import be.duncanc.discordmodbot.member.gate.persistence.MemberGateQuestionRepository
 import be.duncanc.discordmodbot.member.gate.persistence.WelcomeMessage
-import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.channel.ChannelType
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
-import net.dv8tion.jda.api.entities.emoji.Emoji
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleAddEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent
-import net.dv8tion.jda.api.utils.MarkdownUtil
 import net.dv8tion.jda.api.utils.SplitUtil
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
 import org.springframework.stereotype.Component
@@ -48,11 +44,11 @@ import java.util.concurrent.TimeUnit
 @Component
 @Transactional
 class MemberGate(
-    private val memberGateQuestionRepository: MemberGateQuestionRepository,
     private val memberGateService: MemberGateService,
-    private val welcomeMessageService: WelcomeMessageService
+    private val welcomeMessageService: WelcomeMessageService,
+    private val reviewManager: MemberGateReviewManager
 ) : CommandModule(
-    arrayOf("gateConfig", "join", "review"),
+    arrayOf("gateConfig", "join"),
     null,
     null,
     ignoreWhitelist = true
@@ -64,9 +60,6 @@ class MemberGate(
 
         private val random = SecureRandom()
     }
-
-    private val informUserMessageIds = HashMap<Long, Long>()
-
     /**
      * Check if a user was added to the approved role.
      */
@@ -79,7 +72,7 @@ class MemberGate(
         }
         val welcomeMessage = welcomeMessages[random.nextInt(welcomeMessages.size)].getWelcomeMessage(event.user)
         memberGateService.getWelcomeChannel(guild.idLong, guild.jda)?.sendMessage(welcomeMessage)?.queue()
-        memberGateQuestionRepository.deleteById(event.user.idLong)
+        reviewManager.clearPendingQuestion(guild.idLong, event.jda, event.user.idLong)
         memberGateService.getGateChannel(guild.idLong, guild.jda)?.let { cleanMessagesFromUser(it, event.user) }
     }
 
@@ -123,18 +116,15 @@ class MemberGate(
         val gateTextChannel = memberGateService.getGateChannel(event.guild.idLong, event.jda)
         val welcomeChannel = memberGateService.getWelcomeChannel(event.guild.idLong, event.jda)
         if (gateTextChannel != null) {
-            val memberGateQuestion = memberGateQuestionRepository.findById(event.user.idLong).orElse(null)
+            val memberGateQuestion = reviewManager.getPendingQuestion(event.guild.idLong, event.user.idLong)
             if (memberGateQuestion != null) {
                 gateTextChannel.sendMessage(
                     """
                         ${event.member.asMention} Welcome back. We stored your last answer for you.
-                        A moderator can review it using `!review ${memberGateQuestion.id}`
+                        A moderator can review it using `/review`.
                         """.trimIndent()
                 ).queue { message ->
-                    message.addReaction(Emoji.fromUnicode("❔")).queue()
-                    synchronized(informUserMessageIds) {
-                        informUserMessageIds[memberGateQuestion.id] = message.idLong
-                    }
+                    reviewManager.rememberInformPrompt(memberGateQuestion.id, message.idLong)
                 }
             } else {
                 gateTextChannel.sendMessage(
@@ -169,12 +159,7 @@ class MemberGate(
             return
         }
         val userId = event.user.idLong
-        synchronized(informUserMessageIds) {
-            val messageToRemove = informUserMessageIds.remove(userId)
-            if (messageToRemove != null) {
-                gateChannel.retrieveMessageById(messageToRemove).queue { it.delete().queue() }
-            }
-        }
+        reviewManager.clearInformPrompt(event.guild.idLong, event.jda, userId)
         cleanMessagesFromUser(gateChannel, event.user)
 
     }
@@ -195,36 +180,6 @@ class MemberGate(
             super.aliases[1].lowercase(Locale.getDefault()) -> {
                 join(event)
             }
-
-            super.aliases[2].lowercase(Locale.getDefault()) -> {
-                arguments?.let { review(event.jda, event.author, event.guild, event.channel, it) }
-            }
-        }
-    }
-
-
-    override fun onMessageReactionAdd(event: MessageReactionAddEvent) {
-        if (
-            event.reaction.emoji.type != Emoji.Type.UNICODE ||
-            event.reaction.emoji.asUnicode() != Emoji.fromUnicode("❔") ||
-            event.user == event.jda.selfUser ||
-            event.member?.hasPermission(Permission.KICK_MEMBERS) != true ||
-            memberGateService.getGateChannel(event.guild.idLong, event.jda) != event.channel
-        ) {
-            return
-        }
-        event.retrieveMessage().queue { message ->
-            if (message.author != event.jda.selfUser || !message.contentRaw.contains("!review") || message.mentions.users.size != 1) {
-                return@queue
-            }
-            val userToReview = message.mentions.users[0]
-            event.user?.let { review(event.jda, it, event.guild, event.channel, userToReview.id) }
-        }
-    }
-
-    private fun review(jda: JDA, author: User, guild: Guild, channel: MessageChannel, arguments: String) {
-        if (guild.getMember(author)?.hasPermission(Permission.MANAGE_ROLES) == true) {
-            jda.addEventListener(ReviewSequence(author, channel, arguments.toLong()))
         }
     }
 
@@ -235,7 +190,7 @@ class MemberGate(
             return
         }
 
-        if (memberGateQuestionRepository.existsById(member.idLong)) {
+        if (reviewManager.hasPendingQuestion(event.guild.idLong, member.idLong)) {
             event.channel.sendMessage("You have already tried answering a question. A moderator now needs to manually review you. Please be patient.")
                 .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
             return
@@ -272,15 +227,11 @@ class MemberGate(
     private fun informMember(member: Member, question: String, answer: String, textChannel: TextChannel) {
         textChannel.sendMessage(
             member.asMention + " Please wait while a moderator manually checks your answer. You might be asked (an) other question(s).\n\n" +
-                    "A moderator can use `!" + super.aliases[2] + " " + member.user.idLong + "`"
+                    "A moderator can use `/review` to start reviewing the queue."
         ).queue {
-            it.addReaction(Emoji.fromUnicode("❔")).queue()
-            synchronized(informUserMessageIds) {
-                informUserMessageIds[member.user.idLong] = it.idLong
-            }
+            reviewManager.rememberInformPrompt(member.user.idLong, it.idLong)
         }
-        val memberGateQuestion = MemberGateQuestion(member.user.idLong, question, answer)
-        memberGateQuestionRepository.save(memberGateQuestion)
+        reviewManager.savePendingQuestion(member, question, answer)
     }
 
     /**
@@ -377,7 +328,7 @@ class MemberGate(
         }
     }
 
-    private inner class ConfigureSequence(user: User, channel: MessageChannel) :
+    open inner class ConfigureSequence(user: User, channel: MessageChannel) :
         Sequence(user, channel), MessageSequence {
         private var sequenceNumber: Byte = 0
         private lateinit var questions: List<String>
@@ -673,142 +624,4 @@ class MemberGate(
         }
     }
 
-    /**
-     * Sequence to review user answers
-     */
-    private inner class ReviewSequence(
-        user: User,
-        channel: MessageChannel,
-        private val userId: Long
-    ) : Sequence(user, channel), ReactionSequence, MessageSequence {
-
-        /**
-         * Asks the first question and checks if the user is in the review list.
-         */
-        init {
-            memberGateQuestionRepository.findById(userId).ifPresentOrElse(
-                {
-                    val userQuestionAndAnswer = it.question + '\n' + it.answer
-                    if (userQuestionAndAnswer.isNotBlank()) {
-                        MessageCreateBuilder().addContent("The user answered with the following question:\n")
-                            .addContent(MarkdownUtil.codeblock("text", userQuestionAndAnswer))
-                            .addContent("\nIf you want to approve the user respond with `approve`, to make the bot request the user to ask a new question respond with `reject` or to reject the user and take manual action answer with `noop` or use the reactions.")
-                            .build().let { message ->
-                                channel.sendMessage(message).queue { sendMessage ->
-                                    super.addMessageToCleaner(sendMessage)
-                                    sendMessage.addReaction(Emoji.fromUnicode("✅")).queue()
-                                    sendMessage.addReaction(Emoji.fromUnicode("❌")).queue()
-                                    sendMessage.addReaction(Emoji.fromUnicode("❓")).queue()
-                                }
-                            }
-                    } else {
-                        super.destroy()
-                        throw IllegalArgumentException("The user you tried to review is still in the list, but another moderator already declared the question wrong or the user rejoined.")
-                    }
-                },
-                {
-                    super.destroy()
-                    throw IllegalArgumentException("The user you tried to review is not currently in the manual review list.")
-                })
-        }
-
-        override fun onReactionReceivedDuringSequence(event: MessageReactionAddEvent) {
-            if (event.emoji.type != Emoji.Type.UNICODE) {
-                return
-            }
-
-            if (!memberGateQuestionRepository.existsById(userId)) {
-                throw IllegalStateException("The user is no longer in the queue; another moderator may have reviewed it already.")
-            }
-            when (event.emoji.asUnicode()) {
-                Emoji.fromUnicode("✅") -> {
-                    accept(event.jda, event.guild)
-                }
-
-                Emoji.fromUnicode("❌") -> {
-                    reject(event.jda, event.guild)
-                }
-
-                Emoji.fromUnicode("❓") -> {
-                    reject(event.jda, event.guild, noOp = true)
-                }
-            }
-        }
-
-        /**
-         * Review logic to approve members.
-         */
-        override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
-            if (!memberGateQuestionRepository.existsById(userId)) {
-                throw IllegalStateException("The user is no longer in the queue; another moderator may have reviewed it already.")
-            }
-            when (val messageContent: String = event.message.contentDisplay.lowercase(Locale.getDefault())) {
-                "approve", "accept" -> {
-                    accept(event.jda, event.guild)
-                }
-
-                "reject", "refuse" -> {
-                    reject(event.jda, event.guild)
-                }
-
-                "noop" -> {
-                    reject(event.jda, event.guild, noOp = true)
-                }
-
-                else -> {
-                    throw IllegalArgumentException("Expecting one of the previously mentioned responses, but got \"$messageContent\" as response")
-                }
-            }
-        }
-
-        private fun reject(jda: JDA, guild: Guild, noOp: Boolean = false) {
-            val member: Member? = guild.getMemberById(userId)
-            val gateChannel = memberGateService.getGateChannel(guild.idLong, jda)
-            if (member != null) {
-                if (!noOp) {
-                    gateChannel?.sendMessage("Your answer was incorrect " + member.user.asMention + ".  You can use the `!join` command to try again.")
-                        ?.queue {
-                            it.delete().queueAfter(1, TimeUnit.HOURS)
-                        }
-                }
-            } else {
-                super.channel.sendMessage("The user already left; no further action is needed.")
-                    .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
-            }
-            memberGateQuestionRepository.deleteById(userId)
-            synchronized(informUserMessageIds) {
-                val messageToRemove = informUserMessageIds.remove(userId)
-                if (messageToRemove != null) {
-                    gateChannel
-                        ?.let { gateTextChannel ->
-                            gateTextChannel.retrieveMessageById(messageToRemove).queue { it.delete().queue() }
-                        }
-                }
-            }
-            destroy()
-        }
-
-        private fun accept(jda: JDA, guild: Guild) {
-            val member: Member? = guild.getMemberById(userId)
-            if (member != null) {
-                super.channel.sendMessage("The user has been approved.")
-                    .queue { it.delete().queueAfter(15, TimeUnit.SECONDS) }
-                accept(member)
-            } else {
-                super.channel.sendMessage("The user has left; no further action is needed.")
-                    .queue { it.delete().queueAfter(15, TimeUnit.SECONDS) }
-            }
-            memberGateQuestionRepository.deleteById(userId)
-            synchronized(informUserMessageIds) {
-                val messageToRemove = informUserMessageIds.remove(userId)
-                if (messageToRemove != null) {
-                    memberGateService.getGateChannel(guild.idLong, jda)
-                        ?.let { gateTextChannel ->
-                            gateTextChannel.retrieveMessageById(messageToRemove).queue { it.delete().queue() }
-                        }
-                }
-            }
-            destroy()
-        }
-    }
 }

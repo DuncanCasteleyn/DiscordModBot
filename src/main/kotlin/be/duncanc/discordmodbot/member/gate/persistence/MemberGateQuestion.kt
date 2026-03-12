@@ -9,5 +9,7 @@ data class MemberGateQuestion(
     @Id
     val id: Long,
     val question: String,
-    val answer: String
+    val answer: String,
+    val guildId: Long,
+    val queuedAt: Long
 )
