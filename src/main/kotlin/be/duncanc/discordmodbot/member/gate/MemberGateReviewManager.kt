@@ -23,7 +23,7 @@ class MemberGateReviewManager(
             .asSequence()
             .filterNotNull()
             .filter { it.guildId == guildId }
-            .sortedBy { it.queuedAt ?: Long.MIN_VALUE }
+            .sortedBy { it.queuedAt }
             .map { it.id }
             .toList()
 

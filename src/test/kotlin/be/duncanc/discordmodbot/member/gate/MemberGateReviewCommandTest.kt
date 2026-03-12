@@ -16,7 +16,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
-import org.mockito.Mockito.lenient
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.*
 
@@ -24,6 +23,9 @@ import org.mockito.kotlin.*
 class MemberGateReviewCommandTest {
     @Mock
     private lateinit var reviewManager: MemberGateReviewManager
+
+    @Mock
+    private lateinit var reviewSessionRegistry: MemberGateReviewSessionRegistry
 
     @Mock
     private lateinit var slashEvent: SlashCommandInteractionEvent
@@ -53,36 +55,67 @@ class MemberGateReviewCommandTest {
 
     @BeforeEach
     fun setUp() {
-        command = MemberGateReviewCommand(reviewManager)
+        command = MemberGateReviewCommand(reviewManager, reviewSessionRegistry)
+    }
 
+    private fun stubCommonIdentity() {
         whenever(guild.idLong).thenReturn(1L)
         whenever(user.idLong).thenReturn(99L)
         whenever(member.hasPermission(Permission.KICK_MEMBERS)).thenReturn(true)
+    }
 
+    private fun stubSlashReviewStart() {
+        stubCommonIdentity()
         whenever(slashEvent.name).thenReturn("review")
         whenever(slashEvent.guild).thenReturn(guild)
         whenever(slashEvent.member).thenReturn(member)
         whenever(slashEvent.user).thenReturn(user)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+        whenever(replyAction.addComponents(any<ActionRow>())).thenReturn(replyAction)
+        whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
+    }
 
+    private fun stubApproveButtonInteraction() {
+        stubCommonIdentity()
         whenever(buttonEvent.componentId).thenReturn("member-gate-review:approve")
         whenever(buttonEvent.guild).thenReturn(guild)
         whenever(buttonEvent.member).thenReturn(member)
         whenever(buttonEvent.user).thenReturn(user)
         whenever(buttonEvent.jda).thenReturn(jda)
+    }
 
-        lenient().whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
-        lenient().whenever(replyAction.addComponents(any<ActionRow>())).thenReturn(replyAction)
-        lenient().whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
+    private fun stubApproveButtonInteractionWithoutJda() {
+        stubCommonIdentity()
+        whenever(buttonEvent.componentId).thenReturn("member-gate-review:approve")
+        whenever(buttonEvent.guild).thenReturn(guild)
+        whenever(buttonEvent.member).thenReturn(member)
+        whenever(buttonEvent.user).thenReturn(user)
+    }
 
-        lenient().whenever(editAction.setComponents(any<ActionRow>())).thenReturn(editAction)
-        lenient().whenever(editAction.setComponents(any<List<ActionRow>>())).thenReturn(editAction)
-        lenient().whenever(buttonEvent.editMessage(any<String>())).thenReturn(editAction)
+    private fun stubButtonReply() {
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+        whenever(buttonEvent.reply(any<String>())).thenReturn(replyAction)
+    }
+
+    private fun stubButtonEditWithActionRow() {
+        whenever(editAction.setComponents(any<ActionRow>())).thenReturn(editAction)
+        whenever(buttonEvent.editMessage(any<String>())).thenReturn(editAction)
+    }
+
+    private fun stubButtonEditWithList() {
+        whenever(editAction.setComponents(any<List<ActionRow>>())).thenReturn(editAction)
+        whenever(buttonEvent.editMessage(any<String>())).thenReturn(editAction)
     }
 
     @Test
     fun `approve keeps review open when another applicant is still pending`() {
+        stubSlashReviewStart()
+        stubApproveButtonInteraction()
+        stubButtonEditWithActionRow()
+
         val session = MemberGateReviewSession(listOf(10L, 20L))
         whenever(reviewManager.createSession(1L)).thenReturn(session)
+        whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(session)
         whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(MemberGateQuestion(10L, "Q1", "A1", 1L, 10L))
         whenever(reviewManager.getPendingQuestion(1L, 20L)).thenReturn(MemberGateQuestion(20L, "Q2", "A2", 1L, 20L))
         whenever(reviewManager.approve(eq(guild), eq(jda), eq(10L))).thenReturn("Approved <@10>.")
@@ -95,13 +128,19 @@ class MemberGateReviewCommandTest {
         val editedMessage = messageCaptor.firstValue
         assertTrue(editedMessage.contains("Applicant: <@20> (`20`)"))
         assertTrue(editedMessage.contains("Continuing with the next pending applicant."))
-        verify(buttonEvent, never()).reply("This review session has already finished.")
+        verify(reviewSessionRegistry, times(2)).remember(eq(1L), eq(99L), any())
+        verify(buttonEvent, never()).reply("This review session expired. Run `/review` again.")
     }
 
     @Test
     fun `approve completes review when the final applicant is handled`() {
+        stubSlashReviewStart()
+        stubApproveButtonInteraction()
+        stubButtonEditWithList()
+
         val session = MemberGateReviewSession(listOf(10L))
         whenever(reviewManager.createSession(1L)).thenReturn(session)
+        whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(session)
         whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(MemberGateQuestion(10L, "Q1", "A1", 1L, 10L))
         whenever(reviewManager.approve(eq(guild), eq(jda), eq(10L))).thenReturn("Approved <@10>.")
 
@@ -114,5 +153,18 @@ class MemberGateReviewCommandTest {
         val completionMessage = editedMessages.last()
         assertTrue(completionMessage.contains("Approved <@10>."))
         assertTrue(completionMessage.contains("There are no more pending applicants in the queue."))
+        verify(reviewSessionRegistry).forget(1L, 99L)
+    }
+
+    @Test
+    fun `expired session asks moderator to rerun review`() {
+        stubApproveButtonInteractionWithoutJda()
+        stubButtonReply()
+
+        whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(null)
+
+        command.onButtonInteraction(buttonEvent)
+
+        verify(buttonEvent).reply("This review session expired. Run `/review` again.")
     }
 }

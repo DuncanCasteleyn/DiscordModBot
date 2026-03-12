@@ -15,11 +15,11 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import net.dv8tion.jda.api.utils.MarkdownUtil
 import org.springframework.stereotype.Component
-import java.util.concurrent.ConcurrentHashMap
 
 @Component
 class MemberGateReviewCommand(
-    private val reviewManager: MemberGateReviewManager
+    private val reviewManager: MemberGateReviewManager,
+    private val reviewSessionRegistry: MemberGateReviewSessionRegistry
 ) : ListenerAdapter(), SlashCommand {
     companion object {
         private const val COMMAND = "review"
@@ -29,8 +29,6 @@ class MemberGateReviewCommand(
         private const val REJECT_ACTION = "reject"
         private const val MANUAL_ACTION = "manual"
     }
-
-    private val sessions = ConcurrentHashMap<ReviewSessionKey, MemberGateReviewSession>()
 
     override fun getCommandsData(): List<SlashCommandData> {
         return listOf(
@@ -57,15 +55,14 @@ class MemberGateReviewCommand(
             return
         }
 
-        val sessionKey = ReviewSessionKey(guild.idLong, event.user.idLong)
-        sessions[sessionKey] = session
-
         val pendingQuestion = resolveCurrentQuestion(guild.idLong, session)
         if (pendingQuestion == null) {
-            sessions.remove(sessionKey)
+            reviewSessionRegistry.forget(guild.idLong, event.user.idLong)
             event.reply("Nobody is currently waiting for approval.").setEphemeral(true).queue()
             return
         }
+
+        reviewSessionRegistry.remember(guild.idLong, event.user.idLong, session)
 
         event.reply(buildReviewMessage(guild, session, pendingQuestion))
             .setEphemeral(true)
@@ -84,16 +81,15 @@ class MemberGateReviewCommand(
             return
         }
 
-        val sessionKey = ReviewSessionKey(guild.idLong, event.user.idLong)
-        val session = sessions[sessionKey]
+        val session = reviewSessionRegistry.get(guild.idLong, event.user.idLong)
         if (session == null) {
-            event.reply("This review session has already finished.").setEphemeral(true).queue()
+            event.reply("This review session expired. Run `/review` again.").setEphemeral(true).queue()
             return
         }
 
         val currentUserId = session.getCurrentUserId()
         if (currentUserId == null) {
-            sessions.remove(sessionKey)
+            reviewSessionRegistry.forget(guild.idLong, event.user.idLong)
             event.editMessage("This review session has already finished.").setComponents(emptyList()).queue()
             return
         }
@@ -127,10 +123,12 @@ class MemberGateReviewCommand(
 
         val pendingQuestion = resolveCurrentQuestion(guild.idLong, session)
         if (pendingQuestion == null) {
-            sessions.remove(sessionKey)
+            reviewSessionRegistry.forget(guild.idLong, event.user.idLong)
             event.editMessage(buildCompletionMessage(feedback)).setComponents(emptyList()).queue()
             return
         }
+
+        reviewSessionRegistry.remember(guild.idLong, event.user.idLong, session)
 
         event.editMessage(buildReviewMessage(guild, session, pendingQuestion, feedback))
             .setComponents(ActionRow.of(buildButtons()))
@@ -180,10 +178,5 @@ class MemberGateReviewCommand(
         Button.success("$BUTTON_PREFIX$APPROVE_ACTION", "Approve"),
         Button.danger("$BUTTON_PREFIX$REJECT_ACTION", "Reject"),
         Button.primary("$BUTTON_PREFIX$MANUAL_ACTION", "Manual Action")
-    )
-
-    private data class ReviewSessionKey(
-        val guildId: Long,
-        val reviewerId: Long
     )
 }
