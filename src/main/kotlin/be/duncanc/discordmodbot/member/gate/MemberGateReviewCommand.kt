@@ -27,6 +27,12 @@ class MemberGateReviewCommand(
         private const val APPROVE_ACTION = "approve"
         private const val REJECT_ACTION = "reject"
         private const val MANUAL_ACTION = "manual"
+
+        private data class ReviewButtonAction(
+            val action: String,
+            val expectedUserId: Long,
+            val expectedQueuedAt: Long
+        )
     }
 
     override fun getCommandsData(): List<SlashCommandData> {
@@ -65,7 +71,7 @@ class MemberGateReviewCommand(
 
         event.reply(buildReviewMessage(guild, session, pendingQuestion))
             .setEphemeral(true)
-            .addComponents(ActionRow.of(buildButtons()))
+            .addComponents(ActionRow.of(buildButtons(pendingQuestion)))
             .queue()
     }
 
@@ -86,6 +92,14 @@ class MemberGateReviewCommand(
             return
         }
 
+        val buttonAction = parseButtonAction(event.componentId)
+        if (buttonAction == null) {
+            event.reply("This review action is no longer available. Run `/review` again.")
+                .setEphemeral(true)
+                .queue()
+            return
+        }
+
         val currentUserId = session.getCurrentUserId()
         if (currentUserId == null) {
             reviewSessionRegistry.forget(guild.idLong, event.user.idLong)
@@ -93,7 +107,22 @@ class MemberGateReviewCommand(
             return
         }
 
-        val feedback = when (event.componentId.removePrefix(BUTTON_PREFIX)) {
+        if (buttonAction.expectedUserId != currentUserId) {
+            event.reply("This review message is out of date. Run `/review` again.")
+                .setEphemeral(true)
+                .queue()
+            return
+        }
+
+        val currentQuestion = reviewManager.getPendingQuestion(guild.idLong, currentUserId)
+        if (currentQuestion == null || currentQuestion.queuedAt != buttonAction.expectedQueuedAt) {
+            event.reply("This review message is out of date. Run `/review` again.")
+                .setEphemeral(true)
+                .queue()
+            return
+        }
+
+        val feedback = when (buttonAction.action) {
             APPROVE_ACTION -> {
                 val result = reviewManager.approve(guild, event.jda, currentUserId)
                 session.advanceAfterReview()
@@ -130,8 +159,23 @@ class MemberGateReviewCommand(
         reviewSessionRegistry.remember(guild.idLong, event.user.idLong, session)
 
         event.editMessage(buildReviewMessage(guild, session, pendingQuestion, feedback))
-            .setComponents(ActionRow.of(buildButtons()))
+            .setComponents(ActionRow.of(buildButtons(pendingQuestion)))
             .queue()
+    }
+
+    private fun parseButtonAction(componentId: String): ReviewButtonAction? {
+        if (!componentId.startsWith(BUTTON_PREFIX)) {
+            return null
+        }
+
+        val segments = componentId.removePrefix(BUTTON_PREFIX).split(":", limit = 3)
+        if (segments.size != 3) {
+            return null
+        }
+
+        val expectedUserId = segments[1].toLongOrNull() ?: return null
+        val expectedQueuedAt = segments[2].toLongOrNull() ?: return null
+        return ReviewButtonAction(segments[0], expectedUserId, expectedQueuedAt)
     }
 
     private fun resolveCurrentQuestion(guildId: Long, session: MemberGateReviewSession): MemberGateQuestion? {
@@ -172,9 +216,9 @@ class MemberGateReviewCommand(
         return "$feedback\n\nThere are no more pending applicants in the queue."
     }
 
-    private fun buildButtons() = listOf(
-        Button.success("$BUTTON_PREFIX$APPROVE_ACTION", "Approve"),
-        Button.danger("$BUTTON_PREFIX$REJECT_ACTION", "Reject"),
-        Button.primary("$BUTTON_PREFIX$MANUAL_ACTION", "Manual Action")
+    private fun buildButtons(question: MemberGateQuestion) = listOf(
+        Button.success("$BUTTON_PREFIX$APPROVE_ACTION:${question.userId}:${question.queuedAt}", "Approve"),
+        Button.danger("$BUTTON_PREFIX$REJECT_ACTION:${question.userId}:${question.queuedAt}", "Reject"),
+        Button.primary("$BUTTON_PREFIX$MANUAL_ACTION:${question.userId}:${question.queuedAt}", "Manual Action")
     )
 }

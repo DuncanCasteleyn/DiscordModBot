@@ -88,7 +88,7 @@ class MemberGateReviewCommandTest {
 
     private fun stubApproveButtonInteraction() {
         stubCommonIdentity()
-        whenever(buttonEvent.componentId).thenReturn("member-gate-review:approve")
+        whenever(buttonEvent.componentId).thenReturn("member-gate-review:approve:10:10")
         whenever(buttonEvent.guild).thenReturn(guild)
         whenever(buttonEvent.member).thenReturn(member)
         whenever(buttonEvent.user).thenReturn(user)
@@ -97,7 +97,7 @@ class MemberGateReviewCommandTest {
 
     private fun stubApproveButtonInteractionWithoutJda() {
         stubCommonIdentity()
-        whenever(buttonEvent.componentId).thenReturn("member-gate-review:approve")
+        whenever(buttonEvent.componentId).thenReturn("member-gate-review:approve:10:10")
         whenever(buttonEvent.guild).thenReturn(guild)
         whenever(buttonEvent.member).thenReturn(member)
         whenever(buttonEvent.user).thenReturn(user)
@@ -203,5 +203,38 @@ class MemberGateReviewCommandTest {
         command.onButtonInteraction(buttonEvent)
 
         verify(buttonEvent).reply("This review action is no longer available. Run `/review` again.")
+    }
+
+    @Test
+    fun `stale button asks moderator to rerun review instead of reviewing a different applicant`() {
+        stubButtonReply()
+        stubCommonIdentity()
+        whenever(buttonEvent.componentId).thenReturn("member-gate-review:approve:10:10")
+        whenever(buttonEvent.guild).thenReturn(guild)
+        whenever(buttonEvent.member).thenReturn(member)
+        whenever(buttonEvent.user).thenReturn(user)
+
+        whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(MemberGateReviewSession(listOf(20L, 30L)))
+
+        command.onButtonInteraction(buttonEvent)
+
+        verify(buttonEvent).reply("This review message is out of date. Run `/review` again.")
+        verify(reviewManager, never()).approve(any(), any(), any())
+    }
+
+    @Test
+    fun `stale button does not review a newer submission from the same applicant`() {
+        stubButtonReply()
+        stubApproveButtonInteractionWithoutJda()
+
+        whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(MemberGateReviewSession(listOf(10L)))
+        whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(
+            pendingQuestion(guildId = 1L, userId = 10L, question = "Q2", answer = "A2", queuedAt = 20L)
+        )
+
+        command.onButtonInteraction(buttonEvent)
+
+        verify(buttonEvent).reply("This review message is out of date. Run `/review` again.")
+        verify(reviewManager, never()).approve(any(), any(), any())
     }
 }
