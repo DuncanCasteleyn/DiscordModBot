@@ -17,10 +17,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
+import org.mockito.kotlin.*
 import java.util.*
 
 @ExtendWith(MockitoExtension::class)
@@ -36,6 +33,9 @@ class MemberGateReviewManagerTest {
 
     @Mock
     private lateinit var guild: Guild
+
+    @Mock
+    private lateinit var otherGuild: Guild
 
     @Mock
     private lateinit var member: Member
@@ -65,16 +65,34 @@ class MemberGateReviewManagerTest {
         reviewManager = MemberGateReviewManager(memberGateQuestionRepository, memberGateService, promptRegistry)
     }
 
+    private fun pendingQuestion(guildId: Long, userId: Long, queuedAt: Long, question: String, answer: String): MemberGateQuestion {
+        return MemberGateQuestion(
+            id = MemberGateQuestion.createId(guildId, userId),
+            userId = userId,
+            question = question,
+            answer = answer,
+            guildId = guildId,
+            queuedAt = queuedAt
+        )
+    }
+
     @Test
     fun `createSession ignores null and legacy applicants and returns oldest applicants for guild first`() {
         @Suppress("UNCHECKED_CAST")
         val repositoryEntries = listOf<MemberGateQuestion?>(
             null,
-            MemberGateQuestion(77L, "Legacy", "Answer", guildId = 0L, queuedAt = 1L),
-            MemberGateQuestion(30L, "Q3", "A3", guildId = 1L, queuedAt = 30L),
-            MemberGateQuestion(99L, "QX", "AX", guildId = 2L, queuedAt = 5L),
-            MemberGateQuestion(10L, "Q1", "A1", guildId = 1L, queuedAt = 10L),
-            MemberGateQuestion(20L, "Q2", "A2", guildId = 1L, queuedAt = 20L)
+            MemberGateQuestion(
+                id = "legacy",
+                userId = 0L,
+                question = "Legacy",
+                answer = "Answer",
+                guildId = 0L,
+                queuedAt = 1L
+            ),
+            pendingQuestion(guildId = 1L, userId = 30L, queuedAt = 30L, question = "Q3", answer = "A3"),
+            pendingQuestion(guildId = 2L, userId = 99L, queuedAt = 5L, question = "QX", answer = "AX"),
+            pendingQuestion(guildId = 1L, userId = 10L, queuedAt = 10L, question = "Q1", answer = "A1"),
+            pendingQuestion(guildId = 1L, userId = 20L, queuedAt = 20L, question = "Q2", answer = "A2")
         ) as List<MemberGateQuestion>
         whenever(memberGateQuestionRepository.findAll()).thenReturn(repositoryEntries)
 
@@ -85,78 +103,96 @@ class MemberGateReviewManagerTest {
     }
 
     @Test
-    fun `getPendingQuestion ignores applicants from another guild`() {
-        whenever(memberGateQuestionRepository.findById(10L)).thenReturn(
-            Optional.of(MemberGateQuestion(10L, "Q1", "A1", guildId = 2L, queuedAt = 10L))
-        )
+    fun `getPendingQuestion uses guild scoped redis id`() {
+        val question = pendingQuestion(guildId = 1L, userId = 10L, queuedAt = 10L, question = "Q1", answer = "A1")
+        whenever(memberGateQuestionRepository.findById(MemberGateQuestion.createId(1L, 10L))).thenReturn(Optional.of(question))
+
+        assertEquals(question, reviewManager.getPendingQuestion(1L, 10L))
+        verify(memberGateQuestionRepository).findById(MemberGateQuestion.createId(1L, 10L))
+    }
+
+    @Test
+    fun `getPendingQuestion returns null when guild scoped redis id is missing`() {
+        whenever(memberGateQuestionRepository.findById(MemberGateQuestion.createId(1L, 10L))).thenReturn(Optional.empty())
 
         assertNull(reviewManager.getPendingQuestion(1L, 10L))
     }
 
     @Test
-    fun `getPendingQuestion ignores legacy applicants without guild id`() {
-        whenever(memberGateQuestionRepository.findById(10L)).thenReturn(
-            Optional.of(MemberGateQuestion(10L, "Q1", "A1", guildId = 0L, queuedAt = 10L))
-        )
+    fun `savePendingQuestion creates distinct redis ids for the same user in different guilds`() {
+        val otherMember = mock<Member>()
 
-        assertNull(reviewManager.getPendingQuestion(1L, 10L))
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(otherGuild.idLong).thenReturn(2L)
+        whenever(member.guild).thenReturn(guild)
+        whenever(otherMember.guild).thenReturn(otherGuild)
+        whenever(member.user).thenReturn(user)
+        whenever(otherMember.user).thenReturn(user)
+        whenever(user.idLong).thenReturn(10L)
+
+        reviewManager.savePendingQuestion(member, "Q1", "A1")
+        reviewManager.savePendingQuestion(otherMember, "Q2", "A2")
+
+        val captor = argumentCaptor<MemberGateQuestion>()
+        verify(memberGateQuestionRepository, times(2)).save(captor.capture())
+        assertEquals(listOf("1:10", "2:10"), captor.allValues.map { it.id })
     }
 
     @Test
     fun `approve grants member role and clears applicant`() {
-        val question = MemberGateQuestion(10L, "Q1", "A1", guildId = 1L, queuedAt = 10L)
-        whenever(memberGateQuestionRepository.findById(10L)).thenReturn(Optional.of(question))
+        val question = pendingQuestion(guildId = 1L, userId = 10L, queuedAt = 10L, question = "Q1", answer = "A1")
+        whenever(memberGateQuestionRepository.findById(MemberGateQuestion.createId(1L, 10L))).thenReturn(Optional.of(question))
         whenever(guild.idLong).thenReturn(1L)
         whenever(guild.getMemberById(10L)).thenReturn(member)
         whenever(member.user).thenReturn(user)
         whenever(user.asMention).thenReturn("<@10>")
         whenever(memberGateService.getMemberRole(1L, jda)).thenReturn(role)
         whenever(guild.addRoleToMember(member, role)).thenReturn(addRoleAction)
-        whenever(promptRegistry.forget(10L)).thenReturn(null)
+        whenever(promptRegistry.forget(1L, 10L)).thenReturn(null)
 
         val result = reviewManager.approve(guild, jda, 10L)
 
         assertEquals("Approved <@10>.", result)
         verify(addRoleAction).queue()
-        verify(memberGateQuestionRepository).deleteById(10L)
-        verify(promptRegistry).forget(10L)
+        verify(memberGateQuestionRepository).deleteById(MemberGateQuestion.createId(1L, 10L))
+        verify(promptRegistry).forget(1L, 10L)
     }
 
     @Test
     fun `reject notifies applicant and clears them from queue`() {
-        val question = MemberGateQuestion(10L, "Q1", "A1", guildId = 1L, queuedAt = 10L)
-        whenever(memberGateQuestionRepository.findById(10L)).thenReturn(Optional.of(question))
+        val question = pendingQuestion(guildId = 1L, userId = 10L, queuedAt = 10L, question = "Q1", answer = "A1")
+        whenever(memberGateQuestionRepository.findById(MemberGateQuestion.createId(1L, 10L))).thenReturn(Optional.of(question))
         whenever(guild.idLong).thenReturn(1L)
         whenever(guild.getMemberById(10L)).thenReturn(member)
         whenever(member.user).thenReturn(user)
         whenever(user.asMention).thenReturn("<@10>")
         whenever(memberGateService.getGateChannel(1L, jda)).thenReturn(gateChannel)
         whenever(gateChannel.sendMessage(any<String>())).thenReturn(messageCreateAction)
-        whenever(promptRegistry.forget(10L)).thenReturn(null)
+        whenever(promptRegistry.forget(1L, 10L)).thenReturn(null)
 
         val result = reviewManager.reject(guild, jda, 10L)
 
         assertEquals("Rejected <@10>. They can use `!join` to try again.", result)
         verify(gateChannel).sendMessage(any<String>())
         verify(messageCreateAction).queue(any())
-        verify(memberGateQuestionRepository).deleteById(10L)
+        verify(memberGateQuestionRepository).deleteById(MemberGateQuestion.createId(1L, 10L))
     }
 
     @Test
     fun `manual action removes applicant without notifying them`() {
-        val question = MemberGateQuestion(10L, "Q1", "A1", guildId = 1L, queuedAt = 10L)
-        whenever(memberGateQuestionRepository.findById(10L)).thenReturn(Optional.of(question))
+        val question = pendingQuestion(guildId = 1L, userId = 10L, queuedAt = 10L, question = "Q1", answer = "A1")
+        whenever(memberGateQuestionRepository.findById(MemberGateQuestion.createId(1L, 10L))).thenReturn(Optional.of(question))
         whenever(guild.idLong).thenReturn(1L)
         whenever(guild.getMemberById(10L)).thenReturn(member)
         whenever(member.user).thenReturn(user)
         whenever(user.asMention).thenReturn("<@10>")
         whenever(memberGateService.getGateChannel(1L, jda)).thenReturn(gateChannel)
-        whenever(promptRegistry.forget(10L)).thenReturn(null)
+        whenever(promptRegistry.forget(1L, 10L)).thenReturn(null)
 
         val result = reviewManager.reject(guild, jda, 10L, manualAction = true)
 
         assertEquals("Marked <@10> for manual action and removed them from the review queue.", result)
         verify(gateChannel, never()).sendMessage(any<String>())
-        verify(memberGateQuestionRepository).deleteById(10L)
+        verify(memberGateQuestionRepository).deleteById(MemberGateQuestion.createId(1L, 10L))
     }
 }

@@ -58,6 +58,17 @@ class MemberGateReviewCommandTest {
         command = MemberGateReviewCommand(reviewManager, reviewSessionRegistry)
     }
 
+    private fun pendingQuestion(guildId: Long, userId: Long, question: String, answer: String, queuedAt: Long): MemberGateQuestion {
+        return MemberGateQuestion(
+            id = MemberGateQuestion.createId(guildId, userId),
+            userId = userId,
+            question = question,
+            answer = answer,
+            guildId = guildId,
+            queuedAt = queuedAt
+        )
+    }
+
     private fun stubCommonIdentity() {
         whenever(guild.idLong).thenReturn(1L)
         whenever(user.idLong).thenReturn(99L)
@@ -124,8 +135,12 @@ class MemberGateReviewCommandTest {
         val session = MemberGateReviewSession(listOf(10L, 20L))
         whenever(reviewManager.createSession(1L)).thenReturn(session)
         whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(session)
-        whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(MemberGateQuestion(10L, "Q1", "A1", 1L, 10L))
-        whenever(reviewManager.getPendingQuestion(1L, 20L)).thenReturn(MemberGateQuestion(20L, "Q2", "A2", 1L, 20L))
+        whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(
+            pendingQuestion(guildId = 1L, userId = 10L, question = "Q1", answer = "A1", queuedAt = 10L)
+        )
+        whenever(reviewManager.getPendingQuestion(1L, 20L)).thenReturn(
+            pendingQuestion(guildId = 1L, userId = 20L, question = "Q2", answer = "A2", queuedAt = 20L)
+        )
         whenever(reviewManager.approve(eq(guild), eq(jda), eq(10L))).thenReturn("Approved <@10>.")
 
         command.onSlashCommandInteraction(slashEvent)
@@ -149,7 +164,9 @@ class MemberGateReviewCommandTest {
         val session = MemberGateReviewSession(listOf(10L))
         whenever(reviewManager.createSession(1L)).thenReturn(session)
         whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(session)
-        whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(MemberGateQuestion(10L, "Q1", "A1", 1L, 10L))
+        whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(
+            pendingQuestion(guildId = 1L, userId = 10L, question = "Q1", answer = "A1", queuedAt = 10L)
+        )
         whenever(reviewManager.approve(eq(guild), eq(jda), eq(10L))).thenReturn("Approved <@10>.")
 
         command.onSlashCommandInteraction(slashEvent)

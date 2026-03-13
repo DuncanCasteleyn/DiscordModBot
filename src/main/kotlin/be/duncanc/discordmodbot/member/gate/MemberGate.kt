@@ -124,7 +124,7 @@ class MemberGate(
                         A moderator can review it using `/review`.
                         """.trimIndent()
                 ).queue { message ->
-                    reviewManager.rememberInformPrompt(memberGateQuestion.id, message.idLong)
+                    reviewManager.rememberInformPrompt(event.guild.idLong, memberGateQuestion.userId, message.idLong)
                 }
             } else {
                 gateTextChannel.sendMessage(
@@ -229,7 +229,7 @@ class MemberGate(
             member.asMention + " Please wait while a moderator manually checks your answer. You might be asked (an) other question(s).\n\n" +
                     "A moderator can use `/review` to start reviewing the queue."
         ).queue {
-            reviewManager.rememberInformPrompt(member.user.idLong, it.idLong)
+            reviewManager.rememberInformPrompt(member.guild.idLong, member.user.idLong, it.idLong)
         }
         reviewManager.savePendingQuestion(member, question, answer)
     }

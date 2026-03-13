@@ -152,8 +152,8 @@ class MemberGateReviewCommand(
         question: MemberGateQuestion,
         feedback: String? = null
     ): String {
-        val member = guild.getMemberById(question.id)
-        val applicant = member?.user?.asMention ?: "<@${question.id}>"
+        val member = guild.getMemberById(question.userId)
+        val applicant = member?.user?.asMention ?: "<@${question.userId}>"
         val prefix = feedback?.let { "$it\n\n" } ?: ""
         val oldestLine = if (session.isCurrentOldest()) {
             "Reviewing the oldest pending applicant first.\n\n"
@@ -163,7 +163,7 @@ class MemberGateReviewCommand(
 
         return prefix +
                 oldestLine +
-                "Applicant: $applicant (`${question.id}`)\n" +
+                "Applicant: $applicant (`${question.userId}`)\n" +
                 MarkdownUtil.codeblock("text", "${question.question}\n${question.answer}") +
                 "\nChoose `Approve`, `Reject`, or `Manual action`."
     }

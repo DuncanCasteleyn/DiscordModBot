@@ -8,13 +8,21 @@ import org.springframework.stereotype.Component
 class MemberGateReviewPromptRegistry(
     private val reviewPromptRepository: MemberGateReviewPromptRepository
 ) {
-    fun remember(userId: Long, messageId: Long) {
-        reviewPromptRepository.save(MemberGateReviewPrompt(userId = userId, messageId = messageId))
+    fun remember(guildId: Long, userId: Long, messageId: Long) {
+        reviewPromptRepository.save(
+            MemberGateReviewPrompt(
+                id = MemberGateReviewPrompt.createId(guildId, userId),
+                guildId = guildId,
+                userId = userId,
+                messageId = messageId
+            )
+        )
     }
 
-    fun forget(userId: Long): Long? {
-        val prompt = reviewPromptRepository.findById(userId).orElse(null) ?: return null
-        reviewPromptRepository.deleteById(userId)
+    fun forget(guildId: Long, userId: Long): Long? {
+        val id = MemberGateReviewPrompt.createId(guildId, userId)
+        val prompt = reviewPromptRepository.findById(id).orElse(null) ?: return null
+        reviewPromptRepository.deleteById(id)
         return prompt.messageId
     }
 }

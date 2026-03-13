@@ -18,6 +18,7 @@ package be.duncanc.discordmodbot.member.gate
 
 import be.duncanc.discordmodbot.member.gate.persistence.GuildMemberGate
 import be.duncanc.discordmodbot.member.gate.persistence.GuildMemberGateRepository
+import be.duncanc.discordmodbot.member.gate.persistence.MemberGateQuestion
 import be.duncanc.discordmodbot.member.gate.persistence.MemberGateQuestionRepository
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
@@ -251,8 +252,6 @@ class MemberGateService(
     }
 
     private fun hasPendingQuestion(guildId: Long, userId: Long): Boolean {
-        return memberGateQuestionRepository.findById(userId).orElse(null)
-            ?.let { it.guildId == guildId }
-            ?: false
+        return memberGateQuestionRepository.findById(MemberGateQuestion.createId(guildId, userId)).isPresent
     }
 }

@@ -22,9 +22,9 @@ class MemberGateReviewManager(
         val pendingUserIds = storedQuestions
             .asSequence()
             .filterNotNull()
-            .filter { it.guildId == guildId }
+            .filter { it.guildId == guildId && it.userId > 0L }
             .sortedBy { it.queuedAt }
-            .map { it.id }
+            .map { it.userId }
             .toList()
 
         return pendingUserIds.takeIf { it.isNotEmpty() }?.let(::MemberGateReviewSession)
@@ -32,8 +32,7 @@ class MemberGateReviewManager(
 
     @Transactional(readOnly = true)
     fun getPendingQuestion(guildId: Long, userId: Long): MemberGateQuestion? {
-        return memberGateQuestionRepository.findById(userId).orElse(null)
-            ?.takeIf { it.guildId == guildId }
+        return memberGateQuestionRepository.findById(MemberGateQuestion.createId(guildId, userId)).orElse(null)
     }
 
     @Transactional(readOnly = true)
@@ -43,7 +42,8 @@ class MemberGateReviewManager(
     fun savePendingQuestion(member: Member, question: String, answer: String) {
         memberGateQuestionRepository.save(
             MemberGateQuestion(
-                id = member.user.idLong,
+                id = MemberGateQuestion.createId(member.guild.idLong, member.user.idLong),
+                userId = member.user.idLong,
                 question = question,
                 answer = answer,
                 guildId = member.guild.idLong,
@@ -52,12 +52,12 @@ class MemberGateReviewManager(
         )
     }
 
-    fun rememberInformPrompt(userId: Long, messageId: Long) {
-        promptRegistry.remember(userId, messageId)
+    fun rememberInformPrompt(guildId: Long, userId: Long, messageId: Long) {
+        promptRegistry.remember(guildId, userId, messageId)
     }
 
     fun clearInformPrompt(guildId: Long, jda: JDA, userId: Long) {
-        val messageId = promptRegistry.forget(userId) ?: return
+        val messageId = promptRegistry.forget(guildId, userId) ?: return
         memberGateService.getGateChannel(guildId, jda)
             ?.retrieveMessageById(messageId)
             ?.queue({ message -> message.delete().queue() }) { }
@@ -110,7 +110,7 @@ class MemberGateReviewManager(
             return
         }
 
-        memberGateQuestionRepository.deleteById(userId)
+        memberGateQuestionRepository.deleteById(MemberGateQuestion.createId(guildId, userId))
         clearInformPrompt(guildId, jda, userId)
     }
 }
