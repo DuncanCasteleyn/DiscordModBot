@@ -1,23 +1,8 @@
-/*
- * Copyright 2018 Duncan Casteleyn
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package be.duncanc.discordmodbot.member.gate
 
 import be.duncanc.discordmodbot.member.gate.persistence.GuildMemberGate
 import be.duncanc.discordmodbot.member.gate.persistence.GuildMemberGateRepository
+import be.duncanc.discordmodbot.member.gate.persistence.MemberGateQuestion
 import be.duncanc.discordmodbot.member.gate.persistence.MemberGateQuestionRepository
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
@@ -46,16 +31,14 @@ class MemberGateService(
      */
     fun getGateChannel(guildId: Long, jda: JDA): TextChannel? {
         val memberGate: GuildMemberGate? = guildMemberGateRepository.findById(guildId).orElse(null)
-        return if (memberGate != null) {
-            memberGate.gateTextChannel?.let { jda.getTextChannelById(it) }
-        } else {
-            null
-        }
+
+        return memberGate?.gateTextChannel?.let { jda.getTextChannelById(it) }
     }
 
     @Transactional
     fun setGateChannel(guildId: Long, gateChannel: TextChannel) {
         val memberGate: GuildMemberGate = guildMemberGateRepository.findById(guildId).orElse(GuildMemberGate(guildId))
+
         guildMemberGateRepository.save(memberGate.copy(gateTextChannel = gateChannel.idLong))
     }
 
@@ -64,11 +47,7 @@ class MemberGateService(
      */
     fun getWelcomeChannel(guildId: Long, jda: JDA): TextChannel? {
         val memberGate: GuildMemberGate? = guildMemberGateRepository.findById(guildId).orElse(null)
-        return if (memberGate != null) {
-            memberGate.welcomeTextChannel?.let { jda.getTextChannelById(it) }
-        } else {
-            null
-        }
+        return memberGate?.welcomeTextChannel?.let { jda.getTextChannelById(it) }
     }
 
     @Transactional
@@ -92,7 +71,9 @@ class MemberGateService(
     @Transactional
     fun setRulesChannel(guildId: Long, rulesChannel: TextChannel) {
         val memberGate = guildMemberGateRepository.findById(guildId).orElse(GuildMemberGate(guildId))
-        guildMemberGateRepository.save(memberGate.copy(rulesTextChannel = rulesChannel.idLong))
+        if (memberGate != null) {
+            guildMemberGateRepository.save(memberGate.copy(rulesTextChannel = rulesChannel.idLong))
+        }
     }
 
     /**
@@ -193,8 +174,8 @@ class MemberGateService(
                 guild.members.filter {
                     val reachedTimeLimit =
                         it.timeJoined.isBefore(OffsetDateTime.now().minusHours(removeTimeHours))
-                    val notQueuedForApproval = !memberGateQuestionRepository.existsById(it.user.idLong)
-                    val noRoles = it.roles.size < 1
+                    val notQueuedForApproval = !hasPendingQuestion(guild.idLong, it.user.idLong)
+                    val noRoles = it.roles.isEmpty()
                     noRoles && reachedTimeLimit && notQueuedForApproval
                 }.forEach { member ->
                     val userKickNotification = EmbedBuilder()
@@ -229,7 +210,7 @@ class MemberGateService(
                     val minusHours = OffsetDateTime.now().minusHours(removeTimeHours)
                     val shouldBeReminded =
                         it.timeJoined.isBefore(minusHours) && it.timeJoined.isAfter(minusHours.plusHours(1))
-                    val notQueuedForApproval = !memberGateQuestionRepository.existsById(it.user.idLong)
+                    val notQueuedForApproval = !hasPendingQuestion(guild.idLong, it.user.idLong)
                     val noRoles = it.roles.size < 1
 
                     noRoles && shouldBeReminded && notQueuedForApproval
@@ -252,5 +233,9 @@ class MemberGateService(
                 }
             }
         }
+    }
+
+    private fun hasPendingQuestion(guildId: Long, userId: Long): Boolean {
+        return memberGateQuestionRepository.findById(MemberGateQuestion.createId(guildId, userId)).isPresent
     }
 }

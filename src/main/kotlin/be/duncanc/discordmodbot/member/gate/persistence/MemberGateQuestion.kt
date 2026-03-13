@@ -7,7 +7,14 @@ import org.springframework.data.redis.core.RedisHash
 @RedisHash("memberGateQuestion", timeToLive = 172800)
 data class MemberGateQuestion(
     @Id
-    val id: Long,
+    val id: String,
+    val userId: Long,
     val question: String,
-    val answer: String
-)
+    val answer: String,
+    val guildId: Long,
+    val queuedAt: Long
+) {
+    companion object {
+        fun createId(guildId: Long, userId: Long): String = "$guildId:$userId"
+    }
+}
