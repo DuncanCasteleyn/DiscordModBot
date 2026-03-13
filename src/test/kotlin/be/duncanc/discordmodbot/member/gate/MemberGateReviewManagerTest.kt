@@ -81,7 +81,7 @@ class MemberGateReviewManagerTest {
         val session = reviewManager.createSession(1L)
 
         assertEquals(10L, session?.getCurrentUserId())
-        assertEquals(20L, session?.skipCurrent())
+        assertEquals(20L, session?.advanceAfterReview())
     }
 
     @Test

@@ -92,6 +92,14 @@ class MemberGateReviewCommandTest {
         whenever(buttonEvent.user).thenReturn(user)
     }
 
+    private fun stubLegacySkipButtonInteraction() {
+        stubCommonIdentity()
+        whenever(buttonEvent.componentId).thenReturn("member-gate-review:skip")
+        whenever(buttonEvent.guild).thenReturn(guild)
+        whenever(buttonEvent.member).thenReturn(member)
+        whenever(buttonEvent.user).thenReturn(user)
+    }
+
     private fun stubButtonReply() {
         whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
         whenever(buttonEvent.reply(any<String>())).thenReturn(replyAction)
@@ -166,5 +174,17 @@ class MemberGateReviewCommandTest {
         command.onButtonInteraction(buttonEvent)
 
         verify(buttonEvent).reply("This review session expired. Run `/review` again.")
+    }
+
+    @Test
+    fun `legacy skip button asks moderator to rerun review`() {
+        stubLegacySkipButtonInteraction()
+        stubButtonReply()
+
+        whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(MemberGateReviewSession(listOf(10L)))
+
+        command.onButtonInteraction(buttonEvent)
+
+        verify(buttonEvent).reply("This review action is no longer available. Run `/review` again.")
     }
 }

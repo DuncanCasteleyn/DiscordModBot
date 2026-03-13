@@ -6,13 +6,11 @@ import org.junit.jupiter.api.Test
 
 class MemberGateReviewSessionTest {
     @Test
-    fun `skip moves through queue and approvals continue until queue is empty`() {
+    fun `approving applicants continues until queue is empty`() {
         val session = MemberGateReviewSession(listOf(10L, 20L, 30L))
 
         assertEquals(10L, session.getCurrentUserId())
-        assertEquals(20L, session.skipCurrent())
-        assertEquals(30L, session.advanceAfterReview())
-        assertEquals(10L, session.skipCurrent())
+        assertEquals(20L, session.advanceAfterReview())
         assertEquals(30L, session.advanceAfterReview())
         assertNull(session.advanceAfterReview())
         assertNull(session.getCurrentUserId())

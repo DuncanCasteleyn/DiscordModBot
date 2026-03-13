@@ -24,7 +24,6 @@ class MemberGateReviewCommand(
     companion object {
         private const val COMMAND = "review"
         private const val BUTTON_PREFIX = "member-gate-review:"
-        private const val SKIP_ACTION = "skip"
         private const val APPROVE_ACTION = "approve"
         private const val REJECT_ACTION = "reject"
         private const val MANUAL_ACTION = "manual"
@@ -95,11 +94,6 @@ class MemberGateReviewCommand(
         }
 
         val feedback = when (event.componentId.removePrefix(BUTTON_PREFIX)) {
-            SKIP_ACTION -> {
-                session.skipCurrent()
-                "Skipped the current applicant."
-            }
-
             APPROVE_ACTION -> {
                 val result = reviewManager.approve(guild, event.jda, currentUserId)
                 session.advanceAfterReview()
@@ -118,7 +112,12 @@ class MemberGateReviewCommand(
                 result
             }
 
-            else -> return
+            else -> {
+                event.reply("This review action is no longer available. Run `/review` again.")
+                    .setEphemeral(true)
+                    .queue()
+                return
+            }
         }
 
         val pendingQuestion = resolveCurrentQuestion(guild.idLong, session)
@@ -166,7 +165,7 @@ class MemberGateReviewCommand(
                 oldestLine +
                 "Applicant: $applicant (`${question.id}`)\n" +
                 MarkdownUtil.codeblock("text", "${question.question}\n${question.answer}") +
-                "\nChoose `Skip`, `Approve`, `Reject`, or `Manual action`."
+                "\nChoose `Approve`, `Reject`, or `Manual action`."
     }
 
     private fun buildCompletionMessage(feedback: String): String {
@@ -174,7 +173,6 @@ class MemberGateReviewCommand(
     }
 
     private fun buildButtons() = listOf(
-        Button.secondary("$BUTTON_PREFIX$SKIP_ACTION", "Skip"),
         Button.success("$BUTTON_PREFIX$APPROVE_ACTION", "Approve"),
         Button.danger("$BUTTON_PREFIX$REJECT_ACTION", "Reject"),
         Button.primary("$BUTTON_PREFIX$MANUAL_ACTION", "Manual Action")

@@ -28,8 +28,10 @@ class MemberGateReviewSessionRegistryTest {
 
     @Test
     fun `remember stores session state in redis repository`() {
-        val session = MemberGateReviewSession(listOf(10L, 20L))
-        session.skipCurrent()
+        val session = MemberGateReviewSession(
+            pendingUserIds = listOf(20L, 10L),
+            oldestPendingUserId = 10L
+        )
 
         reviewSessionRegistry.remember(1L, 99L, session)
 

@@ -15,13 +15,6 @@ class MemberGateReviewSession(
 
     fun toPendingUserIds(): List<Long> = listOfNotNull(currentUserId) + queuedUserIds.toList()
 
-    fun skipCurrent(): Long? {
-        val currentUserId = currentUserId ?: return null
-        queuedUserIds.addLast(currentUserId)
-        this.currentUserId = queuedUserIds.removeFirstOrNull()
-        return this.currentUserId
-    }
-
     fun advanceAfterReview(): Long? {
         currentUserId = queuedUserIds.removeFirstOrNull()
         return currentUserId
