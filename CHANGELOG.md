@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.2.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.1.5...v2.2.0) (2026-03-13)
+
+
+### Features
+
+* **MemberGate:** review the pending members with one slash command ([#513](https://github.com/DuncanCasteleyn/DiscordModBot/issues/513)) ([08867aa](https://github.com/DuncanCasteleyn/DiscordModBot/commit/08867aa6da2ca77f52765d3d8c1a95d1e7048a7d))
+
+
+### Bug Fixes
+
+* **23:** use contentRaw to retrieve users from message. ([#510](https://github.com/DuncanCasteleyn/DiscordModBot/issues/510)) ([c9cc589](https://github.com/DuncanCasteleyn/DiscordModBot/commit/c9cc58920c48f07e52a978e9133ca52167bfc435))
+* **revokeWarnPoints:** use contentRaw to retrieve users from message ([#511](https://github.com/DuncanCasteleyn/DiscordModBot/issues/511)) ([cd21f5e](https://github.com/DuncanCasteleyn/DiscordModBot/commit/cd21f5e4da12c1be0537c9fc214e5c106a544d9c))
+
+
+### Documentation
+
+* Add configuration documentation ([e82806e](https://github.com/DuncanCasteleyn/DiscordModBot/commit/e82806e1a972c67559258d2ced94df0c9ef12a2e))
+
 ## [2.1.5](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.1.4...v2.1.5) (2026-03-10)
 
 
