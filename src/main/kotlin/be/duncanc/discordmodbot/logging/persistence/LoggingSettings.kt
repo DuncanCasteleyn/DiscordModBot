@@ -21,7 +21,7 @@ data class LoggingSettings
     var logMemberLeave: Boolean = true,
     var logMemberBan: Boolean = true,
     var logMemberRemoveBan: Boolean = true,
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "logging_ignored_channels")
     val ignoredChannels: MutableSet<Long> = HashSet()
 ) {
