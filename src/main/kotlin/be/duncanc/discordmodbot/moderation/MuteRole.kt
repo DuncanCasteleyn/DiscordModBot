@@ -1,67 +1,68 @@
 package be.duncanc.discordmodbot.moderation
 
-import be.duncanc.discordmodbot.discord.CommandModule
+import be.duncanc.discordmodbot.discord.SlashCommand
 import be.duncanc.discordmodbot.discord.nicknameAndUsername
 import be.duncanc.discordmodbot.logging.GuildLogger
-import be.duncanc.discordmodbot.moderation.persistence.MuteRole as MuteRoleEntity
 import be.duncanc.discordmodbot.moderation.persistence.MuteRolesRepository
-import java.awt.Color
-import java.util.concurrent.TimeUnit
 import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Role
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleAddEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.role.RoleDeleteEvent
-import net.dv8tion.jda.api.exceptions.PermissionException
-import net.dv8tion.jda.api.Permission
-import org.springframework.beans.factory.annotation.Autowired
+import net.dv8tion.jda.api.hooks.ListenerAdapter
+import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions
+import net.dv8tion.jda.api.interactions.commands.OptionType
+import net.dv8tion.jda.api.interactions.commands.build.Commands
+import net.dv8tion.jda.api.interactions.commands.build.OptionData
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
+import java.awt.Color
+import be.duncanc.discordmodbot.moderation.persistence.MuteRole as MuteRoleEntity
 
 @Component
 @Transactional
-class MuteRole
-@Autowired constructor(
+class MuteRole(
     private val muteRolesRepository: MuteRolesRepository,
     private val guildLogger: GuildLogger
-) : CommandModule(
-    arrayOf("MuteRole"),
-    "[Name of the mute role or nothing to remove the role]",
-    "This command allows you to set the mute role for a guild/server"
-) {
-
-    override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-        if (event.member?.hasPermission(Permission.MANAGE_ROLES) != true) {
-            throw PermissionException("You do not have sufficient permissions to set the mute role for this server")
-        }
-
-        val guildId = event.guild.idLong
-        if (arguments == null) {
-            muteRolesRepository.deleteById(guildId)
-            event.channel.sendMessage("Mute role has been removed.")
-                .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
-        } else {
-            try {
-                muteRolesRepository.save(
-                    MuteRoleEntity(
-                        guildId,
-                        event.guild.getRolesByName(arguments, false)[0].idLong
-                    )
-                )
-                event.channel.sendMessage("Role has been set as mute role.")
-                    .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
-            } catch (exception: IndexOutOfBoundsException) {
-                throw IllegalArgumentException("Couldn't find any roles with that name.", exception)
-            }
-        }
+) : ListenerAdapter(), SlashCommand {
+    companion object {
+        private const val COMMAND = "muterole"
+        private const val DESCRIPTION = "Set or remove the mute role for this server."
+        private const val OPTION_ROLE = "role"
     }
 
-    override fun onRoleDelete(event: RoleDeleteEvent) {
-        muteRolesRepository.deleteByRoleIdAndGuildId(event.role.idLong, event.guild.idLong)
+    override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
+        if (event.name != COMMAND) return
+
+        val member = event.member
+        if (member == null) {
+            event.reply("This command only works in a guild.").setEphemeral(true).queue()
+            return
+        }
+
+        if (!member.hasPermission(Permission.MANAGE_ROLES)) {
+            event.reply("You need manage roles permission to set the mute role.").setEphemeral(true).queue()
+            return
+        }
+
+        val guild = event.guild!!
+        val guildId = guild.idLong
+        val roleOption = event.getOption(OPTION_ROLE)
+
+        if (roleOption == null) {
+            muteRolesRepository.deleteById(guildId)
+            event.reply("Mute role has been removed.").setEphemeral(true).queue()
+        } else {
+            val role = roleOption.asRole
+            muteRolesRepository.save(MuteRoleEntity(guildId, role.idLong))
+            event.reply("Role ${role.asMention} has been set as the mute role.").setEphemeral(true).queue()
+        }
     }
 
     @Transactional(readOnly = true)
@@ -71,6 +72,10 @@ class MuteRole
             ?: throw IllegalStateException("This guild does not have a mute role set up.")
 
         return guild.getRoleById(roleId)!!
+    }
+
+    override fun onRoleDelete(event: RoleDeleteEvent) {
+        muteRolesRepository.deleteByRoleIdAndGuildId(event.role.idLong, event.guild.idLong)
     }
 
     override fun onGuildMemberRoleAdd(event: GuildMemberRoleAddEvent) {
@@ -123,5 +128,19 @@ class MuteRole
                 actionType = GuildLogger.LogTypeAction.MODERATOR
             )
         }
+    }
+
+    override fun getCommandsData(): List<SlashCommandData> {
+        return listOf(
+            Commands.slash(COMMAND, DESCRIPTION)
+                .addOptions(
+                    OptionData(
+                        OptionType.ROLE,
+                        OPTION_ROLE,
+                        "The role to use as mute role (omit to remove)"
+                    ).setRequired(false)
+                )
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_ROLES))
+        )
     }
 }

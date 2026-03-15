@@ -1,9 +1,9 @@
 package be.duncanc.discordmodbot.moderation.persistence
 
-import java.time.OffsetDateTime
-import java.util.*
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
+import java.time.OffsetDateTime
+import java.util.*
 
 @Repository
 interface GuildWarnPointsRepository : JpaRepository<GuildWarnPoint, GuildWarnPoint.GuildWarnPointId> {
@@ -21,6 +21,8 @@ interface GuildWarnPointsRepository : JpaRepository<GuildWarnPoint, GuildWarnPoi
     ): Collection<GuildWarnPoint>
 
     fun deleteAllById(id: UUID)
+
+    fun findById(id: UUID): GuildWarnPoint?
 
     fun existsByGuildIdAndUserId(guildId: Long, userId: Long): Boolean
 }
