@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.2.3](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.2.2...v2.2.3) (2026-03-15)
+
+
+### Bug Fixes
+
+* add choices to action options in add warn points command ([3be80aa](https://github.com/DuncanCasteleyn/DiscordModBot/commit/3be80aa603a570bebf3aed9b3fc593fa4af9311a))
+* eagerly fetch questions in GuildMemberGate ([76778bb](https://github.com/DuncanCasteleyn/DiscordModBot/commit/76778bbb98e94dafd5a8e1fd6419b2d4d405130d))
+
 ## [2.2.2](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.2.1...v2.2.2) (2026-03-15)
 
 
