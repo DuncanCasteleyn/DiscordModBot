@@ -2,16 +2,18 @@
 
 ## Supported Versions
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 2.x.x   | :white_check_mark: |
-| < 2.1.x | :x:                |
+| Version  | Supported          |
+|----------|--------------------|
+| >= 2.2.x | :white_check_mark: |
+| < 2.2.x  | :x:                |
 
 ## Reporting a Vulnerability
 
 **Please do not report security vulnerabilities through public GitHub issues, discussions, or pull requests.**
 
-Please look look at the [Github documentation](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing/privately-reporting-a-security-vulnerability#privately-reporting-a-security-vulnerability) how to privately report a vulnerability.
+Please look look at
+the [Github documentation](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing/privately-reporting-a-security-vulnerability#privately-reporting-a-security-vulnerability)
+how to privately report a vulnerability.
 
 Please include as much of the information listed below as you can to help us better understand and resolve the issue:
 
@@ -24,4 +26,3 @@ Please include as much of the information listed below as you can to help us bet
     Impact of the issue, including how an attacker might exploit the issue
 
 This information will help us triage your report more quickly.
-
