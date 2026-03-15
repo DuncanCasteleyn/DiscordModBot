@@ -51,6 +51,12 @@ class RevokeWarnPointsCommand(
             return
         }
 
+        if (!member.canInteract(targetMember)) {
+            event.reply("You can't revoke warn points from a user that you can't interact with.").setEphemeral(true)
+                .queue()
+            return
+        }
+
         val guild = event.guild ?: return
         val guildId = guild.idLong
         val userId = targetMember.idLong
@@ -110,7 +116,12 @@ class RevokeWarnPointsCommand(
         if (!componentId.startsWith(COMPONENT_ID)) return
 
         val member = event.member
-        if (member == null || !member.hasPermission(Permission.KICK_MEMBERS)) {
+        if (member == null) {
+            event.reply("This command only works in a guild.").setEphemeral(true).queue()
+            return
+        }
+
+        if (!member.hasPermission(Permission.KICK_MEMBERS)) {
             event.reply("You need kick members permission to revoke warn points.").setEphemeral(true).queue()
             return
         }

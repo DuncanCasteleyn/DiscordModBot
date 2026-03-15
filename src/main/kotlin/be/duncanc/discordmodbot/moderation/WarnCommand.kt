@@ -12,6 +12,7 @@ import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.InteractionHook
+import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions
 import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
@@ -67,6 +68,11 @@ class WarnCommand(
         val targetMember = event.getOption(OPTION_USER)?.asMember
         if (targetMember == null) {
             event.reply("You need to mention a user that is still in the server.").setEphemeral(true).queue()
+            return
+        }
+
+        if (!member.canInteract(targetMember)) {
+            event.reply("You can't warn a user that you can't interact with.").setEphemeral(true).queue()
             return
         }
 
@@ -132,6 +138,7 @@ class WarnCommand(
                     OptionData(OptionType.USER, OPTION_USER, "The user to warn").setRequired(true),
                     OptionData(OptionType.STRING, OPTION_REASON, "The reason for the warning").setRequired(true)
                 )
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.KICK_MEMBERS))
         )
     }
 }

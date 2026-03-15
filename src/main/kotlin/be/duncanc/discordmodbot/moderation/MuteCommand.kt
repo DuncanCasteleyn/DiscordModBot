@@ -52,7 +52,7 @@ class MuteCommand(
             return
         }
 
-        if (member.canInteract(targetMember) != true) {
+        if (!member.canInteract(targetMember)) {
             event.reply("You can't mute a user that you can't interact with.").setEphemeral(true).queue()
             return
         }

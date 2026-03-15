@@ -49,7 +49,7 @@ class KickCommand : ListenerAdapter(), SlashCommand {
             return
         }
 
-        if (member.canInteract(targetMember) != true) {
+        if (!member.canInteract(targetMember)) {
             event.reply("You can't kick a user that you can't interact with.").setEphemeral(true).queue()
             return
         }

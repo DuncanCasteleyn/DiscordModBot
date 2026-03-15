@@ -41,6 +41,7 @@ class BanUserByIdCommand : ListenerAdapter(), SlashCommand {
         }
 
         val userIdString = event.getOption(OPTION_USER_ID)?.asString
+
         if (userIdString.isNullOrBlank()) {
             event.reply("You need to provide a user ID.").setEphemeral(true).queue()
             return
@@ -58,7 +59,7 @@ class BanUserByIdCommand : ListenerAdapter(), SlashCommand {
             event.jda.retrieveUserById(userId).queue({ toBan ->
                 val guild = event.guild!!
                 val toBanMemberCheck = guild.getMember(toBan)
-                if (toBanMemberCheck != null && member.canInteract(toBanMemberCheck) != true) {
+                if (toBanMemberCheck != null && !member.canInteract(toBanMemberCheck)) {
                     hook.editOriginal("You can't ban a user that you can't interact with.").queue()
                     return@queue
                 }
