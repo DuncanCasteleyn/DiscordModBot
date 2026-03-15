@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.2.0...v2.2.1) (2026-03-15)
+
+
+### Bug Fixes
+
+* clean up unused command and migrate utility commands to slash commands ([#515](https://github.com/DuncanCasteleyn/DiscordModBot/issues/515)) ([3825fca](https://github.com/DuncanCasteleyn/DiscordModBot/commit/3825fca089d7a7a1f5fe3c2b75a633569f9cecd7))
+
 ## [2.2.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.1.5...v2.2.0) (2026-03-13)
 
 
