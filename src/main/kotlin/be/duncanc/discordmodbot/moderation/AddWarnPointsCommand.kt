@@ -108,7 +108,7 @@ class AddWarnPointsCommand(
             return
         }
 
-        event.deferReply().queue { hook ->
+        event.deferReply(true).queue { hook ->
             try {
                 processWarnPoints(event, member, targetMember, points, days, action, reason, guildPointsSettings, hook)
             } catch (t: Throwable) {

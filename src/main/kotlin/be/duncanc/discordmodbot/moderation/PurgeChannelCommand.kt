@@ -10,8 +10,6 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import org.springframework.stereotype.Component
-import java.util.concurrent.TimeUnit
-
 @Component
 class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
     companion object {
@@ -29,8 +27,10 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
             return
         }
 
-        if (!member.hasPermission(Permission.MANAGE_CHANNEL)) {
-            event.reply("You need manage channels permission to use this command.").setEphemeral(true).queue()
+        val channel = event.channel.asTextChannel()
+        if (!member.hasPermission(channel, Permission.MESSAGE_MANAGE)) {
+            event.reply("You need manage messages permission in this channel to use this command.").setEphemeral(true)
+                .queue()
             return
         }
 
@@ -40,14 +40,10 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
             return
         }
 
-        val channel = event.channel
-
-        event.deferReply().queue { hook ->
+        event.deferReply(true).queue { hook ->
             val messages = channel.history.retrievePast(amount).complete()
             channel.purgeMessages(messages)
-            hook.editOriginal("Deleted ${messages.size} message(s).").queue {
-                it.delete().queueAfter(5, TimeUnit.SECONDS)
-            }
+            hook.editOriginal("Deleted ${messages.size} message(s).").queue()
         }
     }
 
@@ -59,7 +55,7 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
                         true
                     )
                 )
-                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_CHANNEL))
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MESSAGE_MANAGE))
         )
     }
 }

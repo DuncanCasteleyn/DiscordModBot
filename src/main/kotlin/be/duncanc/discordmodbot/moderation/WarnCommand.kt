@@ -78,7 +78,7 @@ class WarnCommand(
 
         val reason = event.getOption(OPTION_REASON)?.asString ?: "No reason provided"
 
-        event.deferReply().queue { hook ->
+        event.deferReply(true).queue { hook ->
             val guild = event.guild!!
             val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
             if (guildLogger != null) {

@@ -59,7 +59,7 @@ class MuteCommand(
 
         val reason = event.getOption(OPTION_REASON)?.asString ?: "No reason provided"
 
-        event.deferReply().queue { hook ->
+        event.deferReply(true).queue { hook ->
             val guild = event.guild!!
             val muteRole = try {
                 muteRole.getMuteRole(guild)

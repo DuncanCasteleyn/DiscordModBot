@@ -53,7 +53,7 @@ class RemoveMuteCommand(
             return
         }
 
-        event.deferReply().queue { hook ->
+        event.deferReply(true).queue { hook ->
             val guild = event.guild!!
             guild.removeRoleFromMember(targetMember, muteRole).queue({
                 hook.editOriginal("Unmuted ${targetMember.asMention}.").queue()
