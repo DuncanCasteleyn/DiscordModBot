@@ -1,9 +1,6 @@
 package be.duncanc.discordmodbot.member.gate.persistence
 
-import jakarta.persistence.Column
-import jakarta.persistence.ElementCollection
-import jakarta.persistence.Entity
-import jakarta.persistence.Id
+import jakarta.persistence.*
 
 @Entity
 data class GuildMemberGate(
@@ -15,7 +12,7 @@ data class GuildMemberGate(
     val welcomeTextChannel: Long? = null,
     val removeTimeHours: Long? = null,
     val reminderTimeHours: Long? = null,
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @Column(name = "question")
     val questions: MutableSet<String> = HashSet()
 )
