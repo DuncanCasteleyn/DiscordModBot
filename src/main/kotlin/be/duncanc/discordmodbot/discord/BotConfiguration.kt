@@ -34,10 +34,11 @@ class BotConfiguration {
     ): JDA {
         val jda = JDABuilder.create(discordModBotConfig.botToken, INTENTS)
             .setBulkDeleteSplittingEnabled(false)
-            .disableCache(CacheFlag.VOICE_STATE)
+            .disableCache(CacheFlag.VOICE_STATE, CacheFlag.SCHEDULED_EVENTS)
             .addEventListeners(*listenerAdapters)
             .setEnableShutdownHook(false)
             .build()
+            .awaitReady()
 
         val updateCommands = jda.updateCommands()
         slashCommands.forEach {

@@ -165,10 +165,11 @@ class AddWarnPointsCommand(
                 val muteRole = try {
                     muteRole.getMuteRole(guild)
                 } catch (_: IllegalStateException) {
-                    hook.editOriginal("Warn points added, but mute role is not configured.").queue()
-                    return
+                    hook.sendMessage("Warn points added, but mute role is not configured.").queue()
+
+                    null
                 }
-                guild.addRoleToMember(targetMember, muteRole).reason(reason).queue()
+                muteRole?.let { guild.addRoleToMember(targetMember, it) }?.reason(reason)?.queue()
             }
 
             2 -> {
@@ -289,7 +290,7 @@ class AddWarnPointsCommand(
         toInform: Member,
         informationMessage: MessageEmbed
     ) {
-        hook.editOriginal(
+        hook.sendMessage(
             "Added warn points to $toInform.\n\nThe following message was sent to the user:"
         ).setEmbeds(informationMessage).queue()
     }
@@ -299,9 +300,9 @@ class AddWarnPointsCommand(
         toInform: Member,
         throwable: Throwable
     ) {
-        val msg =
+        hook.sendMessage(
             "Added warn points to $toInform.\n\nWas unable to send a DM to the user please inform the user manually.\nError: ${throwable.message}"
-        hook.editOriginal(msg).queue()
+        ).queue()
     }
 
     override fun getCommandsData(): List<SlashCommandData> {

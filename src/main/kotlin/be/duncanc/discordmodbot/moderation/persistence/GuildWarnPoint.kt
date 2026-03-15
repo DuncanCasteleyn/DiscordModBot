@@ -5,11 +5,13 @@ import jakarta.validation.constraints.Future
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Positive
+import org.hibernate.Hibernate
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
+import org.springframework.util.Assert
 import java.io.Serializable
 import java.time.OffsetDateTime
 import java.util.*
-import org.hibernate.Hibernate
-import org.springframework.util.Assert
 
 @Entity
 @IdClass(GuildWarnPoint.GuildWarnPointId::class)
@@ -22,6 +24,7 @@ data class GuildWarnPoint(
     @Column(updatable = false)
     val guildId: Long,
     @Id
+    @JdbcTypeCode(SqlTypes.BINARY)
     @Column(updatable = false, columnDefinition = "BINARY(16)", unique = true)
     val id: UUID = UUID.randomUUID(),
     @field:Positive
@@ -72,10 +75,14 @@ data class GuildWarnPoint(
 
     data class GuildWarnPointId(
         @Id
+        @Column(updatable = false)
         val userId: Long? = null,
         @Id
+        @Column(updatable = false)
         val guildId: Long? = null,
         @Id
+        @JdbcTypeCode(SqlTypes.BINARY)
+        @Column(updatable = false, columnDefinition = "BINARY(16)", unique = true)
         val id: UUID? = null,
     ) : Serializable
 }
