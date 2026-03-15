@@ -315,8 +315,14 @@ class AddWarnPointsCommand(
                     OptionData(
                         OptionType.INTEGER,
                         OPTION_ACTION,
-                        "Action to perform: 0=None, 1=Mute, 2=Kick"
-                    ).setRequired(true).setMinValue(0).setMaxValue(2),
+                        "Action to perform"
+                    )
+                        .addChoice("None", 0L)
+                        .addChoice("Mute", 1L)
+                        .addChoice("Kick", 2L)
+                        .setMinValue(0L)
+                        .setMaxValue(2L)
+                        .setRequired(true),
                     OptionData(OptionType.STRING, OPTION_REASON, "Reason for the warning").setRequired(true)
                 )
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.KICK_MEMBERS))
