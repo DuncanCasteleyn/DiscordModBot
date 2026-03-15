@@ -17,7 +17,7 @@ class Info : ListenerAdapter(), SlashCommand {
 
         private val INFO_MESSAGE: MessageEmbed = EmbedBuilder()
             .setTitle("Discord bot", null)
-            .setDescription("**Author:** Dunciboy\n**Language:** Java & Kotlin\n**Discord-lib:** JDA")
+            .setDescription("**Author:** dunci.\n**Language:** Java & Kotlin\n**Discord-lib:** JDA")
             .setColor(java.awt.Color.RED)
             .build()
     }
