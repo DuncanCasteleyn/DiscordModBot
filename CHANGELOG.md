@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.2.2](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.2.1...v2.2.2) (2026-03-15)
+
+
+### Bug Fixes
+
+* **deps:** update dependency net.dv8tion:jda to v6.3.2 ([#519](https://github.com/DuncanCasteleyn/DiscordModBot/issues/519)) ([f6e245f](https://github.com/DuncanCasteleyn/DiscordModBot/commit/f6e245f04023f3c3186d05f2e82f15ec581795a3))
+* **Moderation:** Migrate to slash commands ([#518](https://github.com/DuncanCasteleyn/DiscordModBot/issues/518)) ([ec7553f](https://github.com/DuncanCasteleyn/DiscordModBot/commit/ec7553f5c9f0b4f59a4ca58b6ef7e60573dda965))
+
 ## [2.2.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.2.0...v2.2.1) (2026-03-15)
 
 
