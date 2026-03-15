@@ -87,7 +87,7 @@ class RevokeWarnPointsCommand(
                 return
             }
 
-            val selectMenu = StringSelectMenu.create(COMPONENT_ID)
+            val selectMenu = StringSelectMenu.create("$COMPONENT_ID-${member.idLong}")
                 .setPlaceholder("Select a warn point to revoke")
 
             warnings.forEach { warning ->
@@ -100,14 +100,26 @@ class RevokeWarnPointsCommand(
                 .addComponents(ActionRow.of(selectMenu.build()))
                 .build()
 
-            event.reply(message).queue()
+            event.reply(message).setEphemeral(true).queue()
         }
     }
 
     override fun onStringSelectInteraction(event: StringSelectInteractionEvent) {
         val componentId = event.componentId
 
-        if (componentId != COMPONENT_ID) return
+        if (!componentId.startsWith(COMPONENT_ID)) return
+
+        val member = event.member
+        if (member == null || !member.hasPermission(Permission.KICK_MEMBERS)) {
+            event.reply("You need kick members permission to revoke warn points.").setEphemeral(true).queue()
+            return
+        }
+
+        val invokerId = componentId.removePrefix("$COMPONENT_ID-").toLongOrNull()
+        if (invokerId != event.user.idLong) {
+            event.reply("You cannot revoke warn points initiated by another moderator.").setEphemeral(true).queue()
+            return
+        }
 
         val guild = event.guild ?: return
         val warnPointIdStr = event.values.firstOrNull() ?: return

@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
+import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions
 import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
@@ -38,6 +39,12 @@ class WarnHistoryCommand(
         val guild = event.guild
         if (guild == null) {
             event.reply("This command only works in a guild.").setEphemeral(true).queue()
+            return
+        }
+
+        val moderator = event.member!!
+        if (!moderator.hasPermission(Permission.KICK_MEMBERS)) {
+            event.reply("You need kick members permission to use this command.").setEphemeral(true).queue()
             return
         }
 
@@ -100,7 +107,7 @@ class WarnHistoryCommand(
         if (moderator) {
             event.reply("The list of points the user collected has been sent in a private message.").setEphemeral(true)
                 .queue()
-            sendDmToUser(user, embeds, false)
+            sendDmToUser(event.user, embeds, false)
         } else {
             event.reply("Your list of points has been sent in a private message. If you didn't receive any messages, make sure you have enabled DMs from server members.")
                 .setEphemeral(true).queue()
@@ -145,6 +152,7 @@ class WarnHistoryCommand(
                         "The user to check (leave empty to check yourself)"
                     ).setRequired(false)
                 )
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.KICK_MEMBERS))
         )
     }
 }

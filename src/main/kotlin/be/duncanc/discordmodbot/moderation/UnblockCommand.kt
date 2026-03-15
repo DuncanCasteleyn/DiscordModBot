@@ -5,6 +5,7 @@ import be.duncanc.discordmodbot.discord.SlashCommand
 import be.duncanc.discordmodbot.moderation.persistence.BlockedUserRepository
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
+import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions
 import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
@@ -52,6 +53,7 @@ class UnblockCommand(
                 .addOptions(
                     OptionData(OptionType.STRING, OPTION_USER_ID, "The user ID to unblock").setRequired(true)
                 )
+                .setDefaultPermissions(DefaultMemberPermissions.DISABLED)
         )
     }
 }

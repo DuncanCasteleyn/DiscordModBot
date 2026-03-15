@@ -12,7 +12,6 @@ import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.InteractionHook
-import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions
 import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
@@ -38,6 +37,12 @@ class WarnCommand(
         val guild = event.guild
         if (guild == null) {
             event.reply("This command only works in a guild.").setEphemeral(true).queue()
+            return
+        }
+
+        val moderator = event.member!!
+        if (!moderator.hasPermission(Permission.KICK_MEMBERS)) {
+            event.reply("You need kick members permission to use this command.").setEphemeral(true).queue()
             return
         }
 
@@ -127,7 +132,6 @@ class WarnCommand(
                     OptionData(OptionType.USER, OPTION_USER, "The user to warn").setRequired(true),
                     OptionData(OptionType.STRING, OPTION_REASON, "The reason for the warning").setRequired(true)
                 )
-                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.KICK_MEMBERS))
         )
     }
 }

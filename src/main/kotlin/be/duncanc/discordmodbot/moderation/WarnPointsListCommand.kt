@@ -4,8 +4,10 @@ import be.duncanc.discordmodbot.discord.SlashCommand
 import be.duncanc.discordmodbot.discord.nicknameAndUsername
 import be.duncanc.discordmodbot.moderation.persistence.GuildWarnPointsRepository
 import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
+import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import org.springframework.stereotype.Component
@@ -27,6 +29,12 @@ class WarnPointsListCommand(
         val guild = event.guild
         if (guild == null) {
             event.reply("This command only works in a guild.").setEphemeral(true).queue()
+            return
+        }
+
+        val moderator = event.member!!
+        if (!moderator.hasPermission(Permission.KICK_MEMBERS)) {
+            event.reply("You need kick members permission to use this command.").setEphemeral(true).queue()
             return
         }
 
@@ -57,6 +65,7 @@ class WarnPointsListCommand(
     override fun getCommandsData(): List<SlashCommandData> {
         return listOf(
             Commands.slash(COMMAND, DESCRIPTION)
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.KICK_MEMBERS))
         )
     }
 }
