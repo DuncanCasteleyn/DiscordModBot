@@ -10,7 +10,7 @@ import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import org.springframework.stereotype.Component
 
 @Component
-class Help : ListenerAdapter(), SlashCommand {
+class HelpCommand : ListenerAdapter(), SlashCommand {
     companion object {
         private const val COMMAND = "help"
         private const val DESCRIPTION = "Show a list of commands"

@@ -1,8 +1,11 @@
 package be.duncanc.discordmodbot.utility
 
+import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
-import net.dv8tion.jda.api.interactions.commands.OptionMapping
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -15,7 +18,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 @ExtendWith(MockitoExtension::class)
-class UserInfoTest {
+class ChannelIdsCommandTest {
     @Mock
     private lateinit var slashEvent: SlashCommandInteractionEvent
 
@@ -23,16 +26,22 @@ class UserInfoTest {
     private lateinit var guild: Guild
 
     @Mock
-    private lateinit var replyAction: ReplyCallbackAction
+    private lateinit var member: Member
 
     @Mock
-    private lateinit var optionMapping: OptionMapping
+    private lateinit var user: User
 
-    private lateinit var command: UserInfo
+    @Mock
+    private lateinit var jda: JDA
+
+    @Mock
+    private lateinit var replyAction: ReplyCallbackAction
+
+    private lateinit var command: ChannelIdsCommand
 
     @BeforeEach
     fun setUp() {
-        command = UserInfo()
+        command = ChannelIdsCommand()
     }
 
     @Test
@@ -46,26 +55,27 @@ class UserInfoTest {
 
     @Test
     fun `DM context - returns error`() {
-        whenever(slashEvent.name).thenReturn("userinfo")
+        whenever(slashEvent.name).thenReturn("channelids")
         whenever(slashEvent.guild).thenReturn(null)
         whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
         whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
 
         command.onSlashCommandInteraction(slashEvent)
 
-        verify(slashEvent).reply("This command only works in a guild text channel.")
+        verify(slashEvent).reply("This command only works in a guild.")
     }
 
     @Test
-    fun `missing user option - returns error`() {
-        whenever(slashEvent.name).thenReturn("userinfo")
+    fun `missing MANAGE_CHANNEL permission - returns error`() {
+        whenever(slashEvent.name).thenReturn("channelids")
         whenever(slashEvent.guild).thenReturn(guild)
-        whenever(slashEvent.getOption("user")).thenReturn(null)
+        whenever(slashEvent.member).thenReturn(member)
+        whenever(member.hasPermission(Permission.MANAGE_CHANNEL)).thenReturn(false)
         whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
         whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
 
         command.onSlashCommandInteraction(slashEvent)
 
-        verify(slashEvent).reply("Please mention the user you want to get information about.")
+        verify(slashEvent).reply("You need manage channels permission to use this command.")
     }
 }

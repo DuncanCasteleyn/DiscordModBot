@@ -11,18 +11,18 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.*
 
 @ExtendWith(MockitoExtension::class)
-class InfoTest {
+class InfoCommandTest {
     @Mock
     private lateinit var slashEvent: SlashCommandInteractionEvent
 
     @Mock
     private lateinit var replyAction: ReplyCallbackAction
 
-    private lateinit var command: Info
+    private lateinit var command: InfoCommand
 
     @BeforeEach
     fun setUp() {
-        command = Info()
+        command = InfoCommand()
     }
 
     @Test

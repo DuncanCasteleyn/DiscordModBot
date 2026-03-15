@@ -18,7 +18,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 @ExtendWith(MockitoExtension::class)
-class ChannelIdsTest {
+class RoleIdsCommandTest {
     @Mock
     private lateinit var slashEvent: SlashCommandInteractionEvent
 
@@ -37,11 +37,11 @@ class ChannelIdsTest {
     @Mock
     private lateinit var replyAction: ReplyCallbackAction
 
-    private lateinit var command: ChannelIds
+    private lateinit var command: RoleIdsCommand
 
     @BeforeEach
     fun setUp() {
-        command = ChannelIds()
+        command = RoleIdsCommand()
     }
 
     @Test
@@ -55,7 +55,7 @@ class ChannelIdsTest {
 
     @Test
     fun `DM context - returns error`() {
-        whenever(slashEvent.name).thenReturn("channelids")
+        whenever(slashEvent.name).thenReturn("roleids")
         whenever(slashEvent.guild).thenReturn(null)
         whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
         whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
@@ -66,16 +66,16 @@ class ChannelIdsTest {
     }
 
     @Test
-    fun `missing MANAGE_CHANNEL permission - returns error`() {
-        whenever(slashEvent.name).thenReturn("channelids")
+    fun `missing MANAGE_ROLES permission - returns error`() {
+        whenever(slashEvent.name).thenReturn("roleids")
         whenever(slashEvent.guild).thenReturn(guild)
         whenever(slashEvent.member).thenReturn(member)
-        whenever(member.hasPermission(Permission.MANAGE_CHANNEL)).thenReturn(false)
+        whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(false)
         whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
         whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
 
         command.onSlashCommandInteraction(slashEvent)
 
-        verify(slashEvent).reply("You need manage channels permission to use this command.")
+        verify(slashEvent).reply("You need manage roles permission to use this command.")
     }
 }

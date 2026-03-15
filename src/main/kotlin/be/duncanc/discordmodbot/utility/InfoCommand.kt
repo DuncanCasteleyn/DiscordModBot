@@ -10,7 +10,7 @@ import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import org.springframework.stereotype.Component
 
 @Component
-class Info : ListenerAdapter(), SlashCommand {
+class InfoCommand : ListenerAdapter(), SlashCommand {
     companion object {
         private const val COMMAND = "info"
         private const val DESCRIPTION = "Returns information about the bot."
