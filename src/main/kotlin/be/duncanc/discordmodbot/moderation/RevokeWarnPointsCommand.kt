@@ -189,12 +189,12 @@ class RevokeWarnPointsCommand(
             Commands.slash(COMMAND, "Revoke warn points from a user")
                 .addOptions(
                     OptionData(OptionType.USER, OPTION_USER, "The user to revoke points from").setRequired(true),
+                    OptionData(OptionType.STRING, OPTION_REASON, "Reason for revoking points").setRequired(true),
                     OptionData(
                         OptionType.STRING,
                         OPTION_WARN_POINT_ID,
                         "Specific warn point ID to revoke (optional - leave empty to see selection menu)"
-                    ).setRequired(false),
-                    OptionData(OptionType.STRING, OPTION_REASON, "Reason for revoking points").setRequired(true)
+                    ).setRequired(false)
                 )
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.KICK_MEMBERS))
         )

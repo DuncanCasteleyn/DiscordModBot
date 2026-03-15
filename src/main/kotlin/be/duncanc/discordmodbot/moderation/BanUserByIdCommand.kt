@@ -21,7 +21,7 @@ class BanUserByIdCommand : ListenerAdapter(), SlashCommand {
     companion object {
         private const val COMMAND = "banbyid"
         private const val DESCRIPTION =
-            "Will ban the user with the given ID, clear all messages from the last 24 hours and log it to the log channel."
+            "Ban the user with the given ID, clear all messages from the last 24 hours and log to log channel."
         private const val OPTION_USER_ID = "user_id"
         private const val OPTION_REASON = "reason"
     }
