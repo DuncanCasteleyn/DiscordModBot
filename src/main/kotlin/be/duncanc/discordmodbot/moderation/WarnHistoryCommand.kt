@@ -82,7 +82,7 @@ class WarnHistoryCommand(
             OffsetDateTime.now()
         )
 
-        if (warnings.isNullOrEmpty()) {
+        if (warnings.isEmpty()) {
             event.reply(if (moderator) "The user has no active points." else "You have no active points. Good job!")
                 .setEphemeral(true).queue()
             return

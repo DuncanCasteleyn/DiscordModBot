@@ -49,19 +49,9 @@ class WarnCommand(
 
         val guildWarnPointsSettings = guildWarnPointsSettingsRepository.findById(guild.idLong)
             .orElse(GuildWarnPointsSettings(guild.idLong, announceChannelId = -1))
+
         if (guildWarnPointsSettings.overrideWarnCommand) {
             event.reply("This command has been disabled. Use /addwarnpoints instead.").setEphemeral(true).queue()
-            return
-        }
-
-        val member = event.member
-        if (member == null) {
-            event.reply("This command only works in a guild.").setEphemeral(true).queue()
-            return
-        }
-
-        if (!member.hasPermission(Permission.KICK_MEMBERS)) {
-            event.reply("You need kick members permission to warn.").setEphemeral(true).queue()
             return
         }
 
@@ -71,7 +61,7 @@ class WarnCommand(
             return
         }
 
-        if (!member.canInteract(targetMember)) {
+        if (!moderator.canInteract(targetMember)) {
             event.reply("You can't warn a user that you can't interact with.").setEphemeral(true).queue()
             return
         }
@@ -104,9 +94,9 @@ class WarnCommand(
                 { privateChannelUserToWarn ->
                     privateChannelUserToWarn.sendMessageEmbeds(userWarning).queue(
                         { onSuccessfulWarnUser(hook, targetMember, userWarning) }
-                    ) { throwable -> onFailToWarnUser(hook, targetMember, throwable, true) }
+                    ) { throwable -> onFailToWarnUser(hook, targetMember, throwable) }
                 }
-            ) { throwable -> onFailToWarnUser(hook, targetMember, throwable, false) }
+            ) { throwable -> onFailToWarnUser(hook, targetMember, throwable) }
         }
     }
 
@@ -123,8 +113,7 @@ class WarnCommand(
     private fun onFailToWarnUser(
         hook: InteractionHook,
         toWarn: Member,
-        throwable: Throwable,
-        dmFailed: Boolean
+        throwable: Throwable
     ) {
         val msg =
             "Warned $toWarn.\n\nWas unable to send a DM to the user please inform the user manually.\nError: ${throwable.message}"

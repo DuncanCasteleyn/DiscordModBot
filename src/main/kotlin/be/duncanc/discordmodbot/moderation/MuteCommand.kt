@@ -99,9 +99,9 @@ class MuteCommand(
                     { privateChannelUserToMute ->
                         privateChannelUserToMute.sendMessageEmbeds(userMuteWarning).queue(
                             { onSuccessfulInformUser(hook, targetMember, userMuteWarning) }
-                        ) { throwable -> onFailToInformUser(hook, targetMember, throwable, true) }
+                        ) { throwable -> onFailToInformUser(hook, targetMember, throwable) }
                     }
-                ) { throwable -> onFailToInformUser(hook, targetMember, throwable, false) }
+                ) { throwable -> onFailToInformUser(hook, targetMember, throwable) }
 
             }) { throwable ->
                 val creatorMessage = MessageCreateBuilder()
@@ -126,14 +126,14 @@ class MuteCommand(
     private fun onFailToInformUser(
         hook: InteractionHook,
         toMute: Member,
-        throwable: Throwable,
-        dmFailed: Boolean
+        throwable: Throwable
     ) {
-        val msg = if (dmFailed) {
-            "Muted $toMute.\n\nWas unable to send a DM to the user, please inform the user manually.\nError: ${throwable.message}"
-        } else {
-            "Muted $toMute.\n\nCould not find or open a DM channel with the user, please inform the user manually.\nError: ${throwable.message}"
-        }
+        val msg =
+            """Muted $toMute.
+
+Was unable to send a DM to the user, please inform the user manually.
+Error: ${throwable.message}"""
+
         hook.editOriginal(msg).queue()
     }
 

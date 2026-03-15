@@ -92,7 +92,6 @@ class MemberGateService(
 
     fun getQuestions(guildId: Long): Set<String> {
         val memberGate: GuildMemberGate? = guildMemberGateRepository.findById(guildId).orElse(null)
-        memberGate?.questions?.size
 
         return if (memberGate != null) {
             Collections.unmodifiableSet(memberGate.questions)

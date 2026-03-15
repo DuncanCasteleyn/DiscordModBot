@@ -74,11 +74,11 @@ class KickCommand : ListenerAdapter(), SlashCommand {
                             onSuccessfulInformUser(event, reason, hook, targetMember, message, kickRestAction)
                         }
                     ) { throwable ->
-                        onFailToInformUser(event, reason, hook, targetMember, throwable, kickRestAction, true)
+                        onFailToInformUser(event, reason, hook, targetMember, throwable, kickRestAction)
                     }
                 }
             ) { throwable ->
-                onFailToInformUser(event, reason, hook, targetMember, throwable, kickRestAction, false)
+                onFailToInformUser(event, reason, hook, targetMember, throwable, kickRestAction)
             }
         }
     }
@@ -126,8 +126,7 @@ class KickCommand : ListenerAdapter(), SlashCommand {
         hook: InteractionHook,
         toKick: Member,
         throwable: Throwable,
-        kickRestAction: RestAction<Void>,
-        dmFailed: Boolean
+        kickRestAction: RestAction<Void>
     ) {
         kickRestAction.queue({
             logKick(event, reason, toKick)

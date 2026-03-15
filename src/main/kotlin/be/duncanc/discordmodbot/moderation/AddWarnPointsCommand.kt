@@ -93,8 +93,12 @@ class AddWarnPointsCommand(
         }
 
         val guildId = event.guild!!.idLong
-        val guildPointsSettings = guildWarnPointsSettingsRepository.findById(guildId)
-            .orElse(GuildWarnPointsSettings(guildId, announceChannelId = -1))
+        val guildPointsSettings =
+            guildWarnPointsSettingsRepository.findById(guildId)
+                .orElse(null) ?: GuildWarnPointsSettings(
+                guildId,
+                announceChannelId = -1
+            )
 
         if (points > guildPointsSettings.maxPointsPerReason) {
             event.reply("The maximum points per reason is ${guildPointsSettings.maxPointsPerReason}.")
@@ -160,7 +164,7 @@ class AddWarnPointsCommand(
             1 -> {
                 val muteRole = try {
                     muteRole.getMuteRole(guild)
-                } catch (e: IllegalStateException) {
+                } catch (_: IllegalStateException) {
                     hook.editOriginal("Warn points added, but mute role is not configured.").queue()
                     return
                 }
@@ -275,9 +279,9 @@ class AddWarnPointsCommand(
             { privateChannelUserToWarn ->
                 privateChannelUserToWarn.sendMessageEmbeds(userWarning).queue(
                     { onSuccessfulInformUser(hook, toInform, userWarning) }
-                ) { throwable -> onFailToInformUser(hook, toInform, throwable, true) }
+                ) { throwable -> onFailToInformUser(hook, toInform, throwable) }
             }
-        ) { throwable -> onFailToInformUser(hook, toInform, throwable, false) }
+        ) { throwable -> onFailToInformUser(hook, toInform, throwable) }
     }
 
     private fun onSuccessfulInformUser(
@@ -293,8 +297,7 @@ class AddWarnPointsCommand(
     private fun onFailToInformUser(
         hook: InteractionHook,
         toInform: Member,
-        throwable: Throwable,
-        dmFailed: Boolean
+        throwable: Throwable
     ) {
         val msg =
             "Added warn points to $toInform.\n\nWas unable to send a DM to the user please inform the user manually.\nError: ${throwable.message}"

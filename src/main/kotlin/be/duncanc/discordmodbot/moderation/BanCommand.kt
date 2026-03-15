@@ -82,18 +82,17 @@ class BanCommand : ListenerAdapter(), SlashCommand {
                             onSuccessfulInformUser(event, reason, hook, targetMember, message, banRestAction)
                         }
                     ) { throwable ->
-                        onFailToInformUser(event, reason, hook, targetMember, throwable, banRestAction, true)
+                        onFailToInformUser(event, reason, hook, targetMember, throwable, banRestAction)
                     }
                 }
-            ) { throwable -> onFailToInformUser(event, reason, hook, targetMember, throwable, banRestAction, false) }
+            ) { throwable -> onFailToInformUser(event, reason, hook, targetMember, throwable, banRestAction) }
         }
     }
 
     private fun logBan(
         event: SlashCommandInteractionEvent,
         reason: String,
-        toBan: Member,
-        hook: net.dv8tion.jda.api.interactions.InteractionHook
+        toBan: Member
     ) {
         val guild = event.guild!!
         val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
@@ -119,7 +118,7 @@ class BanCommand : ListenerAdapter(), SlashCommand {
         banRestAction: RestAction<Void>
     ) {
         banRestAction.queue({
-            logBan(event, reason, toBan, hook)
+            logBan(event, reason, toBan)
             hook.editOriginal(
                 "Banned $toBan.\n\nThe following message was sent to the user:"
             ).setEmbeds(userBanWarning.embeds).queue()
@@ -137,16 +136,17 @@ class BanCommand : ListenerAdapter(), SlashCommand {
         hook: net.dv8tion.jda.api.interactions.InteractionHook,
         toBan: Member,
         throwable: Throwable,
-        banRestAction: RestAction<Void>,
-        dmFailed: Boolean
+        banRestAction: RestAction<Void>
     ) {
         banRestAction.queue({
-            logBan(event, reason, toBan, hook)
-            val msg = if (dmFailed) {
-                "Banned $toBan.\n\nWas unable to send a DM to the user please inform the user manually, if possible.\nError: ${throwable.message}"
-            } else {
-                "Banned $toBan.\n\nWas unable to send a DM to the user please inform the user manually, if possible.\nError: ${throwable.message}"
-            }
+            logBan(event, reason, toBan)
+
+            val msg =
+                """Banned $toBan.
+
+Was unable to send a DM to the user please inform the user manually, if possible.
+Error: ${throwable.message}"""
+
             hook.editOriginal(msg).queue()
         }) { banThrowable ->
             hook.editOriginal(
