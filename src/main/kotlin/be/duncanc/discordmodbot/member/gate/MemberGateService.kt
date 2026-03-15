@@ -37,7 +37,8 @@ class MemberGateService(
 
     @Transactional
     fun setGateChannel(guildId: Long, gateChannel: TextChannel) {
-        val memberGate: GuildMemberGate = guildMemberGateRepository.findById(guildId).orElse(GuildMemberGate(guildId))
+        val memberGate: GuildMemberGate = guildMemberGateRepository.findById(guildId)
+            .orElse(null) ?: GuildMemberGate(guildId)
 
         guildMemberGateRepository.save(memberGate.copy(gateTextChannel = gateChannel.idLong))
     }
@@ -52,7 +53,9 @@ class MemberGateService(
 
     @Transactional
     fun setWelcomeChannel(guildId: Long, welcomeChannel: TextChannel) {
-        val memberGate: GuildMemberGate = guildMemberGateRepository.findById(guildId).orElse(GuildMemberGate(guildId))
+        val memberGate: GuildMemberGate = guildMemberGateRepository.findById(guildId)
+            .orElse(null) ?: GuildMemberGate(guildId)
+
         guildMemberGateRepository.save(memberGate.copy(welcomeTextChannel = welcomeChannel.idLong))
     }
 
@@ -61,11 +64,8 @@ class MemberGateService(
      */
     fun getRuleChannel(guildId: Long, jda: JDA): TextChannel? {
         val memberGate: GuildMemberGate? = guildMemberGateRepository.findById(guildId).orElse(null)
-        return if (memberGate != null) {
-            memberGate.rulesTextChannel?.let { jda.getTextChannelById(it) }
-        } else {
-            null
-        }
+
+        return memberGate?.rulesTextChannel?.let { jda.getTextChannelById(it) }
     }
 
     @Transactional
@@ -81,23 +81,22 @@ class MemberGateService(
      */
     fun getMemberRole(guildId: Long, jda: JDA): Role? {
         val memberGate: GuildMemberGate? = guildMemberGateRepository.findById(guildId).orElse(null)
-        return if (memberGate != null) {
-            memberGate.memberRole?.let { jda.getRoleById(it) }
-        } else {
-            null
-        }
+
+        return memberGate?.memberRole?.let { jda.getRoleById(it) }
     }
 
 
     @Transactional
     fun setMemberRole(guildId: Long, memberRole: Role) {
-        val memberGate: GuildMemberGate = guildMemberGateRepository.findById(guildId).orElse(GuildMemberGate(guildId))
+        val memberGate: GuildMemberGate = guildMemberGateRepository.findById(guildId)
+            .orElse(null) ?: GuildMemberGate(guildId)
+
         guildMemberGateRepository.save(memberGate.copy(memberRole = memberRole.idLong))
     }
 
     fun getQuestions(guildId: Long): Set<String> {
         val memberGate: GuildMemberGate? = guildMemberGateRepository.findById(guildId).orElse(null)
-        memberGate?.questions?.size
+
         return if (memberGate != null) {
             Collections.unmodifiableSet(memberGate.questions)
         } else {
@@ -107,21 +106,28 @@ class MemberGateService(
 
     @Transactional
     fun addQuestion(guildId: Long, question: String) {
-        val memberGate: GuildMemberGate = guildMemberGateRepository.findById(guildId).orElse(GuildMemberGate(guildId))
+        val memberGate: GuildMemberGate = guildMemberGateRepository.findById(guildId)
+            .orElse(null) ?: GuildMemberGate(guildId)
+
         memberGate.questions.add(question)
+
         guildMemberGateRepository.save(memberGate)
     }
 
     @Transactional
     fun removeQuestion(guildId: Long, question: String) {
-        val memberGate: GuildMemberGate = guildMemberGateRepository.findById(guildId).orElse(GuildMemberGate(guildId))
+        val memberGate: GuildMemberGate = guildMemberGateRepository.findById(guildId)
+            .orElse(null) ?: GuildMemberGate(guildId)
+
         memberGate.questions.remove(question)
+
         guildMemberGateRepository.save(memberGate)
     }
 
     @Transactional
     fun resetGateSettings(guildId: Long) {
         val guildMemberGate: GuildMemberGate? = guildMemberGateRepository.findById(guildId).orElse(null)
+
         if (guildMemberGate != null) {
             guildMemberGate.questions.clear()
             guildMemberGateRepository.save(

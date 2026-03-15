@@ -1,11 +1,8 @@
 package be.duncanc.discordmodbot.utility
 
-import net.dv8tion.jda.api.JDA
-import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
-import net.dv8tion.jda.api.entities.Member
-import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.interactions.commands.OptionMapping
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -18,7 +15,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 @ExtendWith(MockitoExtension::class)
-class RoleIdsTest {
+class UserInfoCommandTest {
     @Mock
     private lateinit var slashEvent: SlashCommandInteractionEvent
 
@@ -26,22 +23,16 @@ class RoleIdsTest {
     private lateinit var guild: Guild
 
     @Mock
-    private lateinit var member: Member
-
-    @Mock
-    private lateinit var user: User
-
-    @Mock
-    private lateinit var jda: JDA
-
-    @Mock
     private lateinit var replyAction: ReplyCallbackAction
 
-    private lateinit var command: RoleIds
+    @Mock
+    private lateinit var optionMapping: OptionMapping
+
+    private lateinit var command: UserInfoCommand
 
     @BeforeEach
     fun setUp() {
-        command = RoleIds()
+        command = UserInfoCommand()
     }
 
     @Test
@@ -55,27 +46,26 @@ class RoleIdsTest {
 
     @Test
     fun `DM context - returns error`() {
-        whenever(slashEvent.name).thenReturn("roleids")
+        whenever(slashEvent.name).thenReturn("userinfo")
         whenever(slashEvent.guild).thenReturn(null)
         whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
         whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
 
         command.onSlashCommandInteraction(slashEvent)
 
-        verify(slashEvent).reply("This command only works in a guild.")
+        verify(slashEvent).reply("This command only works in a guild text channel.")
     }
 
     @Test
-    fun `missing MANAGE_ROLES permission - returns error`() {
-        whenever(slashEvent.name).thenReturn("roleids")
+    fun `missing user option - returns error`() {
+        whenever(slashEvent.name).thenReturn("userinfo")
         whenever(slashEvent.guild).thenReturn(guild)
-        whenever(slashEvent.member).thenReturn(member)
-        whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(false)
+        whenever(slashEvent.getOption("user")).thenReturn(null)
         whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
         whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
 
         command.onSlashCommandInteraction(slashEvent)
 
-        verify(slashEvent).reply("You need manage roles permission to use this command.")
+        verify(slashEvent).reply("Please mention the user you want to get information about.")
     }
 }

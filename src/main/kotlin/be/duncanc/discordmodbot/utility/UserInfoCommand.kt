@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component
 import java.time.format.DateTimeFormatter
 
 @Component
-class UserInfo : ListenerAdapter(), SlashCommand {
+class UserInfoCommand : ListenerAdapter(), SlashCommand {
     companion object {
         private const val COMMAND = "userinfo"
         private const val DESCRIPTION = "Prints out user information of the user given as argument"

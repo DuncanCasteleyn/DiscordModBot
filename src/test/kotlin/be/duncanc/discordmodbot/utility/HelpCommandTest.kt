@@ -12,15 +12,15 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 @ExtendWith(MockitoExtension::class)
-class HelpTest {
+class HelpCommandTest {
     @Mock
     private lateinit var slashEvent: SlashCommandInteractionEvent
 
-    private lateinit var command: Help
+    private lateinit var command: HelpCommand
 
     @BeforeEach
     fun setUp() {
-        command = Help()
+        command = HelpCommand()
     }
 
     @Test

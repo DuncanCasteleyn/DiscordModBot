@@ -8,7 +8,7 @@ import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import org.springframework.stereotype.Component
 
 @Component
-class Ping : ListenerAdapter(), SlashCommand {
+class PingCommand : ListenerAdapter(), SlashCommand {
     companion object {
         private const val COMMAND = "ping"
         private const val DESCRIPTION = "responds with \"pong!\"."

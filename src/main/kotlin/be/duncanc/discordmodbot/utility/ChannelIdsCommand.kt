@@ -14,7 +14,7 @@ import net.dv8tion.jda.api.utils.SplitUtil
 import org.springframework.stereotype.Component
 
 @Component
-class ChannelIds : ListenerAdapter(), SlashCommand {
+class ChannelIdsCommand : ListenerAdapter(), SlashCommand {
     companion object {
         private const val COMMAND = "channelids"
         private const val DESCRIPTION = "Returns all channel ids of the guild where executed."

@@ -13,7 +13,7 @@ import net.dv8tion.jda.api.utils.SplitUtil
 import org.springframework.stereotype.Component
 
 @Component
-class RoleIds : ListenerAdapter(), SlashCommand {
+class RoleIdsCommand : ListenerAdapter(), SlashCommand {
     companion object {
         private const val COMMAND = "roleids"
         private const val DESCRIPTION = "Get all the role ids of the guild where executed."
