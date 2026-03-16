@@ -38,7 +38,7 @@ class WarnPointsListCommand(
             return
         }
 
-        event.deferReply().queue {
+        event.deferReply(true).queue {
             val guildId = guild.idLong
             val allPoints = guildWarnPointsRepository.findAllByGuildIdAndExpireDateAfter(guildId, OffsetDateTime.now())
 
