@@ -38,28 +38,30 @@ class WarnPointsListCommand(
             return
         }
 
-        val guildId = guild.idLong
-        val allPoints = guildWarnPointsRepository.findAllByGuildIdAndExpireDateAfter(guildId, OffsetDateTime.now())
+        event.deferReply().queue {
+            val guildId = guild.idLong
+            val allPoints = guildWarnPointsRepository.findAllByGuildIdAndExpireDateAfter(guildId, OffsetDateTime.now())
 
-        if (allPoints.isEmpty()) {
-            event.reply("No active warn points in this server.").setEphemeral(true).queue()
-            return
+            if (allPoints.isEmpty()) {
+                it.sendMessage("No active warn points in this server.").setEphemeral(true).queue()
+                return@queue
+            }
+
+            val embedBuilder = EmbedBuilder()
+                .setTitle("Active Warn Points in ${guild.name}")
+                .setColor(Color.YELLOW)
+
+            val usersWithPoints = allPoints.groupBy { it.userId }
+
+            usersWithPoints.forEach { (userId, points) ->
+                val totalPoints = points.sumOf { it.points }
+                val member = guild.getMemberById(userId)
+                val userName = member?.nicknameAndUsername ?: "Unknown User (ID: $userId)"
+                embedBuilder.addField(userName, "$totalPoints point(s) (${points.size} warning(s))", true)
+            }
+
+            it.sendMessageEmbeds(embedBuilder.build()).setEphemeral(true).queue()
         }
-
-        val embedBuilder = EmbedBuilder()
-            .setTitle("Active Warn Points in ${guild.name}")
-            .setColor(Color.YELLOW)
-
-        val usersWithPoints = allPoints.groupBy { it.userId }
-
-        usersWithPoints.forEach { (userId, points) ->
-            val totalPoints = points.sumOf { it.points }
-            val member = guild.getMemberById(userId)
-            val userName = member?.nicknameAndUsername ?: "Unknown User (ID: $userId)"
-            embedBuilder.addField(userName, "$totalPoints point(s) (${points.size} warning(s))", true)
-        }
-
-        event.replyEmbeds(embedBuilder.build()).setEphemeral(true).queue()
     }
 
     override fun getCommandsData(): List<SlashCommandData> {
