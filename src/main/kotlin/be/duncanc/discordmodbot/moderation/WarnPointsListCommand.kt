@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.awt.Color
 import java.time.OffsetDateTime
@@ -21,6 +22,7 @@ class WarnPointsListCommand(
     companion object {
         private const val COMMAND = "warnpointslist"
         private const val DESCRIPTION = "Shows all warn points in the server."
+        private val LOG = LoggerFactory.getLogger(WarnPointsListCommand::class.java)
     }
 
     override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
@@ -38,28 +40,37 @@ class WarnPointsListCommand(
             return
         }
 
-        val guildId = guild.idLong
-        val allPoints = guildWarnPointsRepository.findAllByGuildIdAndExpireDateAfter(guildId, OffsetDateTime.now())
+        event.deferReply(true).queue { hook ->
+            try {
+                val guildId = guild.idLong
+                val allPoints =
+                    guildWarnPointsRepository.findAllByGuildIdAndExpireDateAfter(guildId, OffsetDateTime.now())
 
-        if (allPoints.isEmpty()) {
-            event.reply("No active warn points in this server.").setEphemeral(true).queue()
-            return
+                if (allPoints.isEmpty()) {
+                    hook.sendMessage("No active warn points in this server.").setEphemeral(true).queue()
+                    return@queue
+                }
+
+                val embedBuilder = EmbedBuilder()
+                    .setTitle("Active Warn Points in ${guild.name}")
+                    .setColor(Color.YELLOW)
+
+                val usersWithPoints = allPoints.groupBy { it.userId }
+
+                usersWithPoints.forEach { (userId, points) ->
+                    val totalPoints = points.sumOf { it.points }
+                    val member = guild.getMemberById(userId)
+                    val userName = member?.nicknameAndUsername ?: "Unknown User (ID: $userId)"
+                    embedBuilder.addField(userName, "$totalPoints point(s) (${points.size} warning(s))", true)
+                }
+
+                hook.sendMessageEmbeds(embedBuilder.build()).setEphemeral(true).queue()
+            } catch (t: Throwable) {
+                LOG.error("Error processing warn points list", t)
+                hook.sendMessage("Error: ${t.message}")
+                    .setEphemeral(true).queue()
+            }
         }
-
-        val embedBuilder = EmbedBuilder()
-            .setTitle("Active Warn Points in ${guild.name}")
-            .setColor(Color.YELLOW)
-
-        val usersWithPoints = allPoints.groupBy { it.userId }
-
-        usersWithPoints.forEach { (userId, points) ->
-            val totalPoints = points.sumOf { it.points }
-            val member = guild.getMemberById(userId)
-            val userName = member?.nicknameAndUsername ?: "Unknown User (ID: $userId)"
-            embedBuilder.addField(userName, "$totalPoints point(s) (${points.size} warning(s))", true)
-        }
-
-        event.replyEmbeds(embedBuilder.build()).setEphemeral(true).queue()
     }
 
     override fun getCommandsData(): List<SlashCommandData> {
