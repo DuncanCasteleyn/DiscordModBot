@@ -69,7 +69,7 @@ class WarnHistoryCommand(
         val guildId = guild.idLong
         val userId = user.idLong
 
-        event.deferReply().queue { hook ->
+        event.deferReply(true).queue { hook ->
             if (!guildWarnPointsRepository.existsByGuildIdAndUserId(guildId, userId)) {
                 hook.sendMessage(if (moderator) "The user has not received any points." else "You haven't received any points. Good job!")
                     .setEphemeral(true).queue()
@@ -83,7 +83,7 @@ class WarnHistoryCommand(
             )
 
             if (warnings.isEmpty()) {
-                event.reply(if (moderator) "The user has no active points." else "You have no active points. Good job!")
+                hook.sendMessage(if (moderator) "The user has no active points." else "You have no active points. Good job!")
                     .setEphemeral(true).queue()
                 return@queue
             }
