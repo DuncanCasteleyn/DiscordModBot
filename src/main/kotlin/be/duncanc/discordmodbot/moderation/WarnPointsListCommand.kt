@@ -3,16 +3,16 @@ package be.duncanc.discordmodbot.moderation
 import be.duncanc.discordmodbot.discord.SlashCommand
 import be.duncanc.discordmodbot.discord.nicknameAndUsername
 import be.duncanc.discordmodbot.moderation.persistence.GuildWarnPointsRepository
-import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
+import net.dv8tion.jda.api.utils.SplitUtil
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import java.awt.Color
 import java.time.OffsetDateTime
 
 @Component
@@ -51,9 +51,8 @@ class WarnPointsListCommand(
                     return@queue
                 }
 
-                val embedBuilder = EmbedBuilder()
-                    .setTitle("Active Warn Points in ${guild.name}")
-                    .setColor(Color.YELLOW)
+                val content = StringBuilder()
+                    .append("Active Warn Points in ${guild.name}\n\n")
 
                 val usersWithPoints = allPoints.groupBy { it.userId }
 
@@ -61,10 +60,15 @@ class WarnPointsListCommand(
                     val totalPoints = points.sumOf { it.points }
                     val member = guild.getMemberById(userId)
                     val userName = member?.nicknameAndUsername ?: "Unknown User (ID: $userId)"
-                    embedBuilder.addField(userName, "$totalPoints point(s) (${points.size} warning(s))", true)
+                    content.append("$userName: $totalPoints point(s) (${points.size} warning(s))\n")
                 }
 
-                hook.sendMessageEmbeds(embedBuilder.build()).setEphemeral(true).queue()
+                val messages =
+                    SplitUtil.split(content.toString(), Message.MAX_CONTENT_LENGTH, SplitUtil.Strategy.NEWLINE)
+
+                messages.forEach { message ->
+                    hook.sendMessage(message).setEphemeral(true).queue()
+                }
             } catch (t: Throwable) {
                 LOG.error("Error processing warn points list", t)
                 hook.sendMessage("Error: ${t.message}")

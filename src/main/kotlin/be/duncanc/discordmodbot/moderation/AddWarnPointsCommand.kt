@@ -316,7 +316,6 @@ class AddWarnPointsCommand(
                         OptionType.INTEGER,
                         OPTION_ACTION,
                         "Action to perform",
-                        true,
                         true
                     )
                         .addChoice("None", 0L)
