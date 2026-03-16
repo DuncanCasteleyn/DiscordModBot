@@ -15,7 +15,6 @@ import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
-import net.dv8tion.jda.api.utils.SplitUtil
 import org.springframework.stereotype.Component
 import java.awt.Color
 import java.time.OffsetDateTime
@@ -70,73 +69,57 @@ class WarnHistoryCommand(
         val guildId = guild.idLong
         val userId = user.idLong
 
-        if (!guildWarnPointsRepository.existsByGuildIdAndUserId(guildId, userId)) {
-            event.reply(if (moderator) "The user has not received any points." else "You haven't received any points. Good job!")
-                .setEphemeral(true).queue()
-            return
-        }
+        event.deferReply().queue { hook ->
+            if (!guildWarnPointsRepository.existsByGuildIdAndUserId(guildId, userId)) {
+                hook.sendMessage(if (moderator) "The user has not received any points." else "You haven't received any points. Good job!")
+                    .setEphemeral(true).queue()
+                return@queue
+            }
 
-        val warnings = guildWarnPointsRepository.findAllByGuildIdAndUserIdAndExpireDateAfter(
-            guildId,
-            userId,
-            OffsetDateTime.now()
-        )
+            val warnings = guildWarnPointsRepository.findAllByGuildIdAndUserIdAndExpireDateAfter(
+                guildId,
+                userId,
+                OffsetDateTime.now()
+            )
 
-        if (warnings.isEmpty()) {
-            event.reply(if (moderator) "The user has no active points." else "You have no active points. Good job!")
-                .setEphemeral(true).queue()
-            return
-        }
+            if (warnings.isEmpty()) {
+                event.reply(if (moderator) "The user has no active points." else "You have no active points. Good job!")
+                    .setEphemeral(true).queue()
+                return@queue
+            }
 
-        val embeds = mutableListOf<net.dv8tion.jda.api.entities.MessageEmbed>()
-        val targetUser = user.jda.getUserById(userId)
+            val embeds = mutableListOf<net.dv8tion.jda.api.entities.MessageEmbed>()
+            val targetUser = user.jda.getUserById(userId)
 
-        warnings.forEach { warning ->
-            val embedBuilder = EmbedBuilder()
-                .setColor(if (moderator) Color.ORANGE else Color.YELLOW)
-                .setTitle("Warning ${if (moderator) "for ${targetUser?.name ?: "Unknown"}" else ""}")
-                .addField("Points", warning.points.toString(), true)
-                .addField("Moderator", guild.getMemberById(warning.creatorId)?.nicknameAndUsername ?: "Unknown", true)
-                .addField("Created", warning.creationDate.format(messageTimeFormat), true)
-                .addField("Reason", warning.reason, false)
-                .addField("Expires", warning.expireDate.format(messageTimeFormat), true)
+            warnings.forEach { warning ->
+                val embedBuilder = EmbedBuilder()
+                    .setColor(if (moderator) Color.ORANGE else Color.YELLOW)
+                    .setTitle("Warning ${if (moderator) "for ${targetUser?.name ?: "Unknown"}" else ""}")
+                    .addField("Points", warning.points.toString(), true)
+                    .addField(
+                        "Moderator",
+                        guild.getMemberById(warning.creatorId)?.nicknameAndUsername ?: "Unknown",
+                        true
+                    )
+                    .addField("Created", warning.creationDate.format(messageTimeFormat), true)
+                    .addField("Reason", warning.reason, false)
+                    .addField("Expires", warning.expireDate.format(messageTimeFormat), true)
 
-            embeds.add(embedBuilder.build())
-        }
+                embeds.add(embedBuilder.build())
+            }
 
-        if (moderator) {
-            event.reply("The list of points the user collected has been sent in a private message.").setEphemeral(true)
-                .queue()
-            sendDmToUser(event.user, embeds, false)
-        } else {
-            event.reply("Your list of points has been sent in a private message. If you didn't receive any messages, make sure you have enabled DMs from server members.")
-                .setEphemeral(true).queue()
-            sendDmToUser(user, embeds, true)
-        }
-    }
-
-    private fun sendDmToUser(user: User, embeds: List<net.dv8tion.jda.api.entities.MessageEmbed>, simple: Boolean) {
-        user.openPrivateChannel().queue { privateChannel ->
-            if (simple) {
-                val message = StringBuilder("Your warning history:\n\n")
+            if (moderator) {
+                hook.sendMessage("Here is the list of points the user collected:")
+                    .setEphemeral(true)
+                    .queue()
                 embeds.forEach { embed ->
-                    embed.fields.forEach { field ->
-                        if (field.name == "Reason") {
-                            message.append("\nReason: ${field.value}")
-                        }
-                    }
-                }
-                val messages = SplitUtil.split(
-                    message.toString(),
-                    net.dv8tion.jda.api.entities.Message.MAX_CONTENT_LENGTH,
-                    SplitUtil.Strategy.NEWLINE
-                )
-                messages.forEach {
-                    privateChannel.sendMessage(it).queue()
+                    hook.setEphemeral(true).sendMessageEmbeds(embed).queue()
                 }
             } else {
+                hook.sendMessage("Here is your list of points:")
+                    .setEphemeral(true).queue()
                 embeds.forEach { embed ->
-                    privateChannel.sendMessageEmbeds(embed).queue()
+                    hook.setEphemeral(true).sendMessageEmbeds(embed).queue()
                 }
             }
         }
