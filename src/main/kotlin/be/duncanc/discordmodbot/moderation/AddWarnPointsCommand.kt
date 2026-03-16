@@ -309,21 +309,22 @@ class AddWarnPointsCommand(
         return listOf(
             Commands.slash(COMMAND, DESCRIPTION)
                 .addOptions(
-                    OptionData(OptionType.USER, OPTION_USER, "The user to add points to").setRequired(true),
-                    OptionData(OptionType.INTEGER, OPTION_POINTS, "Number of points to add").setRequired(true),
-                    OptionData(OptionType.INTEGER, OPTION_DAYS, "Number of days until points expire").setRequired(true),
+                    OptionData(OptionType.USER, OPTION_USER, "The user to add points to", true),
+                    OptionData(OptionType.INTEGER, OPTION_POINTS, "Number of points to add", true),
+                    OptionData(OptionType.INTEGER, OPTION_DAYS, "Number of days until points expire", true),
                     OptionData(
                         OptionType.INTEGER,
                         OPTION_ACTION,
-                        "Action to perform"
+                        "Action to perform",
+                        true,
+                        true
                     )
                         .addChoice("None", 0L)
                         .addChoice("Mute", 1L)
                         .addChoice("Kick", 2L)
                         .setMinValue(0L)
-                        .setMaxValue(2L)
-                        .setRequired(true),
-                    OptionData(OptionType.STRING, OPTION_REASON, "Reason for the warning").setRequired(true)
+                        .setMaxValue(2L),
+                    OptionData(OptionType.STRING, OPTION_REASON, "Reason for the warning", true)
                 )
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.KICK_MEMBERS))
         )
