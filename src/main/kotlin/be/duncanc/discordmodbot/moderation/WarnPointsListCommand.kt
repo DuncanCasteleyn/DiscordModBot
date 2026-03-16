@@ -67,7 +67,8 @@ class WarnPointsListCommand(
                 hook.sendMessageEmbeds(embedBuilder.build()).setEphemeral(true).queue()
             } catch (t: Throwable) {
                 LOG.error("Error processing warn points list", t)
-                hook.sendMessage("Error: ${t.message}").queue()
+                hook.sendMessage("Error: ${t.message}")
+                    .setEphemeral(true).queue()
             }
         }
     }
