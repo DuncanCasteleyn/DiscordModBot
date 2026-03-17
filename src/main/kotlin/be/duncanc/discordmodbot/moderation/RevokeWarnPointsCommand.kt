@@ -34,32 +34,32 @@ class RevokeWarnPointsCommand(
     override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
         if (event.name != COMMAND) return
 
-        val member = event.member
-        if (member == null) {
+        val moderator = event.member
+        if (moderator == null) {
             event.reply("This command only works in a guild.").setEphemeral(true).queue()
             return
         }
 
-        if (!member.hasPermission(Permission.KICK_MEMBERS)) {
+        if (!moderator.hasPermission(Permission.KICK_MEMBERS)) {
             event.reply("You need kick members permission to revoke warn points.").setEphemeral(true).queue()
             return
         }
 
-        val targetMember = event.getOption(OPTION_USER)?.asMember
-        if (targetMember == null) {
+        val targetUserId = event.getOption(OPTION_USER)?.asLong
+        if (targetUserId == null) {
             event.reply("You need to mention a user.").setEphemeral(true).queue()
             return
         }
 
-        if (!member.canInteract(targetMember)) {
+        val targetMember = event.getOption(OPTION_USER)?.asMember
+        val guild = event.guild ?: return
+        if (targetMember != null && !moderator.canInteract(targetMember)) {
             event.reply("You can't revoke warn points from a user that you can't interact with.").setEphemeral(true)
                 .queue()
             return
         }
 
-        val guild = event.guild ?: return
         val guildId = guild.idLong
-        val userId = targetMember.idLong
         val reason = event.getOption(OPTION_REASON)?.asString ?: "No reason provided"
 
         val warnPointIdStr = event.getOption(OPTION_WARN_POINT_ID)?.asString
@@ -72,7 +72,7 @@ class RevokeWarnPointsCommand(
                 return
             }
 
-            val warnings = guildWarnPointsService.getGuildWarningsFromUser(guildId, userId)
+            val warnings = guildWarnPointsService.getGuildWarningsFromUser(guildId, targetUserId)
             val targetWarning = warnings.find { it.id == warnPointId }
 
             if (targetWarning == null) {
@@ -81,19 +81,19 @@ class RevokeWarnPointsCommand(
             }
 
             guildWarnPointsService.revokePoint(warnPointId)
-            logRevoke(event.jda, guild, targetWarning.points, reason, member)
+            logRevoke(event.jda, guild, targetWarning.points, reason, moderator)
 
-            event.reply("Revoked ${targetWarning.points} warn point(s) from ${targetMember.asMention}. Reason: $reason")
+            event.reply("Revoked ${targetWarning.points} warn point(s) from <@$targetUserId>. Reason: $reason")
                 .setEphemeral(true).queue()
         } else {
-            val warnings = guildWarnPointsService.getActiveWarnings(guildId, userId)
+            val warnings = guildWarnPointsService.getActiveWarnings(guildId, targetUserId)
 
             if (warnings.isEmpty()) {
                 event.reply("This user has no active warn points to revoke.").setEphemeral(true).queue()
                 return
             }
 
-            val selectMenu = StringSelectMenu.create("$COMPONENT_ID-${member.idLong}")
+            val selectMenu = StringSelectMenu.create("$COMPONENT_ID-${moderator.idLong}")
                 .setPlaceholder("Select a warn point to revoke")
 
             warnings.forEach { warning ->
@@ -102,7 +102,7 @@ class RevokeWarnPointsCommand(
             }
 
             val message = MessageCreateBuilder()
-                .setContent("Select a warn point to revoke from ${targetMember.user.name}:")
+                .setContent("Select a warn point to revoke from <@$targetUserId>:")
                 .addComponents(ActionRow.of(selectMenu.build()))
                 .build()
 
