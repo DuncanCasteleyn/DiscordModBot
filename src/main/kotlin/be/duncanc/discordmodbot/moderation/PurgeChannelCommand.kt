@@ -21,40 +21,14 @@ import java.time.OffsetDateTime
 
 @Component
 class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
-    data class ParsedPurgeTargets(
-        val userIds: Set<Long>,
-        val invalidTargets: List<String>
-    )
-
     companion object {
         private const val COMMAND = "purgechannel"
         private const val DESCRIPTION = "Delete recent messages from the current channel."
         private const val SUBCOMMAND_ALL = "all"
         private const val SUBCOMMAND_FILTERED = "filtered"
         private const val OPTION_AMOUNT = "amount"
-        private const val OPTION_TARGETS = "targets"
+        private const val OPTION_TARGET = "target"
         internal const val MAX_PURGE_AMOUNT = 1000
-
-        private val USER_MENTION_REGEX = Regex("<@!?(\\d+)>")
-
-        internal fun parseTargets(rawTargets: String): ParsedPurgeTargets {
-            val validTargets = linkedSetOf<Long>()
-            val invalidTargets = mutableListOf<String>()
-
-            rawTargets.split(Regex("[,\\s]+"))
-                .filter { it.isNotBlank() }
-                .forEach { token ->
-                    val mentionMatch = USER_MENTION_REGEX.matchEntire(token)
-                    val userId = mentionMatch?.groupValues?.get(1)?.toLongOrNull() ?: token.toLongOrNull()
-                    if (userId == null) {
-                        invalidTargets.add(token)
-                    } else {
-                        validTargets.add(userId)
-                    }
-                }
-
-            return ParsedPurgeTargets(validTargets, invalidTargets)
-        }
     }
 
     override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
@@ -94,33 +68,17 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
 
     private fun handleFilteredSubcommand(event: SlashCommandInteractionEvent, guild: Guild, channel: TextChannel) {
         val amount = getValidatedAmount(event) ?: return
-        val targets = event.getOption(OPTION_TARGETS)?.asString
-        if (targets.isNullOrBlank()) {
-            event.reply("Please provide one or more user mentions or IDs in the targets option.").setEphemeral(true)
-                .queue()
-            return
-        }
-
-        val parsedTargets = parseTargets(targets)
-        if (parsedTargets.invalidTargets.isNotEmpty()) {
-            val invalidTargets = parsedTargets.invalidTargets.joinToString(", ")
-            event.reply("Invalid target(s): $invalidTargets. Use user mentions or raw user IDs.").setEphemeral(true)
-                .queue()
-            return
-        }
-
-        if (parsedTargets.userIds.isEmpty()) {
-            event.reply("Please provide at least one valid user mention or ID in the targets option.")
-                .setEphemeral(true).queue()
+        val targetUserId = event.getOption(OPTION_TARGET)?.asLong
+        if (targetUserId == null) {
+            event.reply("Please select a user to delete messages from.").setEphemeral(true).queue()
             return
         }
 
         event.deferReply(true).queue { hook ->
-            val messageIds = collectRecentMessageIds(channel, amount, parsedTargets.userIds)
+            val messageIds = collectRecentMessageIds(channel, amount, targetUserId)
             channel.limitLessBulkDeleteByIds(messageIds)
-            val targetMentions = parsedTargets.userIds.joinToString(", ") { "<@$it>" }
-            hook.editOriginal("Deleted ${messageIds.size} message(s) from $targetMentions.").queue()
-            logPurge(event, guild, channel, parsedTargets.userIds)
+            hook.editOriginal("Deleted ${messageIds.size} message(s) from <@$targetUserId>.").queue()
+            logPurge(event, guild, channel, targetUserId)
         }
     }
 
@@ -147,7 +105,7 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
     private fun collectRecentMessageIds(
         channel: TextChannel,
         amount: Int,
-        targetUserIds: Set<Long> = emptySet()
+        targetUserId: Long? = null
     ): ArrayList<Long> {
         val cutoff = OffsetDateTime.now().minusWeeks(2)
         val messageIds = ArrayList<Long>()
@@ -157,7 +115,7 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
                 break
             }
 
-            if (targetUserIds.isEmpty() || targetUserIds.contains(message.author.idLong)) {
+            if (targetUserId == null || targetUserId == message.author.idLong) {
                 messageIds.add(message.idLong)
             }
 
@@ -173,17 +131,17 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
         event: SlashCommandInteractionEvent,
         guild: Guild,
         channel: TextChannel,
-        targetUserIds: Set<Long>?
+        targetUserId: Long?
     ) {
         val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as? GuildLogger ?: return
         val logEmbed = EmbedBuilder()
             .setColor(Color.YELLOW)
-            .setTitle(if (targetUserIds == null) "Channel purge" else "Filtered channel purge")
+            .setTitle(if (targetUserId == null) "Channel purge" else "Filtered channel purge")
             .addField("Moderator", event.member!!.nicknameAndUsername, true)
             .addField("Channel", channel.name, true)
 
-        if (targetUserIds != null) {
-            logEmbed.addField("Filter", targetUserIds.joinToString("\n") { "<@$it>" }, true)
+        if (targetUserId != null) {
+            logEmbed.addField("Filter", "<@$targetUserId>", true)
         }
 
         guildLogger.log(logEmbed, event.user, guild, null, GuildLogger.LogTypeAction.MODERATOR)
@@ -211,9 +169,9 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
                             true
                         )
                         .addOption(
-                            OptionType.STRING,
-                            OPTION_TARGETS,
-                            "User mentions or IDs separated by spaces or commas",
+                            OptionType.USER,
+                            OPTION_TARGET,
+                            "User to delete messages from",
                             true
                         )
                 )

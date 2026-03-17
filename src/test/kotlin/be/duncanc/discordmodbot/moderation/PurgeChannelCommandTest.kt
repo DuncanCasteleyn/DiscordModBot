@@ -9,8 +9,6 @@ import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.commands.OptionMapping
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -47,9 +45,6 @@ class PurgeChannelCommandTest {
 
     @Mock
     private lateinit var amountOption: OptionMapping
-
-    @Mock
-    private lateinit var targetsOption: OptionMapping
 
     private lateinit var command: PurgeChannelCommand
 
@@ -117,32 +112,15 @@ class PurgeChannelCommandTest {
     }
 
     @Test
-    fun `filtered mode rejects invalid targets`() {
+    fun `filtered mode rejects missing target user`() {
         stubGuildContext(subcommandName = "filtered")
         whenever(slashEvent.getOption("amount")).thenReturn(amountOption)
         whenever(amountOption.asInt).thenReturn(10)
-        whenever(slashEvent.getOption("targets")).thenReturn(targetsOption)
-        whenever(targetsOption.asString).thenReturn("<@123> nope")
+        whenever(slashEvent.getOption("target")).thenReturn(null)
 
         command.onSlashCommandInteraction(slashEvent)
 
-        verify(slashEvent).reply("Invalid target(s): nope. Use user mentions or raw user IDs.")
-    }
-
-    @Test
-    fun `parseTargets accepts mentions ids and deduplicates`() {
-        val parsedTargets = PurgeChannelCommand.parseTargets("<@123>, <@!456> 123 789")
-
-        assertEquals(setOf(123L, 456L, 789L), parsedTargets.userIds)
-        assertTrue(parsedTargets.invalidTargets.isEmpty())
-    }
-
-    @Test
-    fun `parseTargets keeps invalid tokens separate`() {
-        val parsedTargets = PurgeChannelCommand.parseTargets("foo <@bar> 123")
-
-        assertEquals(setOf(123L), parsedTargets.userIds)
-        assertEquals(listOf("foo", "<@bar>"), parsedTargets.invalidTargets)
+        verify(slashEvent).reply("Please select a user to delete messages from.")
     }
 
     private fun stubGuildContext(subcommandName: String) {
