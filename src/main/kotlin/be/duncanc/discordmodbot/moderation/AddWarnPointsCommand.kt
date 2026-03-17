@@ -8,9 +8,13 @@ import be.duncanc.discordmodbot.moderation.persistence.GuildWarnPointsSettings
 import be.duncanc.discordmodbot.moderation.persistence.GuildWarnPointsSettingsRepository
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.components.label.Label
+import net.dv8tion.jda.api.components.textinput.TextInput
+import net.dv8tion.jda.api.components.textinput.TextInputStyle
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.InteractionHook
@@ -19,6 +23,7 @@ import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
+import net.dv8tion.jda.api.modals.Modal
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -39,6 +44,7 @@ class AddWarnPointsCommand(
         private const val OPTION_DAYS = "days"
         private const val OPTION_ACTION = "action"
         private const val OPTION_REASON = "reason"
+        private const val MODAL_ID = "addwarnpoints_reason"
 
         val LOG: Logger = LoggerFactory.getLogger(AddWarnPointsCommand::class.java)
     }
@@ -46,13 +52,13 @@ class AddWarnPointsCommand(
     override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
         if (event.name != COMMAND) return
 
-        val member = event.member
-        if (member == null) {
+        val moderator = event.member
+        if (moderator == null) {
             event.reply("This command only works in a guild.").setEphemeral(true).queue()
             return
         }
 
-        if (!member.hasPermission(Permission.KICK_MEMBERS)) {
+        if (!moderator.hasPermission(Permission.KICK_MEMBERS)) {
             event.reply("You need kick members permission to add warn points.").setEphemeral(true).queue()
             return
         }
@@ -63,7 +69,7 @@ class AddWarnPointsCommand(
             return
         }
 
-        if (member.canInteract(targetMember) != true) {
+        if (moderator.canInteract(targetMember) != true) {
             event.reply("You can't interact with this member.").setEphemeral(true).queue()
             return
         }
@@ -86,7 +92,12 @@ class AddWarnPointsCommand(
             return
         }
 
-        val reason = event.getOption(OPTION_REASON)?.asString ?: "No reason provided"
+        val reason = event.getOption(OPTION_REASON)?.asString
+        if (reason == null) {
+            val modal = createReasonModal(targetMember, points, days, action)
+            event.replyModal(modal).queue()
+            return
+        }
         if (reason.length > 1024) {
             event.reply("Reason must be 1024 characters or less.").setEphemeral(true).queue()
             return
@@ -114,7 +125,93 @@ class AddWarnPointsCommand(
 
         event.deferReply(true).queue { hook ->
             try {
-                processWarnPoints(event, member, targetMember, points, days, action, reason, guildPointsSettings, hook)
+                processWarnPoints(
+                    event.guild!!,
+                    event.jda,
+                    moderator,
+                    targetMember,
+                    points,
+                    days,
+                    action,
+                    reason,
+                    guildPointsSettings,
+                    hook
+                )
+            } catch (t: Throwable) {
+                LOG.error("Error processing warn points", t)
+                hook.editOriginal("Error: ${t.message}").queue()
+            }
+        }
+    }
+
+    override fun onModalInteraction(event: ModalInteractionEvent) {
+        if (!event.modalId.startsWith(MODAL_ID)) return
+
+        val parts = event.modalId.split(":")
+
+        if (parts.size != 5) return
+
+        val targetMember = event.guild?.getMemberById(parts[1]) ?: run {
+            event.reply("User not found.").setEphemeral(true).queue()
+            return
+        }
+
+        val moderator = event.member
+        if (moderator == null) {
+            event.reply("This command only works in a guild.").setEphemeral(true).queue()
+            return
+        }
+
+        if (!moderator.hasPermission(Permission.KICK_MEMBERS)) {
+            event.reply("You need kick members permission to add warn points.").setEphemeral(true).queue()
+            return
+        }
+
+        if (moderator.canInteract(targetMember) != true) {
+            event.reply("You can't interact with this member.").setEphemeral(true).queue()
+            return
+        }
+
+        val points = parts[2].toInt()
+        val days = parts[3].toInt()
+        val action = parts[4].toInt()
+        val reason = event.getValue("reason")?.asString ?: ""
+
+        if (reason.length > 1024) {
+            event.reply("Reason must be 1024 characters or less.").setEphemeral(true).queue()
+            return
+        }
+
+        val guildId = event.guild!!.idLong
+        val guildPointsSettings = guildWarnPointsSettingsRepository.findById(guildId)
+            .orElse(null) ?: GuildWarnPointsSettings(guildId, announceChannelId = -1)
+
+        if (points > guildPointsSettings.maxPointsPerReason) {
+            event.reply("The maximum points per reason is ${guildPointsSettings.maxPointsPerReason}.")
+                .setEphemeral(true).queue()
+            return
+        }
+
+        if (guildPointsSettings.announceChannelId.let { event.jda.getTextChannelById(it) == null }) {
+            event.reply("The announcement channel is not configured. Please contact an administrator.")
+                .setEphemeral(true).queue()
+            return
+        }
+
+        event.deferReply(true).queue { hook ->
+            try {
+                processWarnPoints(
+                    moderator.guild,
+                    event.jda,
+                    moderator,
+                    targetMember,
+                    points,
+                    days,
+                    action,
+                    reason,
+                    guildPointsSettings,
+                    hook
+                )
             } catch (t: Throwable) {
                 LOG.error("Error processing warn points", t)
                 hook.editOriginal("Error: ${t.message}").queue()
@@ -123,7 +220,8 @@ class AddWarnPointsCommand(
     }
 
     private fun processWarnPoints(
-        event: SlashCommandInteractionEvent,
+        guild: net.dv8tion.jda.api.entities.Guild,
+        jda: net.dv8tion.jda.api.JDA,
         moderator: Member,
         targetMember: Member,
         points: Int,
@@ -133,7 +231,6 @@ class AddWarnPointsCommand(
         guildPointsSettings: GuildWarnPointsSettings,
         hook: InteractionHook
     ) {
-        val guild = event.guild!!
         val expireDate = OffsetDateTime.now().plusDays(days.toLong())
 
         val guildWarnPoint = guildWarnPointsService.addWarnPoint(
@@ -150,6 +247,7 @@ class AddWarnPointsCommand(
         performChecks(guildPointsSettings, targetMember.user, guild)
 
         logAddPoints(
+            jda,
             moderator,
             targetMember.user,
             reason,
@@ -214,6 +312,7 @@ class AddWarnPointsCommand(
     }
 
     private fun logAddPoints(
+        jda: net.dv8tion.jda.api.JDA,
         moderator: Member,
         toInform: User,
         reason: String,
@@ -223,7 +322,7 @@ class AddWarnPointsCommand(
         action: Byte,
         guild: net.dv8tion.jda.api.entities.Guild
     ) {
-        val guildLogger = toInform.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
+        val guildLogger = jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
         if (guildLogger != null) {
             val logEmbed = EmbedBuilder()
                 .setColor(Color.YELLOW)
@@ -305,6 +404,19 @@ class AddWarnPointsCommand(
         ).queue()
     }
 
+    private fun createReasonModal(targetMember: Member, points: Int, days: Int, action: Int): Modal {
+        val modalId = "$MODAL_ID:${targetMember.idLong}:$points:$days:$action"
+        val textInput = TextInput.create("reason", TextInputStyle.PARAGRAPH)
+            .setPlaceholder("Enter the reason for this warning...")
+            .setMinLength(1)
+            .setMaxLength(1024)
+            .build()
+
+        return Modal.create(modalId, "Enter Reason")
+            .addComponents(Label.of("Reason", textInput))
+            .build()
+    }
+
     override fun getCommandsData(): List<SlashCommandData> {
         return listOf(
             Commands.slash(COMMAND, DESCRIPTION)
@@ -323,7 +435,7 @@ class AddWarnPointsCommand(
                         .addChoice("Kick", 2L)
                         .setMinValue(0L)
                         .setMaxValue(2L),
-                    OptionData(OptionType.STRING, OPTION_REASON, "Reason for the warning", true)
+                    OptionData(OptionType.STRING, OPTION_REASON, "Reason for the warning", false)
                 )
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.KICK_MEMBERS))
         )
