@@ -148,6 +148,9 @@ class AddWarnPointsCommand(
         if (!event.modalId.startsWith(MODAL_ID)) return
 
         val parts = event.modalId.split(":")
+
+        if (parts.size != 5) return
+
         val targetMember = event.guild?.getMemberById(parts[1]) ?: run {
             event.reply("User not found.").setEphemeral(true).queue()
             return
