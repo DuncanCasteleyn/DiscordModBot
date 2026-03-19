@@ -4,10 +4,8 @@ import be.duncanc.discordmodbot.discord.CommandModule
 import be.duncanc.discordmodbot.discord.MessageSequence
 import be.duncanc.discordmodbot.discord.Sequence
 import be.duncanc.discordmodbot.discord.limitLessBulkDeleteByIds
-import be.duncanc.discordmodbot.logging.GuildLogger
 import be.duncanc.discordmodbot.member.gate.persistence.WelcomeMessage
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.channel.ChannelType
@@ -32,7 +30,7 @@ class MemberGate(
     private val welcomeMessageService: WelcomeMessageService,
     private val reviewManager: MemberGateReviewManager
 ) : CommandModule(
-    arrayOf("gateConfig", "join"),
+    arrayOf("gateConfig"),
     null,
     null,
     ignoreWhitelist = true
@@ -44,6 +42,7 @@ class MemberGate(
 
         private val random = SecureRandom()
     }
+
     /**
      * Check if a user was added to the approved role.
      */
@@ -116,7 +115,7 @@ class MemberGate(
                             (memberGateService.getRuleChannel(event.guild.idLong, event.jda)?.asMention
                                 ?: "rules") +
                             " and answer a question regarding those before you gain full access.\n\n" +
-                            "If you have read the rules and are ready to answer the question, type ``!" + super.aliases[1] + "`` and follow the instructions from the bot.\n\n" +
+                            "If you have read the rules and are ready to answer the question, use the ``/join`` command and follow the instructions from the bot.\n\n" +
                             "Please read the pinned message for more information.\n" +
                             "Never ping moderators unless you have issues which prevent you from completing the entry process."
                 ).queue { message -> message.delete().queueAfter(5, TimeUnit.MINUTES) }
@@ -152,7 +151,7 @@ class MemberGate(
         if (!event.isFromType(ChannelType.TEXT)) {
             throw IllegalStateException("This command cannot be executed outside a text channel.")
         }
-        if (/* !guildMemberGate.isPresent && !command.equals(super.aliases[0], true) || */ event.author.isBot) {
+        if (event.author.isBot) {
             return
         }
 
@@ -160,155 +159,12 @@ class MemberGate(
             super.aliases[0].lowercase(Locale.getDefault()) -> {
                 configure(event)
             }
-
-            super.aliases[1].lowercase(Locale.getDefault()) -> {
-                join(event)
-            }
-        }
-    }
-
-    private fun join(event: MessageReceivedEvent) {
-        val memberRole = memberGateService.getMemberRole(event.guild.idLong, event.jda)
-        val member = event.guild.getMember(event.author)
-        if (memberRole == null || member == null || member.roles.any { it.idLong == memberRole.idLong }) {
-            return
-        }
-
-        if (reviewManager.hasPendingQuestion(event.guild.idLong, member.idLong)) {
-            event.channel.sendMessage("You have already tried answering a question. A moderator now needs to manually review you. Please be patient.")
-                .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
-            return
-        }
-        val questions = memberGateService.getQuestions(event.guild.idLong).toList()
-        if (questions.isEmpty()) {
-            accept(member)
-        } else {
-            event.jda.addEventListener(
-                QuestionSequence(
-                    event.author,
-                    event.channel,
-                    questions[random.nextInt(questions.size)]
-                )
-            )
         }
     }
 
     private fun configure(event: MessageReceivedEvent) {
         if (event.guild.getMember(event.author)?.hasPermission(Permission.MANAGE_ROLES) == true) {
             event.jda.addEventListener(ConfigureSequence(event.author, event.channel))
-        }
-    }
-
-    private fun accept(member: Member) {
-        val guild = member.guild
-        memberGateService.getMemberRole(guild.idLong, member.jda)
-            ?.let { guild.addRoleToMember(member, it).queue() }
-    }
-
-    /**
-     * Starts the manual review procedure.
-     */
-    private fun informMember(member: Member, question: String, answer: String, textChannel: TextChannel) {
-        textChannel.sendMessage(
-            member.asMention + " Please wait while a moderator manually checks your answer. You might be asked (an) other question(s).\n\n" +
-                    "A moderator can use `/review` to start reviewing the queue."
-        ).queue {
-            reviewManager.rememberInformPrompt(member.guild.idLong, member.user.idLong, it.idLong)
-        }
-        reviewManager.savePendingQuestion(member, question, answer)
-    }
-
-    /**
-     * This sequences questions a user.
-     */
-    private inner class QuestionSequence(
-        user: User,
-        channel: MessageChannel,
-        private val question: String
-    ) : Sequence(user, channel, informUser = false), MessageSequence {
-        private var sequenceNumber: Byte = 0
-
-        /**
-         * Asks first question.
-         */
-        init {
-            super.channel.sendMessage("${user.asMention} Have you read the rules? answer with `yes` or `no`")
-                .queue { super.addMessageToCleaner(it) }
-        }
-
-        /**
-         * Logic to check answers
-         */
-        override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
-            if (super.user != event.author || super.channel != event.channel) {
-                return
-            }
-            when (sequenceNumber) {
-                0.toByte() -> {
-                    when (event.message.contentRaw.lowercase(Locale.getDefault())) {
-                        "yes" -> {
-                            super.channel.sendMessage("${user.asMention} Do you accept the rules? Answer with `yes` or `no`")
-                                .queue { super.addMessageToCleaner(it) }
-                            sequenceNumber = 1
-                        }
-
-                        "no" -> {
-                            destroy()
-                            super.channel.sendMessage("${user.asMention} Please read the rules, before using this command.")
-                                .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
-                        }
-
-                        else -> {
-                            super.channel.sendMessage("${user.asMention} Invalid response! Answer with `yes` or `no`!")
-                                .queue { super.addMessageToCleaner(it) }
-                        }
-                    }
-                }
-
-                1.toByte() -> {
-                    when (event.message.contentRaw.lowercase(Locale.getDefault())) {
-                        "yes" -> {
-                            super.channel.sendMessage(user.asMention + " Please answer the following question:\n" + question)
-                                .queue { super.addMessageToCleaner(it) }
-                            sequenceNumber = 2
-                        }
-
-                        "no" -> {
-                            destroy()
-                            val reason = "Doesn't agree with the rules."
-                            event.guild.kick(event.member!!)
-                                .reason(reason)
-                                .queue()
-                            val logToChannel = event.jda.registeredListeners.firstOrNull { it is GuildLogger }
-                            if (logToChannel != null) {
-                                logToChannel as GuildLogger
-                                logToChannel.logKick(
-                                    event.author,
-                                    event.guild,
-                                    event.guild.getMember(event.jda.selfUser),
-                                    reason
-                                )
-                            }
-                        }
-
-                        else -> {
-                            super.channel.sendMessage(user.asMention + " Invalid response! Answer with \"yes\" or \"no\"!")
-                                .queue { super.addMessageToCleaner(it) }
-                        }
-                    }
-                }
-
-                else -> {
-                    destroy()
-                    val member = event.guild.getMemberById(user.idLong)!!
-                    informMember(
-                        member = member,
-                        question = question,
-                        answer = event.message.contentDisplay,
-                        textChannel = event.channel.asTextChannel()
-                    )
-                }
-            }
         }
     }
 
