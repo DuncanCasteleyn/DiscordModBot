@@ -1,17 +1,17 @@
 package be.duncanc.discordmodbot.member.gate
 
-import be.duncanc.discordmodbot.member.gate.persistence.MemberGateReviewPrompt
-import be.duncanc.discordmodbot.member.gate.persistence.MemberGateReviewPromptRepository
+import be.duncanc.discordmodbot.member.gate.persistence.ReviewPrompt
+import be.duncanc.discordmodbot.member.gate.persistence.ReviewPromptRepository
 import org.springframework.stereotype.Component
 
 @Component
-class MemberGateReviewPromptRegistry(
-    private val reviewPromptRepository: MemberGateReviewPromptRepository
+class ReviewPromptRegistry(
+    private val reviewPromptRepository: ReviewPromptRepository
 ) {
     fun remember(guildId: Long, userId: Long, messageId: Long) {
         reviewPromptRepository.save(
-            MemberGateReviewPrompt(
-                id = MemberGateReviewPrompt.createId(guildId, userId),
+            ReviewPrompt(
+                id = ReviewPrompt.createId(guildId, userId),
                 guildId = guildId,
                 userId = userId,
                 messageId = messageId
@@ -20,7 +20,7 @@ class MemberGateReviewPromptRegistry(
     }
 
     fun forget(guildId: Long, userId: Long): Long? {
-        val id = MemberGateReviewPrompt.createId(guildId, userId)
+        val id = ReviewPrompt.createId(guildId, userId)
         val prompt = reviewPromptRepository.findById(id).orElse(null) ?: return null
         reviewPromptRepository.deleteById(id)
         return prompt.messageId

@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit
 class MemberGate(
     private val memberGateService: MemberGateService,
     private val welcomeMessageService: WelcomeMessageService,
-    private val reviewManager: MemberGateReviewManager
+    private val reviewManager: ReviewManager
 ) : CommandModule(
     arrayOf("gateConfig"),
     null,

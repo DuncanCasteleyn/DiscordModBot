@@ -4,7 +4,7 @@ import org.springframework.data.annotation.Id
 import org.springframework.data.redis.core.RedisHash
 
 @RedisHash("memberGateReviewSession", timeToLive = 1800)
-data class MemberGateReviewSessionState(
+data class ReviewSessionState(
     @Id
     val id: String,
     val guildId: Long,

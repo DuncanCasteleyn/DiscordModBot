@@ -1,6 +1,6 @@
 package be.duncanc.discordmodbot.member.gate
 
-class MemberGateReviewSession(
+class ReviewSession(
     pendingUserIds: List<Long>,
     val oldestPendingUserId: Long = pendingUserIds.firstOrNull()
         ?: throw IllegalArgumentException("A review session requires at least one pending user.")

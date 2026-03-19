@@ -1,9 +1,6 @@
 package be.duncanc.discordmodbot.member.gate
 
-import be.duncanc.discordmodbot.member.gate.persistence.GuildMemberGate
-import be.duncanc.discordmodbot.member.gate.persistence.GuildMemberGateRepository
-import be.duncanc.discordmodbot.member.gate.persistence.MemberGateQuestion
-import be.duncanc.discordmodbot.member.gate.persistence.MemberGateQuestionRepository
+import be.duncanc.discordmodbot.member.gate.persistence.*
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Role
@@ -23,7 +20,8 @@ class MemberGateService(
     private val guildMemberGateRepository: GuildMemberGateRepository,
     @Lazy
     private val jda: JDA,
-    private val memberGateQuestionRepository: MemberGateQuestionRepository
+    private val memberGateQuestionRepository: MemberGateQuestionRepository,
+    private val joinModalQuestionRepository: JoinModalQuestionRepository
 ) {
 
     /**
@@ -243,5 +241,31 @@ class MemberGateService(
 
     private fun hasPendingQuestion(guildId: Long, userId: Long): Boolean {
         return memberGateQuestionRepository.findById(MemberGateQuestion.createId(guildId, userId)).isPresent
+    }
+
+    @Transactional
+    fun saveModalQuestion(guildId: Long, userId: Long, question: String) {
+        val modalQuestion = JoinModalQuestion(
+            id = JoinModalQuestion.createId(guildId, userId),
+            guildId = guildId,
+            userId = userId,
+            question = question
+        )
+        joinModalQuestionRepository.save(modalQuestion)
+    }
+
+    @Transactional(readOnly = true)
+    fun getModalQuestion(guildId: Long, userId: Long): String? {
+        return joinModalQuestionRepository
+            .findById(JoinModalQuestion.createId(guildId, userId))
+            .map { it.question }
+            .orElse(null)
+    }
+
+    @Transactional
+    fun deleteModalQuestion(guildId: Long, userId: Long) {
+        joinModalQuestionRepository.deleteById(
+            JoinModalQuestion.createId(guildId, userId)
+        )
     }
 }
