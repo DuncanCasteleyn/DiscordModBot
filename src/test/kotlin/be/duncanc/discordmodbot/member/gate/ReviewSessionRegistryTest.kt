@@ -1,7 +1,7 @@
 package be.duncanc.discordmodbot.member.gate
 
-import be.duncanc.discordmodbot.member.gate.persistence.MemberGateReviewSessionState
-import be.duncanc.discordmodbot.member.gate.persistence.MemberGateReviewSessionStateRepository
+import be.duncanc.discordmodbot.member.gate.persistence.ReviewSessionState
+import be.duncanc.discordmodbot.member.gate.persistence.ReviewSessionStateRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
@@ -15,27 +15,27 @@ import org.mockito.kotlin.whenever
 import java.util.*
 
 @ExtendWith(MockitoExtension::class)
-class MemberGateReviewSessionRegistryTest {
+class ReviewSessionRegistryTest {
     @Mock
-    private lateinit var reviewSessionStateRepository: MemberGateReviewSessionStateRepository
+    private lateinit var reviewSessionStateRepository: ReviewSessionStateRepository
 
-    private lateinit var reviewSessionRegistry: MemberGateReviewSessionRegistry
+    private lateinit var reviewSessionRegistry: ReviewSessionRegistry
 
     @BeforeEach
     fun setUp() {
-        reviewSessionRegistry = MemberGateReviewSessionRegistry(reviewSessionStateRepository)
+        reviewSessionRegistry = ReviewSessionRegistry(reviewSessionStateRepository)
     }
 
     @Test
     fun `remember stores session state in redis repository`() {
-        val session = MemberGateReviewSession(
+        val session = ReviewSession(
             pendingUserIds = listOf(20L, 10L),
             oldestPendingUserId = 10L
         )
 
         reviewSessionRegistry.remember(1L, 99L, session)
 
-        val captor = argumentCaptor<MemberGateReviewSessionState>()
+        val captor = argumentCaptor<ReviewSessionState>()
         verify(reviewSessionStateRepository).save(captor.capture())
         val state = captor.firstValue
         assertEquals("1:99", state.id)
@@ -47,7 +47,7 @@ class MemberGateReviewSessionRegistryTest {
     fun `get recreates session with original oldest applicant`() {
         whenever(reviewSessionStateRepository.findById("1:99")).thenReturn(
             Optional.of(
-                MemberGateReviewSessionState(
+                ReviewSessionState(
                     id = "1:99",
                     guildId = 1L,
                     reviewerId = 99L,
@@ -66,7 +66,7 @@ class MemberGateReviewSessionRegistryTest {
 
     @Test
     fun `remember deletes completed sessions`() {
-        val session = MemberGateReviewSession(listOf(10L))
+        val session = ReviewSession(listOf(10L))
         session.advanceAfterReview()
 
         reviewSessionRegistry.remember(1L, 99L, session)

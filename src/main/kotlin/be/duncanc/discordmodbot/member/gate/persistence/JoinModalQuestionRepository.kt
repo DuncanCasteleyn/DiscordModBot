@@ -4,4 +4,4 @@ import org.springframework.data.keyvalue.repository.KeyValueRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-interface MemberGateReviewPromptRepository : KeyValueRepository<MemberGateReviewPrompt, String>
+interface JoinModalQuestionRepository : KeyValueRepository<JoinModalQuestion, String>

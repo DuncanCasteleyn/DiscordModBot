@@ -20,12 +20,12 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.*
 
 @ExtendWith(MockitoExtension::class)
-class MemberGateReviewCommandTest {
+class ReviewCommandTest {
     @Mock
-    private lateinit var reviewManager: MemberGateReviewManager
+    private lateinit var reviewManager: ReviewManager
 
     @Mock
-    private lateinit var reviewSessionRegistry: MemberGateReviewSessionRegistry
+    private lateinit var reviewSessionRegistry: ReviewSessionRegistry
 
     @Mock
     private lateinit var slashEvent: SlashCommandInteractionEvent
@@ -51,11 +51,11 @@ class MemberGateReviewCommandTest {
     @Mock
     private lateinit var editAction: MessageEditCallbackAction
 
-    private lateinit var command: MemberGateReviewCommand
+    private lateinit var command: ReviewCommand
 
     @BeforeEach
     fun setUp() {
-        command = MemberGateReviewCommand(reviewManager, reviewSessionRegistry)
+        command = ReviewCommand(reviewManager, reviewSessionRegistry)
     }
 
     private fun pendingQuestion(guildId: Long, userId: Long, question: String, answer: String, queuedAt: Long): MemberGateQuestion {
@@ -132,7 +132,7 @@ class MemberGateReviewCommandTest {
         stubApproveButtonInteraction()
         stubButtonEditWithActionRow()
 
-        val session = MemberGateReviewSession(listOf(10L, 20L))
+        val session = ReviewSession(listOf(10L, 20L))
         whenever(reviewManager.createSession(1L)).thenReturn(session)
         whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(session)
         whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(
@@ -161,7 +161,7 @@ class MemberGateReviewCommandTest {
         stubApproveButtonInteraction()
         stubButtonEditWithList()
 
-        val session = MemberGateReviewSession(listOf(10L))
+        val session = ReviewSession(listOf(10L))
         whenever(reviewManager.createSession(1L)).thenReturn(session)
         whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(session)
         whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(
@@ -198,7 +198,7 @@ class MemberGateReviewCommandTest {
         stubLegacySkipButtonInteraction()
         stubButtonReply()
 
-        whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(MemberGateReviewSession(listOf(10L)))
+        whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(ReviewSession(listOf(10L)))
 
         command.onButtonInteraction(buttonEvent)
 
@@ -214,7 +214,7 @@ class MemberGateReviewCommandTest {
         whenever(buttonEvent.member).thenReturn(member)
         whenever(buttonEvent.user).thenReturn(user)
 
-        whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(MemberGateReviewSession(listOf(20L, 30L)))
+        whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(ReviewSession(listOf(20L, 30L)))
 
         command.onButtonInteraction(buttonEvent)
 
@@ -227,7 +227,7 @@ class MemberGateReviewCommandTest {
         stubButtonReply()
         stubApproveButtonInteractionWithoutJda()
 
-        whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(MemberGateReviewSession(listOf(10L)))
+        whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(ReviewSession(listOf(10L)))
         whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(
             pendingQuestion(guildId = 1L, userId = 10L, question = "Q2", answer = "A2", queuedAt = 20L)
         )

@@ -13,6 +13,6 @@ data class GuildMemberGate(
     val removeTimeHours: Long? = null,
     val reminderTimeHours: Long? = null,
     @ElementCollection(fetch = FetchType.EAGER)
-    @Column(name = "question")
+    @Column(name = "question", length = 100)
     val questions: MutableSet<String> = HashSet()
 )

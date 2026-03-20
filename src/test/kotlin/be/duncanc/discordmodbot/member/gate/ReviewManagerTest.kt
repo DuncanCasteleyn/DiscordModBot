@@ -21,7 +21,7 @@ import org.mockito.kotlin.*
 import java.util.*
 
 @ExtendWith(MockitoExtension::class)
-class MemberGateReviewManagerTest {
+class ReviewManagerTest {
     @Mock
     private lateinit var memberGateQuestionRepository: MemberGateQuestionRepository
 
@@ -29,7 +29,7 @@ class MemberGateReviewManagerTest {
     private lateinit var memberGateService: MemberGateService
 
     @Mock
-    private lateinit var promptRegistry: MemberGateReviewPromptRegistry
+    private lateinit var promptRegistry: ReviewPromptRegistry
 
     @Mock
     private lateinit var guild: Guild
@@ -58,11 +58,11 @@ class MemberGateReviewManagerTest {
     @Mock
     private lateinit var messageCreateAction: MessageCreateAction
 
-    private lateinit var reviewManager: MemberGateReviewManager
+    private lateinit var reviewManager: ReviewManager
 
     @BeforeEach
     fun setUp() {
-        reviewManager = MemberGateReviewManager(memberGateQuestionRepository, memberGateService, promptRegistry)
+        reviewManager = ReviewManager(memberGateQuestionRepository, memberGateService, promptRegistry)
     }
 
     private fun pendingQuestion(guildId: Long, userId: Long, queuedAt: Long, question: String, answer: String): MemberGateQuestion {
@@ -172,7 +172,7 @@ class MemberGateReviewManagerTest {
 
         val result = reviewManager.reject(guild, jda, 10L)
 
-        assertEquals("Rejected <@10>. They can use `!join` to try again.", result)
+        assertEquals("Rejected <@10>. They can use `/join` to try again.", result)
         verify(gateChannel).sendMessage(any<String>())
         verify(messageCreateAction).queue(any())
         verify(memberGateQuestionRepository).deleteById(MemberGateQuestion.createId(1L, 10L))

@@ -1,14 +1,14 @@
 package be.duncanc.discordmodbot.member.gate
 
-import be.duncanc.discordmodbot.member.gate.persistence.MemberGateReviewSessionState
-import be.duncanc.discordmodbot.member.gate.persistence.MemberGateReviewSessionStateRepository
+import be.duncanc.discordmodbot.member.gate.persistence.ReviewSessionState
+import be.duncanc.discordmodbot.member.gate.persistence.ReviewSessionStateRepository
 import org.springframework.stereotype.Component
 
 @Component
-class MemberGateReviewSessionRegistry(
-    private val reviewSessionStateRepository: MemberGateReviewSessionStateRepository
+class ReviewSessionRegistry(
+    private val reviewSessionStateRepository: ReviewSessionStateRepository
 ) {
-    fun remember(guildId: Long, reviewerId: Long, session: MemberGateReviewSession) {
+    fun remember(guildId: Long, reviewerId: Long, session: ReviewSession) {
         val pendingUserIds = session.toPendingUserIds()
         if (pendingUserIds.isEmpty()) {
             forget(guildId, reviewerId)
@@ -16,7 +16,7 @@ class MemberGateReviewSessionRegistry(
         }
 
         reviewSessionStateRepository.save(
-            MemberGateReviewSessionState(
+            ReviewSessionState(
                 id = createId(guildId, reviewerId),
                 guildId = guildId,
                 reviewerId = reviewerId,
@@ -26,7 +26,7 @@ class MemberGateReviewSessionRegistry(
         )
     }
 
-    fun get(guildId: Long, reviewerId: Long): MemberGateReviewSession? {
+    fun get(guildId: Long, reviewerId: Long): ReviewSession? {
         val id = createId(guildId, reviewerId)
         val state = reviewSessionStateRepository.findById(id).orElse(null) ?: return null
         if (state.pendingUserIds.isEmpty()) {
@@ -43,8 +43,8 @@ class MemberGateReviewSessionRegistry(
 
     private fun createId(guildId: Long, reviewerId: Long): String = "$guildId:$reviewerId"
 
-    private fun MemberGateReviewSessionState.toSession(): MemberGateReviewSession {
-        return MemberGateReviewSession(
+    private fun ReviewSessionState.toSession(): ReviewSession {
+        return ReviewSession(
             pendingUserIds = pendingUserIds,
             oldestPendingUserId = oldestPendingUserId
         )

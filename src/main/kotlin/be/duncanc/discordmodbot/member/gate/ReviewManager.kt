@@ -10,13 +10,13 @@ import org.springframework.transaction.annotation.Transactional
 import java.util.concurrent.TimeUnit
 
 @Component
-class MemberGateReviewManager(
+class ReviewManager(
     private val memberGateQuestionRepository: MemberGateQuestionRepository,
     private val memberGateService: MemberGateService,
-    private val promptRegistry: MemberGateReviewPromptRegistry
+    private val promptRegistry: ReviewPromptRegistry
 ) {
     @Transactional(readOnly = true)
-    fun createSession(guildId: Long): MemberGateReviewSession? {
+    fun createSession(guildId: Long): ReviewSession? {
         val storedQuestions = memberGateQuestionRepository.findAll()
 
         val pendingUserIds = storedQuestions
@@ -27,7 +27,7 @@ class MemberGateReviewManager(
             .map { it.userId }
             .toList()
 
-        return pendingUserIds.takeIf { it.isNotEmpty() }?.let(::MemberGateReviewSession)
+        return pendingUserIds.takeIf { it.isNotEmpty() }?.let(::ReviewSession)
     }
 
     @Transactional(readOnly = true)
@@ -92,7 +92,7 @@ class MemberGateReviewManager(
         val gateChannel = memberGateService.getGateChannel(guild.idLong, jda)
         if (member != null && !manualAction) {
             gateChannel?.sendMessage(
-                "Your answer was incorrect ${member.user.asMention}. You can use the `!join` command to try again."
+                "Your answer was incorrect ${member.user.asMention}. You can use the `/join` command to try again."
             )?.queue { it.delete().queueAfter(1, TimeUnit.HOURS) }
         }
 
@@ -100,7 +100,7 @@ class MemberGateReviewManager(
         return when {
             member == null -> "The user already left; no further action is needed."
             manualAction -> "Marked ${member.user.asMention} for manual action and removed them from the review queue."
-            else -> "Rejected ${member.user.asMention}. They can use `!join` to try again."
+            else -> "Rejected ${member.user.asMention}. They can use `/join` to try again."
         }
     }
 

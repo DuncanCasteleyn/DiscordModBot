@@ -4,4 +4,4 @@ import org.springframework.data.keyvalue.repository.KeyValueRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-interface MemberGateReviewSessionStateRepository : KeyValueRepository<MemberGateReviewSessionState, String>
+interface ReviewPromptRepository : KeyValueRepository<ReviewPrompt, String>

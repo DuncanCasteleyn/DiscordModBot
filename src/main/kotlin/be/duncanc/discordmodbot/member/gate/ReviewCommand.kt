@@ -17,9 +17,9 @@ import net.dv8tion.jda.api.utils.MarkdownUtil
 import org.springframework.stereotype.Component
 
 @Component
-class MemberGateReviewCommand(
-    private val reviewManager: MemberGateReviewManager,
-    private val reviewSessionRegistry: MemberGateReviewSessionRegistry
+class ReviewCommand(
+    private val reviewManager: ReviewManager,
+    private val reviewSessionRegistry: ReviewSessionRegistry
 ) : ListenerAdapter(), SlashCommand {
     companion object {
         private const val COMMAND = "review"
@@ -178,7 +178,7 @@ class MemberGateReviewCommand(
         return ReviewButtonAction(segments[0], expectedUserId, expectedQueuedAt)
     }
 
-    private fun resolveCurrentQuestion(guildId: Long, session: MemberGateReviewSession): MemberGateQuestion? {
+    private fun resolveCurrentQuestion(guildId: Long, session: ReviewSession): MemberGateQuestion? {
         while (true) {
             val currentUserId = session.getCurrentUserId() ?: return null
             val question = reviewManager.getPendingQuestion(guildId, currentUserId)
@@ -192,7 +192,7 @@ class MemberGateReviewCommand(
 
     private fun buildReviewMessage(
         guild: Guild,
-        session: MemberGateReviewSession,
+        session: ReviewSession,
         question: MemberGateQuestion,
         feedback: String? = null
     ): String {
