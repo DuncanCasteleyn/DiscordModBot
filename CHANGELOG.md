@@ -1,5 +1,25 @@
 # Changelog
 
+## [2.2.3](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.2.2...v2.2.3) (2026-03-20)
+
+
+### Bug Fixes
+
+* add choices to action options in add warn points command ([3be80aa](https://github.com/DuncanCasteleyn/DiscordModBot/commit/3be80aa603a570bebf3aed9b3fc593fa4af9311a))
+* **addwarnpoints:** Improve experience for entering a reason ([#527](https://github.com/DuncanCasteleyn/DiscordModBot/issues/527)) ([52d0e1f](https://github.com/DuncanCasteleyn/DiscordModBot/commit/52d0e1f3621007203b9ecd3b2facb8fd81617539))
+* **addwarnpoints:** minor improvements to option data ([0de9d93](https://github.com/DuncanCasteleyn/DiscordModBot/commit/0de9d936659200a7874ee61b890e23a056b91757))
+* **deps:** update dependency org.mockito.kotlin:mockito-kotlin to v6.3.0 ([#539](https://github.com/DuncanCasteleyn/DiscordModBot/issues/539)) ([8d8c2ca](https://github.com/DuncanCasteleyn/DiscordModBot/commit/8d8c2cabe16008bcf14a40fa1242f50bf174c3d3))
+* **deps:** update dependency org.springframework.modulith:spring-modulith-bom to v2.0.4 ([#536](https://github.com/DuncanCasteleyn/DiscordModBot/issues/536)) ([1178c78](https://github.com/DuncanCasteleyn/DiscordModBot/commit/1178c78a2e8e6a4115fcd7b9fc7d7835765351ab))
+* **deps:** update kotlin monorepo to v2.3.20 (patch) ([#528](https://github.com/DuncanCasteleyn/DiscordModBot/issues/528)) ([16b0030](https://github.com/DuncanCasteleyn/DiscordModBot/commit/16b00308d22cad1fdb9f3355cf548f4dfd10bdd3))
+* **deps:** update plugin org.springframework.boot to v4.0.4 ([#538](https://github.com/DuncanCasteleyn/DiscordModBot/issues/538)) ([168e8b9](https://github.com/DuncanCasteleyn/DiscordModBot/commit/168e8b9a9f970fee7fb32767220778b4ff898cbb))
+* eagerly fetch ignoredChannels in LoggingSettings ([e565a15](https://github.com/DuncanCasteleyn/DiscordModBot/commit/e565a157702eb02169ce7f4d5034000613a99bb5))
+* eagerly fetch questions in GuildMemberGate ([76778bb](https://github.com/DuncanCasteleyn/DiscordModBot/commit/76778bbb98e94dafd5a8e1fd6419b2d4d405130d))
+* **join:** Migrate to slash command ([#537](https://github.com/DuncanCasteleyn/DiscordModBot/issues/537)) ([3c9df4a](https://github.com/DuncanCasteleyn/DiscordModBot/commit/3c9df4ac9c0c0263c4f612c6fa7187d55bee0fc8))
+* **purgechannel:** Use user mention option and only allow one target user ([#530](https://github.com/DuncanCasteleyn/DiscordModBot/issues/530)) ([eff9cef](https://github.com/DuncanCasteleyn/DiscordModBot/commit/eff9cefda855c06985c56b16accbd742c55e93b3))
+* **revokeWarnPoints:** should work even when the user has left the server ([80c1b24](https://github.com/DuncanCasteleyn/DiscordModBot/commit/80c1b24601a568296b663f16e65add23fb072005))
+* **warnhistory:** send messages through interaction hook ([#526](https://github.com/DuncanCasteleyn/DiscordModBot/issues/526)) ([59a0a76](https://github.com/DuncanCasteleyn/DiscordModBot/commit/59a0a7678474e6231fae2b092e9cddc58c57cbaf))
+* **warnpointslist:** deferReply ([#525](https://github.com/DuncanCasteleyn/DiscordModBot/issues/525)) ([49e4460](https://github.com/DuncanCasteleyn/DiscordModBot/commit/49e4460d48593f60e062f2b039103df1f7e0fc0c))
+
 ## [2.2.2](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.2.1...v2.2.2) (2026-03-15)
 
 
