@@ -1,34 +1,57 @@
 package be.duncanc.discordmodbot.server.config
 
-import be.duncanc.discordmodbot.discord.CommandModule
+import be.duncanc.discordmodbot.discord.SlashCommand
 import be.duncanc.discordmodbot.server.config.persistence.ChannelOrderLock
 import be.duncanc.discordmodbot.server.config.persistence.ChannelOrderLockRepository
-
-
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.hooks.ListenerAdapter
+import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions
+import net.dv8tion.jda.api.interactions.commands.build.Commands
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
-import java.util.concurrent.TimeUnit
 
 @Component
 class ToggleChannelOrderLock(
     val channelOrderLockRepository: ChannelOrderLockRepository
-) : CommandModule(
-    arrayOf("ToggleChannelOrderLock"),
-    null,
-    "Enables/disables channel order locking for the guild",
-    requiredPermissions = arrayOf(Permission.MANAGE_CHANNEL)
-) {
+) : ListenerAdapter(), SlashCommand {
+
+    companion object {
+        private const val COMMAND = "togglechannelorderlock"
+        private const val DESCRIPTION = "Enables or disables channel order locking for this server."
+    }
+
     @Transactional
-    override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-        val guildId = event.guild.idLong
+    override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
+        if (event.name != COMMAND) return
+
+        val member = event.member
+        if (member == null) {
+            event.reply("This command only works in a guild.").setEphemeral(true).queue()
+            return
+        }
+
+        if (!member.hasPermission(Permission.MANAGE_CHANNEL)) {
+            event.reply("You need manage channel permission to use this command.").setEphemeral(true).queue()
+            return
+        }
+
+        val guildId = member.guild.idLong
         val channelOrderLock = channelOrderLockRepository.findById(guildId)
-            .orElse(ChannelOrderLock(guildId))
-        val reverseChannelOrderLock = channelOrderLock.copy(enabled = !channelOrderLock.enabled)
-        channelOrderLockRepository.save(reverseChannelOrderLock)
-        val lockingStatusText = if (reverseChannelOrderLock.enabled) "enabled" else "disabled"
-        event.channel.sendMessage("Channel order locking is now $lockingStatusText.")
-            .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
+            .orElse(null) ?: ChannelOrderLock(guildId)
+
+        val updatedChannelOrderLock = channelOrderLock.copy(enabled = !channelOrderLock.enabled)
+
+        channelOrderLockRepository.save(updatedChannelOrderLock)
+        val statusText = if (updatedChannelOrderLock.enabled) "enabled" else "disabled"
+        event.reply("Channel order locking is now $statusText.").setEphemeral(true).queue()
+    }
+
+    override fun getCommandsData(): List<SlashCommandData> {
+        return listOf(
+            Commands.slash(COMMAND, DESCRIPTION)
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_CHANNEL))
+        )
     }
 }
