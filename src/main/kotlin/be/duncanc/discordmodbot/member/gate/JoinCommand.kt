@@ -159,7 +159,8 @@ class JoinCommand(
                     "Rules",
                     "You can close this modal and execute /join again to get the same question (within 10 minutes)",
                     rulesMenu
-                ), Label.of("Please answer the question bellow", question, textInput)
+                ),
+                Label.of("Please answer the question below", question, textInput)
             )
             .build()
     }
