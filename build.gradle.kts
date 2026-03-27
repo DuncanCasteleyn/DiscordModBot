@@ -21,41 +21,41 @@ val springModulithVersion: String by project
 
 val mockitoAgent = configurations.create("mockitoAgent")
 dependencies {
-    annotationProcessor(group = "org.springframework.boot", name = "spring-boot-configuration-processor")
+    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 
     implementation(kotlin("stdlib"))
     implementation(kotlin("reflect"))
     implementation(kotlin("test"))
 
-    implementation(group = "org.springframework.boot", name = "spring-boot-starter-data-jpa")
-    implementation(group = "org.springframework.boot", name = "spring-boot-starter-validation")
-    implementation(group = "org.springframework.boot", name = "spring-boot-starter-data-redis")
-    implementation(group = "org.springframework.boot", name = "spring-boot-starter-flyway")
-    implementation(group = "org.flywaydb", name = "flyway-mysql")
-    implementation(group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin")
-    implementation(group = "net.dv8tion", name = "JDA", version = jdaVersion) {
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.springframework.boot:spring-boot-starter-data-redis")
+    implementation("org.springframework.boot:spring-boot-starter-flyway")
+    implementation("org.flywaydb:flyway-mysql")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("net.dv8tion:JDA:$jdaVersion") {
         exclude(group = "club.minnced", module = "opus-java")
     }
-    implementation(group = "org.apache.commons", name = "commons-collections4", version = commonsCollections4Version)
-    implementation(group = "org.json", name = "json", version = orgJSONVersion)
+    implementation("org.apache.commons:commons-collections4:$commonsCollections4Version")
+    implementation("org.json:json:$orgJSONVersion")
 
-    implementation(group = "org.springframework.modulith", name = "spring-modulith-starter-core")
+    implementation("org.springframework.modulith:spring-modulith-starter-core")
 
-    compileOnly(group = "org.jetbrains", name = "annotations", version = jetbrainsAnnotationsVersion)
+    compileOnly("org.jetbrains:annotations:$jetbrainsAnnotationsVersion")
 
-    runtimeOnly(group = "com.h2database", name = "h2")
-    runtimeOnly(group = "org.mariadb.jdbc", name = "mariadb-java-client")
+    runtimeOnly("com.h2database:h2")
+    runtimeOnly("org.mariadb.jdbc:mariadb-java-client")
 
-    testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-test")
-    testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-data-jpa-test")
-    testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-data-redis-test")
-    testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-flyway-test")
-    testImplementation(group = "org.springframework.boot", name = "spring-boot-starter-data-redis-test")
-    testImplementation(group = "org.mockito.kotlin", name = "mockito-kotlin", version = mockitoKotlinVersion)
-    testImplementation(group = "org.springframework.modulith", name = "spring-modulith-starter-test")
-    testImplementation(group = "org.jetbrains.kotlin", name = "kotlin-test-junit5")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-data-redis-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-flyway-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-data-redis-test")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion")
+    testImplementation("org.springframework.modulith:spring-modulith-starter-test")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 
-    testRuntimeOnly(group = "org.junit.platform", name = "junit-platform-launcher")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     developmentOnly("org.springframework.boot:spring-boot-docker-compose")
 
