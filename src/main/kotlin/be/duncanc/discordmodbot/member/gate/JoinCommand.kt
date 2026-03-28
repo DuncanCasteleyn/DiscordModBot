@@ -107,7 +107,10 @@ class JoinCommand(
 
         val answer = event.getValue(TEXT_ANSWER_ID)?.asString ?: ""
         val question =
-            event.getValue(QUESTION_ID)?.asString ?: memberGateService.getModalQuestion(guildId, member.idLong)
+            event.getValue(QUESTION_ID)?.asStringList?.getOrNull(0) ?: memberGateService.getModalQuestion(
+                guildId,
+                member.idLong
+            )
 
         if (question == null) {
             event.reply("You took too long to answer the question. Please try again.").setEphemeral(true).queue()
