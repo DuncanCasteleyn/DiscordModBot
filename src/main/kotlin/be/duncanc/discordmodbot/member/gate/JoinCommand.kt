@@ -3,6 +3,7 @@ package be.duncanc.discordmodbot.member.gate
 import be.duncanc.discordmodbot.discord.SlashCommand
 import be.duncanc.discordmodbot.logging.GuildLogger
 import net.dv8tion.jda.api.components.label.Label
+import net.dv8tion.jda.api.components.selections.SelectOption
 import net.dv8tion.jda.api.components.selections.StringSelectMenu
 import net.dv8tion.jda.api.components.textinput.TextInput
 import net.dv8tion.jda.api.components.textinput.TextInputStyle
@@ -19,6 +20,13 @@ import org.springframework.stereotype.Component
 import java.security.SecureRandom
 
 
+private const val QUESTION_ID = "question"
+private const val COMMAND = "join"
+private const val DESCRIPTION = "Complete the entry process to gain access to the server."
+private const val MODAL_ID = "join-modal"
+private const val RULES_ANSWER_ID = "rules-answer"
+private const val TEXT_ANSWER_ID = "join-answer"
+
 @Component
 class JoinCommand(
     private val memberGateService: MemberGateService,
@@ -27,12 +35,6 @@ class JoinCommand(
 ) : ListenerAdapter(), SlashCommand {
 
     companion object {
-        private const val COMMAND = "join"
-        private const val DESCRIPTION = "Complete the entry process to gain access to the server."
-        private const val MODAL_ID = "join-modal"
-        private const val RULES_ANSWER_ID = "rules-answer"
-        private const val TEXT_ANSWER_ID = "join-answer"
-
         private val random = SecureRandom()
     }
 
@@ -104,7 +106,11 @@ class JoinCommand(
         val guildId = member.guild.idLong
 
         val answer = event.getValue(TEXT_ANSWER_ID)?.asString ?: ""
-        val question = memberGateService.getModalQuestion(guildId, member.idLong)
+        val question =
+            event.getValue(QUESTION_ID)?.asStringList?.getOrNull(0) ?: memberGateService.getModalQuestion(
+                guildId,
+                member.idLong
+            )
 
         if (question == null) {
             event.reply("You took too long to answer the question. Please try again.").setEphemeral(true).queue()
@@ -142,9 +148,15 @@ class JoinCommand(
     private fun createAnswerModal(question: String): Modal {
         val rulesMenu = StringSelectMenu.create(RULES_ANSWER_ID)
             .setPlaceholder("Have you read the rules and agree to them?")
-            .setRequiredRange(1, 1)
             .addOption("Yes", "agree-rules", "You agree to the rules", Emoji.fromUnicode("✅"))
             .addOption("No", "kick-me", "Disagree and get removed from the server", Emoji.fromUnicode("❌"))
+            .build()
+
+        val questionOption = SelectOption.of(question, question)
+
+        val questionMenu = StringSelectMenu.create(QUESTION_ID)
+            .addOptions(questionOption)
+            .setDefaultOptions(questionOption)
             .build()
 
         val textInput = TextInput.create(TEXT_ANSWER_ID, TextInputStyle.PARAGRAPH)
@@ -160,7 +172,8 @@ class JoinCommand(
                     "You can close this modal and execute /join again to get the same question (within 10 minutes)",
                     rulesMenu
                 ),
-                Label.of("Please answer the question below", question, textInput)
+                Label.of("Question", questionMenu),
+                Label.of("Please answer the question above", textInput)
             )
             .build()
     }
