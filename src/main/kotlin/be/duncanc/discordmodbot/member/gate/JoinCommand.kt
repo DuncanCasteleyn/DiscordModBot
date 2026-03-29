@@ -155,6 +155,7 @@ class JoinCommand(
         val questionOption = SelectOption.of(question, question)
 
         val questionMenu = StringSelectMenu.create(QUESTION_ID)
+            .setPlaceholder("If you don't see a question, click on this menu and select the question to continue")
             .addOptions(questionOption)
             .setDefaultOptions(questionOption)
             .build()
