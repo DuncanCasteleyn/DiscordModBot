@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.2.6](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.2.5...v2.2.6) (2026-03-29)
+
+
+### Bug Fixes
+
+* **gateconfig:** Migrate to slash commands ([#552](https://github.com/DuncanCasteleyn/DiscordModBot/issues/552)) ([2e82b5d](https://github.com/DuncanCasteleyn/DiscordModBot/commit/2e82b5d23ce7c40381c6c07f0eb535f5b517c47c))
+* **ToggleChannelOrderLock:** Migrate to slash command ([#551](https://github.com/DuncanCasteleyn/DiscordModBot/issues/551)) ([ffb8b26](https://github.com/DuncanCasteleyn/DiscordModBot/commit/ffb8b26c3e39eb060456cbc29fdf48397ff782a9))
+
 ## [2.2.5](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.2.4...v2.2.5) (2026-03-29)
 
 
