@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.2.5](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.2.4...v2.2.5) (2026-03-29)
+
+
+### Bug Fixes
+
+* **deps:** update dependency net.dv8tion:jda to v6.4.0 ([#548](https://github.com/DuncanCasteleyn/DiscordModBot/issues/548)) ([580ee17](https://github.com/DuncanCasteleyn/DiscordModBot/commit/580ee17f14b48969288d2d8a4db964f8c2da431c))
+* **join:** Add placeholder as hint when the defaultOptions fail on the discord client ([bc50cbf](https://github.com/DuncanCasteleyn/DiscordModBot/commit/bc50cbf30c27ac40e8151f392e17be3956272931))
+* **join:** Add the question to the description for mobile users ([3def5d4](https://github.com/DuncanCasteleyn/DiscordModBot/commit/3def5d4e887e8f483cb39f16877d385940f22bab))
+
 ## [2.2.4](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.2.3...v2.2.4) (2026-03-28)
 
 
