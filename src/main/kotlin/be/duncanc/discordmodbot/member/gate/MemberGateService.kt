@@ -153,18 +153,24 @@ class MemberGateService(
 
     @Transactional
     fun setPurgeTime(guildId: Long, purgeTime: Long?) {
-        val guildMemberGate: GuildMemberGate? = guildMemberGateRepository.findById(guildId).orElse(null)
-        if (guildMemberGate != null) {
-            guildMemberGateRepository.save(guildMemberGate.copy(removeTimeHours = purgeTime))
-        }
+        val guildMemberGate = guildMemberGateRepository.findById(guildId).orElse(null) ?: GuildMemberGate(guildId)
+
+        guildMemberGateRepository.save(guildMemberGate.copy(removeTimeHours = purgeTime))
+    }
+
+    fun getPurgeTime(guildId: Long): Long? {
+        return guildMemberGateRepository.findById(guildId).orElse(null)?.removeTimeHours
     }
 
     @Transactional
     fun setReminderTime(guildId: Long, reminderTimeHours: Long?) {
-        val guildMemberGate: GuildMemberGate? = guildMemberGateRepository.findById(guildId).orElse(null)
-        if (guildMemberGate != null) {
-            guildMemberGateRepository.save(guildMemberGate.copy(reminderTimeHours = reminderTimeHours))
-        }
+        val guildMemberGate = guildMemberGateRepository.findById(guildId).orElse(null) ?: GuildMemberGate(guildId)
+
+        guildMemberGateRepository.save(guildMemberGate.copy(reminderTimeHours = reminderTimeHours))
+    }
+
+    fun getReminderTime(guildId: Long): Long? {
+        return guildMemberGateRepository.findById(guildId).orElse(null)?.reminderTimeHours
     }
 
     @Transactional(readOnly = true)
