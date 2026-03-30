@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.util.concurrent.TimeUnit
 
+@Deprecated("No longer needed after migration to slash commands.")
 @Component
 class CommandTextChannelsWhitelist
 @Autowired constructor(

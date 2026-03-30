@@ -1,15 +1,11 @@
 package be.duncanc.discordmodbot.logging
 
-import be.duncanc.discordmodbot.discord.CommandModule
-import be.duncanc.discordmodbot.discord.MessageSequence
-import be.duncanc.discordmodbot.discord.Sequence
 import be.duncanc.discordmodbot.discord.nicknameAndUsername
 import be.duncanc.discordmodbot.logging.persistence.DiscordMessage
 import be.duncanc.discordmodbot.logging.persistence.LoggingSettings
 import be.duncanc.discordmodbot.logging.persistence.LoggingSettingsRepository
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
-import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.audit.ActionType
 import net.dv8tion.jda.api.audit.AuditLogEntry
 import net.dv8tion.jda.api.audit.AuditLogOption
@@ -18,9 +14,7 @@ import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
-import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.events.guild.GuildBanEvent
-import net.dv8tion.jda.api.events.guild.GuildLeaveEvent
 import net.dv8tion.jda.api.events.guild.GuildUnbanEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent
@@ -577,119 +571,6 @@ class GuildLogger
 
     enum class LogTypeAction {
         MODERATOR, USER
-    }
-
-    @Component
-    class LogSettings
-    @Autowired constructor(
-        private val loggingSettingsRepository: LoggingSettingsRepository
-    ) : CommandModule(
-        arrayOf("LogSettings"),
-        null,
-        "Adjust server settings.",
-        requiredPermissions = arrayOf(Permission.MANAGE_CHANNEL)
-    ) {
-
-        @Transactional
-        override fun onGuildLeave(event: GuildLeaveEvent) {
-            loggingSettingsRepository.deleteById(event.guild.idLong)
-        }
-
-        override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-            event.jda.addEventListener(SettingsSequence(event.author, event.channel))
-        }
-
-        open inner class SettingsSequence(user: User, channel: MessageChannel) :
-            Sequence(user, channel), MessageSequence {
-            private var sequenceNumber: Byte = 0
-
-            init {
-                if (channel !is TextChannel) {
-                    throw UnsupportedOperationException("Command needs to be executed in a TextChannel")
-                }
-                val guildId = channel.guild.idLong
-                val logSettings = loggingSettingsRepository.findById(guildId).orElse(LoggingSettings(guildId))
-                channel.sendMessage(
-                    "Enter number of the action you'd like to perform:\n\n" +
-                            "0: Set the mod logging channel. Currently: ${
-                                logSettings.modLogChannel?.let { "<#$it>" }
-                                    ?: "None (Required to set before setting/changing other setting)"
-                            }\n" +
-                            "1: Set the user logging channel. Currently: ${
-                                logSettings.userLogChannel?.let { "<#$it>" }
-                                    ?: "Using same channel as mod logging"
-                            }\n" +
-                            "2: " + (if (logSettings.logMessageUpdate) "Disable" else "Enable ") + " logging for edited messages.\n" +
-                            "3: " + (if (logSettings.logMessageDelete) "Disable" else "Enable ") + " logging for deleted messages.\n" +
-                            "4: " + (if (logSettings.logMemberJoin) "Disable" else "Enable ") + " logging for members joining.\n" +
-                            "5: " + (if (logSettings.logMemberLeave) "Disable" else "Enable ") + " logging for members leaving (includes kicks).\n" +
-                            "6: " + (if (logSettings.logMemberBan) "Disable" else "Enable ") + " logging for banning members.\n" +
-                            "7: " + (if (logSettings.logMemberBan) "Disable" else "Enable ") + " logging for removing bans.")
-                    .queue { addMessageToCleaner(it) }
-            }
-
-            @Transactional
-            override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
-                channel as TextChannel
-                val guildId = channel.guild.idLong
-                val logSettings = loggingSettingsRepository.findById(guildId).orElse(LoggingSettings(guildId))
-                when (sequenceNumber) {
-                    0.toByte() -> {
-                        when (event.message.contentRaw.toByte()) {
-                            0.toByte() -> {
-                                sequenceNumber = 1
-                                channel.sendMessage("${user.asMention} Please mention the channel you want to be used as moderator log.")
-                                    .queue { addMessageToCleaner(it) }
-                                return
-                            }
-
-                            1.toByte() -> {
-                                sequenceNumber = 2
-                                channel.sendMessage("${user.asMention} Please mention the channel you want to be used as user log.")
-                                    .queue { addMessageToCleaner(it) }
-                                return
-                            }
-
-                            2.toByte() -> {
-                                logSettings.logMessageUpdate = !logSettings.logMessageUpdate
-                            }
-
-                            3.toByte() -> {
-                                logSettings.logMessageDelete = !logSettings.logMessageDelete
-                            }
-
-                            4.toByte() -> {
-                                logSettings.logMemberJoin = !logSettings.logMemberJoin
-                            }
-
-                            5.toByte() -> {
-                                logSettings.logMemberLeave = !logSettings.logMemberLeave
-                            }
-
-                            6.toByte() -> {
-                                logSettings.logMemberBan = !logSettings.logMemberBan
-                            }
-
-                            7.toByte() -> {
-                                logSettings.logMemberRemoveBan = !logSettings.logMemberRemoveBan
-                            }
-                        }
-                    }
-
-                    1.toByte() -> {
-                        logSettings.modLogChannel = event.message.mentions.channels[0].idLong
-                    }
-
-                    2.toByte() -> {
-                        logSettings.userLogChannel = event.message.mentions.channels[0].idLong
-                    }
-                }
-                loggingSettingsRepository.save(logSettings)
-                channel.sendMessage("${user.asMention} Settings successfully saved.")
-                    .queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
-                destroy()
-            }
-        }
     }
 
     /**
