@@ -1,6 +1,5 @@
 package be.duncanc.discordmodbot.utility
 
-import be.duncanc.discordmodbot.discord.CommandModule
 import be.duncanc.discordmodbot.discord.SlashCommand
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
@@ -29,33 +28,6 @@ class HelpCommand : ListenerAdapter(), SlashCommand {
                 helpEmbeds[helpEmbeds.lastIndex].addField(
                     "/${commandData.name}",
                     commandData.description ?: "No description available.",
-                    false
-                )
-            }
-        }
-
-        val legacyCommands = event.jda.registeredListeners.filterIsInstance<CommandModule>()
-        if (legacyCommands.isNotEmpty()) {
-            if (helpEmbeds[helpEmbeds.lastIndex].fields.count() >= 25) {
-                helpEmbeds.add(EmbedBuilder().setTitle("Help - Legacy Commands (${helpEmbeds.size})"))
-            } else {
-                helpEmbeds.add(EmbedBuilder().setTitle("Help - Legacy Commands"))
-            }
-
-            legacyCommands.forEach { commandModule ->
-                if (helpEmbeds[helpEmbeds.lastIndex].fields.count() >= 25) {
-                    helpEmbeds.add(EmbedBuilder().setTitle("Help - Legacy Commands (${helpEmbeds.size})"))
-                }
-                helpEmbeds[helpEmbeds.lastIndex].addField(
-                    "${
-                        commandModule.aliases.contentToString().replace("[", "").replace(
-                            "]",
-                            ""
-                        )
-                    }${if (commandModule.argumentationSyntax != null) " ${commandModule.argumentationSyntax}" else ""}",
-                    (commandModule.description
-                        ?: "No description available.") +
-                            (if (commandModule.requiredPermissions.isNotEmpty()) " (Requires: ${commandModule.requiredPermissions.contentToString()})" else ""),
                     false
                 )
             }

@@ -150,7 +150,9 @@ class WeeklyActivitySettingsCommand(
 
     private fun showCurrentSettings(event: SlashCommandInteractionEvent, guild: Guild) {
         val settings =
-            activityReportSettingsRepository.findById(guild.idLong).orElse(ActivityReportSettings(guild.idLong))
+            activityReportSettingsRepository.findById(guild.idLong).orElse(null)
+                ?: ActivityReportSettings(guild.idLong)
+
         val trackedTargets = settings.trackedRoleOrMember
             .map { trackedId -> formatTrackedTarget(guild, trackedId) }
             .sorted()
@@ -193,8 +195,11 @@ class WeeklyActivitySettingsCommand(
     }
 
     private fun updateSettings(guildId: Long, update: (ActivityReportSettings) -> Unit) {
-        val settings = activityReportSettingsRepository.findById(guildId).orElse(ActivityReportSettings(guildId))
+        val settings = activityReportSettingsRepository.findById(guildId).orElse(null)
+            ?: ActivityReportSettings(guildId)
+
         update(settings)
+
         activityReportSettingsRepository.save(settings)
     }
 

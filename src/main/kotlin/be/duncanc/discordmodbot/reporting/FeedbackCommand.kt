@@ -100,7 +100,7 @@ class FeedbackCommand(
             return
         }
 
-        val embed = createFeedbackEmbed(guild, member, feedbackMessage)
+        val embed = createFeedbackEmbed(member, feedbackMessage)
         sendFeedbackEmbed(
             guild = guild,
             channelId = channelId,
@@ -149,7 +149,7 @@ class FeedbackCommand(
         channel.sendMessageEmbeds(embed).queue { onSuccess() }
     }
 
-    internal fun createFeedbackEmbed(guild: Guild, member: Member, message: String): MessageEmbed {
+    internal fun createFeedbackEmbed(member: Member, message: String): MessageEmbed {
         return EmbedBuilder()
             .setAuthor(member.nicknameAndUsername, null, member.user.effectiveAvatarUrl)
             .setDescription(message)

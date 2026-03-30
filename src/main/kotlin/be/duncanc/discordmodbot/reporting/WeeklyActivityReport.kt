@@ -74,7 +74,7 @@ class WeeklyActivityReport(
                                 }
                             }
                             stats[it] = channelStats
-                        } catch (e: PermissionException) {
+                        } catch (_: PermissionException) {
                             LOG.warn("Insufficient permissions to retrieve history from $it")
                         }
                     }
