@@ -15,8 +15,17 @@ class IAmRolesService
     private val iAmRolesRepository: IAmRolesRepository
 ) {
 
+    fun getCategory(guildId: Long, categoryId: Long): IAmRolesCategory {
+        return iAmRolesRepository.findById(IAmRolesCategory.IAmRoleId(guildId, categoryId))
+            .orElseThrow { IllegalArgumentException(ENTITY_DOES_NOT_EXIST_MESSAGE) }
+    }
+
     fun getAllCategoriesForGuild(guildId: Long): List<IAmRolesCategory> {
         return iAmRolesRepository.findByGuildId(guildId).toList()
+    }
+
+    fun getSortedCategoriesForGuild(guildId: Long): List<IAmRolesCategory> {
+        return getAllCategoriesForGuild(guildId).sortedBy { it.categoryName.lowercase() }
     }
 
 
@@ -40,6 +49,7 @@ class IAmRolesService
 
     @Transactional
     fun addNewCategory(guildId: Long, categoryName: String, allowedRoles: Int) {
+        validateCategoryNameUniqueness(guildId, categoryName)
         iAmRolesRepository.save(IAmRolesCategory(guildId, null, categoryName, allowedRoles))
     }
 
@@ -50,10 +60,36 @@ class IAmRolesService
 
     @Transactional
     fun changeCategoryName(guildId: Long, categoryId: Long, newName: String) {
-        val iAmRolesCategory = iAmRolesRepository.findById(IAmRolesCategory.IAmRoleId(guildId, categoryId))
-            .orElseThrow { IllegalArgumentException(ENTITY_DOES_NOT_EXIST_MESSAGE) }
+        validateCategoryNameUniqueness(guildId, newName, categoryId)
+        val iAmRolesCategory = getCategory(guildId, categoryId)
         iAmRolesCategory.categoryName = newName
         iAmRolesRepository.save(iAmRolesCategory)
+    }
+
+    @Transactional
+    fun addRoleToCategory(guildId: Long, categoryId: Long, roleId: Long) {
+        val duplicateCategory = getAllCategoriesForGuild(guildId)
+            .firstOrNull { it.categoryId != categoryId && it.roles.contains(roleId) }
+        if (duplicateCategory != null) {
+            throw IllegalArgumentException("That role is already assigned to category ${duplicateCategory.categoryName}.")
+        }
+
+        val category = getCategory(guildId, categoryId)
+        if (!category.roles.add(roleId)) {
+            throw IllegalArgumentException("That role is already in this category.")
+        }
+
+        iAmRolesRepository.save(category)
+    }
+
+    @Transactional
+    fun removeRoleFromCategory(guildId: Long, categoryId: Long, roleId: Long) {
+        val category = getCategory(guildId, categoryId)
+        if (!category.roles.remove(roleId)) {
+            throw IllegalArgumentException("That role is not in this category.")
+        }
+
+        iAmRolesRepository.save(category)
     }
 
     /**
@@ -61,8 +97,7 @@ class IAmRolesService
      */
     @Transactional
     fun addOrRemoveRole(guildId: Long, categoryId: Long, roleId: Long): Boolean {
-        val iAmRolesCategory = iAmRolesRepository.findById(IAmRolesCategory.IAmRoleId(guildId, categoryId))
-            .orElseThrow { IllegalArgumentException(ENTITY_DOES_NOT_EXIST_MESSAGE) }
+        val iAmRolesCategory = getCategory(guildId, categoryId)
         return if (iAmRolesCategory.roles.contains(roleId)) {
             iAmRolesCategory.roles.remove(roleId)
             false
@@ -74,20 +109,26 @@ class IAmRolesService
 
     @Transactional
     fun changeAllowedRoles(guildId: Long, categoryId: Long, newAmount: Int) {
-        val iAmRolesCategory = iAmRolesRepository.findById(IAmRolesCategory.IAmRoleId(guildId, categoryId))
-            .orElseThrow { IllegalArgumentException(ENTITY_DOES_NOT_EXIST_MESSAGE) }
+        val iAmRolesCategory = getCategory(guildId, categoryId)
         iAmRolesCategory.allowedRoles = newAmount
         iAmRolesRepository.save(iAmRolesCategory)
     }
 
     fun getRoleIds(guildId: Long, categoryId: Long): Set<Long> {
-        val iAmRolesCategory = iAmRolesRepository.findById(IAmRolesCategory.IAmRoleId(guildId, categoryId))
-            .orElseThrow { IllegalArgumentException(ENTITY_DOES_NOT_EXIST_MESSAGE) }
+        val iAmRolesCategory = getCategory(guildId, categoryId)
         return HashSet(iAmRolesCategory.roles)
     }
 
     fun getCategoryByRoleId(guildId: Long, role: Long): IAmRolesCategory {
         return iAmRolesRepository.findByRolesContainsAndGuildId(mutableSetOf(role), guildId).firstOrNull()
             ?: throw IllegalArgumentException(ENTITY_DOES_NOT_EXIST_MESSAGE)
+    }
+
+    private fun validateCategoryNameUniqueness(guildId: Long, categoryName: String, currentCategoryId: Long? = null) {
+        val duplicateCategory = getAllCategoriesForGuild(guildId)
+            .firstOrNull { it.categoryId != currentCategoryId && it.categoryName == categoryName }
+        if (duplicateCategory != null) {
+            throw IllegalArgumentException("The name you provided is already being used.")
+        }
     }
 }

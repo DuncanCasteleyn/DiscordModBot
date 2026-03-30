@@ -5,20 +5,23 @@ import jakarta.validation.constraints.NotNull
 import java.io.Serializable
 
 @Entity
-@Table(name = "i_am_roles_categories")
+@Table(
+    name = "i_am_roles_categories",
+    uniqueConstraints = [UniqueConstraint(columnNames = ["guild_id", "category_name"])]
+)
 @IdClass(IAmRolesCategory.IAmRoleId::class)
 data class IAmRolesCategory(
     @Id
-    @Column(updatable = false)
+    @Column(name = "guild_id", updatable = false)
     val guildId: Long,
 
     @Id
     @GeneratedValue(generator = "i_am_roles_category_id_seq")
     @SequenceGenerator(name = "i_am_roles_category_id_seq", sequenceName = "i_am_roles_seq", allocationSize = 1)
-    @Column(insertable = false, updatable = false)
+    @Column(name = "category_id", insertable = false, updatable = false)
     val categoryId: Long? = null,
 
-    @Column(unique = true, nullable = false)
+    @Column(name = "category_name", nullable = false)
     var categoryName: String,
 
     @Column(nullable = false)

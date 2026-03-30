@@ -1,176 +1,430 @@
 package be.duncanc.discordmodbot.roles
 
-import be.duncanc.discordmodbot.bootstrap.DiscordModBotConfig
 import be.duncanc.discordmodbot.discord.SlashCommand
-
-
+import be.duncanc.discordmodbot.roles.persistence.IAmRolesCategory
+import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.components.actionrow.ActionRow
 import net.dv8tion.jda.api.components.buttons.Button
 import net.dv8tion.jda.api.components.selections.StringSelectMenu
 import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Role
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.InteractionContextType
-import net.dv8tion.jda.api.interactions.InteractionHook
+import net.dv8tion.jda.api.interactions.callbacks.IReplyCallback
+import net.dv8tion.jda.api.interactions.commands.Command
+import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.Commands
+import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
-import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
 import org.springframework.stereotype.Component
-
-private const val CATEGORY_COMPONENT_ID = "role-choose-category"
-private const val ROLE_COMPONENT_ID = "role-choose-role"
-private const val MORE_BUTTON_ID_PREFIX = "role-more-"
 
 @Component
 class Roles(
-    private val iAmRolesService: IAmRolesService,
-    private val discordModBotConfig: DiscordModBotConfig
+    private val iAmRolesService: IAmRolesService
 ) : ListenerAdapter(), SlashCommand {
+    companion object {
+        private const val COMMAND = "role"
+        private const val DESCRIPTION = "Assign or remove self-assignable roles."
+        private const val SUBCOMMAND_ASSIGN = "assign"
+        private const val SUBCOMMAND_REMOVE = "remove"
+        private const val OPTION_CATEGORY = "category"
+        private const val AUTOCOMPLETE_LIMIT = 25
+        private const val COMPONENT_PREFIX = "role"
+        private const val COMPONENT_TYPE_MENU = "menu"
+        private const val COMPONENT_TYPE_PAGE = "page"
+    }
+
     override fun getCommandsData(): List<SlashCommandData> {
         return listOf(
-            Commands.slash("role", "Allows you to select roles that you can freely assign to yourself")
+            Commands.slash(COMMAND, DESCRIPTION)
                 .addSubcommands(
-                    SubcommandData("assign", "assign yourself a role")
+                    SubcommandData(SUBCOMMAND_ASSIGN, "Assign yourself self-assignable roles")
+                        .addOptions(categoryOption("Category to assign roles from")),
+                    SubcommandData(SUBCOMMAND_REMOVE, "Remove self-assignable roles from yourself")
+                        .addOptions(categoryOption("Category to remove roles from"))
                 )
                 .setContexts(InteractionContextType.GUILD)
         )
     }
 
-
-    override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
-        val guild = event.guild
-
-        if (event.name != "role" || guild == null) return
-
-        when (event.subcommandName) {
-            "assign" -> {
-                event.deferReply(true).queue {
-                    val categoryMenu = StringSelectMenu.create(CATEGORY_COMPONENT_ID)
-
-                    iAmRolesService.getAllCategoriesForGuild(guild.idLong).forEach { category ->
-                        categoryMenu.addOption(category.categoryName, category.categoryId.toString())
-                    }
-
-                    val message = MessageCreateBuilder()
-                        .setContent("Select the category you would like a role from")
-                        .addComponents(listOf(ActionRow.of(categoryMenu.build())))
-                        .build()
-                    it.sendMessage(message).queue()
-                }
-            }
-
-            else -> {
-                event.deferReply(true).queue { reply ->
-                    reply.sendMessage("That's not a valid subcommand for this command.").queue()
-                }
-            }
+    override fun onCommandAutoCompleteInteraction(event: CommandAutoCompleteInteractionEvent) {
+        if (event.name != COMMAND || event.guild == null || event.focusedOption.name != OPTION_CATEGORY) {
+            return
         }
+
+        val query = event.focusedOption.value
+        val choices = iAmRolesService.getSortedCategoriesForGuild(event.guild!!.idLong)
+            .asSequence()
+            .filter { query.isBlank() || it.categoryName.contains(query, ignoreCase = true) }
+            .take(AUTOCOMPLETE_LIMIT)
+            .mapNotNull { category ->
+                val categoryId = category.categoryId ?: return@mapNotNull null
+                Command.Choice(category.categoryName, categoryId.toString())
+            }
+            .toList()
+
+        event.replyChoices(choices).queue()
     }
 
-    override fun onStringSelectInteraction(event: StringSelectInteractionEvent) {
+    override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
+        if (event.name != COMMAND) {
+            return
+        }
+
         val guild = event.guild
-        val componentId = event.componentId
-
-        if ((componentId != CATEGORY_COMPONENT_ID && componentId != ROLE_COMPONENT_ID) || guild == null) return
-
-        if (componentId == CATEGORY_COMPONENT_ID) {
-            event.deferReply(true).queue { reply ->
-                val categoryId = event.values.first().toLong()
-
-                replyWithRoleMenu(reply, guild, categoryId, 0)
-            }
+        val member = event.member
+        if (guild == null || member == null) {
+            event.reply("This command only works in a guild.").setEphemeral(true).queue()
+            return
         }
 
-        if (componentId == ROLE_COMPONENT_ID) {
-            event.deferReply(true).queue { reply ->
-                val roleId = event.values.first().toLong()
-
-                val roleCategory = iAmRolesService.getCategoryByRoleId(guild.idLong, roleId)
-
-                val member = event.member ?: return@queue
-
-                val assignedRolesFromCategory = member.roles.count { role: Role? ->
-                    if (role == null) {
-                        return@count false
-                    }
-
-                    roleCategory.roles.contains(role.idLong)
-                }
-
-                if (assignedRolesFromCategory >= roleCategory.allowedRoles) {
-                    reply.sendMessage("You already have the max amount of roles from this category.").queue()
-                    return@queue
-                }
-
-
-                guild.getRoleById(roleId)?.let {
-                    guild.addRoleToMember(event.user, it)
-                        .reason("User request role through \"/role assign\" slash command.").queue {
-                            reply.sendMessage("You're role was assigned.").queue()
-                        }
-                }
-            }
-
+        if (!guild.selfMember.hasPermission(Permission.MANAGE_ROLES)) {
+            event.reply("I need manage roles permission to update self-assignable roles.").setEphemeral(true).queue()
+            return
         }
+
+        if (!guild.selfMember.canInteract(member)) {
+            event.reply("I can't manage your roles because your highest role is above mine.").setEphemeral(true).queue()
+            return
+        }
+
+        val action = RoleAction.fromSubcommand(event.subcommandName)
+        if (action == null) {
+            event.reply("Please choose a valid /role subcommand.").setEphemeral(true).queue()
+            return
+        }
+
+        val categoryId = getCategoryId(event)
+        if (categoryId == null) {
+            event.reply("Please choose one of the suggested categories.").setEphemeral(true).queue()
+            return
+        }
+
+        val category = getRequiredCategory(guild.idLong, categoryId) ?: return
+        val menuMessage = buildRoleMenuMessage(guild, member, action, category, 0)
+        if (menuMessage.errorMessage != null) {
+            event.reply(menuMessage.errorMessage).setEphemeral(true).queue()
+            return
+        }
+
+        sendRoleMenu(event, menuMessage)
     }
 
     override fun onButtonInteraction(event: ButtonInteractionEvent) {
+        val state = parseComponentState(event.componentId, COMPONENT_TYPE_PAGE) ?: return
         val guild = event.guild
-        val componentId = event.componentId
-
-        if (!componentId.startsWith(MORE_BUTTON_ID_PREFIX) || guild == null) return
-
-        val ephemeral = event.user.idLong != discordModBotConfig.ownerId
-
-        event.deferReply(ephemeral).queue { reply ->
-            val metaData = componentId.removePrefix(MORE_BUTTON_ID_PREFIX).split("-")
-
-            val categoryId = metaData[0].toLong()
-            val pageNumber = metaData[1].toInt() + 1
-
-            replyWithRoleMenu(reply, guild, categoryId, pageNumber)
+        val member = event.member
+        if (guild == null || member == null) {
+            event.reply("This action only works in a guild.").setEphemeral(true).queue()
+            return
         }
 
+        if (state.userId != event.user.idLong) {
+            event.reply("This role menu belongs to someone else. Run the command yourself.").setEphemeral(true).queue()
+            return
+        }
 
+        val category = try {
+            iAmRolesService.getCategory(guild.idLong, state.categoryId)
+        } catch (_: IllegalArgumentException) {
+            event.reply("This role menu is out of date. Run the command again.").setEphemeral(true).queue()
+            return
+        }
+
+        val menuMessage = buildRoleMenuMessage(guild, member, state.action, category, state.page)
+        if (menuMessage.errorMessage != null) {
+            event.reply(menuMessage.errorMessage).setEphemeral(true).queue()
+            return
+        }
+
+        sendRoleMenu(event, menuMessage)
     }
 
-    private fun replyWithRoleMenu(
-        reply: InteractionHook,
-        guild: Guild,
-        categoryId: Long,
-        page: Int
-    ) {
-        val chunkedRoles = getChunkedRoles(guild, categoryId)
-
-        val roleSelectMenu = StringSelectMenu.create(ROLE_COMPONENT_ID)
-
-        chunkedRoles[page].forEach {
-            roleSelectMenu.addOption(it.name, it.id)
+    override fun onStringSelectInteraction(event: StringSelectInteractionEvent) {
+        val state = parseComponentState(event.componentId, COMPONENT_TYPE_MENU) ?: return
+        val guild = event.guild
+        val member = event.member
+        if (guild == null || member == null) {
+            event.reply("This action only works in a guild.").setEphemeral(true).queue()
+            return
         }
 
-        val message = MessageCreateBuilder()
-            .setContent("Select the role you would like to get assigned.")
-            .addComponents(
-                listOf(
-                    ActionRow.of(roleSelectMenu.build()),
-                    ActionRow.of(
-                        Button.primary("$MORE_BUTTON_ID_PREFIX$categoryId-$page", "More roles")
-                            .withDisabled(chunkedRoles.size <= page + 1)
+        if (state.userId != event.user.idLong) {
+            event.reply("This role menu belongs to someone else. Run the command yourself.").setEphemeral(true).queue()
+            return
+        }
+
+        if (!guild.selfMember.hasPermission(Permission.MANAGE_ROLES)) {
+            event.reply("I need manage roles permission to update self-assignable roles.").setEphemeral(true).queue()
+            return
+        }
+
+        if (!guild.selfMember.canInteract(member)) {
+            event.reply("I can't manage your roles because your highest role is above mine.").setEphemeral(true).queue()
+            return
+        }
+
+        val category = try {
+            iAmRolesService.getCategory(guild.idLong, state.categoryId)
+        } catch (_: IllegalArgumentException) {
+            event.reply("This role menu is out of date. Run the command again.").setEphemeral(true).queue()
+            return
+        }
+
+        val roleSelection = buildRoleSelection(guild, member, state.action, category)
+        if (roleSelection.errorMessage != null) {
+            event.reply(roleSelection.errorMessage).setEphemeral(true).queue()
+            return
+        }
+
+        val pageRoles = roleSelection.rolePages.getOrNull(state.page)
+        if (pageRoles == null) {
+            event.reply("This role menu is out of date. Run the command again.").setEphemeral(true).queue()
+            return
+        }
+
+        val selectedRoleIds = event.values.mapNotNull { it.toLongOrNull() }
+        val allowedRoleIds = pageRoles.map { it.id }.toSet()
+        if (selectedRoleIds.isEmpty() || selectedRoleIds.any { it.toString() !in allowedRoleIds }) {
+            event.reply("This role menu is out of date. Run the command again.").setEphemeral(true).queue()
+            return
+        }
+
+        val selectedRoles = selectedRoleIds.mapNotNull(guild::getRoleById)
+        if (selectedRoles.size != selectedRoleIds.size || selectedRoles.any { !guild.selfMember.canInteract(it) }) {
+            event.reply("I can't manage one or more of the selected roles.").setEphemeral(true).queue()
+            return
+        }
+
+        val remainingAllowance = roleSelection.maxSelectable
+        if (selectedRoles.size > remainingAllowance) {
+            event.reply("You selected more roles than allowed.").setEphemeral(true).queue()
+            return
+        }
+
+        if (state.action == RoleAction.ASSIGN) {
+            guild.modifyMemberRoles(member, selectedRoles, null)
+                .reason("User used /role assign slash command.")
+                .queue {
+                    event.reply("Your requested role(s) were added.").setEphemeral(true).queue()
+                }
+        } else {
+            guild.modifyMemberRoles(member, null, selectedRoles)
+                .reason("User used /role remove slash command.")
+                .queue {
+                    event.reply("Your requested role(s) were removed.").setEphemeral(true).queue()
+                }
+        }
+    }
+
+    private fun buildRoleMenuMessage(
+        guild: Guild,
+        member: Member,
+        action: RoleAction,
+        category: IAmRolesCategory,
+        page: Int
+    ): RoleMenuMessage {
+        val roleSelection = buildRoleSelection(guild, member, action, category)
+        if (roleSelection.errorMessage != null) {
+            return RoleMenuMessage(errorMessage = roleSelection.errorMessage)
+        }
+
+        val rolePages = roleSelection.rolePages
+        val pageRoles = rolePages.getOrNull(page)
+            ?: return RoleMenuMessage(errorMessage = "This role menu is out of date. Run the command again.")
+        val maxSelections = minOf(roleSelection.maxSelectable, pageRoles.size).coerceAtLeast(1)
+        val menu = StringSelectMenu.create(
+            componentId(
+                COMPONENT_TYPE_MENU,
+                action,
+                member.idLong,
+                category.categoryId!!,
+                page
+            )
+        )
+            .setPlaceholder("Choose role(s) to ${action.verb}")
+            .setRequiredRange(1, maxSelections)
+        pageRoles.forEach { role ->
+            menu.addOption(role.name, role.id)
+        }
+
+        val buttons = buildList {
+            if (page > 0) {
+                add(
+                    Button.secondary(
+                        componentId(
+                            COMPONENT_TYPE_PAGE,
+                            action,
+                            member.idLong,
+                            category.categoryId!!,
+                            page - 1
+                        ), "Previous"
                     )
                 )
-            )
-            .build()
-        reply.sendMessage(message).queue()
+            }
+            if (page + 1 < rolePages.size) {
+                add(
+                    Button.secondary(
+                        componentId(
+                            COMPONENT_TYPE_PAGE,
+                            action,
+                            member.idLong,
+                            category.categoryId!!,
+                            page + 1
+                        ), "Next"
+                    )
+                )
+            }
+        }
+
+        val content = buildString {
+            append("Select the role(s) you'd like to ${action.verb} from ${category.categoryName}.")
+            if (rolePages.size > 1) {
+                append(" Page ${page + 1}/${rolePages.size}.")
+            }
+            if (action == RoleAction.ASSIGN) {
+                append(" You may choose up to ")
+                append(if (category.allowedRoles == 0) "${maxSelections}" else roleSelection.maxSelectable)
+                append(" role(s) in this step.")
+            }
+        }
+
+        return RoleMenuMessage(
+            content = content,
+            selectMenu = menu.build(),
+            buttons = buttons
+        )
     }
 
-    private fun getChunkedRoles(
+    private fun buildRoleSelection(
         guild: Guild,
-        categoryId: Long
-    ) = iAmRolesService.getRoleIds(guild.idLong, categoryId)
-        .mapNotNull { guild.getRoleById(it) }
-        .chunked(StringSelectMenu.OPTIONS_MAX_AMOUNT)
+        member: Member,
+        action: RoleAction,
+        category: IAmRolesCategory
+    ): RoleSelection {
+        val categoryRoles = category.roles
+            .mapNotNull(guild::getRoleById)
+            .sortedBy { it.name.lowercase() }
+        val assignedRoles = member.roles
+            .filter { category.roles.contains(it.idLong) }
+            .sortedBy { it.name.lowercase() }
+
+        return if (action == RoleAction.ASSIGN) {
+            if (categoryRoles.isEmpty()) {
+                RoleSelection(errorMessage = "There are no roles in this category. Please contact a server admin.")
+            } else {
+                val remainingAllowance =
+                    if (category.allowedRoles == 0) Int.MAX_VALUE else category.allowedRoles - assignedRoles.size
+                when {
+                    remainingAllowance <= 0 -> RoleSelection(errorMessage = "You already have the max amount of roles you can assign for this category.")
+                    else -> {
+                        val addableRoles =
+                            categoryRoles.filter { role -> assignedRoles.none { it.idLong == role.idLong } }
+                        when {
+                            addableRoles.isEmpty() -> RoleSelection(errorMessage = "You already have all the roles from this category.")
+                            else -> RoleSelection(
+                                rolePages = addableRoles.chunked(StringSelectMenu.OPTIONS_MAX_AMOUNT),
+                                maxSelectable = minOf(
+                                    addableRoles.size,
+                                    remainingAllowance,
+                                    StringSelectMenu.OPTIONS_MAX_AMOUNT
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        } else {
+            if (assignedRoles.isEmpty()) {
+                RoleSelection(errorMessage = "You have no roles to remove from this category.")
+            } else {
+                RoleSelection(
+                    rolePages = assignedRoles.chunked(StringSelectMenu.OPTIONS_MAX_AMOUNT),
+                    maxSelectable = minOf(assignedRoles.size, StringSelectMenu.OPTIONS_MAX_AMOUNT)
+                )
+            }
+        }
+    }
+
+    internal fun getCategoryId(event: SlashCommandInteractionEvent): Long? {
+        return event.getOption(OPTION_CATEGORY)?.asString?.toLongOrNull()
+    }
+
+    private fun getRequiredCategory(guildId: Long, categoryId: Long): IAmRolesCategory? {
+        return try {
+            iAmRolesService.getCategory(guildId, categoryId)
+        } catch (_: IllegalArgumentException) {
+            null
+        }
+    }
+
+    private fun sendRoleMenu(callback: IReplyCallback, menuMessage: RoleMenuMessage) {
+        val replyAction = callback.reply(menuMessage.content!!)
+            .setEphemeral(true)
+            .addComponents(ActionRow.of(menuMessage.selectMenu!!))
+
+        if (menuMessage.buttons.isNotEmpty()) {
+            replyAction.addComponents(ActionRow.of(menuMessage.buttons))
+        }
+
+        replyAction.queue()
+    }
+
+    private fun categoryOption(description: String): OptionData {
+        return OptionData(OptionType.STRING, OPTION_CATEGORY, description, true, true)
+    }
+
+    private fun componentId(type: String, action: RoleAction, userId: Long, categoryId: Long, page: Int): String {
+        return listOf(COMPONENT_PREFIX, type, action.value, userId, categoryId, page).joinToString(":")
+    }
+
+    private fun parseComponentState(componentId: String, expectedType: String): RoleComponentState? {
+        val tokens = componentId.split(':')
+        if (tokens.size != 6 || tokens[0] != COMPONENT_PREFIX || tokens[1] != expectedType) {
+            return null
+        }
+
+        val action = RoleAction.fromSubcommand(tokens[2]) ?: return null
+        val userId = tokens[3].toLongOrNull() ?: return null
+        val categoryId = tokens[4].toLongOrNull() ?: return null
+        val page = tokens[5].toIntOrNull() ?: return null
+        return RoleComponentState(action, userId, categoryId, page)
+    }
+
+    private data class RoleSelection(
+        val rolePages: List<List<Role>> = emptyList(),
+        val maxSelectable: Int = 0,
+        val errorMessage: String? = null
+    )
+
+    private data class RoleMenuMessage(
+        val content: String? = null,
+        val selectMenu: StringSelectMenu? = null,
+        val buttons: List<Button> = emptyList(),
+        val errorMessage: String? = null
+    )
+
+    private data class RoleComponentState(
+        val action: RoleAction,
+        val userId: Long,
+        val categoryId: Long,
+        val page: Int
+    )
+
+    private enum class RoleAction(val value: String, val verb: String) {
+        ASSIGN(SUBCOMMAND_ASSIGN, "add"),
+        REMOVE(SUBCOMMAND_REMOVE, "remove");
+
+        companion object {
+            fun fromSubcommand(subcommand: String?): RoleAction? {
+                return entries.firstOrNull { it.value == subcommand }
+            }
+        }
+    }
 }
