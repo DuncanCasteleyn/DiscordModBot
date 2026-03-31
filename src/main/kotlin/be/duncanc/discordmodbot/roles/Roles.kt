@@ -203,6 +203,9 @@ class Roles(
             hook.editOriginal(roleSelection.errorMessage).queue()
             return
         }
+        require(roleSelection.maxSelectable > 0) {
+            "Invariant violation: maxSelectable should be > 0 when errorMessage is null"
+        }
 
         val pageRoles = roleSelection.rolePages.getOrNull(state.page)
         if (pageRoles == null) {
@@ -278,11 +281,14 @@ class Roles(
         if (roleSelection.errorMessage != null) {
             return RoleMenuMessage(errorMessage = roleSelection.errorMessage)
         }
+        require(roleSelection.maxSelectable > 0) {
+            "Invariant violation: maxSelectable should be > 0 when errorMessage is null"
+        }
 
         val rolePages = roleSelection.rolePages
         val pageRoles = rolePages.getOrNull(page)
             ?: return RoleMenuMessage(errorMessage = OUT_OF_DATE_MESSAGE)
-        val maxSelections = minOf(roleSelection.maxSelectable, pageRoles.size).coerceAtLeast(1)
+        val maxSelections = minOf(roleSelection.maxSelectable, pageRoles.size)
         val menu = StringSelectMenu.create(
             componentId(
                 COMPONENT_TYPE_MENU,
