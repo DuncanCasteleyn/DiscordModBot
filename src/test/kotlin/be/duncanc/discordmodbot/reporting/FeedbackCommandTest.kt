@@ -1,6 +1,5 @@
 package be.duncanc.discordmodbot.reporting
 
-import be.duncanc.discordmodbot.discord.UserBlockService
 import be.duncanc.discordmodbot.reporting.persistence.ReportChannel
 import be.duncanc.discordmodbot.reporting.persistence.ReportChannelRepository
 import net.dv8tion.jda.api.entities.Guild
@@ -34,9 +33,6 @@ class FeedbackCommandTest {
     private lateinit var reportChannelRepository: ReportChannelRepository
 
     @Mock
-    private lateinit var userBlockService: UserBlockService
-
-    @Mock
     private lateinit var slashEvent: SlashCommandInteractionEvent
 
     @Mock
@@ -61,7 +57,7 @@ class FeedbackCommandTest {
 
     @BeforeEach
     fun setUp() {
-        command = TestFeedbackCommand(reportChannelRepository, userBlockService)
+        command = TestFeedbackCommand(reportChannelRepository)
 
         lenient().whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
         lenient().whenever(modalEvent.reply(any<String>())).thenReturn(replyAction)
@@ -83,7 +79,6 @@ class FeedbackCommandTest {
         lenient().whenever(member.nickname).thenReturn("Duncan")
         lenient().whenever(guild.getTextChannelById(11L)).thenReturn(textChannel)
         lenient().whenever(reportChannelRepository.findById(1L)).thenReturn(Optional.of(ReportChannel(1L, 11L)))
-        lenient().whenever(userBlockService.isBlocked(99L)).thenReturn(false)
     }
 
     @Test
@@ -102,15 +97,6 @@ class FeedbackCommandTest {
         command.onSlashCommandInteraction(slashEvent)
 
         verify(slashEvent).reply("Feedback is not enabled on this server.")
-    }
-
-    @Test
-    fun `blocked user cannot open feedback modal`() {
-        whenever(userBlockService.isBlocked(99L)).thenReturn(true)
-
-        command.onSlashCommandInteraction(slashEvent)
-
-        verify(slashEvent).reply("You are blocked from using this command.")
     }
 
     @Test
@@ -138,6 +124,18 @@ class FeedbackCommandTest {
     }
 
     @Test
+    fun `modal submission reports send failures`() {
+        command.onSlashCommandInteraction(slashEvent)
+        whenever(modalEvent.modalId).thenReturn(command.shownModal!!.id)
+        command.feedbackMessage = "The server is great"
+        command.failToSendFeedback = true
+
+        command.onModalInteraction(modalEvent)
+
+        verify(modalEvent).reply("I could not forward your feedback to the configured channel. Please contact server staff.")
+    }
+
+    @Test
     fun `mismatched modal user is rejected`() {
         command.onSlashCommandInteraction(slashEvent)
         whenever(modalEvent.modalId).thenReturn(command.shownModal!!.id.replace(":99", ":100"))
@@ -156,13 +154,13 @@ class FeedbackCommandTest {
     }
 
     private class TestFeedbackCommand(
-        reportChannelRepository: ReportChannelRepository,
-        userBlockService: UserBlockService
-    ) : FeedbackCommand(reportChannelRepository, userBlockService) {
+        reportChannelRepository: ReportChannelRepository
+    ) : FeedbackCommand(reportChannelRepository) {
         var shownModal: Modal? = null
         var feedbackMessage: String? = null
         var sentChannelId: Long? = null
         var sentEmbed: MessageEmbed? = null
+        var failToSendFeedback = false
 
         override fun showModal(event: SlashCommandInteractionEvent, modal: Modal) {
             shownModal = modal
@@ -177,11 +175,16 @@ class FeedbackCommandTest {
             channelId: Long,
             embed: MessageEmbed,
             onSuccess: () -> Unit,
-            onMissingChannel: () -> Unit
+            onMissingChannel: () -> Unit,
+            onFailure: () -> Unit
         ) {
             sentChannelId = channelId
             sentEmbed = embed
-            onSuccess()
+            if (failToSendFeedback) {
+                onFailure()
+            } else {
+                onSuccess()
+            }
         }
     }
 }

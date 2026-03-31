@@ -1,7 +1,6 @@
 package be.duncanc.discordmodbot.reporting
 
 import be.duncanc.discordmodbot.discord.SlashCommand
-import be.duncanc.discordmodbot.discord.UserBlockService
 import be.duncanc.discordmodbot.discord.nicknameAndUsername
 import be.duncanc.discordmodbot.reporting.persistence.ReportChannelRepository
 import net.dv8tion.jda.api.EmbedBuilder
@@ -24,8 +23,7 @@ import java.time.OffsetDateTime
 
 @Component
 class FeedbackCommand(
-    private val reportChannelRepository: ReportChannelRepository,
-    private val userBlockService: UserBlockService
+    private val reportChannelRepository: ReportChannelRepository
 ) : ListenerAdapter(), SlashCommand {
     companion object {
         private const val COMMAND = "feedback"
@@ -44,11 +42,6 @@ class FeedbackCommand(
         val member = event.member
         if (guild == null || member == null) {
             event.reply("This command only works in a server.").setEphemeral(true).queue()
-            return
-        }
-
-        if (userBlockService.isBlocked(event.user.idLong)) {
-            event.reply("You are blocked from using this command.").setEphemeral(true).queue()
             return
         }
 
@@ -83,11 +76,6 @@ class FeedbackCommand(
             return
         }
 
-        if (userBlockService.isBlocked(event.user.idLong)) {
-            event.reply("You are blocked from using this command.").setEphemeral(true).queue()
-            return
-        }
-
         val feedbackMessage = getFeedbackMessage(event)?.trim()
         if (feedbackMessage.isNullOrBlank()) {
             event.reply("Please provide feedback before submitting.").setEphemeral(true).queue()
@@ -114,6 +102,11 @@ class FeedbackCommand(
                 event.reply("Feedback is configured to use a channel that no longer exists. Please contact server staff.")
                     .setEphemeral(true)
                     .queue()
+            },
+            onFailure = {
+                event.reply("I could not forward your feedback to the configured channel. Please contact server staff.")
+                    .setEphemeral(true)
+                    .queue()
             }
         )
     }
@@ -138,7 +131,8 @@ class FeedbackCommand(
         channelId: Long,
         embed: MessageEmbed,
         onSuccess: () -> Unit,
-        onMissingChannel: () -> Unit
+        onMissingChannel: () -> Unit,
+        onFailure: () -> Unit
     ) {
         val channel = guild.getTextChannelById(channelId)
         if (channel == null) {
@@ -146,7 +140,7 @@ class FeedbackCommand(
             return
         }
 
-        channel.sendMessageEmbeds(embed).queue { onSuccess() }
+        channel.sendMessageEmbeds(embed).queue({ onSuccess() }, { onFailure() })
     }
 
     internal fun createFeedbackEmbed(member: Member, message: String): MessageEmbed {
