@@ -16,12 +16,14 @@ import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionE
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.InteractionContextType
 import net.dv8tion.jda.api.interactions.callbacks.IReplyCallback
+import net.dv8tion.jda.api.interactions.InteractionHook
 import net.dv8tion.jda.api.interactions.commands.Command
 import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
+import net.dv8tion.jda.api.requests.restaction.AuditableRestAction
 import org.springframework.stereotype.Component
 
 @Component
@@ -38,6 +40,8 @@ class Roles(
         private const val COMPONENT_PREFIX = "role"
         private const val COMPONENT_TYPE_MENU = "menu"
         private const val COMPONENT_TYPE_PAGE = "page"
+        private const val OUT_OF_DATE_MESSAGE = "This role menu is out of date. Run the command again."
+        private const val ROLE_UPDATE_FAILURE_MESSAGE = "I couldn't update your roles right now. Please try again."
     }
 
     override fun getCommandsData(): List<SlashCommandData> {
@@ -106,7 +110,12 @@ class Roles(
             return
         }
 
-        val category = getRequiredCategory(guild.idLong, categoryId) ?: return
+        val category = getRequiredCategory(guild.idLong, categoryId)
+        if (category == null) {
+            event.reply(OUT_OF_DATE_MESSAGE).setEphemeral(true).queue()
+            return
+        }
+
         val menuMessage = buildRoleMenuMessage(guild, member, action, category, 0)
         if (menuMessage.errorMessage != null) {
             event.reply(menuMessage.errorMessage).setEphemeral(true).queue()
@@ -160,66 +169,101 @@ class Roles(
             return
         }
 
+        event.deferReply(true).queue { hook ->
+            handleRoleSelection(event, guild, member, state, hook)
+        }
+    }
+
+    private fun handleRoleSelection(
+        event: StringSelectInteractionEvent,
+        guild: Guild,
+        member: Member,
+        state: RoleComponentState,
+        hook: InteractionHook
+    ) {
         if (!guild.selfMember.hasPermission(Permission.MANAGE_ROLES)) {
-            event.reply("I need manage roles permission to update self-assignable roles.").setEphemeral(true).queue()
+            hook.editOriginal("I need manage roles permission to update self-assignable roles.").queue()
             return
         }
 
         if (!guild.selfMember.canInteract(member)) {
-            event.reply("I can't manage your roles because your highest role is above mine.").setEphemeral(true).queue()
+            hook.editOriginal("I can't manage your roles because your highest role is above mine.").queue()
             return
         }
 
         val category = try {
             iAmRolesService.getCategory(guild.idLong, state.categoryId)
         } catch (_: IllegalArgumentException) {
-            event.reply("This role menu is out of date. Run the command again.").setEphemeral(true).queue()
+            hook.editOriginal(OUT_OF_DATE_MESSAGE).queue()
             return
         }
 
         val roleSelection = buildRoleSelection(guild, member, state.action, category)
         if (roleSelection.errorMessage != null) {
-            event.reply(roleSelection.errorMessage).setEphemeral(true).queue()
+            hook.editOriginal(roleSelection.errorMessage).queue()
             return
         }
 
         val pageRoles = roleSelection.rolePages.getOrNull(state.page)
         if (pageRoles == null) {
-            event.reply("This role menu is out of date. Run the command again.").setEphemeral(true).queue()
+            hook.editOriginal(OUT_OF_DATE_MESSAGE).queue()
             return
         }
 
         val selectedRoleIds = event.values.mapNotNull { it.toLongOrNull() }
         val allowedRoleIds = pageRoles.map { it.id }.toSet()
         if (selectedRoleIds.isEmpty() || selectedRoleIds.any { it.toString() !in allowedRoleIds }) {
-            event.reply("This role menu is out of date. Run the command again.").setEphemeral(true).queue()
+            hook.editOriginal(OUT_OF_DATE_MESSAGE).queue()
             return
         }
 
         val selectedRoles = selectedRoleIds.mapNotNull(guild::getRoleById)
         if (selectedRoles.size != selectedRoleIds.size || selectedRoles.any { !guild.selfMember.canInteract(it) }) {
-            event.reply("I can't manage one or more of the selected roles.").setEphemeral(true).queue()
+            hook.editOriginal("I can't manage one or more of the selected roles.").queue()
             return
         }
 
         val remainingAllowance = roleSelection.maxSelectable
         if (selectedRoles.size > remainingAllowance) {
-            event.reply("You selected more roles than allowed.").setEphemeral(true).queue()
+            hook.editOriginal("You selected more roles than allowed.").queue()
             return
         }
 
-        if (state.action == RoleAction.ASSIGN) {
-            guild.modifyMemberRoles(member, selectedRoles, null)
-                .reason("User used /role assign slash command.")
-                .queue {
-                    event.reply("Your requested role(s) were added.").setEphemeral(true).queue()
+        val successMessage =
+            if (state.action == RoleAction.ASSIGN) "Your requested role(s) were added." else "Your requested role(s) were removed."
+        updateSelectedRoles(guild, member, selectedRoles, state.action, hook, successMessage)
+    }
+
+    private fun updateSelectedRoles(
+        guild: Guild,
+        member: Member,
+        selectedRoles: List<Role>,
+        action: RoleAction,
+        hook: InteractionHook,
+        successMessage: String
+    ) {
+        roleUpdateAction(guild, member, selectedRoles, action)
+            .reason("User used /role ${action.value} slash command.")
+            .queue(
+                {
+                    hook.editOriginal(successMessage).queue()
+                },
+                {
+                    hook.editOriginal(ROLE_UPDATE_FAILURE_MESSAGE).queue()
                 }
+            )
+    }
+
+    private fun roleUpdateAction(
+        guild: Guild,
+        member: Member,
+        selectedRoles: List<Role>,
+        action: RoleAction
+    ): AuditableRestAction<Void> {
+        return if (action == RoleAction.ASSIGN) {
+            guild.modifyMemberRoles(member, selectedRoles, null)
         } else {
             guild.modifyMemberRoles(member, null, selectedRoles)
-                .reason("User used /role remove slash command.")
-                .queue {
-                    event.reply("Your requested role(s) were removed.").setEphemeral(true).queue()
-                }
         }
     }
 
@@ -237,7 +281,7 @@ class Roles(
 
         val rolePages = roleSelection.rolePages
         val pageRoles = rolePages.getOrNull(page)
-            ?: return RoleMenuMessage(errorMessage = "This role menu is out of date. Run the command again.")
+            ?: return RoleMenuMessage(errorMessage = OUT_OF_DATE_MESSAGE)
         val maxSelections = minOf(roleSelection.maxSelectable, pageRoles.size).coerceAtLeast(1)
         val menu = StringSelectMenu.create(
             componentId(

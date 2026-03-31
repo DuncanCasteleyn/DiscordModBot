@@ -8,8 +8,10 @@ import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInterac
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent
 import net.dv8tion.jda.api.interactions.InteractionContextType
+import net.dv8tion.jda.api.interactions.InteractionHook
 import net.dv8tion.jda.api.interactions.commands.Command
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
+import net.dv8tion.jda.api.requests.restaction.AuditableRestAction
 import net.dv8tion.jda.api.requests.restaction.interactions.AutoCompleteCallbackAction
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -22,6 +24,7 @@ import org.mockito.Mock
 import org.mockito.Mockito.lenient
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.*
+import java.util.function.Consumer
 
 @ExtendWith(MockitoExtension::class)
 class RolesTest {
@@ -53,7 +56,16 @@ class RolesTest {
     private lateinit var replyAction: ReplyCallbackAction
 
     @Mock
+    private lateinit var deferredReplyAction: ReplyCallbackAction
+
+    @Mock
     private lateinit var autoCompleteAction: AutoCompleteCallbackAction
+
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private lateinit var interactionHook: InteractionHook
+
+    @Mock
+    private lateinit var roleUpdateAction: AuditableRestAction<Void>
 
     @Mock
     private lateinit var assignedRole: Role
@@ -64,23 +76,36 @@ class RolesTest {
     private lateinit var command: TestRolesCommand
 
     @BeforeEach
+    @Suppress("UNCHECKED_CAST")
     fun setUp() {
         command = TestRolesCommand(iAmRolesService)
 
         lenient().whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
         lenient().whenever(selectEvent.reply(any<String>())).thenReturn(replyAction)
+        lenient().whenever(selectEvent.deferReply(true)).thenReturn(deferredReplyAction)
         lenient().whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
         lenient().whenever(replyAction.addComponents(any<ActionRow>())).thenReturn(replyAction)
         lenient().whenever(autoCompleteEvent.replyChoices(any<Collection<Command.Choice>>()))
             .thenReturn(autoCompleteAction)
+        lenient().whenever(roleUpdateAction.reason(any())).thenReturn(roleUpdateAction)
+        lenient().doAnswer {
+            val consumer = it.arguments[0] as Consumer<InteractionHook>
+            consumer.accept(interactionHook)
+            null
+        }.whenever(deferredReplyAction).queue(any<Consumer<InteractionHook>>())
 
         lenient().whenever(slashEvent.name).thenReturn("role")
         lenient().whenever(slashEvent.guild).thenReturn(guild)
         lenient().whenever(slashEvent.member).thenReturn(member)
+        lenient().whenever(selectEvent.guild).thenReturn(guild)
+        lenient().whenever(selectEvent.member).thenReturn(member)
+        lenient().whenever(selectEvent.user).thenReturn(user)
         lenient().whenever(guild.idLong).thenReturn(1L)
         lenient().whenever(guild.selfMember).thenReturn(selfMember)
         lenient().whenever(selfMember.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
         lenient().whenever(selfMember.canInteract(member)).thenReturn(true)
+        lenient().whenever(selfMember.canInteract(availableRole)).thenReturn(true)
+        lenient().whenever(user.idLong).thenReturn(99L)
     }
 
     @Test
@@ -158,6 +183,17 @@ class RolesTest {
     }
 
     @Test
+    fun `slash command replies when selected category no longer exists`() {
+        whenever(slashEvent.subcommandName).thenReturn("assign")
+        command.categoryId = 5L
+        whenever(iAmRolesService.getCategory(1L, 5L)).thenThrow(IllegalArgumentException("missing"))
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        verify(slashEvent).reply("This role menu is out of date. Run the command again.")
+    }
+
+    @Test
     fun `category autocomplete returns category ids as values`() {
         whenever(autoCompleteEvent.name).thenReturn("role")
         whenever(autoCompleteEvent.guild).thenReturn(guild)
@@ -183,14 +219,65 @@ class RolesTest {
     @Test
     fun `select interaction rejects clicks from another user`() {
         whenever(selectEvent.componentId).thenReturn("role:menu:assign:99:5:0")
-        whenever(selectEvent.guild).thenReturn(guild)
-        whenever(selectEvent.member).thenReturn(member)
-        whenever(selectEvent.user).thenReturn(user)
         whenever(user.idLong).thenReturn(100L)
 
         command.onStringSelectInteraction(selectEvent)
 
         verify(selectEvent).reply("This role menu belongs to someone else. Run the command yourself.")
+    }
+
+    @Test
+    @Suppress("UNCHECKED_CAST")
+    fun `select interaction defers reply before assigning roles`() {
+        val category = IAmRolesCategory(1L, 5L, "Games", 0, mutableSetOf(11L))
+        stubSelectContext("assign", category, listOf("11"))
+        whenever(member.roles).thenReturn(emptyList())
+        whenever(availableRole.id).thenReturn("11")
+        whenever(guild.getRoleById(11L)).thenReturn(availableRole)
+        whenever(guild.modifyMemberRoles(member, listOf(availableRole), null)).thenReturn(roleUpdateAction)
+        doAnswer {
+            val consumer = it.arguments[0] as Consumer<Void?>
+            consumer.accept(null)
+            null
+        }.whenever(roleUpdateAction).queue(any<Consumer<Void?>>(), any<Consumer<Throwable>>())
+
+        command.onStringSelectInteraction(selectEvent)
+
+        verify(selectEvent).deferReply(true)
+        verify(interactionHook).editOriginal("Your requested role(s) were added.")
+    }
+
+    @Test
+    fun `select interaction defers before stale category check`() {
+        whenever(selectEvent.componentId).thenReturn("role:menu:assign:99:5:0")
+        whenever(iAmRolesService.getCategory(1L, 5L)).thenThrow(IllegalArgumentException("missing"))
+
+        command.onStringSelectInteraction(selectEvent)
+
+        verify(selectEvent).deferReply(true)
+        verify(interactionHook).editOriginal("This role menu is out of date. Run the command again.")
+        verify(selectEvent, never()).reply(any<String>())
+    }
+
+    @Test
+    @Suppress("UNCHECKED_CAST")
+    fun `select interaction reports async role update failures`() {
+        val category = IAmRolesCategory(1L, 5L, "Games", 0, mutableSetOf(11L))
+        stubSelectContext("assign", category, listOf("11"))
+        whenever(member.roles).thenReturn(emptyList())
+        whenever(availableRole.id).thenReturn("11")
+        whenever(guild.getRoleById(11L)).thenReturn(availableRole)
+        whenever(guild.modifyMemberRoles(member, listOf(availableRole), null)).thenReturn(roleUpdateAction)
+        doAnswer {
+            val consumer = it.arguments[1] as Consumer<Throwable>
+            consumer.accept(IllegalStateException("Discord rejected the update"))
+            null
+        }.whenever(roleUpdateAction).queue(any<Consumer<Void?>>(), any<Consumer<Throwable>>())
+
+        command.onStringSelectInteraction(selectEvent)
+
+        verify(selectEvent).deferReply(true)
+        verify(interactionHook).editOriginal("I couldn't update your roles right now. Please try again.")
     }
 
     @Test
@@ -205,6 +292,12 @@ class RolesTest {
     private fun stubSlashContext(subcommandName: String, category: IAmRolesCategory) {
         whenever(slashEvent.subcommandName).thenReturn(subcommandName)
         command.categoryId = category.categoryId
+        whenever(iAmRolesService.getCategory(1L, category.categoryId!!)).thenReturn(category)
+    }
+
+    private fun stubSelectContext(subcommandName: String, category: IAmRolesCategory, values: List<String>) {
+        whenever(selectEvent.componentId).thenReturn("role:menu:$subcommandName:99:${category.categoryId}:0")
+        whenever(selectEvent.values).thenReturn(values)
         whenever(iAmRolesService.getCategory(1L, category.categoryId!!)).thenReturn(category)
     }
 
