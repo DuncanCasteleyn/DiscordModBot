@@ -32,7 +32,7 @@ data class IAmRolesCategory(
     @field:NotNull
     @CollectionTable(name = "i_am_roles_category_roles")
     @ElementCollection(fetch = FetchType.EAGER)
-    val roles: MutableSet<Long> = HashSet()
+    var roles: MutableSet<Long> = HashSet()
 ) {
 
     override fun equals(other: Any?): Boolean {
