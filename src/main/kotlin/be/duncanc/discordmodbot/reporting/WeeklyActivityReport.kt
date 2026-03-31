@@ -53,8 +53,9 @@ class WeeklyActivityReport(
                             val members = guild.getMembersWithRoles(role)
                             trackedMembers.addAll(members)
                         } else {
-                            val member = guild.getMemberById(it)!!
-                            trackedMembers.add(member)
+                            val member = guild.getMemberById(it)
+
+                            member?.let { e -> trackedMembers.add(e) }
                         }
                     }
                     if (trackedMembers.isEmpty()) {
