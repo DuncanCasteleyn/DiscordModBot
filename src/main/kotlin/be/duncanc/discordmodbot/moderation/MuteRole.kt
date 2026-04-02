@@ -51,7 +51,7 @@ class MuteRole(
             return
         }
 
-        val guild = event.guild!!
+        val guild = member.guild
         val guildId = guild.idLong
         val roleOption = event.getOption(OPTION_ROLE)
 
