@@ -1,38 +1,25 @@
 package be.duncanc.discordmodbot.reporting
 
-import be.duncanc.discordmodbot.discord.CommandModule
-import be.duncanc.discordmodbot.discord.MessageSequence
-import be.duncanc.discordmodbot.discord.Sequence
-import be.duncanc.discordmodbot.reporting.persistence.ActivityReportSettings
 import be.duncanc.discordmodbot.reporting.persistence.ActivityReportSettingsRepository
-import be.duncanc.discordmodbot.reporting.persistence.ReportChannel
-import java.time.Duration
-import java.time.OffsetDateTime
-import java.util.concurrent.TimeUnit
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
-import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
+import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
-import net.dv8tion.jda.api.entities.User
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.events.session.ReadyEvent
 import net.dv8tion.jda.api.events.session.ShutdownEvent
 import net.dv8tion.jda.api.exceptions.PermissionException
-import net.dv8tion.jda.api.JDA
-import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.utils.SplitUtil
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.time.Duration
+import java.time.OffsetDateTime
 
 @Component
 class WeeklyActivityReport(
     private val activityReportSettingsRepository: ActivityReportSettingsRepository
-) : CommandModule(
-    arrayOf("WeeklyActivitySettings"),
-    null,
-    "Allows you to configure weekly reports on amount of message per channel for certain users (in a role)"
-) {
+) : ListenerAdapter() {
     companion object {
         val LOG: Logger = LoggerFactory.getLogger(WeeklyActivityReport::class.java)
     }
@@ -45,14 +32,6 @@ class WeeklyActivityReport(
 
     override fun onShutdown(event: ShutdownEvent) {
         instances.remove(event.jda)
-    }
-
-    override fun commandExec(event: MessageReceivedEvent, command: String, arguments: String?) {
-        if (event.member?.hasPermission(Permission.ADMINISTRATOR) == true) {
-            event.jda.addEventListener(WeeklyReportConfigurationSequence(event.author, event.channel))
-        } else {
-            throw PermissionException("You need administrator permissions.")
-        }
     }
 
     @Deprecated("Broken needs to be fixed")
@@ -74,8 +53,9 @@ class WeeklyActivityReport(
                             val members = guild.getMembersWithRoles(role)
                             trackedMembers.addAll(members)
                         } else {
-                            val member = guild.getMemberById(it)!!
-                            trackedMembers.add(member)
+                            val member = guild.getMemberById(it)
+
+                            member?.let { e -> trackedMembers.add(e) }
                         }
                     }
                     if (trackedMembers.isEmpty()) {
@@ -95,7 +75,7 @@ class WeeklyActivityReport(
                                 }
                             }
                             stats[it] = channelStats
-                        } catch (e: PermissionException) {
+                        } catch (_: PermissionException) {
                             LOG.warn("Insufficient permissions to retrieve history from $it")
                         }
                     }
@@ -120,91 +100,4 @@ class WeeklyActivityReport(
             }
         }
     }
-
-    inner class WeeklyReportConfigurationSequence(
-        user: User,
-        channel: MessageChannel
-    ) : Sequence(
-        user,
-        channel,
-        true,
-        true
-    ), MessageSequence {
-        private var sequenceNumber: Byte = 0
-
-        init {
-            channel.sendMessage(
-                "Please selection the action you want to perform:\n\n" +
-                        "0: Set report channel\n" +
-                        "1: add tracked member or role\n" +
-                        "2: remove tracked member or role"
-            ).queue { addMessageToCleaner(it) }
-        }
-
-        override fun onMessageReceivedDuringSequence(event: MessageReceivedEvent) {
-            when (sequenceNumber) {
-                0.toByte() -> {
-                    when (event.message.contentRaw.toByte()) {
-                        0.toByte() -> {
-                            sequenceNumber = 1
-                            channel.sendMessage("Please mention the channel or send the id of the channel")
-                                .queue { addMessageToCleaner(it) }
-                        }
-
-                        1.toByte() -> {
-                            sequenceNumber = 2
-                            channel.sendMessage("Please mention the user or role or send the id of the role or user")
-                                .queue { addMessageToCleaner(it) }
-                        }
-
-                        2.toByte() -> {
-                            sequenceNumber = 3
-                            channel.sendMessage("Please mention the user or role or send the id of the role or user")
-                                .queue { addMessageToCleaner(it) }
-                        }
-                    }
-                }
-
-                1.toByte() -> {
-                    val channelId = event.message.contentRaw.replace("<#", "").replace(">", "").toLong()
-                    val guildId = event.guild.idLong
-                    val activityReportSettings =
-                        activityReportSettingsRepository.findById(guildId).orElse(ActivityReportSettings(guildId))
-                    activityReportSettings.reportChannel = channelId
-                    activityReportSettingsRepository.save(activityReportSettings)
-                    channel.sendMessage("Channel configured.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
-                    destroy()
-                }
-
-                2.toByte() -> {
-                    val roleOrMemberId = getRoleOrMemberIdFromString(event)
-                    val guildId = event.guild.idLong
-                    val activityReportSettings =
-                        activityReportSettingsRepository.findById(guildId).orElse(ActivityReportSettings(guildId))
-                    activityReportSettings.trackedRoleOrMember.add(roleOrMemberId)
-                    activityReportSettingsRepository.save(activityReportSettings)
-                    channel.sendMessage("Role or member added.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
-                    destroy()
-                }
-
-                3.toByte() -> {
-                    val guildId = event.guild.idLong
-                    val roleOrMemberId = getRoleOrMemberIdFromString(event)
-                    val activityReportSettings =
-                        activityReportSettingsRepository.findById(guildId).orElse(ActivityReportSettings(guildId))
-                    activityReportSettings.trackedRoleOrMember.remove(roleOrMemberId)
-                    activityReportSettingsRepository.save(activityReportSettings)
-                    channel.sendMessage("Role or member removed.").queue { it.delete().queueAfter(1, TimeUnit.MINUTES) }
-                    destroy()
-                }
-            }
-        }
-    }
-
-    private fun getRoleOrMemberIdFromString(event: MessageReceivedEvent) =
-        event.message.contentRaw
-            .replace("<@", "")
-            .replace("&", "")
-            .replace(">", "")
-            .toLong()
 }
