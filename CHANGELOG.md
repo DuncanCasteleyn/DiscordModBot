@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.7](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.2.6...v2.2.7) (2026-04-02)
+
+
+### Bug Fixes
+
+* migrate remaining commands to slash commands ([#555](https://github.com/DuncanCasteleyn/DiscordModBot/issues/555)) ([7953d44](https://github.com/DuncanCasteleyn/DiscordModBot/commit/7953d44acc011c7141ab739e1b17d6ac258cdafb))
+
 ## [2.2.6](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.2.5...v2.2.6) (2026-03-29)
 
 
