@@ -77,7 +77,7 @@ class MuteByIdCommand(
                 .setColor(Color.YELLOW)
                 .setTitle("User muted by ID")
                 .addField("UUID", UUID.randomUUID().toString(), false)
-                .addField("User ID", userId.toString(), true)
+                .addField("User", "<@$userId>", true)
                 .addField("Moderator", member.nicknameAndUsername, true)
                 .addField("Reason", reason, false)
 
