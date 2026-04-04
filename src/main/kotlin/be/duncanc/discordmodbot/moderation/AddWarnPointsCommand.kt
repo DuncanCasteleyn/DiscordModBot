@@ -34,7 +34,7 @@ import java.time.OffsetDateTime
 class AddWarnPointsCommand(
     private val guildWarnPointsService: GuildWarnPointsService,
     private val guildWarnPointsSettingsRepository: GuildWarnPointsSettingsRepository,
-    private val muteRole: MuteRole
+    private val muteRoleCommandAndEventsListener: MuteRoleCommandAndEventsListener
 ) : ListenerAdapter(), SlashCommand {
     companion object {
         private const val COMMAND = "addwarnpoints"
@@ -261,7 +261,7 @@ class AddWarnPointsCommand(
         when (action) {
             1 -> {
                 val muteRole = try {
-                    muteRole.getMuteRole(guild)
+                    muteRoleCommandAndEventsListener.getMuteRole(guild)
                 } catch (_: IllegalStateException) {
                     hook.sendMessage("Warn points added, but mute role is not configured.").queue()
 

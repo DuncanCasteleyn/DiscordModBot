@@ -14,7 +14,7 @@ data class MuteRole(
     @Column(nullable = false)
     var roleId: Long,
 
-    @ElementCollection(fetch = FetchType.EAGER)
+    @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "muted_users")
     var mutedUsers: MutableSet<Long> = HashSet()
 ) {

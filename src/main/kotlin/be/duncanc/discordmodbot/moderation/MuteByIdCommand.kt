@@ -3,7 +3,6 @@ package be.duncanc.discordmodbot.moderation
 import be.duncanc.discordmodbot.discord.SlashCommand
 import be.duncanc.discordmodbot.discord.nicknameAndUsername
 import be.duncanc.discordmodbot.logging.GuildLogger
-import be.duncanc.discordmodbot.moderation.persistence.MuteRolesRepository
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
@@ -19,8 +18,8 @@ import java.util.*
 
 @Component
 class MuteByIdCommand(
-    private val muteRole: MuteRole,
-    private val muteRolesRepository: MuteRolesRepository,
+    private val muteRoleCommandAndEventsListenerService: MuteRoleCommandAndEventsListener,
+    private val muteService: MuteService,
     private val guildLogger: GuildLogger
 ) : ListenerAdapter(), SlashCommand {
     companion object {
@@ -59,25 +58,18 @@ class MuteByIdCommand(
         event.deferReply(true).queue { hook ->
             val guild = member.guild
 
-            val muteRoleEntity = try {
-                muteRole.getMuteRole(guild)
+            val muteRole = try {
+                muteRoleCommandAndEventsListenerService.getMuteRole(guild)
             } catch (_: IllegalStateException) {
                 hook.editOriginal("Mute role is not configured for this server.").queue()
                 return@queue
             }
 
-            val dbMuteRole = muteRolesRepository.findById(guild.idLong).orElse(null)
-            if (dbMuteRole == null) {
-                hook.editOriginal("Mute role is not configured for this server.").queue()
-                return@queue
-            }
+            muteService.muteUserById(guild.idLong, userId)
 
-
-            dbMuteRole.mutedUsers.add(userId)
-            muteRolesRepository.save(dbMuteRole)
-
-            event.getOption(OPTION_USER_ID)?.asMember?.let {
-                guild.addRoleToMember(it, muteRoleEntity).reason(reason).queue()
+            val targetMember = event.getOption(OPTION_USER_ID)?.asMember
+            targetMember?.let {
+                guild.addRoleToMember(it, muteRole).reason(reason).queue()
             }
 
 
@@ -97,7 +89,12 @@ class MuteByIdCommand(
                 GuildLogger.LogTypeAction.MODERATOR
             )
 
-            hook.editOriginal("User (ID: $userId) has been muted. The mute will be applied when they rejoin.").queue()
+            if (targetMember == null) {
+                hook.editOriginal("User (ID: $userId) has been muted. The mute will be applied when they rejoin.")
+                    .queue()
+            } else {
+                hook.editOriginal("User $targetMember has been muted.").queue()
+            }
         }
     }
 

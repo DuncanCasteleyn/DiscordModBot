@@ -1,7 +1,6 @@
 package be.duncanc.discordmodbot.moderation
 
 import be.duncanc.discordmodbot.logging.GuildLogger
-import be.duncanc.discordmodbot.moderation.persistence.MuteRolesRepository
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
@@ -19,17 +18,15 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.*
 import java.util.function.Consumer
-import be.duncanc.discordmodbot.moderation.persistence.MuteRole as MuteRoleEntity
 
 @ExtendWith(MockitoExtension::class)
 class MuteByIdCommandTest {
     @Mock
-    private lateinit var muteRole: MuteRole
+    private lateinit var muteRoleCommandAndEventsListenerService: MuteRoleCommandAndEventsListener
 
     @Mock
-    private lateinit var muteRolesRepository: MuteRolesRepository
+    private lateinit var muteService: MuteService
 
     @Mock
     private lateinit var guildLogger: GuildLogger
@@ -69,7 +66,7 @@ class MuteByIdCommandTest {
     @BeforeEach
     @Suppress("UNCHECKED_CAST")
     fun setUp() {
-        command = MuteByIdCommand(muteRole, muteRolesRepository, guildLogger)
+        command = MuteByIdCommand(muteRoleCommandAndEventsListenerService, muteService, guildLogger)
 
         lenient().whenever(slashEvent.name).thenReturn("mutebyid")
         lenient().whenever(slashEvent.member).thenReturn(member)
@@ -92,18 +89,14 @@ class MuteByIdCommandTest {
         lenient().whenever(userIdOption.asLong).thenReturn(99L)
         lenient().whenever(userIdOption.asMember).thenReturn(null)
         lenient().whenever(reasonOption.asString).thenReturn("Spamming")
-        lenient().whenever(muteRole.getMuteRole(guild)).thenReturn(muteRoleEntity)
-        lenient().whenever(muteRolesRepository.findById(1L)).thenReturn(Optional.of(MuteRoleEntity(1L, 42L)))
+        lenient().whenever(muteRoleCommandAndEventsListenerService.getMuteRole(guild)).thenReturn(muteRoleEntity)
     }
 
     @Test
     fun `mutes a user by id and confirms the request`() {
-        val dbMuteRole = MuteRoleEntity(1L, 42L)
-        whenever(muteRolesRepository.findById(1L)).thenReturn(Optional.of(dbMuteRole))
-
         command.onSlashCommandInteraction(slashEvent)
 
-        verify(muteRolesRepository).save(dbMuteRole)
+        verify(muteService).muteUserById(1L, 99L)
         verify(interactionHook).editOriginal("User (ID: 99) has been muted. The mute will be applied when they rejoin.")
     }
 }

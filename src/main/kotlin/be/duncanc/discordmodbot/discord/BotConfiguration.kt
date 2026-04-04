@@ -1,11 +1,10 @@
 package be.duncanc.discordmodbot.discord
 
+
 import be.duncanc.discordmodbot.bootstrap.DiscordModBotConfig
-
-
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.JDABuilder
-import net.dv8tion.jda.api.hooks.ListenerAdapter
+import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.requests.GatewayIntent
 import net.dv8tion.jda.api.utils.cache.CacheFlag
 import org.springframework.context.annotation.Bean
@@ -28,14 +27,14 @@ class BotConfiguration {
 
     @Bean(destroyMethod = "shutdown")
     fun jda(
-        listenerAdapters: Array<ListenerAdapter>,
+        eventListeners: Array<EventListener>,
         slashCommands: Array<SlashCommand>,
         discordModBotConfig: DiscordModBotConfig
     ): JDA {
         val jda = JDABuilder.create(discordModBotConfig.botToken, INTENTS)
             .setBulkDeleteSplittingEnabled(false)
             .disableCache(CacheFlag.VOICE_STATE, CacheFlag.SCHEDULED_EVENTS)
-            .addEventListeners(*listenerAdapters)
+            .addEventListeners(*eventListeners)
             .setEnableShutdownHook(false)
             .build()
             .awaitReady()
