@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.3.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.2.7...v2.3.0) (2026-04-04)
+
+
+### Features
+
+* **MuteById:** Add a MuteById command to mute user by id even if they have left the guild ([#563](https://github.com/DuncanCasteleyn/DiscordModBot/issues/563)) ([6ee1932](https://github.com/DuncanCasteleyn/DiscordModBot/commit/6ee1932a161520b19f1bf60ba2930da835f24fb9))
+
+
+### Bug Fixes
+
+* **deps:** update dependency net.dv8tion:jda to v6.4.1 ([#564](https://github.com/DuncanCasteleyn/DiscordModBot/issues/564)) ([e319c01](https://github.com/DuncanCasteleyn/DiscordModBot/commit/e319c01c9dc77136228dd87a28610ba2bfc5c2ab))
+
 ## [2.2.7](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.2.6...v2.2.7) (2026-04-02)
 
 
