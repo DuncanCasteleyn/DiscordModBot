@@ -5,19 +5,18 @@ import jakarta.validation.constraints.NotNull
 
 @Entity
 @Table(name = "mute_roles")
-data class MuteRole
-constructor(
+data class MuteRole(
     @Id
     @Column(updatable = false)
-    val guildId: Long,
+    var guildId: Long,
 
     @field:NotNull
     @Column(nullable = false)
-    val roleId: Long,
+    var roleId: Long,
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "muted_users")
-    val mutedUsers: MutableSet<Long> = HashSet()
+    var mutedUsers: MutableSet<Long> = HashSet()
 ) {
 
     override fun equals(other: Any?): Boolean {

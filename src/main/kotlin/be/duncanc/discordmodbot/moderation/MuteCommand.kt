@@ -22,7 +22,7 @@ import java.util.*
 
 @Component
 class MuteCommand(
-    private val muteRole: MuteRole
+    private val muteRoleCommandAndEventsListener: MuteRoleCommandAndEventsListener
 ) : ListenerAdapter(), SlashCommand {
     companion object {
         private const val COMMAND = "mute"
@@ -62,7 +62,7 @@ class MuteCommand(
         event.deferReply(true).queue { hook ->
             val guild = event.guild!!
             val muteRole = try {
-                muteRole.getMuteRole(guild)
+                muteRoleCommandAndEventsListener.getMuteRole(guild)
             } catch (e: IllegalStateException) {
                 hook.editOriginal("Mute role is not configured for this server.").queue()
                 return@queue

@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component
 
 @Component
 class RemoveMuteCommand(
-    private val muteRole: MuteRole
+    private val muteRoleCommandAndEventsListener: MuteRoleCommandAndEventsListener
 ) : ListenerAdapter(), SlashCommand {
     companion object {
         private const val COMMAND = "unmute"
@@ -47,7 +47,7 @@ class RemoveMuteCommand(
         }
 
         val muteRole = try {
-            muteRole.getMuteRole(event.guild!!)
+            muteRoleCommandAndEventsListener.getMuteRole(event.guild!!)
         } catch (e: IllegalStateException) {
             event.reply("Mute role is not configured for this server.").setEphemeral(true).queue()
             return
