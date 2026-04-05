@@ -15,7 +15,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
-import org.mockito.Mockito.lenient
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -48,19 +47,11 @@ class FeedbackConfigCommandTest {
     @BeforeEach
     fun setUp() {
         command = TestFeedbackConfigCommand(reportChannelRepository)
-
-        lenient().whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
-        lenient().whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
-        lenient().whenever(slashEvent.name).thenReturn("feedbackconfig")
-        lenient().whenever(slashEvent.guild).thenReturn(guild)
-        lenient().whenever(slashEvent.member).thenReturn(member)
-        lenient().whenever(guild.idLong).thenReturn(1L)
-        lenient().whenever(guild.name).thenReturn("Test Guild")
-        lenient().whenever(member.hasPermission(Permission.MANAGE_CHANNEL)).thenReturn(true)
     }
 
     @Test
     fun `missing manage channel permission returns error`() {
+        stubSlashCommandContext()
         whenever(member.hasPermission(Permission.MANAGE_CHANNEL)).thenReturn(false)
 
         command.onSlashCommandInteraction(slashEvent)
@@ -70,7 +61,8 @@ class FeedbackConfigCommandTest {
 
     @Test
     fun `show displays disabled state`() {
-        whenever(slashEvent.subcommandName).thenReturn("show")
+        stubAuthorizedSlashCommand("show")
+        whenever(guild.name).thenReturn("Test Guild")
         whenever(reportChannelRepository.findById(1L)).thenReturn(Optional.empty())
 
         command.onSlashCommandInteraction(slashEvent)
@@ -82,7 +74,7 @@ class FeedbackConfigCommandTest {
 
     @Test
     fun `set channel stores selected channel`() {
-        whenever(slashEvent.subcommandName).thenReturn("set-channel")
+        stubAuthorizedSlashCommand("set-channel")
         whenever(textChannel.idLong).thenReturn(11L)
         whenever(textChannel.asMention).thenReturn("<#11>")
         command.selectedChannel = textChannel
@@ -97,7 +89,7 @@ class FeedbackConfigCommandTest {
 
     @Test
     fun `disable removes feedback configuration`() {
-        whenever(slashEvent.subcommandName).thenReturn("disable")
+        stubAuthorizedSlashCommand("disable")
 
         command.onSlashCommandInteraction(slashEvent)
 
@@ -112,6 +104,21 @@ class FeedbackConfigCommandTest {
         assertEquals("feedbackconfig", commandData.name)
         assertEquals(setOf(InteractionContextType.GUILD), commandData.contexts)
         assertEquals(listOf("show", "set-channel", "disable"), commandData.subcommands.map(SubcommandData::getName))
+    }
+
+    private fun stubSlashCommandContext() {
+        whenever(slashEvent.name).thenReturn("feedbackconfig")
+        whenever(slashEvent.guild).thenReturn(guild)
+        whenever(slashEvent.member).thenReturn(member)
+        whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+    }
+
+    private fun stubAuthorizedSlashCommand(subcommandName: String) {
+        stubSlashCommandContext()
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(member.hasPermission(Permission.MANAGE_CHANNEL)).thenReturn(true)
+        whenever(slashEvent.subcommandName).thenReturn(subcommandName)
     }
 
     private class TestFeedbackConfigCommand(

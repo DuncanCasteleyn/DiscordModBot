@@ -17,7 +17,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
-import org.mockito.Mockito.lenient
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -56,20 +55,11 @@ class WeeklyActivitySettingsCommandTest {
     @BeforeEach
     fun setUp() {
         command = TestWeeklyActivitySettingsCommand(activityReportSettingsRepository)
-
-        lenient().whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
-        lenient().whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
-        lenient().whenever(slashEvent.name).thenReturn("weeklyactivitysettings")
-        lenient().whenever(slashEvent.guild).thenReturn(guild)
-        lenient().whenever(slashEvent.member).thenReturn(member)
-        lenient().whenever(guild.idLong).thenReturn(1L)
-        lenient().whenever(guild.name).thenReturn("Test Guild")
-        lenient().whenever(member.hasPermission(Permission.ADMINISTRATOR)).thenReturn(true)
-        lenient().whenever(activityReportSettingsRepository.findById(1L)).thenReturn(Optional.empty())
     }
 
     @Test
     fun `missing administrator permission returns error`() {
+        stubSlashCommandContext()
         whenever(member.hasPermission(Permission.ADMINISTRATOR)).thenReturn(false)
 
         command.onSlashCommandInteraction(slashEvent)
@@ -79,7 +69,8 @@ class WeeklyActivitySettingsCommandTest {
 
     @Test
     fun `set channel stores report channel`() {
-        whenever(slashEvent.subcommandName).thenReturn("set-channel")
+        stubAuthorizedSlashCommand("set-channel")
+        whenever(activityReportSettingsRepository.findById(1L)).thenReturn(Optional.empty())
         whenever(textChannel.idLong).thenReturn(11L)
         whenever(textChannel.asMention).thenReturn("<#11>")
         command.selectedChannel = textChannel
@@ -94,7 +85,8 @@ class WeeklyActivitySettingsCommandTest {
 
     @Test
     fun `add role stores tracked role id`() {
-        whenever(slashEvent.subcommandName).thenReturn("add-role")
+        stubAuthorizedSlashCommand("add-role")
+        whenever(activityReportSettingsRepository.findById(1L)).thenReturn(Optional.empty())
         whenever(role.idLong).thenReturn(15L)
         whenever(role.asMention).thenReturn("<@&15>")
         command.selectedRole = role
@@ -109,7 +101,8 @@ class WeeklyActivitySettingsCommandTest {
 
     @Test
     fun `add member stores tracked member id`() {
-        whenever(slashEvent.subcommandName).thenReturn("add-member")
+        stubAuthorizedSlashCommand("add-member")
+        whenever(activityReportSettingsRepository.findById(1L)).thenReturn(Optional.empty())
         whenever(user.idLong).thenReturn(99L)
         whenever(user.asMention).thenReturn("<@99>")
         command.selectedUser = user
@@ -124,7 +117,7 @@ class WeeklyActivitySettingsCommandTest {
 
     @Test
     fun `remove role updates existing settings`() {
-        whenever(slashEvent.subcommandName).thenReturn("remove-role")
+        stubAuthorizedSlashCommand("remove-role")
         whenever(role.idLong).thenReturn(15L)
         whenever(role.asMention).thenReturn("<@&15>")
         whenever(activityReportSettingsRepository.findById(1L)).thenReturn(
@@ -150,6 +143,21 @@ class WeeklyActivitySettingsCommandTest {
             listOf("show", "set-channel", "add-role", "remove-role", "add-member", "remove-member"),
             commandData.subcommands.map(SubcommandData::getName)
         )
+    }
+
+    private fun stubSlashCommandContext() {
+        whenever(slashEvent.name).thenReturn("weeklyactivitysettings")
+        whenever(slashEvent.guild).thenReturn(guild)
+        whenever(slashEvent.member).thenReturn(member)
+        whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+    }
+
+    private fun stubAuthorizedSlashCommand(subcommandName: String) {
+        stubSlashCommandContext()
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(member.hasPermission(Permission.ADMINISTRATOR)).thenReturn(true)
+        whenever(slashEvent.subcommandName).thenReturn(subcommandName)
     }
 
     private class TestWeeklyActivitySettingsCommand(

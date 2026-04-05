@@ -21,7 +21,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Answers
 import org.mockito.Mock
-import org.mockito.Mockito.lenient
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.*
 import java.util.function.Consumer
@@ -79,33 +78,6 @@ class RolesTest {
     @Suppress("UNCHECKED_CAST")
     fun setUp() {
         command = TestRolesCommand(iAmRolesService)
-
-        lenient().whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
-        lenient().whenever(selectEvent.reply(any<String>())).thenReturn(replyAction)
-        lenient().whenever(selectEvent.deferReply(true)).thenReturn(deferredReplyAction)
-        lenient().whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
-        lenient().whenever(replyAction.addComponents(any<ActionRow>())).thenReturn(replyAction)
-        lenient().whenever(autoCompleteEvent.replyChoices(any<Collection<Command.Choice>>()))
-            .thenReturn(autoCompleteAction)
-        lenient().whenever(roleUpdateAction.reason(any())).thenReturn(roleUpdateAction)
-        lenient().doAnswer {
-            val consumer = it.arguments[0] as Consumer<InteractionHook>
-            consumer.accept(interactionHook)
-            null
-        }.whenever(deferredReplyAction).queue(any<Consumer<InteractionHook>>())
-
-        lenient().whenever(slashEvent.name).thenReturn("role")
-        lenient().whenever(slashEvent.guild).thenReturn(guild)
-        lenient().whenever(slashEvent.member).thenReturn(member)
-        lenient().whenever(selectEvent.guild).thenReturn(guild)
-        lenient().whenever(selectEvent.member).thenReturn(member)
-        lenient().whenever(selectEvent.user).thenReturn(user)
-        lenient().whenever(guild.idLong).thenReturn(1L)
-        lenient().whenever(guild.selfMember).thenReturn(selfMember)
-        lenient().whenever(selfMember.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
-        lenient().whenever(selfMember.canInteract(member)).thenReturn(true)
-        lenient().whenever(selfMember.canInteract(availableRole)).thenReturn(true)
-        lenient().whenever(user.idLong).thenReturn(99L)
     }
 
     @Test
@@ -127,6 +99,8 @@ class RolesTest {
             roles = mutableSetOf(10L, 11L)
         )
         stubSlashContext("assign", category)
+        stubSlashReply(includeComponents = true)
+        stubManageableSelfMember()
         whenever(member.roles).thenReturn(listOf(assignedRole))
         whenever(assignedRole.idLong).thenReturn(10L)
         whenever(availableRole.idLong).thenReturn(11L)
@@ -153,6 +127,8 @@ class RolesTest {
             roles = mutableSetOf(10L, 11L)
         )
         stubSlashContext("assign", category)
+        stubSlashReply()
+        stubManageableSelfMember()
         whenever(member.roles).thenReturn(listOf(assignedRole))
         whenever(assignedRole.idLong).thenReturn(10L)
         whenever(assignedRole.name).thenReturn("Among Us")
@@ -175,6 +151,8 @@ class RolesTest {
             roles = mutableSetOf(10L)
         )
         stubSlashContext("remove", category)
+        stubSlashReply()
+        stubManageableSelfMember()
         whenever(member.roles).thenReturn(emptyList())
 
         command.onSlashCommandInteraction(slashEvent)
@@ -184,6 +162,12 @@ class RolesTest {
 
     @Test
     fun `slash command replies when selected category no longer exists`() {
+        stubSlashReply()
+        stubManageableSelfMember()
+        whenever(slashEvent.name).thenReturn("role")
+        whenever(slashEvent.guild).thenReturn(guild)
+        whenever(slashEvent.member).thenReturn(member)
+        whenever(guild.idLong).thenReturn(1L)
         whenever(slashEvent.subcommandName).thenReturn("assign")
         command.categoryId = 5L
         whenever(iAmRolesService.getCategory(1L, 5L)).thenThrow(IllegalArgumentException("missing"))
@@ -195,6 +179,7 @@ class RolesTest {
 
     @Test
     fun `category autocomplete returns category ids as values`() {
+        whenever(autoCompleteEvent.replyChoices(any<Collection<Command.Choice>>())).thenReturn(autoCompleteAction)
         whenever(autoCompleteEvent.name).thenReturn("role")
         whenever(autoCompleteEvent.guild).thenReturn(guild)
         whenever(autoCompleteEvent.focusedOption.name).thenReturn("category")
@@ -218,6 +203,8 @@ class RolesTest {
 
     @Test
     fun `select interaction rejects clicks from another user`() {
+        stubSelectInteractionContext()
+        stubSelectReply()
         whenever(selectEvent.componentId).thenReturn("role:menu:assign:99:5:0")
         whenever(user.idLong).thenReturn(100L)
 
@@ -231,8 +218,12 @@ class RolesTest {
     fun `select interaction defers reply before assigning roles`() {
         val category = IAmRolesCategory(1L, 5L, "Games", 0, mutableSetOf(11L))
         stubSelectContext("assign", category, listOf("11"))
+        stubDeferredSelectReply()
+        stubManageableSelfMember()
+        whenever(roleUpdateAction.reason(any())).thenReturn(roleUpdateAction)
         whenever(member.roles).thenReturn(emptyList())
         whenever(availableRole.id).thenReturn("11")
+        whenever(selfMember.canInteract(availableRole)).thenReturn(true)
         whenever(guild.getRoleById(11L)).thenReturn(availableRole)
         whenever(guild.modifyMemberRoles(member, listOf(availableRole), null)).thenReturn(roleUpdateAction)
         doAnswer {
@@ -249,6 +240,10 @@ class RolesTest {
 
     @Test
     fun `select interaction defers before stale category check`() {
+        stubSelectInteractionContext()
+        stubDeferredSelectReply()
+        stubManageableSelfMember()
+        whenever(guild.idLong).thenReturn(1L)
         whenever(selectEvent.componentId).thenReturn("role:menu:assign:99:5:0")
         whenever(iAmRolesService.getCategory(1L, 5L)).thenThrow(IllegalArgumentException("missing"))
 
@@ -264,8 +259,12 @@ class RolesTest {
     fun `select interaction reports async role update failures`() {
         val category = IAmRolesCategory(1L, 5L, "Games", 0, mutableSetOf(11L))
         stubSelectContext("assign", category, listOf("11"))
+        stubDeferredSelectReply()
+        stubManageableSelfMember()
+        whenever(roleUpdateAction.reason(any())).thenReturn(roleUpdateAction)
         whenever(member.roles).thenReturn(emptyList())
         whenever(availableRole.id).thenReturn("11")
+        whenever(selfMember.canInteract(availableRole)).thenReturn(true)
         whenever(guild.getRoleById(11L)).thenReturn(availableRole)
         whenever(guild.modifyMemberRoles(member, listOf(availableRole), null)).thenReturn(roleUpdateAction)
         doAnswer {
@@ -290,15 +289,57 @@ class RolesTest {
     }
 
     private fun stubSlashContext(subcommandName: String, category: IAmRolesCategory) {
+        whenever(slashEvent.name).thenReturn("role")
+        whenever(slashEvent.guild).thenReturn(guild)
+        whenever(slashEvent.member).thenReturn(member)
+        whenever(guild.idLong).thenReturn(1L)
         whenever(slashEvent.subcommandName).thenReturn(subcommandName)
         command.categoryId = category.categoryId
         whenever(iAmRolesService.getCategory(1L, category.categoryId!!)).thenReturn(category)
     }
 
     private fun stubSelectContext(subcommandName: String, category: IAmRolesCategory, values: List<String>) {
+        stubSelectInteractionContext()
+        whenever(guild.idLong).thenReturn(1L)
         whenever(selectEvent.componentId).thenReturn("role:menu:$subcommandName:99:${category.categoryId}:0")
         whenever(selectEvent.values).thenReturn(values)
         whenever(iAmRolesService.getCategory(1L, category.categoryId!!)).thenReturn(category)
+    }
+
+    private fun stubSlashReply(includeComponents: Boolean = false) {
+        whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+        if (includeComponents) {
+            whenever(replyAction.addComponents(any<ActionRow>())).thenReturn(replyAction)
+        }
+    }
+
+    private fun stubSelectReply() {
+        whenever(selectEvent.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun stubDeferredSelectReply() {
+        whenever(selectEvent.deferReply(true)).thenReturn(deferredReplyAction)
+        doAnswer {
+            val consumer = it.arguments[0] as Consumer<InteractionHook>
+            consumer.accept(interactionHook)
+            null
+        }.whenever(deferredReplyAction).queue(any<Consumer<InteractionHook>>())
+    }
+
+    private fun stubSelectInteractionContext() {
+        whenever(selectEvent.guild).thenReturn(guild)
+        whenever(selectEvent.member).thenReturn(member)
+        whenever(selectEvent.user).thenReturn(user)
+        whenever(user.idLong).thenReturn(99L)
+    }
+
+    private fun stubManageableSelfMember() {
+        whenever(guild.selfMember).thenReturn(selfMember)
+        whenever(selfMember.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
+        whenever(selfMember.canInteract(member)).thenReturn(true)
     }
 
     private class TestRolesCommand(

@@ -15,7 +15,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
-import org.mockito.Mockito.lenient
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
@@ -71,30 +70,31 @@ class PlanUnmuteCommandTest {
     @BeforeEach
     fun setUp() {
         command = PlanUnmuteCommand(muteService, scheduledUnmuteService, guildLogger, muteRolesRepository)
-
-        lenient().whenever(slashEvent.name).thenReturn("planunmute")
-        lenient().whenever(slashEvent.member).thenReturn(member)
-        lenient().whenever(slashEvent.guild).thenReturn(guild)
-        lenient().whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
-        lenient().whenever(member.user).thenReturn(moderatorUser)
-        lenient().whenever(moderatorUser.name).thenReturn("Moderator")
-        lenient().whenever(guild.idLong).thenReturn(1L)
-        lenient().whenever(slashEvent.getOption("user")).thenReturn(userOption)
-        lenient().whenever(slashEvent.getOption("days")).thenReturn(daysOption)
-        lenient().whenever(userOption.asUser).thenReturn(targetUser)
-        lenient().whenever(userOption.asLong).thenReturn(99L)
-        lenient().whenever(userOption.asMember).thenReturn(null)
-        lenient().whenever(targetUser.name).thenReturn("TargetUser")
-        lenient().whenever(daysOption.asInt).thenReturn(2)
-        lenient().whenever(muteRolesRepository.findById(1L)).thenReturn(Optional.of(MuteRole(1L, 2L)))
-        lenient().whenever(guild.getRoleById(2L)).thenReturn(muteRole)
-        lenient().whenever(muteService.isUserMuted(1L, 99L)).thenReturn(true)
-        lenient().whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
-        lenient().whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
     }
 
     @Test
     fun `plans an unmute for a user who already left the server`() {
+        val jda = org.mockito.kotlin.mock<net.dv8tion.jda.api.JDA>()
+
+        whenever(slashEvent.name).thenReturn("planunmute")
+        whenever(slashEvent.member).thenReturn(member)
+        whenever(slashEvent.guild).thenReturn(guild)
+        whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
+        whenever(member.user).thenReturn(moderatorUser)
+        whenever(moderatorUser.name).thenReturn("Moderator")
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(slashEvent.getOption("user")).thenReturn(userOption)
+        whenever(slashEvent.getOption("days")).thenReturn(daysOption)
+        whenever(userOption.asLong).thenReturn(99L)
+        whenever(userOption.asMember).thenReturn(null)
+        whenever(daysOption.asInt).thenReturn(2)
+        whenever(muteRolesRepository.findById(1L)).thenReturn(Optional.of(MuteRole(1L, 2L)))
+        whenever(guild.getRoleById(2L)).thenReturn(muteRole)
+        whenever(guild.jda).thenReturn(jda)
+        whenever(muteService.isUserMuted(1L, 99L)).thenReturn(true)
+        whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+
         command.onSlashCommandInteraction(slashEvent)
 
         verify(muteService).isUserMuted(1L, 99L)

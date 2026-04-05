@@ -22,7 +22,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Answers
 import org.mockito.Mock
-import org.mockito.Mockito.lenient
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.*
 import java.util.function.Consumer
@@ -70,20 +69,6 @@ class GateConfigCommandTest {
     @BeforeEach
     fun setUp() {
         command = GateConfigCommand(memberGateService, welcomeMessageService)
-
-        lenient().whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
-        lenient().whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
-        lenient().whenever(slashEvent.deferReply(true)).thenReturn(replyAction)
-        lenient().whenever(slashEvent.hook).thenReturn(interactionHook)
-        lenient().whenever(interactionHook.sendMessage(any<String>())).thenReturn(followupAction)
-        lenient().whenever(followupAction.setEphemeral(true)).thenReturn(followupAction)
-        lenient().doAnswer {
-            val consumer = it.arguments[0] as Consumer<InteractionHook>
-            consumer.accept(interactionHook)
-            null
-        }.whenever(replyAction).queue(any<Consumer<InteractionHook>>())
-        lenient().whenever(autoCompleteEvent.replyChoices(any<Collection<Command.Choice>>()))
-            .thenReturn(autoCompleteAction)
     }
 
     @Test
@@ -97,6 +82,7 @@ class GateConfigCommandTest {
 
     @Test
     fun `missing member returns guild error`() {
+        stubReply()
         whenever(slashEvent.name).thenReturn("gateconfig")
         whenever(slashEvent.guild).thenReturn(guild)
         whenever(slashEvent.member).thenReturn(null)
@@ -108,7 +94,10 @@ class GateConfigCommandTest {
 
     @Test
     fun `missing manage roles permission returns error`() {
-        stubSlashContext(subcommandName = "show")
+        stubReply()
+        whenever(slashEvent.name).thenReturn("gateconfig")
+        whenever(slashEvent.guild).thenReturn(guild)
+        whenever(slashEvent.member).thenReturn(member)
         whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(false)
 
         command.onSlashCommandInteraction(slashEvent)
@@ -118,6 +107,7 @@ class GateConfigCommandTest {
 
     @Test
     fun `question autocomplete filters matching questions`() {
+        whenever(autoCompleteEvent.replyChoices(any<Collection<Command.Choice>>())).thenReturn(autoCompleteAction)
         stubQuestionAutocomplete(query = "app")
         whenever(memberGateService.getQuestions(1L)).thenReturn(setOf("banana", "apple", "application"))
 
@@ -134,6 +124,7 @@ class GateConfigCommandTest {
 
     @Test
     fun `welcome autocomplete uses ids as values`() {
+        whenever(autoCompleteEvent.replyChoices(any<Collection<Command.Choice>>())).thenReturn(autoCompleteAction)
         stubWelcomeAutocomplete(query = "hello")
         whenever(welcomeMessageService.getWelcomeMessages(1L)).thenReturn(
             listOf(
@@ -155,8 +146,7 @@ class GateConfigCommandTest {
 
     @Test
     fun `remove question rejects values outside autocomplete suggestions`() {
-        stubSlashContext(subcommandName = "remove-question")
-        whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
+        stubAuthorizedSlashContext(subcommandName = "remove-question", includeReply = true)
         val questionOption = stringOption("missing")
         whenever(slashEvent.getOption("question")).thenReturn(questionOption)
         whenever(memberGateService.getQuestions(1L)).thenReturn(setOf("expected"))
@@ -168,8 +158,7 @@ class GateConfigCommandTest {
 
     @Test
     fun `set member role stores selected role`() {
-        stubSlashContext(subcommandName = "set-member-role")
-        whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
+        stubAuthorizedSlashContext(subcommandName = "set-member-role", includeReply = true)
         val roleOption = roleOption(role)
         whenever(slashEvent.getOption("role")).thenReturn(roleOption)
         whenever(role.asMention).thenReturn("<@&5>")
@@ -182,7 +171,9 @@ class GateConfigCommandTest {
 
     @Test
     fun `show lists all configured questions and welcome messages`() {
-        stubSlashContext(subcommandName = "show")
+        stubAuthorizedSlashContext(subcommandName = "show")
+        stubDeferredReply()
+        whenever(guild.jda).thenReturn(jda)
         whenever(guild.name).thenReturn("Test Guild")
         whenever(memberGateService.getQuestions(1L)).thenReturn(setOf("First question?", "Second question?"))
         whenever(welcomeMessageService.getWelcomeMessages(1L)).thenReturn(
@@ -215,7 +206,9 @@ class GateConfigCommandTest {
 
     @Test
     fun `show splits oversized output into followup messages`() {
-        stubSlashContext(subcommandName = "show")
+        stubAuthorizedSlashContext(subcommandName = "show")
+        stubDeferredReply(includeEphemeralFollowup = true)
+        whenever(guild.jda).thenReturn(jda)
         whenever(guild.name).thenReturn("Test Guild")
         whenever(memberGateService.getQuestions(1L)).thenReturn(
             (1..60).map { "Question $it ${"x".repeat(50)}" }.toSet()
@@ -244,38 +237,57 @@ class GateConfigCommandTest {
         assertEquals(2048, option.maxLength)
     }
 
-    private fun stubSlashContext(subcommandName: String) {
-        lenient().whenever(slashEvent.name).thenReturn("gateconfig")
-        lenient().whenever(slashEvent.guild).thenReturn(guild)
-        lenient().whenever(slashEvent.member).thenReturn(member)
-        lenient().whenever(slashEvent.subcommandName).thenReturn(subcommandName)
-        lenient().whenever(guild.jda).thenReturn(jda)
-        lenient().whenever(guild.idLong).thenReturn(1L)
-        lenient().whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
-        lenient().whenever(memberGateService.getGateChannel(1L, jda)).thenReturn(null)
-        lenient().whenever(memberGateService.getWelcomeChannel(1L, jda)).thenReturn(null)
-        lenient().whenever(memberGateService.getRuleChannel(1L, jda)).thenReturn(null)
-        lenient().whenever(memberGateService.getMemberRole(1L, jda)).thenReturn(null)
-        lenient().whenever(memberGateService.getPurgeTime(1L)).thenReturn(null)
-        lenient().whenever(memberGateService.getReminderTime(1L)).thenReturn(null)
+    private fun stubSlashContext(subcommandName: String, includeReply: Boolean = false) {
+        if (includeReply) {
+            stubReply()
+        }
+        whenever(slashEvent.name).thenReturn("gateconfig")
+        whenever(slashEvent.guild).thenReturn(guild)
+        whenever(slashEvent.member).thenReturn(member)
+        whenever(slashEvent.subcommandName).thenReturn(subcommandName)
+        whenever(guild.idLong).thenReturn(1L)
+    }
+
+    private fun stubAuthorizedSlashContext(subcommandName: String, includeReply: Boolean = false) {
+        stubSlashContext(subcommandName, includeReply)
+        whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
     }
 
     private fun stubQuestionAutocomplete(query: String) {
-        lenient().whenever(autoCompleteEvent.name).thenReturn("gateconfig")
-        lenient().whenever(autoCompleteEvent.guild).thenReturn(guild)
-        lenient().whenever(guild.idLong).thenReturn(1L)
-        lenient().whenever(autoCompleteEvent.subcommandName).thenReturn("remove-question")
-        lenient().whenever(autoCompleteEvent.focusedOption.name).thenReturn("question")
-        lenient().whenever(autoCompleteEvent.focusedOption.value).thenReturn(query)
+        whenever(autoCompleteEvent.name).thenReturn("gateconfig")
+        whenever(autoCompleteEvent.guild).thenReturn(guild)
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(autoCompleteEvent.subcommandName).thenReturn("remove-question")
+        whenever(autoCompleteEvent.focusedOption.name).thenReturn("question")
+        whenever(autoCompleteEvent.focusedOption.value).thenReturn(query)
     }
 
     private fun stubWelcomeAutocomplete(query: String) {
-        lenient().whenever(autoCompleteEvent.name).thenReturn("gateconfig")
-        lenient().whenever(autoCompleteEvent.guild).thenReturn(guild)
-        lenient().whenever(guild.idLong).thenReturn(1L)
-        lenient().whenever(autoCompleteEvent.subcommandName).thenReturn("remove-welcome")
-        lenient().whenever(autoCompleteEvent.focusedOption.name).thenReturn("welcome")
-        lenient().whenever(autoCompleteEvent.focusedOption.value).thenReturn(query)
+        whenever(autoCompleteEvent.name).thenReturn("gateconfig")
+        whenever(autoCompleteEvent.guild).thenReturn(guild)
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(autoCompleteEvent.subcommandName).thenReturn("remove-welcome")
+        whenever(autoCompleteEvent.focusedOption.name).thenReturn("welcome")
+        whenever(autoCompleteEvent.focusedOption.value).thenReturn(query)
+    }
+
+    private fun stubReply() {
+        whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun stubDeferredReply(includeEphemeralFollowup: Boolean = false) {
+        whenever(slashEvent.deferReply(true)).thenReturn(replyAction)
+        whenever(interactionHook.sendMessage(any<String>())).thenReturn(followupAction)
+        if (includeEphemeralFollowup) {
+            whenever(followupAction.setEphemeral(true)).thenReturn(followupAction)
+        }
+        doAnswer {
+            val consumer = it.arguments[0] as Consumer<InteractionHook>
+            consumer.accept(interactionHook)
+            null
+        }.whenever(replyAction).queue(any<Consumer<InteractionHook>>())
     }
 
     private fun getSubcommand(name: String): SubcommandData {
