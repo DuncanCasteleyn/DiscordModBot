@@ -2,11 +2,13 @@ package be.duncanc.discordmodbot.moderation
 
 import be.duncanc.discordmodbot.moderation.persistence.GuildWarnPointsSettingsRepository
 import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.components.actionrow.ActionRow
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 import net.dv8tion.jda.api.interactions.modals.ModalMapping
+import net.dv8tion.jda.api.requests.restaction.interactions.MessageEditCallbackAction
 import net.dv8tion.jda.api.requests.restaction.interactions.ModalCallbackAction
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction
 import org.junit.jupiter.api.BeforeEach
@@ -14,11 +16,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argThat
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
+import org.mockito.kotlin.*
 import java.time.OffsetDateTime
 
 @ExtendWith(MockitoExtension::class)
@@ -61,6 +59,9 @@ class AddWarnPointsCommandTest {
 
     @Mock
     private lateinit var daysValue: ModalMapping
+
+    @Mock
+    private lateinit var messageEditAction: MessageEditCallbackAction
 
     private lateinit var command: AddWarnPointsCommand
 
@@ -140,5 +141,19 @@ class AddWarnPointsCommandTest {
 
         verify(buttonEvent).reply("You cannot skip an unmute prompt initiated by another moderator.")
         verify(buttonEvent, never()).editMessage(any<String>())
+    }
+
+    @Test
+    fun `skip unmute button edits message when moderator matches`() {
+        whenever(buttonEvent.componentId).thenReturn("addwarnpoints_skip_unmute:12:99")
+        whenever(buttonEvent.user).thenReturn(moderatorUser)
+        whenever(moderatorUser.idLong).thenReturn(12L)
+        whenever(buttonEvent.editMessage(any<String>())).thenReturn(messageEditAction)
+        whenever(messageEditAction.setComponents(any<List<ActionRow>>())).thenReturn(messageEditAction)
+
+        command.onButtonInteraction(buttonEvent)
+
+        verify(buttonEvent).editMessage("Skipped planning an unmute for <@99>.")
+        verify(buttonEvent, never()).reply(any<String>())
     }
 }

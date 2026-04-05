@@ -14,13 +14,9 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.isNull
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
+import org.mockito.kotlin.*
 import java.time.OffsetDateTime
-import java.util.Optional
+import java.util.*
 
 @ExtendWith(MockitoExtension::class)
 class UnmutePlanningServiceTest {
@@ -63,7 +59,7 @@ class UnmutePlanningServiceTest {
 
     @Test
     fun `plans an unmute for a muted user`() {
-        val jda = org.mockito.kotlin.mock<JDA>()
+        val jda = mock<JDA>()
 
         whenever(guild.idLong).thenReturn(1L)
         whenever(muteRolesRepository.findById(1L)).thenReturn(Optional.of(MuteRole(1L, 2L)))
@@ -107,5 +103,30 @@ class UnmutePlanningServiceTest {
         }
 
         kotlin.test.assertEquals("This user is not muted.", exception.message)
+    }
+
+    @Test
+    fun `fails when mute role is not configured`() {
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(muteRolesRepository.findById(1L)).thenReturn(Optional.empty())
+
+        val exception = assertThrows<IllegalStateException> {
+            service.planUnmute(guild, 99L, moderator, 2)
+        }
+
+        kotlin.test.assertEquals("Mute role is not configured for this server.", exception.message)
+    }
+
+    @Test
+    fun `fails when mute role does not exist in guild`() {
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(muteRolesRepository.findById(1L)).thenReturn(Optional.of(MuteRole(1L, 2L)))
+        whenever(guild.getRoleById(2L)).thenReturn(null)
+
+        val exception = assertThrows<IllegalStateException> {
+            service.planUnmute(guild, 99L, moderator, 2)
+        }
+
+        kotlin.test.assertEquals("Mute role is not configured for this server.", exception.message)
     }
 }

@@ -167,11 +167,12 @@ class AddWarnPointsCommand(
     }
 
     private fun handleReasonModal(event: ModalInteractionEvent) {
-        if (!event.modalId.startsWith(MODAL_ID)) return
-
         val parts = event.modalId.split(":")
 
-        if (parts.size != 5) return
+        if (parts.size != 5) {
+            event.reply("This form is no longer valid.").setEphemeral(true).queue()
+            return
+        }
 
         val targetMember = event.guild?.getMemberById(parts[1]) ?: run {
             event.reply("User not found.").setEphemeral(true).queue()
@@ -373,9 +374,10 @@ class AddWarnPointsCommand(
                     null
                 }
                 muteRole?.let { role ->
-                    guild.addRoleToMember(targetMember, role).reason(reason).queue {
-                        sendPlanUnmutePrompt(hook, moderator, targetMember)
-                    }
+                    guild.addRoleToMember(targetMember, role).reason(reason).queue(
+                        { sendPlanUnmutePrompt(hook, moderator, targetMember) },
+                        { hook.sendMessage("Unable to add mute role to user.").queue() }
+                    )
                 }
             }
 

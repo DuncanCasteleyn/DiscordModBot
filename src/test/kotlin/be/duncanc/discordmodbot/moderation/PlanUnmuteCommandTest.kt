@@ -68,4 +68,89 @@ class PlanUnmuteCommandTest {
         verify(unmutePlanningService).planUnmute(guild, 99L, member, 2)
         verify(slashEvent).reply(argThat<String> { contains("<@99>") })
     }
+
+    @Test
+    fun `fails when no user is specified`() {
+        whenever(slashEvent.name).thenReturn("planunmute")
+        whenever(slashEvent.member).thenReturn(member)
+        whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
+        whenever(slashEvent.getOption("user")).thenReturn(null)
+        whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        verify(slashEvent).reply("You need to mention a user.")
+    }
+
+    @Test
+    fun `fails when days is null`() {
+        whenever(slashEvent.name).thenReturn("planunmute")
+        whenever(slashEvent.member).thenReturn(member)
+        whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
+        whenever(slashEvent.getOption("user")).thenReturn(userOption)
+        whenever(slashEvent.getOption("days")).thenReturn(null)
+        whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        verify(slashEvent).reply("Please provide a valid number of days.")
+    }
+
+    @Test
+    fun `fails when days is zero`() {
+        whenever(slashEvent.name).thenReturn("planunmute")
+        whenever(slashEvent.member).thenReturn(member)
+        whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
+        whenever(slashEvent.getOption("user")).thenReturn(userOption)
+        whenever(slashEvent.getOption("days")).thenReturn(daysOption)
+        whenever(daysOption.asInt).thenReturn(0)
+        whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        verify(slashEvent).reply("Please provide a valid number of days.")
+    }
+
+    @Test
+    fun `fails when service throws IllegalArgumentException`() {
+        whenever(slashEvent.name).thenReturn("planunmute")
+        whenever(slashEvent.member).thenReturn(member)
+        whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
+        whenever(slashEvent.guild).thenReturn(guild)
+        whenever(slashEvent.getOption("user")).thenReturn(userOption)
+        whenever(slashEvent.getOption("days")).thenReturn(daysOption)
+        whenever(userOption.asLong).thenReturn(99L)
+        whenever(daysOption.asInt).thenReturn(5)
+        whenever(unmutePlanningService.planUnmute(guild, 99L, member, 5))
+            .thenThrow(IllegalArgumentException("Invalid input"))
+        whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        verify(slashEvent).reply("Invalid input")
+    }
+
+    @Test
+    fun `fails when service throws IllegalStateException`() {
+        whenever(slashEvent.name).thenReturn("planunmute")
+        whenever(slashEvent.member).thenReturn(member)
+        whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
+        whenever(slashEvent.guild).thenReturn(guild)
+        whenever(slashEvent.getOption("user")).thenReturn(userOption)
+        whenever(slashEvent.getOption("days")).thenReturn(daysOption)
+        whenever(userOption.asLong).thenReturn(99L)
+        whenever(daysOption.asInt).thenReturn(3)
+        whenever(unmutePlanningService.planUnmute(guild, 99L, member, 3))
+            .thenThrow(IllegalStateException("User is not muted"))
+        whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        verify(slashEvent).reply("User is not muted")
+    }
 }
