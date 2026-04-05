@@ -1,7 +1,6 @@
 package be.duncanc.discordmodbot.moderation
 
 import be.duncanc.discordmodbot.discord.SlashCommand
-import be.duncanc.discordmodbot.discord.messageTimeFormat
 import be.duncanc.discordmodbot.discord.nicknameAndUsername
 import be.duncanc.discordmodbot.moderation.persistence.GuildWarnPointsRepository
 import net.dv8tion.jda.api.EmbedBuilder
@@ -15,10 +14,10 @@ import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
+import net.dv8tion.jda.api.utils.TimeFormat
 import org.springframework.stereotype.Component
 import java.awt.Color
 import java.time.OffsetDateTime
-import java.time.format.DateTimeFormatter
 
 @Component
 class WarnHistoryCommand(
@@ -28,8 +27,6 @@ class WarnHistoryCommand(
         private const val COMMAND = "warnhistory"
         private const val DESCRIPTION = "Shows the warn history for a user."
         private const val OPTION_USER = "user"
-
-        private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd-M-yyyy hh:mm:ss a O")
     }
 
     override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
@@ -101,9 +98,17 @@ class WarnHistoryCommand(
                         guild.getMemberById(warning.creatorId)?.nicknameAndUsername ?: "Unknown",
                         true
                     )
-                    .addField("Created", warning.creationDate.format(messageTimeFormat), true)
+                    .addField(
+                        "Created",
+                        TimeFormat.DATE_SHORT_TIME_SHORT.atInstant(warning.creationDate.toInstant()).toString(),
+                        true
+                    )
                     .addField("Reason", warning.reason, false)
-                    .addField("Expires", warning.expireDate.format(messageTimeFormat), true)
+                    .addField(
+                        "Expires",
+                        TimeFormat.DATE_SHORT_TIME_SHORT.atInstant(warning.expireDate.toInstant()).toString(),
+                        true
+                    )
 
                 embeds.add(embedBuilder.build())
             }

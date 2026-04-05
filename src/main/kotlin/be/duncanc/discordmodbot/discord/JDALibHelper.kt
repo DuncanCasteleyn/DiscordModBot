@@ -1,16 +1,7 @@
 package be.duncanc.discordmodbot.discord
 
-import java.time.format.DateTimeFormatter
-import java.util.*
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.entities.Member
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import net.dv8tion.jda.api.exceptions.PermissionException
-
-/**
- * When a time format has to be displayed generally this format will be used.
- */
-val messageTimeFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm O", Locale.ROOT)
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 
 /**
  * Retrieves a string that contains both the nickname and username of a member.
@@ -38,7 +29,7 @@ fun TextChannel.limitLessBulkDeleteByIds(messagesIds: ArrayList<Long>) {
         }
     } else {
         var messagesStack = ArrayList<String>()
-        while (messagesIdStrings.size > 0) {
+        while (messagesIdStrings.isNotEmpty()) {
             messagesStack.add(messagesIdStrings.removeAt(0))
             if (messagesStack.size == 100) {
                 this.deleteMessagesByIds(messagesStack).queue()
@@ -53,28 +44,4 @@ fun TextChannel.limitLessBulkDeleteByIds(messagesIds: ArrayList<Long>) {
             }
         }
     }
-}
-
-fun extractReason(arguments: String?): String {
-    val reason: String
-    try {
-        reason = extractSentenceIgnoringFirstWord(arguments)
-    } catch (e: IndexOutOfBoundsException) {
-        throw IllegalArgumentException("No reason provided for this action.")
-    }
-    return reason
-}
-
-private fun extractSentenceIgnoringFirstWord(arguments: String?) =
-    arguments!!.substring(getIndexStartOfSecondWord(arguments))
-
-private fun getIndexStartOfSecondWord(arguments: String) =
-    arguments.split(" ").dropLastWhile { it.isBlank() }.toTypedArray()[0].length + 1
-
-fun findMemberAndCheckCanInteract(event: MessageReceivedEvent): Member {
-    val target = event.message.mentions.members[0]
-    if (event.member?.canInteract(target) != true) {
-        throw PermissionException("You can't interact with this member")
-    }
-    return target
 }

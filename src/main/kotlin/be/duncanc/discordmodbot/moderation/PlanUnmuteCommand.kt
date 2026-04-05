@@ -1,7 +1,6 @@
 package be.duncanc.discordmodbot.moderation
 
 import be.duncanc.discordmodbot.discord.SlashCommand
-import be.duncanc.discordmodbot.discord.messageTimeFormat
 import be.duncanc.discordmodbot.discord.nicknameAndUsername
 import be.duncanc.discordmodbot.logging.GuildLogger
 import be.duncanc.discordmodbot.moderation.persistence.MuteRolesRepository
@@ -14,6 +13,7 @@ import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
+import net.dv8tion.jda.api.utils.TimeFormat
 import org.springframework.stereotype.Component
 import java.time.OffsetDateTime
 
@@ -80,7 +80,13 @@ class PlanUnmuteCommand(
 
         logScheduledMute(guild, targetMember.user, member, unmuteDateTime)
 
-        event.reply("Unmute has been planned for ${targetMember.asMention} on ${unmuteDateTime.format(messageTimeFormat)}.")
+        event.reply(
+            "Unmute has been planned for ${targetMember.asMention} on ${
+                TimeFormat.DATE_SHORT_TIME_SHORT.atInstant(
+                    unmuteDateTime.toInstant()
+                )
+            }."
+        )
             .setEphemeral(true).queue()
     }
 
@@ -95,7 +101,11 @@ class PlanUnmuteCommand(
             .setTitle("User unmute planned")
             .addField("User", guild.getMember(targetUser)?.nicknameAndUsername ?: targetUser.name, true)
             .addField("Moderator", guild.getMember(moderator)?.nicknameAndUsername ?: moderator.user.name, true)
-            .addField("Unmute planned after", unmuteDateTime.format(messageTimeFormat), false)
+            .addField(
+                "Unmute planned after",
+                TimeFormat.DATE_SHORT_TIME_SHORT.atInstant(unmuteDateTime.toInstant()).toString(),
+                false
+            )
 
         guildLogger.log(logEmbed, targetUser, guild, null, GuildLogger.LogTypeAction.MODERATOR)
     }

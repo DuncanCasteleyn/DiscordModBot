@@ -1,7 +1,6 @@
 package be.duncanc.discordmodbot.moderation
 
 import be.duncanc.discordmodbot.discord.SlashCommand
-import be.duncanc.discordmodbot.discord.messageTimeFormat
 import be.duncanc.discordmodbot.discord.nicknameAndUsername
 import be.duncanc.discordmodbot.logging.GuildLogger
 import be.duncanc.discordmodbot.moderation.persistence.GuildWarnPointsSettings
@@ -24,6 +23,7 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import net.dv8tion.jda.api.modals.Modal
+import net.dv8tion.jda.api.utils.TimeFormat
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -294,9 +294,11 @@ class AddWarnPointsCommand(
             guildWarnPointsService.getActiveWarnings(guild.idLong, user.idLong).forEach {
                 messageBuilder.append("\n\n").append(it.points).append(" point(s) added by ")
                     .append(guild.getMemberById(it.creatorId)?.nicknameAndUsername)
-                    .append(" on ").append(it.creationDate.format(messageTimeFormat)).append('\n')
+                    .append(" on ").append(TimeFormat.DATE_SHORT_TIME_SHORT.atInstant(it.creationDate.toInstant()))
+                    .append('\n')
                     .append("Reason: ").append(it.reason)
-                    .append("\nExpires on: ").append(it.expireDate.format(messageTimeFormat))
+                    .append("\nExpires on: ")
+                    .append(TimeFormat.DATE_SHORT_TIME_SHORT.atInstant(it.expireDate.toInstant()))
             }
 
             val messages = net.dv8tion.jda.api.utils.SplitUtil.split(
@@ -332,7 +334,7 @@ class AddWarnPointsCommand(
                 .addField("Moderator", moderator.nicknameAndUsername, true)
                 .addField("Amount", amount.toString(), false)
                 .addField("Reason", reason, false)
-                .addField("Expires", dateTime.format(messageTimeFormat), false)
+                .addField("Expires", TimeFormat.DATE_SHORT_TIME_SHORT.atInstant(dateTime.toInstant()).toString(), false)
             when (action) {
                 1.toByte() -> logEmbed.addField("Punishment", "Mute", false)
                 2.toByte() -> logEmbed.addField("Punishment", "Kick", false)

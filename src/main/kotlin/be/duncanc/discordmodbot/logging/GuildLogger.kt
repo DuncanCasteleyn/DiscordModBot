@@ -28,6 +28,7 @@ import net.dv8tion.jda.api.events.user.update.UserUpdateNameEvent
 import net.dv8tion.jda.api.exceptions.PermissionException
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.utils.FileUpload
+import net.dv8tion.jda.api.utils.TimeFormat
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
 import net.dv8tion.jda.api.utils.messages.MessageEditData
 import org.slf4j.LoggerFactory
@@ -35,6 +36,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.awt.Color
+import java.time.Instant
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
@@ -451,7 +453,11 @@ class GuildLogger
             .setColor(Color.GREEN)
             .setTitle("User joined", null)
             .addField("User", event.member.user.name, false)
-            .addField("Account created", event.member.user.timeCreated.format(DATE_TIME_FORMATTER), false)
+            .addField(
+                "Account created",
+                TimeFormat.DATE_SHORT_TIME_SHORT.atInstant(event.member.user.timeCreated.toInstant()).toString(),
+                false
+            )
         guildLoggerExecutor.execute { log(logEmbed, event.member.user, event.guild, null, LogTypeAction.USER) }
     }
 
@@ -598,7 +604,7 @@ class GuildLogger
         } ?: return
 
         try {
-            logEmbed.setTimestamp(OffsetDateTime.now())
+            logEmbed.setTimestamp(Instant.now())
             if (associatedUser != null) {
                 logEmbed.setFooter(associatedUser.id, associatedUser.effectiveAvatarUrl)
             }
