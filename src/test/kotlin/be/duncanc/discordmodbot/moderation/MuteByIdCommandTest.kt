@@ -13,9 +13,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Answers
 import org.mockito.Mock
-import org.mockito.Mockito.lenient
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.util.function.Consumer
@@ -67,33 +67,32 @@ class MuteByIdCommandTest {
     @Suppress("UNCHECKED_CAST")
     fun setUp() {
         command = MuteByIdCommand(muteRoleCommandAndEventsListenerService, muteService, guildLogger)
-
-        lenient().whenever(slashEvent.name).thenReturn("mutebyid")
-        lenient().whenever(slashEvent.member).thenReturn(member)
-        lenient().whenever(member.guild).thenReturn(guild)
-        lenient().whenever(member.nickname).thenReturn("Moderator")
-        lenient().whenever(member.user).thenReturn(user)
-        lenient().whenever(user.name).thenReturn("ModeratorUser")
-        lenient().whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
-        lenient().whenever(guild.idLong).thenReturn(1L)
-        lenient().whenever(slashEvent.deferReply(true)).thenReturn(replyAction)
-        lenient().whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
-        lenient().doAnswer {
-            val consumer = it.arguments[0] as Consumer<InteractionHook>
-            consumer.accept(interactionHook)
-            null
-        }.whenever(replyAction).queue(any<Consumer<InteractionHook>>())
-        lenient().whenever(interactionHook.editOriginal(any<String>())).thenReturn(editAction)
-        lenient().whenever(slashEvent.getOption("user_id")).thenReturn(userIdOption)
-        lenient().whenever(slashEvent.getOption("reason")).thenReturn(reasonOption)
-        lenient().whenever(userIdOption.asLong).thenReturn(99L)
-        lenient().whenever(userIdOption.asMember).thenReturn(null)
-        lenient().whenever(reasonOption.asString).thenReturn("Spamming")
-        lenient().whenever(muteRoleCommandAndEventsListenerService.getMuteRole(guild)).thenReturn(muteRoleEntity)
     }
 
     @Test
     fun `mutes a user by id and confirms the request`() {
+        whenever(slashEvent.name).thenReturn("mutebyid")
+        whenever(slashEvent.member).thenReturn(member)
+        whenever(member.guild).thenReturn(guild)
+        whenever(member.nickname).thenReturn("Moderator")
+        whenever(member.user).thenReturn(user)
+        whenever(user.name).thenReturn("ModeratorUser")
+        whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(slashEvent.deferReply(true)).thenReturn(replyAction)
+        doAnswer {
+            val consumer = it.arguments[0] as Consumer<InteractionHook>
+            consumer.accept(interactionHook)
+            null
+        }.whenever(replyAction).queue(any<Consumer<InteractionHook>>())
+        whenever(interactionHook.editOriginal(any<String>())).thenReturn(editAction)
+        whenever(slashEvent.getOption("user_id")).thenReturn(userIdOption)
+        whenever(slashEvent.getOption("reason")).thenReturn(reasonOption)
+        whenever(userIdOption.asLong).thenReturn(99L)
+        whenever(userIdOption.asMember).thenReturn(null)
+        whenever(reasonOption.asString).thenReturn("Spamming")
+        whenever(muteRoleCommandAndEventsListenerService.getMuteRole(guild)).thenReturn(muteRoleEntity)
+
         command.onSlashCommandInteraction(slashEvent)
 
         verify(muteService).muteUserById(1L, 99L)

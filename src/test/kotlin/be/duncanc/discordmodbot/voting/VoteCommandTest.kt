@@ -20,9 +20,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
-import org.mockito.Mockito.lenient
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -69,25 +69,6 @@ class VoteCommandTest {
     @BeforeEach
     fun setUp() {
         command = TestVoteCommand(votingEmotesRepository)
-
-        lenient().whenever(slashEvent.name).thenReturn("vote")
-        lenient().whenever(slashEvent.guild).thenReturn(guild)
-        lenient().whenever(slashEvent.member).thenReturn(member)
-        lenient().whenever(slashEvent.channel).thenReturn(channel)
-        lenient().whenever(slashEvent.jda).thenReturn(jda)
-        lenient().whenever(guild.idLong).thenReturn(1L)
-        lenient().whenever(member.asMention).thenReturn("<@99>")
-        lenient().whenever(channel.asMention).thenReturn("<#10>")
-        lenient().whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
-        lenient().whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
-        lenient().whenever(slashEvent.deferReply(true)).thenReturn(replyAction)
-        lenient().whenever(interactionHook.sendMessage(any<String>())).thenReturn(followupAction)
-        lenient().whenever(followupAction.setEphemeral(true)).thenReturn(followupAction)
-        lenient().doAnswer {
-            val consumer = it.arguments[0] as Consumer<InteractionHook>
-            consumer.accept(interactionHook)
-            null
-        }.whenever(replyAction).queue(any<Consumer<InteractionHook>>())
     }
 
     @Test
@@ -101,8 +82,11 @@ class VoteCommandTest {
 
     @Test
     fun `yesno creates plain text vote with default reactions`() {
+        stubSlashCommandContext("yesno")
+        stubGuildId()
+        stubVoteMessageContext()
+        stubDeferredReply()
         command.prompt = "Should we do this?"
-        whenever(slashEvent.subcommandName).thenReturn("yesno")
         whenever(votingEmotesRepository.findById(1L)).thenReturn(Optional.empty())
 
         command.onSlashCommandInteraction(slashEvent)
@@ -114,9 +98,12 @@ class VoteCommandTest {
 
     @Test
     fun `yesno uses configured custom emoji when available`() {
+        stubSlashCommandContext("yesno")
+        stubGuildId()
+        stubVoteMessageContext()
+        stubDeferredReply()
         command.prompt = "Use custom emoji?"
         command.yesNoReactionsOverride = listOf(Emoji.fromFormatted("<:yes:100>"), Emoji.fromFormatted("<:no:101>"))
-        whenever(slashEvent.subcommandName).thenReturn("yesno")
 
         command.onSlashCommandInteraction(slashEvent)
 
@@ -125,9 +112,10 @@ class VoteCommandTest {
 
     @Test
     fun `numeric rejects invalid count`() {
+        stubSlashCommandContext("numeric")
+        stubReply()
         command.prompt = "Pick one"
         command.count = 1
-        whenever(slashEvent.subcommandName).thenReturn("numeric")
 
         command.onSlashCommandInteraction(slashEvent)
 
@@ -136,9 +124,11 @@ class VoteCommandTest {
 
     @Test
     fun `numeric vote preserves eleven option sequence`() {
+        stubSlashCommandContext("numeric")
+        stubVoteMessageContext()
+        stubDeferredReply()
         command.prompt = "Pick a number"
         command.count = 11
-        whenever(slashEvent.subcommandName).thenReturn("numeric")
 
         command.onSlashCommandInteraction(slashEvent)
 
@@ -153,6 +143,40 @@ class VoteCommandTest {
         assertEquals("vote", commandData.name)
         assertEquals(setOf(InteractionContextType.GUILD), commandData.contexts)
         assertEquals(listOf("yesno", "numeric"), commandData.subcommands.map(SubcommandData::getName))
+    }
+
+    private fun stubSlashCommandContext(subcommandName: String) {
+        whenever(slashEvent.name).thenReturn("vote")
+        whenever(slashEvent.guild).thenReturn(guild)
+        whenever(slashEvent.member).thenReturn(member)
+        whenever(slashEvent.subcommandName).thenReturn(subcommandName)
+    }
+
+    private fun stubGuildId() {
+        whenever(guild.idLong).thenReturn(1L)
+    }
+
+    private fun stubVoteMessageContext() {
+        whenever(slashEvent.channel).thenReturn(channel)
+        whenever(member.asMention).thenReturn("<@99>")
+        whenever(channel.asMention).thenReturn("<#10>")
+    }
+
+    private fun stubReply() {
+        whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun stubDeferredReply() {
+        whenever(slashEvent.deferReply(true)).thenReturn(replyAction)
+        whenever(interactionHook.sendMessage(any<String>())).thenReturn(followupAction)
+        whenever(followupAction.setEphemeral(true)).thenReturn(followupAction)
+        doAnswer {
+            val consumer = it.arguments[0] as Consumer<InteractionHook>
+            consumer.accept(interactionHook)
+            null
+        }.whenever(replyAction).queue(any<Consumer<InteractionHook>>())
     }
 
     private class TestVoteCommand(

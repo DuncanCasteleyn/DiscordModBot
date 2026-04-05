@@ -17,7 +17,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
-import org.mockito.Mockito.lenient
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -56,19 +55,11 @@ class VoteConfigCommandTest {
     @BeforeEach
     fun setUp() {
         command = TestVoteConfigCommand(votingEmotesRepository)
-
-        lenient().whenever(slashEvent.name).thenReturn("voteconfig")
-        lenient().whenever(slashEvent.guild).thenReturn(guild)
-        lenient().whenever(slashEvent.member).thenReturn(member)
-        lenient().whenever(slashEvent.jda).thenReturn(jda)
-        lenient().whenever(guild.idLong).thenReturn(1L)
-        lenient().whenever(member.hasPermission(Permission.MANAGE_GUILD_EXPRESSIONS)).thenReturn(true)
-        lenient().whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
-        lenient().whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
     }
 
     @Test
     fun `missing permission returns error`() {
+        stubSlashCommandContext()
         whenever(member.hasPermission(Permission.MANAGE_GUILD_EXPRESSIONS)).thenReturn(false)
 
         command.onSlashCommandInteraction(slashEvent)
@@ -78,7 +69,7 @@ class VoteConfigCommandTest {
 
     @Test
     fun `show displays default fallback when not configured`() {
-        whenever(slashEvent.subcommandName).thenReturn("show")
+        stubAuthorizedSlashCommand("show")
         whenever(votingEmotesRepository.findById(1L)).thenReturn(Optional.empty())
 
         command.onSlashCommandInteraction(slashEvent)
@@ -91,7 +82,7 @@ class VoteConfigCommandTest {
 
     @Test
     fun `set stores configured emoji ids`() {
-        whenever(slashEvent.subcommandName).thenReturn("set")
+        stubAuthorizedSlashCommand("set")
         command.yesInput = "<:yes:100>"
         command.noInput = "<:no:101>"
         command.yesEmoji = yesEmoji
@@ -112,7 +103,7 @@ class VoteConfigCommandTest {
 
     @Test
     fun `set rejects duplicate emoji`() {
-        whenever(slashEvent.subcommandName).thenReturn("set")
+        stubAuthorizedSlashCommand("set")
         command.yesInput = "100"
         command.noInput = "100"
         command.yesEmoji = yesEmoji
@@ -126,7 +117,7 @@ class VoteConfigCommandTest {
 
     @Test
     fun `reset deletes stored config`() {
-        whenever(slashEvent.subcommandName).thenReturn("reset")
+        stubAuthorizedSlashCommand("reset")
 
         command.onSlashCommandInteraction(slashEvent)
 
@@ -136,7 +127,7 @@ class VoteConfigCommandTest {
 
     @Test
     fun `show displays missing emoji clearly`() {
-        whenever(slashEvent.subcommandName).thenReturn("show")
+        stubAuthorizedSlashCommand("show", includeJda = true)
         whenever(votingEmotesRepository.findById(1L)).thenReturn(Optional.of(VoteEmotes(1L, 100L, 101L)))
         whenever(jda.getEmojiById(100L)).thenReturn(null)
         whenever(jda.getEmojiById(101L)).thenReturn(noEmoji)
@@ -157,6 +148,24 @@ class VoteConfigCommandTest {
         assertEquals("voteconfig", commandData.name)
         assertEquals(setOf(InteractionContextType.GUILD), commandData.contexts)
         assertEquals(listOf("show", "set", "reset"), commandData.subcommands.map(SubcommandData::getName))
+    }
+
+    private fun stubSlashCommandContext() {
+        whenever(slashEvent.name).thenReturn("voteconfig")
+        whenever(slashEvent.guild).thenReturn(guild)
+        whenever(slashEvent.member).thenReturn(member)
+        whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+    }
+
+    private fun stubAuthorizedSlashCommand(subcommandName: String, includeJda: Boolean = false) {
+        stubSlashCommandContext()
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(member.hasPermission(Permission.MANAGE_GUILD_EXPRESSIONS)).thenReturn(true)
+        whenever(slashEvent.subcommandName).thenReturn(subcommandName)
+        if (includeJda) {
+            whenever(slashEvent.jda).thenReturn(jda)
+        }
     }
 
     private class TestVoteConfigCommand(

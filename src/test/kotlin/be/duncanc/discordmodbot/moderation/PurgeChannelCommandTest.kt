@@ -13,7 +13,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
-import org.mockito.Mockito.lenient
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.never
@@ -51,7 +50,6 @@ class PurgeChannelCommandTest {
     @BeforeEach
     fun setUp() {
         command = PurgeChannelCommand()
-        lenient().whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
     }
 
     @Test
@@ -68,6 +66,7 @@ class PurgeChannelCommandTest {
         whenever(slashEvent.name).thenReturn("purgechannel")
         whenever(slashEvent.member).thenReturn(null)
         whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
 
         command.onSlashCommandInteraction(slashEvent)
 
@@ -76,7 +75,7 @@ class PurgeChannelCommandTest {
 
     @Test
     fun `missing manage messages permission returns error`() {
-        stubGuildContext(subcommandName = "all")
+        stubGuildContext()
         whenever(member.hasPermission(textChannel, Permission.MESSAGE_MANAGE)).thenReturn(false)
 
         command.onSlashCommandInteraction(slashEvent)
@@ -86,7 +85,9 @@ class PurgeChannelCommandTest {
 
     @Test
     fun `missing bot permissions returns error`() {
-        stubGuildContext(subcommandName = "all")
+        stubGuildContext()
+        stubMemberPermission()
+        whenever(guild.selfMember).thenReturn(selfMember)
         whenever(
             selfMember.hasPermission(
                 textChannel,
@@ -103,6 +104,8 @@ class PurgeChannelCommandTest {
     @Test
     fun `invalid amount returns error`() {
         stubGuildContext(subcommandName = "all")
+        stubMemberPermission()
+        stubBotPermissions()
         whenever(slashEvent.getOption("amount")).thenReturn(amountOption)
         whenever(amountOption.asInt).thenReturn(1001)
 
@@ -114,6 +117,8 @@ class PurgeChannelCommandTest {
     @Test
     fun `filtered mode rejects missing target user`() {
         stubGuildContext(subcommandName = "filtered")
+        stubMemberPermission()
+        stubBotPermissions()
         whenever(slashEvent.getOption("amount")).thenReturn(amountOption)
         whenever(amountOption.asInt).thenReturn(10)
         whenever(slashEvent.getOption("target")).thenReturn(null)
@@ -124,16 +129,33 @@ class PurgeChannelCommandTest {
     }
 
     private fun stubGuildContext(subcommandName: String) {
-        lenient().whenever(slashEvent.name).thenReturn("purgechannel")
-        lenient().whenever(slashEvent.member).thenReturn(member)
-        lenient().whenever(slashEvent.guild).thenReturn(guild)
-        lenient().whenever(slashEvent.subcommandName).thenReturn(subcommandName)
-        lenient().whenever(slashEvent.channel).thenReturn(channelUnion)
-        lenient().whenever(channelUnion.asTextChannel()).thenReturn(textChannel)
-        lenient().whenever(guild.selfMember).thenReturn(selfMember)
-        lenient().whenever(member.hasPermission(textChannel, Permission.MESSAGE_MANAGE)).thenReturn(true)
-        lenient().whenever(selfMember.hasPermission(textChannel, Permission.MESSAGE_MANAGE, Permission.MESSAGE_HISTORY))
+        whenever(slashEvent.name).thenReturn("purgechannel")
+        whenever(slashEvent.member).thenReturn(member)
+        whenever(slashEvent.guild).thenReturn(guild)
+        whenever(slashEvent.channel).thenReturn(channelUnion)
+        whenever(channelUnion.asTextChannel()).thenReturn(textChannel)
+        whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+        whenever(slashEvent.subcommandName).thenReturn(subcommandName)
+    }
+
+    private fun stubGuildContext() {
+        whenever(slashEvent.name).thenReturn("purgechannel")
+        whenever(slashEvent.member).thenReturn(member)
+        whenever(slashEvent.guild).thenReturn(guild)
+        whenever(slashEvent.channel).thenReturn(channelUnion)
+        whenever(channelUnion.asTextChannel()).thenReturn(textChannel)
+        whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+    }
+
+    private fun stubMemberPermission() {
+        whenever(member.hasPermission(textChannel, Permission.MESSAGE_MANAGE)).thenReturn(true)
+    }
+
+    private fun stubBotPermissions() {
+        whenever(guild.selfMember).thenReturn(selfMember)
+        whenever(selfMember.hasPermission(textChannel, Permission.MESSAGE_MANAGE, Permission.MESSAGE_HISTORY))
             .thenReturn(true)
-        lenient().whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
     }
 }

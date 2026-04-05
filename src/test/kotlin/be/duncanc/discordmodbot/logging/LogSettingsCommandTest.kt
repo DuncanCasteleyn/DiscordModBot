@@ -18,7 +18,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
-import org.mockito.Mockito.lenient
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.*
 import java.util.*
@@ -54,16 +53,6 @@ class LogSettingsCommandTest {
     @BeforeEach
     fun setUp() {
         command = TestLogSettingsCommand(loggingSettingsRepository)
-
-        lenient().whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
-        lenient().whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
-
-        lenient().whenever(slashEvent.guild).thenReturn(guild)
-        lenient().whenever(slashEvent.member).thenReturn(member)
-        lenient().whenever(guild.idLong).thenReturn(1L)
-        lenient().whenever(guild.name).thenReturn("Test Guild")
-        lenient().whenever(member.hasPermission(Permission.MANAGE_CHANNEL)).thenReturn(true)
-        lenient().whenever(slashEvent.name).thenReturn("logsettings")
     }
 
     @Test
@@ -77,7 +66,7 @@ class LogSettingsCommandTest {
 
     @Test
     fun `missing member returns guild error`() {
-        whenever(slashEvent.member).thenReturn(null)
+        stubSlashCommandContext(member = null)
 
         command.onSlashCommandInteraction(slashEvent)
 
@@ -86,6 +75,7 @@ class LogSettingsCommandTest {
 
     @Test
     fun `missing manage channel permission returns error`() {
+        stubSlashCommandContext()
         whenever(member.hasPermission(Permission.MANAGE_CHANNEL)).thenReturn(false)
 
         command.onSlashCommandInteraction(slashEvent)
@@ -95,7 +85,8 @@ class LogSettingsCommandTest {
 
     @Test
     fun `show displays default settings`() {
-        whenever(slashEvent.subcommandName).thenReturn("show")
+        stubAuthorizedSlashCommand("show")
+        whenever(guild.name).thenReturn("Test Guild")
         whenever(loggingSettingsRepository.findById(1L)).thenReturn(Optional.empty())
 
         command.onSlashCommandInteraction(slashEvent)
@@ -112,7 +103,8 @@ class LogSettingsCommandTest {
 
     @Test
     fun `show displays configured channels and missing channels`() {
-        whenever(slashEvent.subcommandName).thenReturn("show")
+        stubAuthorizedSlashCommand("show")
+        whenever(guild.name).thenReturn("Test Guild")
         whenever(loggingSettingsRepository.findById(1L)).thenReturn(
             Optional.of(
                 LoggingSettings(
@@ -144,7 +136,7 @@ class LogSettingsCommandTest {
 
     @Test
     fun `set mod channel stores selected channel`() {
-        whenever(slashEvent.subcommandName).thenReturn("set-mod-channel")
+        stubAuthorizedSlashCommand("set-mod-channel")
         whenever(loggingSettingsRepository.findById(1L)).thenReturn(Optional.empty())
         whenever(modChannel.idLong).thenReturn(11L)
         whenever(modChannel.asMention).thenReturn("<#11>")
@@ -160,7 +152,7 @@ class LogSettingsCommandTest {
 
     @Test
     fun `set user channel stores selected channel`() {
-        whenever(slashEvent.subcommandName).thenReturn("set-user-channel")
+        stubAuthorizedSlashCommand("set-user-channel")
         whenever(loggingSettingsRepository.findById(1L)).thenReturn(Optional.empty())
         whenever(userChannel.idLong).thenReturn(12L)
         whenever(userChannel.asMention).thenReturn("<#12>")
@@ -237,6 +229,7 @@ class LogSettingsCommandTest {
     @Test
     fun `guild leave removes stored settings`() {
         whenever(guildLeaveEvent.guild).thenReturn(guild)
+        whenever(guild.idLong).thenReturn(1L)
 
         command.onGuildLeave(guildLeaveEvent)
 
@@ -274,7 +267,7 @@ class LogSettingsCommandTest {
         expectedMessage: String,
         verifySetting: (LoggingSettings) -> Unit
     ) {
-        whenever(slashEvent.subcommandName).thenReturn(subcommand)
+        stubAuthorizedSlashCommand(subcommand)
         whenever(loggingSettingsRepository.findById(1L)).thenReturn(Optional.of(initialSettings))
 
         command.onSlashCommandInteraction(slashEvent)
@@ -283,6 +276,21 @@ class LogSettingsCommandTest {
         verify(loggingSettingsRepository).save(settingsCaptor.capture())
         verifySetting(settingsCaptor.firstValue)
         verify(slashEvent).reply(expectedMessage)
+    }
+
+    private fun stubSlashCommandContext(member: Member? = this.member) {
+        whenever(slashEvent.name).thenReturn("logsettings")
+        whenever(slashEvent.guild).thenReturn(guild)
+        whenever(slashEvent.member).thenReturn(member)
+        whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+    }
+
+    private fun stubAuthorizedSlashCommand(subcommandName: String) {
+        stubSlashCommandContext()
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(member.hasPermission(Permission.MANAGE_CHANNEL)).thenReturn(true)
+        whenever(slashEvent.subcommandName).thenReturn(subcommandName)
     }
 
     private class TestLogSettingsCommand(

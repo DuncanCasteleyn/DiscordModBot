@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Answers
 import org.mockito.Mock
-import org.mockito.Mockito.lenient
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -56,20 +55,11 @@ class RoleConfigCommandTest {
     @BeforeEach
     fun setUp() {
         command = TestRoleConfigCommand(iAmRolesService)
-
-        lenient().whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
-        lenient().whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
-        lenient().whenever(slashEvent.name).thenReturn("roleconfig")
-        lenient().whenever(slashEvent.guild).thenReturn(guild)
-        lenient().whenever(slashEvent.member).thenReturn(member)
-        lenient().whenever(guild.idLong).thenReturn(1L)
-        lenient().whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
-        lenient().whenever(autoCompleteEvent.replyChoices(any<Collection<Command.Choice>>()))
-            .thenReturn(autoCompleteAction)
     }
 
     @Test
     fun `missing manage roles permission returns error`() {
+        stubSlashCommandContext()
         whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(false)
 
         command.onSlashCommandInteraction(slashEvent)
@@ -79,7 +69,7 @@ class RoleConfigCommandTest {
 
     @Test
     fun `add category stores requested values`() {
-        whenever(slashEvent.subcommandName).thenReturn("add-category")
+        stubAuthorizedSlashCommand("add-category")
         command.name = "Games"
         command.limit = 0
 
@@ -91,7 +81,7 @@ class RoleConfigCommandTest {
 
     @Test
     fun `duplicate role rejection is shown to the user`() {
-        whenever(slashEvent.subcommandName).thenReturn("add-role")
+        stubAuthorizedSlashCommand("add-role")
         command.categoryId = 5L
         command.role = role
         whenever(role.idLong).thenReturn(10L)
@@ -107,6 +97,7 @@ class RoleConfigCommandTest {
 
     @Test
     fun `category autocomplete returns ids as values`() {
+        whenever(autoCompleteEvent.replyChoices(any<Collection<Command.Choice>>())).thenReturn(autoCompleteAction)
         whenever(autoCompleteEvent.name).thenReturn("roleconfig")
         whenever(autoCompleteEvent.guild).thenReturn(guild)
         whenever(autoCompleteEvent.focusedOption.name).thenReturn("category")
@@ -146,6 +137,21 @@ class RoleConfigCommandTest {
             ),
             commandData.subcommands.map(SubcommandData::getName)
         )
+    }
+
+    private fun stubSlashCommandContext() {
+        whenever(slashEvent.name).thenReturn("roleconfig")
+        whenever(slashEvent.guild).thenReturn(guild)
+        whenever(slashEvent.member).thenReturn(member)
+        whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+    }
+
+    private fun stubAuthorizedSlashCommand(subcommandName: String) {
+        stubSlashCommandContext()
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
+        whenever(slashEvent.subcommandName).thenReturn(subcommandName)
     }
 
     private class TestRoleConfigCommand(

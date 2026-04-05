@@ -6,6 +6,7 @@ import be.duncanc.discordmodbot.logging.GuildLogger
 import be.duncanc.discordmodbot.moderation.persistence.MuteRolesRepository
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions
@@ -19,6 +20,7 @@ import java.time.OffsetDateTime
 
 @Component
 class PlanUnmuteCommand(
+    private val muteService: MuteService,
     private val scheduledUnmuteService: ScheduledUnmuteService,
     private val guildLogger: GuildLogger,
     private val muteRolesRepository: MuteRolesRepository
@@ -44,11 +46,14 @@ class PlanUnmuteCommand(
             return
         }
 
-        val targetMember = event.getOption(OPTION_USER)?.asMember
-        if (targetMember == null) {
+        val targetUserOption = event.getOption(OPTION_USER)
+        if (targetUserOption == null) {
             event.reply("You need to mention a user.").setEphemeral(true).queue()
             return
         }
+
+        val targetUserId = targetUserOption.asLong
+        val targetMember = targetUserOption.asMember
 
         val days = event.getOption(OPTION_DAYS)?.asInt
         if (days == null || days <= 0) {
@@ -70,36 +75,47 @@ class PlanUnmuteCommand(
             return
         }
 
-        if (!targetMember.roles.contains(muteRole)) {
+        val isMuted = targetMember?.roles?.contains(muteRole) ?: muteService.isUserMuted(guild.idLong, targetUserId)
+
+        if (!isMuted) {
             event.reply("This user is not muted.").setEphemeral(true).queue()
             return
         }
 
         val unmuteDateTime = OffsetDateTime.now().plusDays(days.toLong())
-        scheduledUnmuteService.planUnmute(guild.idLong, targetMember.idLong, unmuteDateTime)
+        scheduledUnmuteService.planUnmute(guild.idLong, targetUserId, unmuteDateTime)
 
-        logScheduledMute(guild, targetMember.user, member, unmuteDateTime)
+        logScheduledMute(guild, targetUserId, member, unmuteDateTime)
+
+        val targetMention = targetMember?.asMention ?: "<@$targetUserId>"
 
         event.reply(
-            "Unmute has been planned for ${targetMember.asMention} on ${
+            "Unmute has been planned for $targetMention on ${
                 TimeFormat.DATE_SHORT_TIME_SHORT.atInstant(
                     unmuteDateTime.toInstant()
                 )
             }."
-        )
-            .setEphemeral(true).queue()
+        ).setEphemeral(true).queue()
     }
 
     private fun logScheduledMute(
         guild: net.dv8tion.jda.api.entities.Guild,
-        targetUser: net.dv8tion.jda.api.entities.User,
-        moderator: net.dv8tion.jda.api.entities.Member,
+        targetUserId: Long,
+        moderator: Member,
         unmuteDateTime: OffsetDateTime
     ) {
+
+        val targetMember = guild.getMemberById(targetUserId)
+        val targetUser = guild.jda.getUserById(targetUserId)
+
         val logEmbed = EmbedBuilder()
             .setColor(GuildLogger.LIGHT_BLUE)
             .setTitle("User unmute planned")
-            .addField("User", guild.getMember(targetUser)?.nicknameAndUsername ?: targetUser.name, true)
+            .addField(
+                "User",
+                targetMember?.nicknameAndUsername ?: targetUser?.name ?: "<@$targetUserId>",
+                true
+            )
             .addField("Moderator", guild.getMember(moderator)?.nicknameAndUsername ?: moderator.user.name, true)
             .addField(
                 "Unmute planned after",
@@ -107,7 +123,7 @@ class PlanUnmuteCommand(
                 false
             )
 
-        guildLogger.log(logEmbed, targetUser, guild, null, GuildLogger.LogTypeAction.MODERATOR)
+        guildLogger.log(logEmbed, targetUser, guild, actionType = GuildLogger.LogTypeAction.MODERATOR)
     }
 
     override fun getCommandsData(): List<SlashCommandData> {

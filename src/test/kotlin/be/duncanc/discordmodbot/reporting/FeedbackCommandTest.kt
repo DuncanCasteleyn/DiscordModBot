@@ -18,7 +18,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
-import org.mockito.Mockito.lenient
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.never
@@ -58,27 +57,6 @@ class FeedbackCommandTest {
     @BeforeEach
     fun setUp() {
         command = TestFeedbackCommand(reportChannelRepository)
-
-        lenient().whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
-        lenient().whenever(modalEvent.reply(any<String>())).thenReturn(replyAction)
-        lenient().whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
-
-        lenient().whenever(slashEvent.name).thenReturn("feedback")
-        lenient().whenever(slashEvent.guild).thenReturn(guild)
-        lenient().whenever(slashEvent.member).thenReturn(member)
-        lenient().whenever(slashEvent.user).thenReturn(user)
-        lenient().whenever(modalEvent.guild).thenReturn(guild)
-        lenient().whenever(modalEvent.member).thenReturn(member)
-        lenient().whenever(modalEvent.user).thenReturn(user)
-        lenient().whenever(guild.idLong).thenReturn(1L)
-        lenient().whenever(user.idLong).thenReturn(99L)
-        lenient().whenever(user.id).thenReturn("99")
-        lenient().whenever(user.name).thenReturn("test-user")
-        lenient().whenever(user.effectiveAvatarUrl).thenReturn("https://example.com/avatar.png")
-        lenient().whenever(member.user).thenReturn(user)
-        lenient().whenever(member.nickname).thenReturn("Duncan")
-        lenient().whenever(guild.getTextChannelById(11L)).thenReturn(textChannel)
-        lenient().whenever(reportChannelRepository.findById(1L)).thenReturn(Optional.of(ReportChannel(1L, 11L)))
     }
 
     @Test
@@ -92,6 +70,11 @@ class FeedbackCommandTest {
 
     @Test
     fun `disabled feedback returns error`() {
+        stubReply(slash = true)
+        whenever(slashEvent.name).thenReturn("feedback")
+        whenever(slashEvent.guild).thenReturn(guild)
+        whenever(slashEvent.member).thenReturn(member)
+        whenever(guild.idLong).thenReturn(1L)
         whenever(reportChannelRepository.findById(1L)).thenReturn(Optional.empty())
 
         command.onSlashCommandInteraction(slashEvent)
@@ -101,6 +84,8 @@ class FeedbackCommandTest {
 
     @Test
     fun `enabled feedback opens modal`() {
+        stubEnabledSlashCommand()
+
         command.onSlashCommandInteraction(slashEvent)
 
         assertNotNull(command.shownModal)
@@ -109,7 +94,11 @@ class FeedbackCommandTest {
 
     @Test
     fun `modal submission forwards embed and confirms success`() {
+        stubEnabledSlashCommand()
         command.onSlashCommandInteraction(slashEvent)
+        stubModalContext()
+        stubReply(modal = true)
+        stubMemberIdentity()
         whenever(modalEvent.modalId).thenReturn(command.shownModal!!.id)
         command.feedbackMessage = "The server is great"
 
@@ -125,7 +114,11 @@ class FeedbackCommandTest {
 
     @Test
     fun `modal submission reports send failures`() {
+        stubEnabledSlashCommand()
         command.onSlashCommandInteraction(slashEvent)
+        stubModalContext()
+        stubReply(modal = true)
+        stubMemberIdentity()
         whenever(modalEvent.modalId).thenReturn(command.shownModal!!.id)
         command.feedbackMessage = "The server is great"
         command.failToSendFeedback = true
@@ -137,7 +130,10 @@ class FeedbackCommandTest {
 
     @Test
     fun `mismatched modal user is rejected`() {
+        stubEnabledSlashCommand()
         command.onSlashCommandInteraction(slashEvent)
+        stubModalContext(includeRepository = false)
+        stubReply(modal = true)
         whenever(modalEvent.modalId).thenReturn(command.shownModal!!.id.replace(":99", ":100"))
 
         command.onModalInteraction(modalEvent)
@@ -151,6 +147,50 @@ class FeedbackCommandTest {
 
         assertEquals("feedback", commandData.name)
         assertEquals(setOf(InteractionContextType.GUILD), commandData.contexts)
+    }
+
+    private fun stubReply(slash: Boolean = false, modal: Boolean = false) {
+        if (slash) {
+            whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
+        }
+        if (modal) {
+            whenever(modalEvent.reply(any<String>())).thenReturn(replyAction)
+        }
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+    }
+
+    private fun stubSlashCommandContext() {
+        whenever(slashEvent.name).thenReturn("feedback")
+        whenever(slashEvent.guild).thenReturn(guild)
+        whenever(slashEvent.member).thenReturn(member)
+        whenever(slashEvent.user).thenReturn(user)
+    }
+
+    private fun stubEnabledSlashCommand() {
+        stubSlashCommandContext()
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(user.idLong).thenReturn(99L)
+        whenever(guild.getTextChannelById(11L)).thenReturn(textChannel)
+        whenever(reportChannelRepository.findById(1L)).thenReturn(Optional.of(ReportChannel(1L, 11L)))
+    }
+
+    private fun stubModalContext(includeRepository: Boolean = true) {
+        whenever(modalEvent.guild).thenReturn(guild)
+        whenever(modalEvent.member).thenReturn(member)
+        whenever(modalEvent.user).thenReturn(user)
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(user.idLong).thenReturn(99L)
+        if (includeRepository) {
+            whenever(reportChannelRepository.findById(1L)).thenReturn(Optional.of(ReportChannel(1L, 11L)))
+        }
+    }
+
+    private fun stubMemberIdentity() {
+        whenever(user.id).thenReturn("99")
+        whenever(user.name).thenReturn("test-user")
+        whenever(user.effectiveAvatarUrl).thenReturn("https://example.com/avatar.png")
+        whenever(member.user).thenReturn(user)
+        whenever(member.nickname).thenReturn("Duncan")
     }
 
     private class TestFeedbackCommand(
