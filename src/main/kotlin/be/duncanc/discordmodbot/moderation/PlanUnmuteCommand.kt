@@ -123,7 +123,7 @@ class PlanUnmuteCommand(
                 false
             )
 
-        guildLogger.log(logEmbed, targetUser, guild, null, GuildLogger.LogTypeAction.MODERATOR)
+        guildLogger.log(logEmbed, targetUser, guild, actionType = GuildLogger.LogTypeAction.MODERATOR)
     }
 
     override fun getCommandsData(): List<SlashCommandData> {
