@@ -1,32 +1,23 @@
 package be.duncanc.discordmodbot.moderation
 
-import net.dv8tion.jda.api.entities.Message
-import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.Guild
-import net.dv8tion.jda.api.entities.Member
-import net.dv8tion.jda.api.entities.SelfMember
+import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.InteractionHook
 import net.dv8tion.jda.api.interactions.commands.OptionMapping
-import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction
 import net.dv8tion.jda.api.requests.restaction.WebhookMessageEditAction
+import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction
 import net.dv8tion.jda.api.requests.restaction.pagination.MessagePaginationAction
+import net.dv8tion.jda.api.utils.Procedure
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Answers
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doAnswer
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
-import net.dv8tion.jda.api.utils.Procedure
-import java.time.OffsetDateTime
+import org.mockito.kotlin.*
 import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
 
@@ -138,11 +129,11 @@ class PurgeChannelCommandTest {
         stubMemberPermission()
         stubBotPermissions()
         whenever(slashEvent.getOption("amount")).thenReturn(amountOption)
-        whenever(amountOption.asInt).thenReturn(1001)
+        whenever(amountOption.asInt).thenReturn(101)
 
         command.onSlashCommandInteraction(slashEvent)
 
-        verify(slashEvent).reply("Please provide an amount between 1 and 1000.")
+        verify(slashEvent).reply("Please provide an amount between 1 and 100.")
     }
 
     @Test
@@ -182,14 +173,13 @@ class PurgeChannelCommandTest {
             procedure.execute(message)
             CompletableFuture.completedFuture(null)
         }.whenever(messagePaginationAction).forEachAsync(any())
-        whenever(message.timeCreated).thenReturn(OffsetDateTime.now())
         whenever(message.author).thenReturn(author)
         whenever(author.idLong).thenReturn(99L)
-        whenever(message.idLong).thenReturn(123L)
 
         command.onSlashCommandInteraction(slashEvent)
 
-        verify(interactionHook).editOriginal("Deleted 1 message(s) from <@99>.")
+        verify(textChannel).purgeMessages(listOf(message))
+        verify(interactionHook).editOriginal("Attempting to delete 1 message(s) from <@99>.")
     }
 
     private fun stubGuildContext(subcommandName: String) {

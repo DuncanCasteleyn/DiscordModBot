@@ -1,12 +1,12 @@
 package be.duncanc.discordmodbot.moderation
 
 import be.duncanc.discordmodbot.discord.SlashCommand
-import be.duncanc.discordmodbot.discord.limitLessBulkDeleteByIds
 import be.duncanc.discordmodbot.discord.nicknameAndUsername
 import be.duncanc.discordmodbot.logging.GuildLogger
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
@@ -17,19 +17,18 @@ import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
 import org.springframework.stereotype.Component
 import java.awt.Color
-import java.time.OffsetDateTime
 import java.util.concurrent.CompletableFuture
 
 @Component
 class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
     companion object {
         private const val COMMAND = "purgechannel"
-        private const val DESCRIPTION = "Delete recent messages from the current channel."
+        private const val DESCRIPTION = "Delete messages from the current channel."
         private const val SUBCOMMAND_ALL = "all"
         private const val SUBCOMMAND_FILTERED = "filtered"
         private const val OPTION_AMOUNT = "amount"
         private const val OPTION_TARGET = "target"
-        internal const val MAX_PURGE_AMOUNT = 1000
+        internal const val MAX_PURGE_AMOUNT = 100
     }
 
     override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
@@ -76,17 +75,17 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
         }
 
         event.deferReply(true).queue { hook ->
-            collectRecentMessageIds(channel, amount, targetUserId).whenComplete { messageIds, throwable ->
+            collectMessages(channel, amount, targetUserId).whenComplete { messages, throwable ->
                 if (throwable != null) {
                     hook.editOriginal("Failed to purge messages: ${throwable.message ?: "unknown error"}").queue()
                     return@whenComplete
                 }
 
                 try {
-                    val ids = messageIds ?: ArrayList<Long>()
-                    val deletedCount = ids.size
-                    channel.limitLessBulkDeleteByIds(ids)
-                    hook.editOriginal("Deleted $deletedCount message(s) from <@$targetUserId>.").queue()
+                    val messagesToDelete = messages ?: ArrayList()
+                    val deletingCount = messagesToDelete.size
+                    channel.purgeMessages(messagesToDelete)
+                    hook.editOriginal("Attempting to delete $deletingCount message(s) from <@$targetUserId>.").queue()
                     logPurge(event, guild, channel, targetUserId)
                 } catch (e: Exception) {
                     hook.editOriginal("Failed to purge messages: ${e.message ?: "unknown error"}").queue()
@@ -99,17 +98,17 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
         val amount = getValidatedAmount(event) ?: return
 
         event.deferReply(true).queue { hook ->
-            collectRecentMessageIds(channel, amount).whenComplete { messageIds, throwable ->
+            collectMessages(channel, amount).whenComplete { messages, throwable ->
                 if (throwable != null) {
                     hook.editOriginal("Failed to purge messages: ${throwable.message ?: "unknown error"}").queue()
                     return@whenComplete
                 }
 
                 try {
-                    val ids = messageIds ?: ArrayList<Long>()
-                    val deletedCount = ids.size
-                    channel.limitLessBulkDeleteByIds(ids)
-                    hook.editOriginal("Deleted $deletedCount message(s).").queue()
+                    val messagesToDelete = messages ?: ArrayList()
+                    val deletingCount = messagesToDelete.size
+                    channel.purgeMessages(messagesToDelete)
+                    hook.editOriginal("Attempting to delete $deletingCount message(s).").queue()
                     logPurge(event, guild, channel, null)
                 } catch (e: Exception) {
                     hook.editOriginal("Failed to purge messages: ${e.message ?: "unknown error"}").queue()
@@ -127,30 +126,25 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
         return amount
     }
 
-    private fun collectRecentMessageIds(
+    private fun collectMessages(
         channel: TextChannel,
         amount: Int,
         targetUserId: Long? = null
-    ): CompletableFuture<ArrayList<Long>> {
-        val cutoff = OffsetDateTime.now().minusWeeks(2)
-        val messageIds = ArrayList<Long>()
+    ): CompletableFuture<ArrayList<Message>> {
+        val messages = ArrayList<Message>()
 
         return channel.iterableHistory.cache(false)
             .forEachAsync { message ->
-                if (message.timeCreated.isBefore(cutoff)) {
-                    return@forEachAsync false
-                }
-
                 if (targetUserId == null || targetUserId == message.author.idLong) {
-                    messageIds.add(message.idLong)
-                    if (messageIds.size >= amount) {
+                    messages.add(message)
+                    if (messages.size >= amount) {
                         return@forEachAsync false
                     }
                 }
 
                 true
             }
-            .thenApply { messageIds }
+            .thenApply { messages }
     }
 
     private fun logPurge(
@@ -177,21 +171,21 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
         return listOf(
             Commands.slash(COMMAND, DESCRIPTION)
                 .addSubcommands(
-                    SubcommandData(SUBCOMMAND_ALL, "Delete up to the specified number of recent messages.")
+                    SubcommandData(SUBCOMMAND_ALL, "Delete up to the specified number of messages.")
                         .addOption(
                             OptionType.INTEGER,
                             OPTION_AMOUNT,
-                            "Number of recent messages to delete (1-$MAX_PURGE_AMOUNT)",
+                            "Number of messages to delete (1-$MAX_PURGE_AMOUNT)",
                             true
                         ),
                     SubcommandData(
                         SUBCOMMAND_FILTERED,
-                        "Delete up to the specified number of recent messages from targets."
+                        "Delete up to the specified number of messages from targets."
                     )
                         .addOption(
                             OptionType.INTEGER,
                             OPTION_AMOUNT,
-                            "Number of recent matching messages to delete (1-$MAX_PURGE_AMOUNT)",
+                            "Number of matching messages to delete (1-$MAX_PURGE_AMOUNT)",
                             true
                         )
                         .addOption(
