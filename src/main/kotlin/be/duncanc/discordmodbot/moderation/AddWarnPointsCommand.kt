@@ -7,6 +7,8 @@ import be.duncanc.discordmodbot.moderation.persistence.GuildWarnPointsSettings
 import be.duncanc.discordmodbot.moderation.persistence.GuildWarnPointsSettingsRepository
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.components.actionrow.ActionRow
+import net.dv8tion.jda.api.components.buttons.Button
 import net.dv8tion.jda.api.components.label.Label
 import net.dv8tion.jda.api.components.textinput.TextInput
 import net.dv8tion.jda.api.components.textinput.TextInputStyle
@@ -15,6 +17,7 @@ import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.InteractionHook
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions
@@ -34,7 +37,8 @@ import java.time.OffsetDateTime
 class AddWarnPointsCommand(
     private val guildWarnPointsService: GuildWarnPointsService,
     private val guildWarnPointsSettingsRepository: GuildWarnPointsSettingsRepository,
-    private val muteRoleCommandAndEventsListener: MuteRoleCommandAndEventsListener
+    private val muteRoleCommandAndEventsListener: MuteRoleCommandAndEventsListener,
+    private val unmutePlanningService: UnmutePlanningService
 ) : ListenerAdapter(), SlashCommand {
     companion object {
         private const val COMMAND = "addwarnpoints"
@@ -45,6 +49,10 @@ class AddWarnPointsCommand(
         private const val OPTION_ACTION = "action"
         private const val OPTION_REASON = "reason"
         private const val MODAL_ID = "addwarnpoints_reason"
+        private const val UNMUTE_BUTTON_PREFIX = "addwarnpoints_unmute:"
+        private const val SKIP_UNMUTE_BUTTON_PREFIX = "addwarnpoints_skip_unmute:"
+        private const val UNMUTE_MODAL_ID = "addwarnpoints_plan_unmute"
+        private const val UNMUTE_DAYS_INPUT_ID = "unmute_days"
 
         val LOG: Logger = LoggerFactory.getLogger(AddWarnPointsCommand::class.java)
     }
@@ -145,6 +153,20 @@ class AddWarnPointsCommand(
     }
 
     override fun onModalInteraction(event: ModalInteractionEvent) {
+        when {
+            event.modalId.startsWith(MODAL_ID) -> handleReasonModal(event)
+            event.modalId.startsWith(UNMUTE_MODAL_ID) -> handlePlanUnmuteModal(event)
+        }
+    }
+
+    override fun onButtonInteraction(event: ButtonInteractionEvent) {
+        when {
+            event.componentId.startsWith(UNMUTE_BUTTON_PREFIX) -> handlePlanUnmuteButton(event)
+            event.componentId.startsWith(SKIP_UNMUTE_BUTTON_PREFIX) -> handleSkipUnmuteButton(event)
+        }
+    }
+
+    private fun handleReasonModal(event: ModalInteractionEvent) {
         if (!event.modalId.startsWith(MODAL_ID)) return
 
         val parts = event.modalId.split(":")
@@ -219,6 +241,89 @@ class AddWarnPointsCommand(
         }
     }
 
+    private fun handlePlanUnmuteButton(event: ButtonInteractionEvent) {
+        val buttonAction = parseModeratorTargetComponent(event.componentId, UNMUTE_BUTTON_PREFIX)
+        if (buttonAction == null) {
+            event.reply("This unmute action is no longer available.").setEphemeral(true).queue()
+            return
+        }
+
+        if (event.member?.hasPermission(Permission.MANAGE_ROLES) != true) {
+            event.reply("You need manage roles permission to schedule an unmute.").setEphemeral(true).queue()
+            return
+        }
+
+        if (buttonAction.moderatorId != event.user.idLong) {
+            event.reply("You cannot plan an unmute initiated by another moderator.").setEphemeral(true).queue()
+            return
+        }
+
+        event.replyModal(createPlanUnmuteModal(buttonAction)).queue()
+    }
+
+    private fun handleSkipUnmuteButton(event: ButtonInteractionEvent) {
+        val buttonAction = parseModeratorTargetComponent(event.componentId, SKIP_UNMUTE_BUTTON_PREFIX)
+        if (buttonAction == null) {
+            event.reply("This unmute action is no longer available.").setEphemeral(true).queue()
+            return
+        }
+
+        if (buttonAction.moderatorId != event.user.idLong) {
+            event.reply("You cannot skip an unmute prompt initiated by another moderator.").setEphemeral(true).queue()
+            return
+        }
+
+        event.editMessage("Skipped planning an unmute for <@${buttonAction.targetUserId}>.")
+            .setComponents(emptyList())
+            .queue()
+    }
+
+    private fun handlePlanUnmuteModal(event: ModalInteractionEvent) {
+        val modalAction = parseModeratorTargetComponent(event.modalId, "$UNMUTE_MODAL_ID:")
+        if (modalAction == null) {
+            event.reply("This unmute action is no longer available.").setEphemeral(true).queue()
+            return
+        }
+
+        if (event.member?.hasPermission(Permission.MANAGE_ROLES) != true) {
+            event.reply("You need manage roles permission to schedule an unmute.").setEphemeral(true).queue()
+            return
+        }
+
+        if (modalAction.moderatorId != event.user.idLong) {
+            event.reply("You cannot plan an unmute initiated by another moderator.").setEphemeral(true).queue()
+            return
+        }
+
+        val days = event.getValue(UNMUTE_DAYS_INPUT_ID)?.asString?.trim()?.toIntOrNull()
+        if (days == null || days <= 0) {
+            event.reply("Please provide a valid number of days.").setEphemeral(true).queue()
+            return
+        }
+
+        val guild = event.guild
+        val moderator = event.member
+        if (guild == null || moderator == null) {
+            event.reply("This command only works in a guild.").setEphemeral(true).queue()
+            return
+        }
+
+        try {
+            val unmuteDateTime = unmutePlanningService.planUnmute(guild, modalAction.targetUserId, moderator, days)
+            val targetMention = guild.getMemberById(modalAction.targetUserId)?.asMention ?: "<@${modalAction.targetUserId}>"
+
+            event.reply(
+                "Unmute has been planned for $targetMention on ${
+                    TimeFormat.DATE_SHORT_TIME_SHORT.atInstant(unmuteDateTime.toInstant())
+                }."
+            ).setEphemeral(true).queue()
+        } catch (e: IllegalArgumentException) {
+            event.reply(e.message ?: "Please provide a valid number of days.").setEphemeral(true).queue()
+        } catch (e: IllegalStateException) {
+            event.reply(e.message ?: "Unable to plan an unmute.").setEphemeral(true).queue()
+        }
+    }
+
     private fun processWarnPoints(
         guild: net.dv8tion.jda.api.entities.Guild,
         jda: net.dv8tion.jda.api.JDA,
@@ -267,7 +372,11 @@ class AddWarnPointsCommand(
 
                     null
                 }
-                muteRole?.let { guild.addRoleToMember(targetMember, it) }?.reason(reason)?.queue()
+                muteRole?.let { role ->
+                    guild.addRoleToMember(targetMember, role).reason(reason).queue {
+                        sendPlanUnmutePrompt(hook, moderator, targetMember)
+                    }
+                }
             }
 
             2 -> {
@@ -405,6 +514,55 @@ class AddWarnPointsCommand(
             "Added warn points to $toInform.\n\nWas unable to send a DM to the user please inform the user manually.\nError: ${throwable.message}"
         ).queue()
     }
+
+    private fun sendPlanUnmutePrompt(hook: InteractionHook, moderator: Member, targetMember: Member) {
+        if (!moderator.hasPermission(Permission.MANAGE_ROLES)) {
+            return
+        }
+
+        val planButtonId = "$UNMUTE_BUTTON_PREFIX${moderator.idLong}:${targetMember.idLong}"
+        val skipButtonId = "$SKIP_UNMUTE_BUTTON_PREFIX${moderator.idLong}:${targetMember.idLong}"
+
+        hook.sendMessage("Do you want to plan an unmute for ${targetMember.asMention}?")
+            .setEphemeral(true)
+            .addComponents(ActionRow.of(
+                Button.primary(planButtonId, "Plan unmute"),
+                Button.secondary(skipButtonId, "Skip")
+            ))
+            .queue()
+    }
+
+    private fun createPlanUnmuteModal(action: ModeratorTargetAction): Modal {
+        val daysInput = TextInput.create(UNMUTE_DAYS_INPUT_ID, TextInputStyle.SHORT)
+            .setPlaceholder("Enter the number of days...")
+            .setMinLength(1)
+            .setMaxLength(4)
+            .build()
+
+        return Modal.create("$UNMUTE_MODAL_ID:${action.moderatorId}:${action.targetUserId}", "Plan Unmute")
+            .addComponents(Label.of("Days until unmute", daysInput))
+            .build()
+    }
+
+    private fun parseModeratorTargetComponent(componentId: String, prefix: String): ModeratorTargetAction? {
+        if (!componentId.startsWith(prefix)) {
+            return null
+        }
+
+        val segments = componentId.removePrefix(prefix).split(":", limit = 2)
+        if (segments.size != 2) {
+            return null
+        }
+
+        val moderatorId = segments[0].toLongOrNull() ?: return null
+        val targetUserId = segments[1].toLongOrNull() ?: return null
+        return ModeratorTargetAction(moderatorId, targetUserId)
+    }
+
+    private data class ModeratorTargetAction(
+        val moderatorId: Long,
+        val targetUserId: Long
+    )
 
     private fun createReasonModal(targetMember: Member, points: Int, days: Int, action: Int): Modal {
         val modalId = "$MODAL_ID:${targetMember.idLong}:$points:$days:$action"
