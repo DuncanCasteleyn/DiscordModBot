@@ -14,13 +14,12 @@ val Member.nicknameAndUsername: String
     }
 
 /**
- * Deletes multiple messages at once, unlike the default method, this one will split the ArrayList messages in stacks of 100 messages each automatically
+ * Deletes multiple messages at once; unlike the default method, this one will split the messages in stacks of 100 messages each automatically.
  *
- * @param messagesIds Messages to delete. The list you provide will be emptied for you.
+ * @param messagesIds Messages to delete.
  */
-fun TextChannel.limitLessBulkDeleteByIds(messagesIds: ArrayList<Long>) {
-    val messagesIdStrings = ArrayList(messagesIds.map { it.toString() })
-    messagesIds.clear()
+fun TextChannel.limitLessBulkDeleteByIds(messagesIds: Collection<Long>) {
+    val messagesIdStrings = messagesIds.map { it.toULong().toString() }.toMutableList()
     if (messagesIdStrings.size in 2..100) {
         this.deleteMessagesByIds(messagesIdStrings).queue()
     } else if (messagesIdStrings.size < 2) {

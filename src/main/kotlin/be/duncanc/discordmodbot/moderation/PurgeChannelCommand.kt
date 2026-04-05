@@ -18,6 +18,7 @@ import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
 import org.springframework.stereotype.Component
 import java.awt.Color
 import java.time.OffsetDateTime
+import java.util.concurrent.CompletableFuture
 
 @Component
 class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
@@ -75,10 +76,22 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
         }
 
         event.deferReply(true).queue { hook ->
-            val messageIds = collectRecentMessageIds(channel, amount, targetUserId)
-            channel.limitLessBulkDeleteByIds(messageIds)
-            hook.editOriginal("Deleted ${messageIds.size} message(s) from <@$targetUserId>.").queue()
-            logPurge(event, guild, channel, targetUserId)
+            collectRecentMessageIds(channel, amount, targetUserId).whenComplete { messageIds, throwable ->
+                if (throwable != null) {
+                    hook.editOriginal("Failed to purge messages: ${throwable.message ?: "unknown error"}").queue()
+                    return@whenComplete
+                }
+
+                try {
+                    val ids = messageIds ?: ArrayList<Long>()
+                    val deletedCount = ids.size
+                    channel.limitLessBulkDeleteByIds(ids)
+                    hook.editOriginal("Deleted $deletedCount message(s) from <@$targetUserId>.").queue()
+                    logPurge(event, guild, channel, targetUserId)
+                } catch (e: Exception) {
+                    hook.editOriginal("Failed to purge messages: ${e.message ?: "unknown error"}").queue()
+                }
+            }
         }
     }
 
@@ -86,10 +99,22 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
         val amount = getValidatedAmount(event) ?: return
 
         event.deferReply(true).queue { hook ->
-            val messageIds = collectRecentMessageIds(channel, amount)
-            channel.limitLessBulkDeleteByIds(messageIds)
-            hook.editOriginal("Deleted ${messageIds.size} message(s).").queue()
-            logPurge(event, guild, channel, null)
+            collectRecentMessageIds(channel, amount).whenComplete { messageIds, throwable ->
+                if (throwable != null) {
+                    hook.editOriginal("Failed to purge messages: ${throwable.message ?: "unknown error"}").queue()
+                    return@whenComplete
+                }
+
+                try {
+                    val ids = messageIds ?: ArrayList<Long>()
+                    val deletedCount = ids.size
+                    channel.limitLessBulkDeleteByIds(ids)
+                    hook.editOriginal("Deleted $deletedCount message(s).").queue()
+                    logPurge(event, guild, channel, null)
+                } catch (e: Exception) {
+                    hook.editOriginal("Failed to purge messages: ${e.message ?: "unknown error"}").queue()
+                }
+            }
         }
     }
 
@@ -106,25 +131,26 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
         channel: TextChannel,
         amount: Int,
         targetUserId: Long? = null
-    ): ArrayList<Long> {
+    ): CompletableFuture<ArrayList<Long>> {
         val cutoff = OffsetDateTime.now().minusWeeks(2)
         val messageIds = ArrayList<Long>()
 
-        for (message in channel.iterableHistory.cache(false)) {
-            if (message.timeCreated.isBefore(cutoff)) {
-                break
-            }
+        return channel.iterableHistory.cache(false)
+            .forEachAsync { message ->
+                if (message.timeCreated.isBefore(cutoff)) {
+                    return@forEachAsync false
+                }
 
-            if (targetUserId == null || targetUserId == message.author.idLong) {
-                messageIds.add(message.idLong)
-            }
+                if (targetUserId == null || targetUserId == message.author.idLong) {
+                    messageIds.add(message.idLong)
+                    if (messageIds.size >= amount) {
+                        return@forEachAsync false
+                    }
+                }
 
-            if (messageIds.size >= amount) {
-                break
+                true
             }
-        }
-
-        return messageIds
+            .thenApply { messageIds }
     }
 
     private fun logPurge(
