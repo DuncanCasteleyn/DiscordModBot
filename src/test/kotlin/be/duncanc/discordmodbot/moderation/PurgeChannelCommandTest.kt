@@ -1,23 +1,25 @@
 package be.duncanc.discordmodbot.moderation
 
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.Guild
-import net.dv8tion.jda.api.entities.Member
-import net.dv8tion.jda.api.entities.SelfMember
+import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.interactions.InteractionHook
 import net.dv8tion.jda.api.interactions.commands.OptionMapping
+import net.dv8tion.jda.api.requests.restaction.WebhookMessageEditAction
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction
+import net.dv8tion.jda.api.requests.restaction.pagination.MessagePaginationAction
+import net.dv8tion.jda.api.utils.Procedure
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.Answers
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
+import org.mockito.kotlin.*
+import java.util.concurrent.CompletableFuture
+import java.util.function.Consumer
 
 @ExtendWith(MockitoExtension::class)
 class PurgeChannelCommandTest {
@@ -36,11 +38,29 @@ class PurgeChannelCommandTest {
     @Mock
     private lateinit var channelUnion: MessageChannelUnion
 
-    @Mock
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private lateinit var textChannel: TextChannel
 
     @Mock
     private lateinit var replyAction: ReplyCallbackAction
+
+    @Mock
+    private lateinit var interactionHook: InteractionHook
+
+    @Mock
+    private lateinit var editAction: WebhookMessageEditAction<Message>
+
+    @Mock
+    private lateinit var messagePaginationAction: MessagePaginationAction
+
+    @Mock
+    private lateinit var targetOption: OptionMapping
+
+    @Mock
+    private lateinit var message: Message
+
+    @Mock
+    private lateinit var author: User
 
     @Mock
     private lateinit var amountOption: OptionMapping
@@ -65,8 +85,7 @@ class PurgeChannelCommandTest {
     fun `missing member returns guild error`() {
         whenever(slashEvent.name).thenReturn("purgechannel")
         whenever(slashEvent.member).thenReturn(null)
-        whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
-        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+        stubImmediateReply()
 
         command.onSlashCommandInteraction(slashEvent)
 
@@ -76,6 +95,7 @@ class PurgeChannelCommandTest {
     @Test
     fun `missing manage messages permission returns error`() {
         stubGuildContext()
+        stubImmediateReply()
         whenever(member.hasPermission(textChannel, Permission.MESSAGE_MANAGE)).thenReturn(false)
 
         command.onSlashCommandInteraction(slashEvent)
@@ -86,6 +106,7 @@ class PurgeChannelCommandTest {
     @Test
     fun `missing bot permissions returns error`() {
         stubGuildContext()
+        stubImmediateReply()
         stubMemberPermission()
         whenever(guild.selfMember).thenReturn(selfMember)
         whenever(
@@ -104,19 +125,21 @@ class PurgeChannelCommandTest {
     @Test
     fun `invalid amount returns error`() {
         stubGuildContext(subcommandName = "all")
+        stubImmediateReply()
         stubMemberPermission()
         stubBotPermissions()
         whenever(slashEvent.getOption("amount")).thenReturn(amountOption)
-        whenever(amountOption.asInt).thenReturn(1001)
+        whenever(amountOption.asInt).thenReturn(101)
 
         command.onSlashCommandInteraction(slashEvent)
 
-        verify(slashEvent).reply("Please provide an amount between 1 and 1000.")
+        verify(slashEvent).reply("Please provide an amount between 1 and 100.")
     }
 
     @Test
     fun `filtered mode rejects missing target user`() {
         stubGuildContext(subcommandName = "filtered")
+        stubImmediateReply()
         stubMemberPermission()
         stubBotPermissions()
         whenever(slashEvent.getOption("amount")).thenReturn(amountOption)
@@ -128,14 +151,43 @@ class PurgeChannelCommandTest {
         verify(slashEvent).reply("Please select a user to delete messages from.")
     }
 
+    @Test
+    fun `filtered mode deletes targeted messages and replies with the correct count`() {
+        stubGuildContext(subcommandName = "filtered")
+        stubMemberPermission()
+        stubBotPermissions()
+        whenever(slashEvent.getOption("amount")).thenReturn(amountOption)
+        whenever(amountOption.asInt).thenReturn(10)
+        whenever(slashEvent.getOption("target")).thenReturn(targetOption)
+        whenever(targetOption.asLong).thenReturn(99L)
+        whenever(slashEvent.deferReply(true)).thenReturn(replyAction)
+        doAnswer {
+            val consumer = it.arguments[0] as Consumer<InteractionHook>
+            consumer.accept(interactionHook)
+            null
+        }.whenever(replyAction).queue(any<Consumer<InteractionHook>>())
+        whenever(interactionHook.editOriginal(any<String>())).thenReturn(editAction)
+        whenever(textChannel.iterableHistory.cache(false)).thenReturn(messagePaginationAction)
+        doAnswer {
+            val procedure = it.arguments[0] as Procedure<Message>
+            procedure.execute(message)
+            CompletableFuture.completedFuture(null)
+        }.whenever(messagePaginationAction).forEachAsync(any())
+        whenever(message.author).thenReturn(author)
+        whenever(author.idLong).thenReturn(99L)
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        verify(textChannel).purgeMessages(listOf(message))
+        verify(interactionHook).editOriginal("Attempting to delete 1 message(s) from <@99>.")
+    }
+
     private fun stubGuildContext(subcommandName: String) {
         whenever(slashEvent.name).thenReturn("purgechannel")
         whenever(slashEvent.member).thenReturn(member)
         whenever(slashEvent.guild).thenReturn(guild)
         whenever(slashEvent.channel).thenReturn(channelUnion)
         whenever(channelUnion.asTextChannel()).thenReturn(textChannel)
-        whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
-        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
         whenever(slashEvent.subcommandName).thenReturn(subcommandName)
     }
 
@@ -145,6 +197,9 @@ class PurgeChannelCommandTest {
         whenever(slashEvent.guild).thenReturn(guild)
         whenever(slashEvent.channel).thenReturn(channelUnion)
         whenever(channelUnion.asTextChannel()).thenReturn(textChannel)
+    }
+
+    private fun stubImmediateReply() {
         whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
         whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
     }

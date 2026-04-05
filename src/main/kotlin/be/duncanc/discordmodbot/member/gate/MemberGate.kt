@@ -1,7 +1,7 @@
 package be.duncanc.discordmodbot.member.gate
 
-import be.duncanc.discordmodbot.discord.limitLessBulkDeleteByIds
 import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent
@@ -43,7 +43,7 @@ class MemberGate(
     /**
      * Cleans the messages from the users and messages containing mentions to the users from the member gate channel.
      *
-     * If the channel contains more than 1000 messages, all messages past 1000 will be ignored.
+     * If the channel contains more than 100 messages, all messages past 100 will be ignored.
      */
     private fun cleanMessagesFromUser(gateTextChannel: TextChannel, user: User) {
         if (!gateTextChannel.guild.selfMember.hasPermission(
@@ -55,18 +55,18 @@ class MemberGate(
             return
         }
         gateTextChannel.history.size()
-        val userMessages = ArrayList<Long>()
+        val userMessages = ArrayList<Message>()
         gateTextChannel.iterableHistory
-            .takeAsync(1000)
+            .takeAsync(100)
             .thenApply { messages ->
                 messages.forEach {
                     if (it.author == user || it.contentRaw.contains(user.id)) {
-                        userMessages.add(it.idLong)
+                        userMessages.add(it)
                     }
                 }
                 true
             }.thenRun {
-                gateTextChannel.limitLessBulkDeleteByIds(userMessages)
+                gateTextChannel.purgeMessages(userMessages)
             }
     }
 
