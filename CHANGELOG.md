@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.4.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.3.0...v2.4.0) (2026-04-05)
+
+
+### Features
+
+* **addwarnpoints:** prompt for unmute scheduling after warn mutes ([#571](https://github.com/DuncanCasteleyn/DiscordModBot/issues/571)) ([47698bd](https://github.com/DuncanCasteleyn/DiscordModBot/commit/47698bd7911a16240fde5f7c3a614698f0875827))
+
+
+### Bug Fixes
+
+* allow planning unmute after a user leaves ([#569](https://github.com/DuncanCasteleyn/DiscordModBot/issues/569)) ([34b03db](https://github.com/DuncanCasteleyn/DiscordModBot/commit/34b03db9903257c9a9cb2e4ada7add02e8190ca5))
+* avoid blocking purgechannel history scans ([#572](https://github.com/DuncanCasteleyn/DiscordModBot/issues/572)) ([d2cc390](https://github.com/DuncanCasteleyn/DiscordModBot/commit/d2cc39068d91c69789964424e9cfb07f41a72b69))
+* Use Discord's dynamic time format to show time in local timezone and format for users ([9235a96](https://github.com/DuncanCasteleyn/DiscordModBot/commit/9235a96c269a333e81ba532866588c3ee699f101))
+
 ## [2.3.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.2.7...v2.3.0) (2026-04-04)
 
 
