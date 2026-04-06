@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.4.0...v2.4.1) (2026-04-06)
+
+
+### Bug Fixes
+
+* enable ephemeral mode for informative messages ([b4ea531](https://github.com/DuncanCasteleyn/DiscordModBot/commit/b4ea531a904f5d6ea1a7f8661914741f1b8ba143))
+
 ## [2.4.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.3.0...v2.4.0) (2026-04-05)
 
 
