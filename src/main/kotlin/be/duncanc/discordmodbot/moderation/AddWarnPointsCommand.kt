@@ -311,7 +311,8 @@ class AddWarnPointsCommand(
 
         try {
             val unmuteDateTime = unmutePlanningService.planUnmute(guild, modalAction.targetUserId, moderator, days)
-            val targetMention = guild.getMemberById(modalAction.targetUserId)?.asMention ?: "<@${modalAction.targetUserId}>"
+            val targetMention =
+                guild.getMemberById(modalAction.targetUserId)?.asMention ?: "<@${modalAction.targetUserId}>"
 
             event.reply(
                 "Unmute has been planned for $targetMention on ${
@@ -369,14 +370,14 @@ class AddWarnPointsCommand(
                 val muteRole = try {
                     muteRoleCommandAndEventsListener.getMuteRole(guild)
                 } catch (_: IllegalStateException) {
-                    hook.sendMessage("Warn points added, but mute role is not configured.").queue()
+                    hook.sendMessage("Warn points added, but mute role is not configured.").setEphemeral(true).queue()
 
                     null
                 }
                 muteRole?.let { role ->
                     guild.addRoleToMember(targetMember, role).reason(reason).queue(
                         { sendPlanUnmutePrompt(hook, moderator, targetMember) },
-                        { hook.sendMessage("Unable to add mute role to user.").queue() }
+                        { hook.sendMessage("Unable to add mute role to user.").setEphemeral(true).queue() }
                     )
                 }
             }
@@ -504,7 +505,9 @@ class AddWarnPointsCommand(
     ) {
         hook.sendMessage(
             "Added warn points to $toInform.\n\nThe following message was sent to the user:"
-        ).setEmbeds(informationMessage).queue()
+        )
+            .setEphemeral(true)
+            .setEmbeds(informationMessage).queue()
     }
 
     private fun onFailToInformUser(
@@ -514,7 +517,9 @@ class AddWarnPointsCommand(
     ) {
         hook.sendMessage(
             "Added warn points to $toInform.\n\nWas unable to send a DM to the user please inform the user manually.\nError: ${throwable.message}"
-        ).queue()
+        )
+            .setEphemeral(true)
+            .queue()
     }
 
     private fun sendPlanUnmutePrompt(hook: InteractionHook, moderator: Member, targetMember: Member) {
@@ -527,10 +532,12 @@ class AddWarnPointsCommand(
 
         hook.sendMessage("Do you want to plan an unmute for ${targetMember.asMention}?")
             .setEphemeral(true)
-            .addComponents(ActionRow.of(
-                Button.primary(planButtonId, "Plan unmute"),
-                Button.secondary(skipButtonId, "Skip")
-            ))
+            .addComponents(
+                ActionRow.of(
+                    Button.primary(planButtonId, "Plan unmute"),
+                    Button.secondary(skipButtonId, "Skip")
+                )
+            )
             .queue()
     }
 
