@@ -215,7 +215,7 @@ class AddWarnPointsByIdCommand(
         reason: String
     ) {
         val guild = event.guild!!
-        val guildPointsSettings = getGuildWarnPointsSettings(event)
+        val guildPointsSettings = getGuildWarnPointsSettings(event, points)
         if (guildPointsSettings == null) {
             return
         }
@@ -264,10 +264,19 @@ class AddWarnPointsByIdCommand(
         return guildPointsSettings
     }
 
-    private fun getGuildWarnPointsSettings(event: ModalInteractionEvent): GuildWarnPointsSettings? {
+    private fun getGuildWarnPointsSettings(
+        event: ModalInteractionEvent,
+        requestedPoints: Int
+    ): GuildWarnPointsSettings? {
         val guildId = event.guild!!.idLong
         val guildPointsSettings = guildWarnPointsSettingsRepository.findById(guildId)
             .orElse(null) ?: GuildWarnPointsSettings(guildId, announceChannelId = -1)
+
+        if (requestedPoints > guildPointsSettings.maxPointsPerReason) {
+            event.reply("The maximum points per reason is ${guildPointsSettings.maxPointsPerReason}.")
+                .setEphemeral(true).queue()
+            return null
+        }
 
         if (guildPointsSettings.announceChannelId.let { event.jda.getTextChannelById(it) == null }) {
             event.reply("The announcement channel is not configured. Please contact an administrator.")

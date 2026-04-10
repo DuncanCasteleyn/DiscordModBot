@@ -293,6 +293,30 @@ The user was not warned by DM, please do so manually when they rejoin."""
         )
     }
 
+    @Test
+    fun `modal submission rejects points above the configured cap`() {
+        val settings = settings()
+
+        whenever(modalEvent.modalId).thenReturn("addwarnpointsbyid_reason:99:11:3:0")
+        whenever(modalEvent.member).thenReturn(member)
+        whenever(modalEvent.guild).thenReturn(guild)
+        whenever(member.hasPermission(Permission.KICK_MEMBERS)).thenReturn(true)
+        whenever(member.idLong).thenReturn(12L)
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(guild.getMemberById(99L)).thenReturn(null)
+        whenever(modalEvent.getValue("reason")).thenReturn(reasonValue)
+        whenever(reasonValue.asString).thenReturn("Spamming")
+        whenever(guildWarnPointsSettingsRepository.findById(1L)).thenReturn(Optional.of(settings))
+        whenever(modalEvent.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+
+        command.onModalInteraction(modalEvent)
+
+        verify(modalEvent).reply("The maximum points per reason is 10.")
+        verify(modalEvent, never()).deferReply(true)
+        verify(guildWarnPointsService, never()).addWarnPoint(any(), any(), any(), any(), any(), any())
+    }
+
     private fun stubSlashContext(
         reason: String?,
         targetMember: Member?,
