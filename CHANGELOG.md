@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.5.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.4.1...v2.5.0) (2026-04-10)
+
+
+### Features
+
+* **AddWarnPointsByIdCommand:** new command to add warnings to user that have left the server ([#580](https://github.com/DuncanCasteleyn/DiscordModBot/issues/580)) ([97cafc6](https://github.com/DuncanCasteleyn/DiscordModBot/commit/97cafc6d59006ce5fb51d1096413dc9ba7342154))
+* **MuteService:** Don't keep users muted forever ([#581](https://github.com/DuncanCasteleyn/DiscordModBot/issues/581)) ([69de78a](https://github.com/DuncanCasteleyn/DiscordModBot/commit/69de78a102393353e5c1bafee6b665a23484eac5))
+
 ## [2.4.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.4.0...v2.4.1) (2026-04-06)
 
 
