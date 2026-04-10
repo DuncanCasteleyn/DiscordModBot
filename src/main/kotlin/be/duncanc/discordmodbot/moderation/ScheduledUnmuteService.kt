@@ -57,7 +57,7 @@ class ScheduledUnmuteService(
         }
     }
 
-    @Scheduled(cron = "0 0/20 * * * *")
+    @Scheduled(cron = "@hourly")
     @Transactional
     fun performUnmute() {
         scheduledUnmuteRepository.findAllByUnmuteDateTimeIsBefore(OffsetDateTime.now()).forEach { scheduledUnmute ->
