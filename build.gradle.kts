@@ -121,4 +121,4 @@ allOpen {
 }
 
 project.group = "be.duncanc"
-project.version = "2.5.0" // x-release-please-version
+project.version = "2.5.1-SNAPSHOT" // x-release-please-version
