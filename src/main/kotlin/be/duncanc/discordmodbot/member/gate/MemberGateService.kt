@@ -174,7 +174,7 @@ class MemberGateService(
     }
 
     @Transactional(readOnly = true)
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "@hourly")
     fun purgeMembersWithoutRoles() {
         jda.guilds.forEach { guild ->
             val guildSettings = guildMemberGateRepository.findById(guild.idLong).orElse(null)
@@ -208,7 +208,7 @@ class MemberGateService(
 
 
     @Transactional(readOnly = true)
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "@hourly")
     fun sendReminders() {
         jda.guilds.forEach { guild ->
             val guildSettings: GuildMemberGate? = guildMemberGateRepository.findById(guild.idLong).orElse(null)

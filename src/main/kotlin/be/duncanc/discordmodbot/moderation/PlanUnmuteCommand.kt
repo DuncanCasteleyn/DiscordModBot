@@ -49,7 +49,7 @@ class PlanUnmuteCommand(
             return
         }
 
-        val guild = event.guild!!
+        val guild = member.guild
         try {
             val unmuteDateTime = unmutePlanningService.planUnmute(guild, targetUserId, member, days)
             val targetMention = guild.getMemberById(targetUserId)?.asMention ?: "<@$targetUserId>"

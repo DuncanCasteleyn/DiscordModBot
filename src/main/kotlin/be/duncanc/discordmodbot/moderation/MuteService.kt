@@ -2,12 +2,18 @@ package be.duncanc.discordmodbot.moderation
 
 import be.duncanc.discordmodbot.moderation.persistence.MuteRole
 import be.duncanc.discordmodbot.moderation.persistence.MuteRolesRepository
+import org.slf4j.LoggerFactory
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.OffsetDateTime
+
+private val logger = LoggerFactory.getLogger(MuteService::class.java)
 
 @Service
 class MuteService(
-    private val muteRolesRepository: MuteRolesRepository
+    private val muteRolesRepository: MuteRolesRepository,
+    private val scheduledUnmuteService: ScheduledUnmuteService
 ) {
     @Transactional
     fun muteUserById(guildId: Long, userId: Long) {
@@ -99,6 +105,22 @@ class MuteService(
         muteRolesRepository.findById(guildId).ifPresent { muteRole ->
             muteRole.mutedUsers.remove(userId)
             muteRolesRepository.save(muteRole)
+        }
+    }
+
+    @Scheduled(cron = "@daily")
+    @Transactional
+    fun planUnmutesByRole() {
+        val defaultUnmuteDateTime = OffsetDateTime.now().plusYears(1)
+
+        muteRolesRepository.findAll().forEach { muteRole ->
+            muteRole.mutedUsers.forEach { userId ->
+                try {
+                    scheduledUnmuteService.planDefaultUnmute(muteRole.guildId, userId, defaultUnmuteDateTime)
+                } catch (ex: Exception) {
+                    logger.warn("Failed to plan unmute for user $userId in guild ${muteRole.guildId}", ex)
+                }
+            }
         }
     }
 }
