@@ -2,10 +2,13 @@ package be.duncanc.discordmodbot.moderation
 
 import be.duncanc.discordmodbot.moderation.persistence.MuteRole
 import be.duncanc.discordmodbot.moderation.persistence.MuteRolesRepository
+import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.OffsetDateTime
+
+private val logger = LoggerFactory.getLogger(MuteService::class.java)
 
 @Service
 class MuteService(
@@ -114,7 +117,8 @@ class MuteService(
             muteRole.mutedUsers.forEach { userId ->
                 try {
                     scheduledUnmuteService.planDefaultUnmute(muteRole.guildId, userId, defaultUnmuteDateTime)
-                } catch (_: Exception) {
+                } catch (ex: Exception) {
+                    logger.warn("Failed to plan unmute for user $userId in guild ${muteRole.guildId}", ex)
                 }
             }
         }
