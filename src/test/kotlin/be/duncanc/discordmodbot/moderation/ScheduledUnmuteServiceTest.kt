@@ -5,6 +5,7 @@ import be.duncanc.discordmodbot.logging.GuildLogger
 import be.duncanc.discordmodbot.moderation.persistence.MuteRolesRepository
 import be.duncanc.discordmodbot.moderation.persistence.ScheduledUnmute
 import be.duncanc.discordmodbot.moderation.persistence.ScheduledUnmuteRepository
+import jakarta.persistence.EntityManager
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
@@ -36,7 +37,8 @@ import be.duncanc.discordmodbot.moderation.persistence.MuteRole as MuteRoleEntit
         ScheduledUnmuteRepository::class,
         MuteRolesRepository::class,
         GuildLogger::class,
-        JDA::class
+        JDA::class,
+        EntityManager::class
     ]
 )
 @MockitoSpyBean(types = [ScheduledUnmuteService::class])
@@ -45,7 +47,8 @@ class ScheduledUnmuteServiceTest(
     private val scheduledUnmuteService: ScheduledUnmuteService,
     private val scheduledUnmuteRepository: ScheduledUnmuteRepository,
     private val muteRolesRepository: MuteRolesRepository,
-    private val jda: JDA
+    private val jda: JDA,
+    private val entityManager: EntityManager
 ) {
     @Mock
     lateinit var guild: Guild
@@ -115,6 +118,16 @@ class ScheduledUnmuteServiceTest(
         verify(scheduledUnmuteService).planUnmute(0, 0, unmuteDateTime)
         @Suppress("RemoveExplicitTypeArguments")
         verify(scheduledUnmuteRepository).save(any<ScheduledUnmute>())
+    }
+
+    @Test
+    fun `planning a default unmute should persist a new schedule`() {
+        val unmuteDateTime = OffsetDateTime.now().plusHours(1)
+
+        scheduledUnmuteService.planDefaultUnmute(0, 0, unmuteDateTime)
+
+        verify(scheduledUnmuteService).planDefaultUnmute(0, 0, unmuteDateTime)
+        verify(entityManager).persist(ScheduledUnmute(0, 0, unmuteDateTime))
     }
 
     @Test

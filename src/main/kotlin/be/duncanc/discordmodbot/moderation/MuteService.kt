@@ -2,7 +2,6 @@ package be.duncanc.discordmodbot.moderation
 
 import be.duncanc.discordmodbot.moderation.persistence.MuteRole
 import be.duncanc.discordmodbot.moderation.persistence.MuteRolesRepository
-import be.duncanc.discordmodbot.moderation.persistence.ScheduledUnmuteRepository
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -11,7 +10,6 @@ import java.time.OffsetDateTime
 @Service
 class MuteService(
     private val muteRolesRepository: MuteRolesRepository,
-    private val scheduledUnmuteRepository: ScheduledUnmuteRepository,
     private val scheduledUnmuteService: ScheduledUnmuteService
 ) {
     @Transactional
@@ -114,8 +112,9 @@ class MuteService(
 
         muteRolesRepository.findAll().forEach { muteRole ->
             muteRole.mutedUsers.forEach { userId ->
-                if (!scheduledUnmuteRepository.existsByGuildIdAndUserId(muteRole.guildId, userId)) {
-                    scheduledUnmuteService.planUnmute(muteRole.guildId, userId, defaultUnmuteDateTime)
+                try {
+                    scheduledUnmuteService.planDefaultUnmute(muteRole.guildId, userId, defaultUnmuteDateTime)
+                } catch (_: Exception) {
                 }
             }
         }

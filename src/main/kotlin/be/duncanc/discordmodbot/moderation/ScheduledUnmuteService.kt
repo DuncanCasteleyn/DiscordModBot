@@ -1,15 +1,12 @@
 package be.duncanc.discordmodbot.moderation
 
+import be.duncanc.discordmodbot.discord.nicknameAndUsername
 import be.duncanc.discordmodbot.logging.GuildLogger
-import be.duncanc.discordmodbot.moderation.persistence.MuteRole as MuteRoleEntity
+import be.duncanc.discordmodbot.logging.GuildLogger.LogTypeAction.MODERATOR
 import be.duncanc.discordmodbot.moderation.persistence.MuteRolesRepository
 import be.duncanc.discordmodbot.moderation.persistence.ScheduledUnmute
 import be.duncanc.discordmodbot.moderation.persistence.ScheduledUnmuteRepository
-
-
-import be.duncanc.discordmodbot.logging.GuildLogger.LogTypeAction.MODERATOR
-import be.duncanc.discordmodbot.discord.nicknameAndUsername
-import jakarta.transaction.Transactional
+import jakarta.persistence.EntityManager
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Guild
@@ -18,8 +15,11 @@ import net.dv8tion.jda.api.entities.Role
 import org.springframework.context.annotation.Lazy
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Propagation
+import org.springframework.transaction.annotation.Transactional
 import java.awt.Color
 import java.time.OffsetDateTime
+import be.duncanc.discordmodbot.moderation.persistence.MuteRole as MuteRoleEntity
 
 @Service
 class ScheduledUnmuteService(
@@ -27,10 +27,25 @@ class ScheduledUnmuteService(
     private val muteRolesRepository: MuteRolesRepository,
     private val guildLogger: GuildLogger,
     @Lazy
-    private val jda: JDA
+    private val jda: JDA,
+    private val entityManager: EntityManager
 ) {
     @Transactional
     fun planUnmute(guildId: Long, userId: Long, unmuteDateTime: OffsetDateTime) {
+        validateUnmuteDateTime(unmuteDateTime)
+
+        val scheduledUnmute = ScheduledUnmute(guildId, userId, unmuteDateTime)
+        scheduledUnmuteRepository.save(scheduledUnmute)
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun planDefaultUnmute(guildId: Long, userId: Long, unmuteDateTime: OffsetDateTime) {
+        validateUnmuteDateTime(unmuteDateTime)
+
+        entityManager.persist(ScheduledUnmute(guildId, userId, unmuteDateTime))
+    }
+
+    private fun validateUnmuteDateTime(unmuteDateTime: OffsetDateTime) {
         if (unmuteDateTime.isAfter(OffsetDateTime.now().plusYears(1))) {
             throw IllegalArgumentException("A mute can't take longer than 1 year")
         }
@@ -40,9 +55,6 @@ class ScheduledUnmuteService(
         if (unmuteDateTime.isBefore(OffsetDateTime.now().plusMinutes(30))) {
             throw IllegalArgumentException("An unmute should be planned at least more than 30 minutes in the future")
         }
-
-        val scheduledUnmute = ScheduledUnmute(guildId, userId, unmuteDateTime)
-        scheduledUnmuteRepository.save(scheduledUnmute)
     }
 
     @Scheduled(cron = "0 0/20 * * * *")
