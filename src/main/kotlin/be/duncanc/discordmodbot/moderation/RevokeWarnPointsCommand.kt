@@ -4,9 +4,12 @@ import be.duncanc.discordmodbot.discord.SlashCommand
 import be.duncanc.discordmodbot.discord.nicknameAndUsername
 import be.duncanc.discordmodbot.logging.GuildLogger
 import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.components.actionrow.ActionRow
 import net.dv8tion.jda.api.components.selections.StringSelectMenu
+import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
@@ -67,7 +70,7 @@ class RevokeWarnPointsCommand(
         if (warnPointIdStr != null) {
             val warnPointId = try {
                 UUID.fromString(warnPointIdStr)
-            } catch (e: IllegalArgumentException) {
+            } catch (_: IllegalArgumentException) {
                 event.reply("Invalid warn point ID format. Please provide a valid UUID.").setEphemeral(true).queue()
                 return
             }
@@ -81,7 +84,14 @@ class RevokeWarnPointsCommand(
             }
 
             guildWarnPointsService.revokePoint(warnPointId)
-            logRevoke(event.jda, guild, targetWarning.points, reason, moderator)
+            logRevoke(
+                event.jda,
+                guild,
+                targetWarning.id,
+                targetWarning.points,
+                reason,
+                moderator
+            )
 
             event.reply("Revoked ${targetWarning.points} warn point(s) from <@$targetUserId>. Reason: $reason")
                 .setEphemeral(true).queue()
@@ -137,7 +147,7 @@ class RevokeWarnPointsCommand(
 
         val warnPointId = try {
             UUID.fromString(warnPointIdStr)
-        } catch (e: IllegalArgumentException) {
+        } catch (_: IllegalArgumentException) {
             event.reply("Invalid warn point ID.").setEphemeral(true).queue()
             return
         }
@@ -156,7 +166,14 @@ class RevokeWarnPointsCommand(
 
 
             guildWarnPointsService.revokePoint(warnPointId)
-            logRevoke(event.jda, guild, targetWarning.points, targetWarning.reason, event.member)
+            logRevoke(
+                event.jda,
+                guild,
+                targetWarning.id,
+                targetWarning.points,
+                targetWarning.reason,
+                event.member
+            )
 
             hook.sendMessage("Revoked ${targetWarning.points} warn point(s) from user ID ${targetWarning.userId}: Reason: ${targetWarning.reason}")
                 .setEphemeral(true)
@@ -166,18 +183,19 @@ class RevokeWarnPointsCommand(
     }
 
     private fun logRevoke(
-        jda: net.dv8tion.jda.api.JDA,
-        guild: net.dv8tion.jda.api.entities.Guild,
+        jda: JDA,
+        guild: Guild,
+        warnId: UUID,
         points: Int,
         reason: String,
-        moderator: net.dv8tion.jda.api.entities.Member?
+        moderator: Member?
     ) {
         val guildLogger = jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
         if (guildLogger != null) {
             val logEmbed = EmbedBuilder()
                 .setColor(Color.YELLOW)
                 .setTitle("Warn point revoked")
-                .addField("UUID", UUID.randomUUID().toString(), false)
+                .addField("Revoked warning UUID", warnId.toString(), false)
                 .addField("Moderator", moderator?.nicknameAndUsername ?: "Unknown", true)
                 .addField("Points revoked", points.toString(), false)
                 .addField("Reason", reason, false)
