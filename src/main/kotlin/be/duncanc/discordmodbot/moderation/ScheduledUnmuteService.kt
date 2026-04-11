@@ -42,6 +42,10 @@ class ScheduledUnmuteService(
     fun planDefaultUnmute(guildId: Long, userId: Long, unmuteDateTime: OffsetDateTime) {
         validateUnmuteDateTime(unmuteDateTime)
 
+        if (!scheduledUnmuteRepository.existsByGuildIdAndUserId(guildId, userId)) {
+            return
+        }
+
         entityManager.persist(ScheduledUnmute(guildId, userId, unmuteDateTime))
     }
 
