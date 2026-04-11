@@ -142,19 +142,27 @@ class RevokeWarnPointsCommand(
             return
         }
 
-        val targetWarning = guildWarnPointsService.getWarningById(warnPointId)
+        event.deferReply(true).queue { hook ->
 
-        if (targetWarning == null) {
-            event.reply("Warn point not found. It may have already been revoked.").setEphemeral(true).queue()
-            return
+            val targetWarning = guildWarnPointsService.getWarningById(warnPointId)
+
+            if (targetWarning == null) {
+                hook.sendMessage("Warn point not found. It may have already been revoked.")
+                    .setEphemeral(true)
+                    .queue()
+
+                return@queue
+            }
+
+
+            guildWarnPointsService.revokePoint(warnPointId)
+            logRevoke(event.jda, guild, targetWarning.points, targetWarning.reason, event.member)
+
+            hook.sendMessage("Revoked ${targetWarning.points} warn point(s) from user ID ${targetWarning.userId}: Reason: ${targetWarning.reason}")
+                .setEphemeral(true)
+                .queue()
         }
 
-        guildWarnPointsService.revokePoint(warnPointId)
-        logRevoke(event.jda, guild, targetWarning.points, targetWarning.reason, event.member)
-
-        event.editMessage("Revoked ${targetWarning.points} warn point(s) from user ID ${targetWarning.userId}: Reason: ${targetWarning.reason}")
-            .setComponents(null)
-            .queue()
     }
 
     private fun logRevoke(
