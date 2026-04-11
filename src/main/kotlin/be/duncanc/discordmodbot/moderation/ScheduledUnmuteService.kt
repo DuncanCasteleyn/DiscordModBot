@@ -87,15 +87,13 @@ class ScheduledUnmuteService(
             muteRole.mutedUsers.remove(userId)
             muteRolesRepository.save(muteRole)
             scheduledUnmuteRepository.delete(scheduledUnmute)
-            guild.jda.retrieveUserById(userId).queue { user ->
-                val logEmbed = EmbedBuilder()
-                    .setColor(Color.green)
-                    .setTitle("User unmuted")
-                    .addField("User", user.name, true)
-                    .addField("Reason", "Mute expired", false)
+            val logEmbed = EmbedBuilder()
+                .setColor(Color.green)
+                .setTitle("User unmuted (not present in guild)")
+                .addField("User", "<@$userId>", true)
+                .addField("Reason", "Mute expired", false)
 
-                guildLogger.log(logEmbed, user, guild, actionType = MODERATOR)
-            }
+            guildLogger.log(logEmbed, guild = guild, actionType = MODERATOR)
 
         }
     }
