@@ -19,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
@@ -123,11 +124,25 @@ class ScheduledUnmuteServiceTest(
     @Test
     fun `planning a default unmute should persist a new schedule`() {
         val unmuteDateTime = OffsetDateTime.now().plusHours(1)
+        whenever(scheduledUnmuteRepository.existsByGuildIdAndUserId(0, 0)).thenReturn(true)
 
         scheduledUnmuteService.planDefaultUnmute(0, 0, unmuteDateTime)
 
         verify(scheduledUnmuteService).planDefaultUnmute(0, 0, unmuteDateTime)
+        verify(scheduledUnmuteRepository).existsByGuildIdAndUserId(0, 0)
         verify(entityManager).persist(ScheduledUnmute(0, 0, unmuteDateTime))
+    }
+
+    @Test
+    fun `planning a default unmute should not persist when no schedule exists`() {
+        val unmuteDateTime = OffsetDateTime.now().plusHours(1)
+        whenever(scheduledUnmuteRepository.existsByGuildIdAndUserId(0, 0)).thenReturn(false)
+
+        scheduledUnmuteService.planDefaultUnmute(0, 0, unmuteDateTime)
+
+        verify(scheduledUnmuteService).planDefaultUnmute(0, 0, unmuteDateTime)
+        verify(scheduledUnmuteRepository).existsByGuildIdAndUserId(0, 0)
+        verify(entityManager, never()).persist(any<ScheduledUnmute>())
     }
 
     @Test
