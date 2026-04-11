@@ -52,6 +52,11 @@ class BanSpamAccountContextMenu(
             return
         }
 
+        if (targetMember.idLong == event.jda.selfUser.idLong) {
+            event.reply("You can't ban the bot itself.").setEphemeral(true).queue()
+            return
+        }
+
         if (!moderator.canInteract(targetMember)) {
             event.reply("You can't ban a user that you can't interact with.").setEphemeral(true).queue()
             return

@@ -2,11 +2,13 @@ package be.duncanc.discordmodbot.moderation
 
 import be.duncanc.discordmodbot.logging.GuildLogger
 import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageEmbed
+import net.dv8tion.jda.api.entities.SelfUser
 import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.interaction.command.UserContextInteractionEvent
@@ -53,6 +55,12 @@ class BanSpamAccountContextMenuTest {
 
     @Mock
     private lateinit var guild: Guild
+
+    @Mock
+    private lateinit var jda: JDA
+
+    @Mock
+    private lateinit var selfUser: SelfUser
 
     @Mock
     private lateinit var replyAction: ReplyCallbackAction
@@ -126,8 +134,12 @@ class BanSpamAccountContextMenuTest {
     fun `interaction hierarchy failure replies with an error`() {
         whenever(event.name).thenReturn("Ban Spam Account")
         whenever(event.member).thenReturn(moderator)
+        whenever(event.jda).thenReturn(jda)
+        whenever(jda.selfUser).thenReturn(selfUser)
+        whenever(selfUser.idLong).thenReturn(999L)
         whenever(moderator.hasPermission(Permission.BAN_MEMBERS)).thenReturn(true)
         whenever(event.targetMember).thenReturn(targetMember)
+        whenever(targetMember.idLong).thenReturn(1L)
         whenever(moderator.canInteract(targetMember)).thenReturn(false)
         whenever(event.reply(any<String>())).thenReturn(replyAction)
         whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
@@ -135,6 +147,26 @@ class BanSpamAccountContextMenuTest {
         command.onUserContextInteraction(event)
 
         verify(event).reply("You can't ban a user that you can't interact with.")
+    }
+
+    @Test
+    fun `self user target replies with an error`() {
+        whenever(event.name).thenReturn("Ban Spam Account")
+        whenever(event.member).thenReturn(moderator)
+        whenever(event.jda).thenReturn(jda)
+        whenever(jda.selfUser).thenReturn(selfUser)
+        whenever(selfUser.idLong).thenReturn(1L)
+        whenever(moderator.hasPermission(Permission.BAN_MEMBERS)).thenReturn(true)
+        whenever(event.targetMember).thenReturn(targetMember)
+        whenever(targetMember.idLong).thenReturn(1L)
+        whenever(event.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+
+        command.onUserContextInteraction(event)
+
+        verify(event).reply("You can't ban the bot itself.")
+        verify(moderator, never()).canInteract(targetMember)
+        verify(event, never()).deferReply(true)
     }
 
     @Test
@@ -219,9 +251,13 @@ Error: DMs disabled"""
         whenever(event.name).thenReturn("Ban Spam Account")
         whenever(event.member).thenReturn(moderator)
         whenever(event.guild).thenReturn(guild)
+        whenever(event.jda).thenReturn(jda)
         whenever(event.targetMember).thenReturn(targetMember)
+        whenever(jda.selfUser).thenReturn(selfUser)
+        whenever(selfUser.idLong).thenReturn(999L)
         whenever(moderator.guild).thenReturn(guild)
         whenever(moderator.hasPermission(Permission.BAN_MEMBERS)).thenReturn(true)
+        whenever(targetMember.idLong).thenReturn(1L)
         whenever(moderator.canInteract(targetMember)).thenReturn(true)
         whenever(moderator.user).thenReturn(moderatorUser)
         whenever(moderator.user.effectiveAvatarUrl).thenReturn("https://example.invalid/mod.png")
