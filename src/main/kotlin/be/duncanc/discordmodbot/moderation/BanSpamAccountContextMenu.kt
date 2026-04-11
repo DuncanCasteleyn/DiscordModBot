@@ -8,6 +8,8 @@ import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.events.interaction.command.GenericContextInteractionEvent
+import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.UserContextInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions
@@ -33,6 +35,17 @@ class BanSpamAccountContextMenu(
     }
 
     override fun onUserContextInteraction(event: UserContextInteractionEvent) {
+        handleContextInteraction(event, event.targetMember)
+    }
+
+    override fun onMessageContextInteraction(event: MessageContextInteractionEvent) {
+        handleContextInteraction(event, event.target.member)
+    }
+
+    private fun handleContextInteraction(
+        event: GenericContextInteractionEvent<*>,
+        targetMember: Member?
+    ) {
         if (event.name != COMMAND) return
 
         val moderator = event.member
@@ -46,7 +59,6 @@ class BanSpamAccountContextMenu(
             return
         }
 
-        val targetMember = event.targetMember
         if (targetMember == null) {
             event.reply("You need to select a user that is still in the server.").setEphemeral(true).queue()
             return
@@ -162,6 +174,8 @@ Error: ${throwable.message}"""
     override fun getCommandsData(): List<CommandData> {
         return listOf(
             Commands.user(COMMAND)
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.BAN_MEMBERS)),
+            Commands.message(COMMAND)
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.BAN_MEMBERS))
         )
     }

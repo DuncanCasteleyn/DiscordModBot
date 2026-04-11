@@ -11,8 +11,10 @@ import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.SelfUser
 import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
 import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.UserContextInteractionEvent
 import net.dv8tion.jda.api.interactions.InteractionHook
+import net.dv8tion.jda.api.interactions.commands.Command
 import net.dv8tion.jda.api.requests.restaction.AuditableRestAction
 import net.dv8tion.jda.api.requests.restaction.CacheRestAction
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction
@@ -40,6 +42,9 @@ class BanSpamAccountContextMenuTest {
 
     @Mock
     private lateinit var event: UserContextInteractionEvent
+
+    @Mock
+    private lateinit var messageEvent: MessageContextInteractionEvent
 
     @Mock
     private lateinit var moderator: Member
@@ -85,6 +90,9 @@ class BanSpamAccountContextMenuTest {
 
     @Mock
     private lateinit var dmMessage: Message
+
+    @Mock
+    private lateinit var selectedMessage: Message
 
     private lateinit var command: BanSpamAccountContextMenu
 
@@ -192,7 +200,7 @@ class BanSpamAccountContextMenuTest {
 
     @Test
     fun `dm failure still bans the user`() {
-        stubContextMenuStart()
+        stubUserContextMenuStart()
         whenever(targetMember.user).thenReturn(targetUser)
         whenever(targetUser.openPrivateChannel()).thenReturn(openPrivateChannelAction)
         doAnswer {
@@ -220,8 +228,67 @@ Error: DMs disabled"""
         )
     }
 
+    @Test
+    fun `message context menu bans the selected message author`() {
+        val embeds = listOf<MessageEmbed>()
+        stubSuccessfulMessageBanFlow(embeds)
+
+        command.onMessageContextInteraction(messageEvent)
+
+        verify(guild).ban(targetMember, 1, TimeUnit.DAYS)
+        verify(banRestAction).reason("Compromised account")
+        verify(hook).editOriginal("Banned $targetMember.\n\nThe following message was sent to the user:")
+        verify(editAction).setEmbeds(embeds)
+    }
+
+    @Test
+    fun `message context menu requires the author to still be in the server`() {
+        whenever(messageEvent.name).thenReturn("Ban Spam Account")
+        whenever(messageEvent.member).thenReturn(moderator)
+        whenever(moderator.hasPermission(Permission.BAN_MEMBERS)).thenReturn(true)
+        whenever(messageEvent.target).thenReturn(selectedMessage)
+        whenever(selectedMessage.member).thenReturn(null)
+        whenever(messageEvent.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+
+        command.onMessageContextInteraction(messageEvent)
+
+        verify(messageEvent).reply("You need to select a user that is still in the server.")
+        verify(messageEvent, never()).deferReply(true)
+    }
+
+    @Test
+    fun `message context menu rejects targeting the bot`() {
+        whenever(messageEvent.name).thenReturn("Ban Spam Account")
+        whenever(messageEvent.member).thenReturn(moderator)
+        whenever(messageEvent.jda).thenReturn(jda)
+        whenever(messageEvent.target).thenReturn(selectedMessage)
+        whenever(selectedMessage.member).thenReturn(targetMember)
+        whenever(jda.selfUser).thenReturn(selfUser)
+        whenever(selfUser.idLong).thenReturn(1L)
+        whenever(moderator.hasPermission(Permission.BAN_MEMBERS)).thenReturn(true)
+        whenever(targetMember.idLong).thenReturn(1L)
+        whenever(messageEvent.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+
+        command.onMessageContextInteraction(messageEvent)
+
+        verify(messageEvent).reply("You can't ban the bot itself.")
+        verify(moderator, never()).canInteract(targetMember)
+        verify(messageEvent, never()).deferReply(true)
+    }
+
+    @Test
+    fun `command data includes user and message context menus`() {
+        val commands = command.getCommandsData()
+
+        kotlin.test.assertEquals(2, commands.size)
+        kotlin.test.assertEquals(listOf(Command.Type.USER, Command.Type.MESSAGE), commands.map { it.type })
+        kotlin.test.assertTrue(commands.all { it.name == "Ban Spam Account" })
+    }
+
     private fun stubSuccessfulBanFlow(embeds: List<MessageEmbed>) {
-        stubContextMenuStart()
+        stubUserContextMenuStart()
         whenever(targetMember.user).thenReturn(targetUser)
         whenever(targetUser.openPrivateChannel()).thenReturn(openPrivateChannelAction)
         doAnswer {
@@ -247,7 +314,34 @@ Error: DMs disabled"""
         whenever(editAction.setEmbeds(any<Collection<MessageEmbed>>())).thenReturn(editAction)
     }
 
-    private fun stubContextMenuStart() {
+    private fun stubSuccessfulMessageBanFlow(embeds: List<MessageEmbed>) {
+        stubMessageContextMenuStart()
+        whenever(targetMember.user).thenReturn(targetUser)
+        whenever(targetUser.openPrivateChannel()).thenReturn(openPrivateChannelAction)
+        doAnswer {
+            val success = it.arguments[0] as Consumer<PrivateChannel>
+            success.accept(privateChannel)
+            null
+        }.whenever(openPrivateChannelAction).queue(any<Consumer<PrivateChannel>>(), any<Consumer<Throwable>>())
+        whenever(privateChannel.sendMessageEmbeds(any<MessageEmbed>())).thenReturn(messageCreateAction)
+        doAnswer {
+            val success = it.arguments[0] as Consumer<Message>
+            success.accept(dmMessage)
+            null
+        }.whenever(messageCreateAction).queue(any<Consumer<Message>>(), any<Consumer<Throwable>>())
+        whenever(guild.ban(targetMember, 1, TimeUnit.DAYS)).thenReturn(banRestAction)
+        whenever(banRestAction.reason("Compromised account")).thenReturn(banRestAction)
+        doAnswer {
+            val success = it.arguments[0] as Consumer<Void?>
+            success.accept(null)
+            null
+        }.whenever(banRestAction).queue(any<Consumer<Void?>>(), any<Consumer<Throwable>>())
+        whenever(dmMessage.embeds).thenReturn(embeds)
+        whenever(hook.editOriginal(any<String>())).thenReturn(editAction)
+        whenever(editAction.setEmbeds(any<Collection<MessageEmbed>>())).thenReturn(editAction)
+    }
+
+    private fun stubUserContextMenuStart() {
         whenever(event.name).thenReturn("Ban Spam Account")
         whenever(event.member).thenReturn(moderator)
         whenever(event.guild).thenReturn(guild)
@@ -266,6 +360,33 @@ Error: DMs disabled"""
         whenever(guild.name).thenReturn("Test Guild")
         whenever(guild.idLong).thenReturn(1L)
         whenever(event.deferReply(true)).thenReturn(replyAction)
+        doAnswer {
+            val success = it.arguments[0] as Consumer<InteractionHook>
+            success.accept(hook)
+            null
+        }.whenever(replyAction).queue(any<Consumer<InteractionHook>>())
+    }
+
+    private fun stubMessageContextMenuStart() {
+        whenever(messageEvent.name).thenReturn("Ban Spam Account")
+        whenever(messageEvent.member).thenReturn(moderator)
+        whenever(messageEvent.guild).thenReturn(guild)
+        whenever(messageEvent.jda).thenReturn(jda)
+        whenever(messageEvent.target).thenReturn(selectedMessage)
+        whenever(selectedMessage.member).thenReturn(targetMember)
+        whenever(jda.selfUser).thenReturn(selfUser)
+        whenever(selfUser.idLong).thenReturn(999L)
+        whenever(moderator.guild).thenReturn(guild)
+        whenever(moderator.hasPermission(Permission.BAN_MEMBERS)).thenReturn(true)
+        whenever(targetMember.idLong).thenReturn(1L)
+        whenever(moderator.canInteract(targetMember)).thenReturn(true)
+        whenever(moderator.user).thenReturn(moderatorUser)
+        whenever(moderator.user.effectiveAvatarUrl).thenReturn("https://example.invalid/mod.png")
+        whenever(moderatorUser.name).thenReturn("ModeratorUser")
+        whenever(targetUser.name).thenReturn("TargetUser")
+        whenever(guild.name).thenReturn("Test Guild")
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(messageEvent.deferReply(true)).thenReturn(replyAction)
         doAnswer {
             val success = it.arguments[0] as Consumer<InteractionHook>
             success.accept(hook)
