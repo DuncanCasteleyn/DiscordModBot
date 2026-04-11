@@ -27,7 +27,7 @@ class BanSpamAccountContextMenu(
 ) : ListenerAdapter(), UserContextMenuCommand {
     companion object {
         private const val COMMAND = "Ban Spam Account"
-        private const val REASON = "Compromised account"
+        private const val REASON = "Compromised/Spam account"
         private const val FAIRY_TAIL_SERVER_ID = 175856762677624832L
         private const val FAIRY_TAIL_APPEAL_LINK = "https://goo.gl/forms/SpWg49gaQlMt4lSG3"
         private const val REZERO_SERVER_ID = 176028172729450497L

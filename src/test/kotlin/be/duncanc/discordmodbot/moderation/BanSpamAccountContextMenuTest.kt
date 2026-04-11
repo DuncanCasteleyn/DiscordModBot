@@ -4,13 +4,8 @@ import be.duncanc.discordmodbot.logging.GuildLogger
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.Guild
-import net.dv8tion.jda.api.entities.Member
-import net.dv8tion.jda.api.entities.Message
-import net.dv8tion.jda.api.entities.MessageEmbed
-import net.dv8tion.jda.api.entities.SelfUser
+import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
-import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.UserContextInteractionEvent
 import net.dv8tion.jda.api.interactions.InteractionHook
@@ -25,13 +20,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doAnswer
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.isNull
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
+import org.mockito.kotlin.*
 import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
 
@@ -178,14 +167,14 @@ class BanSpamAccountContextMenuTest {
     }
 
     @Test
-    fun `successful dm and ban uses compromised account reason with 24 hour cleanup`() {
+    fun `successful dm and ban uses Compromised or Spam account reason with 24 hour cleanup`() {
         val embeds = listOf<MessageEmbed>()
         stubSuccessfulBanFlow(embeds)
 
         command.onUserContextInteraction(event)
 
         verify(guild).ban(targetMember, 1, TimeUnit.DAYS)
-        verify(banRestAction).reason("Compromised account")
+        verify(banRestAction).reason("Compromised/Spam account")
         verify(hook).editOriginal("Banned $targetMember.\n\nThe following message was sent to the user:")
         verify(editAction).setEmbeds(embeds)
         verify(guildLogger).log(
@@ -209,7 +198,7 @@ class BanSpamAccountContextMenuTest {
             null
         }.whenever(openPrivateChannelAction).queue(any<Consumer<PrivateChannel>>(), any<Consumer<Throwable>>())
         whenever(guild.ban(targetMember, 1, TimeUnit.DAYS)).thenReturn(banRestAction)
-        whenever(banRestAction.reason("Compromised account")).thenReturn(banRestAction)
+        whenever(banRestAction.reason("Compromised/Spam account")).thenReturn(banRestAction)
         doAnswer {
             val success = it.arguments[0] as Consumer<Void?>
             success.accept(null)
@@ -236,7 +225,7 @@ Error: DMs disabled"""
         command.onMessageContextInteraction(messageEvent)
 
         verify(guild).ban(targetMember, 1, TimeUnit.DAYS)
-        verify(banRestAction).reason("Compromised account")
+        verify(banRestAction).reason("Compromised/Spam account")
         verify(hook).editOriginal("Banned $targetMember.\n\nThe following message was sent to the user:")
         verify(editAction).setEmbeds(embeds)
     }
@@ -303,7 +292,7 @@ Error: DMs disabled"""
             null
         }.whenever(messageCreateAction).queue(any<Consumer<Message>>(), any<Consumer<Throwable>>())
         whenever(guild.ban(targetMember, 1, TimeUnit.DAYS)).thenReturn(banRestAction)
-        whenever(banRestAction.reason("Compromised account")).thenReturn(banRestAction)
+        whenever(banRestAction.reason("Compromised/Spam account")).thenReturn(banRestAction)
         doAnswer {
             val success = it.arguments[0] as Consumer<Void?>
             success.accept(null)
@@ -330,7 +319,7 @@ Error: DMs disabled"""
             null
         }.whenever(messageCreateAction).queue(any<Consumer<Message>>(), any<Consumer<Throwable>>())
         whenever(guild.ban(targetMember, 1, TimeUnit.DAYS)).thenReturn(banRestAction)
-        whenever(banRestAction.reason("Compromised account")).thenReturn(banRestAction)
+        whenever(banRestAction.reason("Compromised/Spam account")).thenReturn(banRestAction)
         doAnswer {
             val success = it.arguments[0] as Consumer<Void?>
             success.accept(null)
