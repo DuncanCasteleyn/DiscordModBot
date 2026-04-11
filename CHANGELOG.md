@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.6.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.6.0...v2.6.1) (2026-04-11)
+
+
+### Bug Fixes
+
+* support message spam ban context menu ([669b3f8](https://github.com/DuncanCasteleyn/DiscordModBot/commit/669b3f861f2c8a6b7e7fad1e3a4e5d304f94a153))
+
 ## [2.6.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.5.0...v2.6.0) (2026-04-11)
 
 
