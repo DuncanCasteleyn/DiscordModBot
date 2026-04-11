@@ -64,11 +64,12 @@ class ScheduledUnmuteService(
     @Scheduled(cron = "@hourly")
     @Transactional
     fun performUnmute() {
-        scheduledUnmuteRepository.findAllByUnmuteDateTimeIsBefore(OffsetDateTime.now()).forEach { scheduledUnmute ->
-            jda.getGuildById(scheduledUnmute.guildId)?.let { guild ->
-                unmuteMembers(scheduledUnmute, guild)
+        scheduledUnmuteRepository.findAllByUnmuteDateTimeIsBefore(OffsetDateTime.now())
+            .forEach { scheduledUnmute ->
+                jda.getGuildById(scheduledUnmute.guildId)?.let { guild ->
+                    unmuteMembers(scheduledUnmute, guild)
+                }
             }
-        }
     }
 
     private fun unmuteMembers(scheduledUnmute: ScheduledUnmute, guild: Guild) {
