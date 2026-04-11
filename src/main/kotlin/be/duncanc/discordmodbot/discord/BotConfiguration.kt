@@ -28,7 +28,7 @@ class BotConfiguration {
     @Bean(destroyMethod = "shutdown")
     fun jda(
         eventListeners: Array<EventListener>,
-        slashCommands: Array<SlashCommand>,
+        discordCommands: Array<DiscordCommand>,
         discordModBotConfig: DiscordModBotConfig
     ): JDA {
         val jda = JDABuilder.create(discordModBotConfig.botToken, INTENTS)
@@ -40,7 +40,7 @@ class BotConfiguration {
             .awaitReady()
 
         val updateCommands = jda.updateCommands()
-        slashCommands.forEach {
+        discordCommands.forEach {
             updateCommands.addCommands(it.getCommandsData())
         }
         updateCommands.queue()
