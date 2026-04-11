@@ -16,7 +16,7 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.requests.RestAction
 import org.springframework.stereotype.Component
 import java.awt.Color
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 @Component
@@ -26,10 +26,10 @@ class BanSpamAccountContextMenu(
     companion object {
         private const val COMMAND = "Ban Spam Account"
         private const val REASON = "Compromised account"
-        private const val WESLEY_SERVER_ID = 175856762677624832L
-        private const val WESLEY_APPEAL_LINK = "https://goo.gl/forms/SpWg49gaQlMt4lSG3"
-        private const val MONSANTO_SERVER_ID = 176028172729450497L
-        private const val MONSANTO_APPEAL_LINK = "https://forms.gle/ffbDj12KcSyTT7mUA"
+        private const val FAIRY_TAIL_SERVER_ID = 175856762677624832L
+        private const val FAIRY_TAIL_APPEAL_LINK = "https://goo.gl/forms/SpWg49gaQlMt4lSG3"
+        private const val REZERO_SERVER_ID = 176028172729450497L
+        private const val REZERO_APPEAL_LINK = "https://forms.gle/ffbDj12KcSyTT7mUA"
     }
 
     override fun onUserContextInteraction(event: UserContextInteractionEvent) {
@@ -91,11 +91,11 @@ class BanSpamAccountContextMenu(
     private fun createBanDescription(guild: Guild): String {
         val description = StringBuilder("Reason: $REASON")
         when (guild.idLong) {
-            WESLEY_SERVER_ID -> description.append("\n\nIf you'd like to appeal the ban, please use this form: ")
-                .append(WESLEY_APPEAL_LINK)
+            FAIRY_TAIL_SERVER_ID -> description.append("\n\nIf you'd like to appeal the ban, please use this form: ")
+                .append(FAIRY_TAIL_APPEAL_LINK)
 
-            MONSANTO_SERVER_ID -> description.append("\n\nIf you'd like to appeal the ban, please use this form: ")
-                .append(MONSANTO_APPEAL_LINK)
+            REZERO_SERVER_ID -> description.append("\n\nIf you'd like to appeal the ban, please use this form: ")
+                .append(REZERO_APPEAL_LINK)
         }
         return description.toString()
     }
