@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.6.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.5.0...v2.6.0) (2026-04-11)
+
+
+### Features
+
+* **moderation:** add spam account ban context menu ([#585](https://github.com/DuncanCasteleyn/DiscordModBot/issues/585)) ([dab9f77](https://github.com/DuncanCasteleyn/DiscordModBot/commit/dab9f77ae08beb086cd694bf173ecc6f94f76f2e))
+
+
+### Bug Fixes
+
+* always log user unmute event even if user left the guild ([0eca529](https://github.com/DuncanCasteleyn/DiscordModBot/commit/0eca5294c93bb32bb7f1259552a541b972ddf38f))
+* reduce amount of warning log noise when planning default unmute ([7f3a3c9](https://github.com/DuncanCasteleyn/DiscordModBot/commit/7f3a3c95db34ffb093d41f58322c728ba6fdcffe))
+
 ## [2.5.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.4.1...v2.5.0) (2026-04-10)
 
 
