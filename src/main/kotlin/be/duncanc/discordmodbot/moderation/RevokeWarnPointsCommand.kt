@@ -156,14 +156,13 @@ class RevokeWarnPointsCommand(
 
     private fun handleDirectRevoke(event: SlashCommandInteractionEvent, moderator: Member) {
         val guild = event.guild ?: return
-        val targetUserId = event.getOption(OPTION_USER)?.asLong
-        if (targetUserId == null) {
+        val targetMember = event.getOption(OPTION_USER)?.asMember
+        if (targetMember == null) {
             event.reply("You need to mention a user.").setEphemeral(true).queue()
             return
         }
 
-        val targetMember = guild.getMemberById(targetUserId)
-        if (targetMember != null && !moderator.canInteract(targetMember)) {
+        if (!moderator.canInteract(targetMember)) {
             event.reply("You can't revoke warn points from a user that you can't interact with.").setEphemeral(true)
                 .queue()
             return
