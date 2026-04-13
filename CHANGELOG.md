@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.6.2](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.6.1...v2.6.2) (2026-04-13)
+
+
+### Bug Fixes
+
+* **moderation:** resolve IllegalArgumentException: MessageTopLevelComponents may not be null ([5c48715](https://github.com/DuncanCasteleyn/DiscordModBot/commit/5c48715c5dbd60182a95292ad796d2a29a276ed3))
+* **moderation:** RevokeWarnPointsCommand now logs exact warning UUID that was revoked ([3162bed](https://github.com/DuncanCasteleyn/DiscordModBot/commit/3162bed07fed222fefaf722b1bf1ddd1a5fade69))
+* **moderation:** split revoke warn points into direct and guided flows ([#590](https://github.com/DuncanCasteleyn/DiscordModBot/issues/590)) ([e34d64c](https://github.com/DuncanCasteleyn/DiscordModBot/commit/e34d64c5a9c8fddff9f8c0d1fe94f9547750ab69))
+
 ## [2.6.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.6.0...v2.6.1) (2026-04-11)
 
 
