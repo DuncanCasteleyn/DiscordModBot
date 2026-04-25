@@ -64,12 +64,14 @@ constructor(
 
         if (discordMessageRepository.existsById(event.messageIdLong)) {
             val message = event.message
+            val existingMessage = discordMessageRepository.findById(message.idLong).orElse(null)
             val discordMessage = DiscordMessage(
                 message.idLong,
                 message.guild.idLong,
                 message.channel.idLong,
                 message.author.idLong,
-                message.contentDisplay
+                message.contentDisplay,
+                existingMessage?.emotes
             )
             discordMessageRepository.save(discordMessage)
         }
@@ -94,7 +96,7 @@ constructor(
         return attachmentProxyCreator.getAttachmentUrl(id)
     }
 
-    private fun linkEmotes(emotes: MutableList<CustomEmoji>): String? {
+    private fun linkEmotes(emotes: List<CustomEmoji>): String? {
         if (emotes.isEmpty()) {
             return null
         }
