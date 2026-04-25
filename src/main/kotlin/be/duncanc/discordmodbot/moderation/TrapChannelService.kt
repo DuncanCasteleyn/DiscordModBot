@@ -91,6 +91,10 @@ class TrapChannelService(
             return
         }
 
+        if (member.hasPermission(Permission.ADMINISTRATOR) || member.hasPermission(Permission.BAN_MEMBERS)) {
+            return
+        }
+
         val actionKey = guild.id + ":" + member.id
         if (!pendingTrapActions.add(actionKey)) {
             return
