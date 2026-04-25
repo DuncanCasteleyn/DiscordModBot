@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.7.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.6.2...v2.7.0) (2026-04-25)
+
+
+### Features
+
+* **moderation:** add trap channels for spam bots ([#602](https://github.com/DuncanCasteleyn/DiscordModBot/issues/602)) ([2d45790](https://github.com/DuncanCasteleyn/DiscordModBot/commit/2d45790b42bf939d46e9bb458d3be15fccce4eea))
+
+
+### Bug Fixes
+
+* **deps:** update dependency org.springframework.modulith:spring-modulith-bom to v2.0.6 ([#601](https://github.com/DuncanCasteleyn/DiscordModBot/issues/601)) ([6cac677](https://github.com/DuncanCasteleyn/DiscordModBot/commit/6cac6770b30987955b3784b27742b6f8b1066e71))
+* **deps:** update kotlin monorepo to v2.3.21 (patch) ([#598](https://github.com/DuncanCasteleyn/DiscordModBot/issues/598)) ([92ac67e](https://github.com/DuncanCasteleyn/DiscordModBot/commit/92ac67ec778365a3b0c4c436556a819ee0a9d984))
+* **deps:** update plugin org.springframework.boot to v4.0.6 ([#599](https://github.com/DuncanCasteleyn/DiscordModBot/issues/599)) ([51018e7](https://github.com/DuncanCasteleyn/DiscordModBot/commit/51018e7c0c74613f68c9c7944d031edd49097103))
+
 ## [2.6.2](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.6.1...v2.6.2) (2026-04-13)
 
 
