@@ -91,13 +91,13 @@ class TrapChannelConfigCommand(
             appendLine("Trap channel settings for ${guild.name}")
             appendLine()
             appendLine("- Trap channel: $configuredChannel")
-            appendLine("- Action: Ban, delete the last hour of messages, then unban shortly after")
+            appendLine("- Action: Ban, deletes recent messages, then unban after")
         }
 
         event.reply(message).setEphemeral(true).queue()
     }
 
-    internal open fun getRequiredTextChannel(event: SlashCommandInteractionEvent): TextChannel? {
+    internal fun getRequiredTextChannel(event: SlashCommandInteractionEvent): TextChannel? {
         val channel = event.getOption(OPTION_CHANNEL)?.asChannel?.asTextChannel()
         if (channel == null) {
             event.reply("Please mention a text channel.").setEphemeral(true).queue()

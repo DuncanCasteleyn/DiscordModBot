@@ -12,11 +12,11 @@ import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.UserSnowflake
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.exceptions.ErrorResponseException
 import net.dv8tion.jda.api.requests.ErrorResponse
+import net.dv8tion.jda.api.utils.TimeFormat
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Lazy
 import org.springframework.scheduling.annotation.Scheduled
@@ -40,7 +40,7 @@ class TrapChannelService(
         private val LOG = LoggerFactory.getLogger(TrapChannelService::class.java)
 
         private const val TRAP_BAN_REASON = "Triggered the configured spam trap channel"
-        private const val TRAP_UNBAN_REASON = "Automatic trap channel release"
+        private const val TRAP_UNBAN_REASON = "Automatic trap channel unban"
         private const val AUTO_UNBAN_DELAY_HOURS = 1L
         private const val TRAP_WARNING_MESSAGE =
             "%s was automatically banned for posting in this channel. This channel is a spambot trap. Do not post here."
@@ -50,10 +50,6 @@ class TrapChannelService(
 
     fun getTrapChannelId(guildId: Long): Long? {
         return guildTrapChannelRepository.findById(guildId).orElse(null)?.channelId
-    }
-
-    fun getTrapChannel(guildId: Long, guild: Guild): TextChannel? {
-        return getTrapChannelId(guildId)?.let(guild::getTextChannelById)
     }
 
     @Transactional
@@ -106,9 +102,9 @@ class TrapChannelService(
             .queue(
                 {
                     trapChannelUnbanRepository.save(TrapChannelUnban(guild.idLong, member.idLong, scheduledUnbanAt))
+                    pendingTrapActions.remove(actionKey)
                     logTrapBan(guild, member, event.channel.asMention, scheduledUnbanAt)
                     postTrapWarning(event.channel, member.idLong)
-                    pendingTrapActions.remove(actionKey)
                 },
                 { throwable ->
                     LOG.warn("Failed to trap {} in guild {}", member.id, guild.id, throwable)
@@ -170,7 +166,11 @@ class TrapChannelService(
             .addField("User", member.nicknameAndUsername, true)
             .addField("Channel", trapChannel, true)
             .addField("Reason", TRAP_BAN_REASON, false)
-            .addField("Planned unban", scheduledUnbanAt.toString(), false)
+            .addField(
+                "Unban planned after",
+                TimeFormat.DATE_SHORT_TIME_SHORT.atInstant(scheduledUnbanAt.toInstant()).toString(),
+                false
+            )
 
         guildLogger.log(logEmbed, member.user, guild, actionType = GuildLogger.LogTypeAction.MODERATOR)
     }
