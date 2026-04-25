@@ -6,30 +6,20 @@ import be.duncanc.discordmodbot.moderation.persistence.TrapChannelUnban
 import be.duncanc.discordmodbot.moderation.persistence.TrapChannelUnbanRepository
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.Guild
-import net.dv8tion.jda.api.entities.Member
-import net.dv8tion.jda.api.entities.SelfMember
-import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.requests.RestAction
-import net.dv8tion.jda.api.requests.restaction.MessageCreateAction
 import net.dv8tion.jda.api.requests.restaction.AuditableRestAction
+import net.dv8tion.jda.api.requests.restaction.MessageCreateAction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.isNull
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyNoInteractions
-import org.mockito.kotlin.whenever
+import org.mockito.kotlin.*
 import java.time.OffsetDateTime
-import java.util.Optional
+import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
 
@@ -138,14 +128,16 @@ class TrapChannelServiceTest {
         val scheduledUnban = TrapChannelUnban(1L, 5L, OffsetDateTime.now().minusMinutes(1))
         whenever(trapChannelUnbanRepository.findAllByUnbanAtLessThanEqual(any())).thenReturn(listOf(scheduledUnban))
         whenever(jda.getGuildById(1L)).thenReturn(guild)
-        whenever(guild.unban(any())).thenReturn(unbanAction)
+        whenever(guild.unban(any<UserSnowflake>())).thenReturn(unbanAction)
         whenever(unbanAction.reason(any())).thenReturn(unbanAction)
-        doSuccess(unbanAction)
 
         service.performPendingUnbans()
 
-        verify(guild).unban(any())
-        verify(unbanAction).reason("Automatic trap channel release")
+        verify(guild).unban(any<UserSnowflake>())
+        verify(unbanAction).reason("Automatic trap channel unban")
+        val queueCaptor = argumentCaptor<Consumer<Void?>>()
+        verify(unbanAction).queue(queueCaptor.capture(), any())
+        queueCaptor.firstValue.accept(null)
         verify(trapChannelUnbanRepository).delete(scheduledUnban)
         verify(guildLogger).log(
             any(),
@@ -181,10 +173,11 @@ class TrapChannelServiceTest {
     }
 
     private fun doSuccess(action: RestAction<Void>) {
-        org.mockito.kotlin.doAnswer {
-            val success = it.arguments[0] as Consumer<Void?>
+        doAnswer {
+            @Suppress("UNCHECKED_CAST")
+            val success = it.getArgument<Consumer<Void?>>(0)
             success.accept(null)
             null
-        }.whenever(action).queue(any<Consumer<Void?>>(), any<Consumer<Throwable>>())
+        }.whenever(action).queue(any(), any())
     }
 }
