@@ -3,7 +3,6 @@ package be.duncanc.discordmodbot.moderation
 import be.duncanc.discordmodbot.discord.nicknameAndUsername
 import be.duncanc.discordmodbot.logging.GuildLogger
 import be.duncanc.discordmodbot.logging.MessageHistory
-import be.duncanc.discordmodbot.logging.StoredMessageReference
 import be.duncanc.discordmodbot.moderation.persistence.GuildTrapChannel
 import be.duncanc.discordmodbot.moderation.persistence.GuildTrapChannelRepository
 import be.duncanc.discordmodbot.moderation.persistence.TrapChannelUnban
@@ -15,7 +14,6 @@ import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.UserSnowflake
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
-import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.exceptions.ErrorResponseException
 import net.dv8tion.jda.api.requests.ErrorResponse
@@ -101,14 +99,12 @@ class TrapChannelService(
         }
 
         val scheduledUnbanAt = OffsetDateTime.now().plusMinutes(AUTO_UNBAN_DELAY_MINUTES)
-        val recentMessages = collectRecentMessages(event)
 
-        guild.ban(member, 0, TimeUnit.DAYS)
+        guild.ban(member, 10, TimeUnit.MINUTES)
             .reason(TRAP_BAN_REASON)
             .queue(
                 {
                     trapChannelUnbanRepository.save(TrapChannelUnban(guild.idLong, member.idLong, scheduledUnbanAt))
-                    deleteRecentMessages(guild, recentMessages)
                     logTrapBan(guild, member, event.channel.asMention, recentMessages.size, scheduledUnbanAt)
                     pendingTrapActions.remove(actionKey)
                 },
@@ -148,62 +144,6 @@ class TrapChannelService(
                         }
                     )
             }
-    }
-
-    private fun collectRecentMessages(event: MessageReceivedEvent): List<StoredMessageReference> {
-        val recentMessages = messageHistory.findRecentMessages(
-            event.guild.idLong,
-            event.author.idLong,
-            OffsetDateTime.now().minusHours(1)
-        ).toMutableList()
-
-        recentMessages.add(
-            StoredMessageReference(
-                event.messageIdLong,
-                event.guild.idLong,
-                event.channel.idLong,
-                event.author.idLong,
-                event.message.contentDisplay,
-                event.message.timeCreated.toInstant().toEpochMilli()
-            )
-        )
-
-        return recentMessages.distinctBy { it.messageId }
-    }
-
-    private fun deleteRecentMessages(guild: Guild, recentMessages: List<StoredMessageReference>) {
-        recentMessages.groupBy { it.channelId }.forEach { (channelId, channelMessages) ->
-            val channel = guild.getChannelById(GuildMessageChannel::class.java, channelId) ?: return@forEach
-            if (!guild.selfMember.hasPermission(channel, Permission.MESSAGE_MANAGE)) {
-                return@forEach
-            }
-
-            channelMessages.map { it.messageId.toString() }
-                .distinct()
-                .chunked(100)
-                .forEach { messageIds ->
-                    if (messageIds.size == 1) {
-                        channel.deleteMessageById(messageIds.single()).queue(
-                            null,
-                            { throwable -> logDeleteFailure(channelId, throwable) }
-                        )
-                    } else {
-                        channel.deleteMessagesByIds(messageIds).queue(
-                            null,
-                            { throwable -> logDeleteFailure(channelId, throwable) }
-                        )
-                    }
-                }
-        }
-    }
-
-    private fun logDeleteFailure(channelId: Long, throwable: Throwable) {
-        val errorResponse = (throwable as? ErrorResponseException)?.errorResponse
-        if (errorResponse == ErrorResponse.UNKNOWN_MESSAGE) {
-            return
-        }
-
-        LOG.warn("Failed to delete trapped user messages in channel {}", channelId, throwable)
     }
 
     private fun logTrapBan(
