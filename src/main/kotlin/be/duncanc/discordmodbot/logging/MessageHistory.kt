@@ -8,6 +8,7 @@ import net.dv8tion.jda.api.events.message.MessageUpdateEvent
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
+import java.time.OffsetDateTime
 
 /**
  * This class provides a buffer that will store Message objects so that they can
@@ -44,6 +45,7 @@ constructor(
             message.channel.idLong,
             message.author.idLong,
             message.contentDisplay,
+            message.timeCreated.toInstant().toEpochMilli(),
             linkEmotes(message.mentions.customEmojis)
         )
         discordMessageRepository.save(discordMessage)
@@ -64,15 +66,40 @@ constructor(
 
         if (discordMessageRepository.existsById(event.messageIdLong)) {
             val message = event.message
+            val existingMessage = discordMessageRepository.findById(message.idLong).orElse(null)
             val discordMessage = DiscordMessage(
                 message.idLong,
                 message.guild.idLong,
                 message.channel.idLong,
                 message.author.idLong,
-                message.contentDisplay
+                message.contentDisplay,
+                existingMessage?.createdAtEpochMillis ?: message.timeCreated.toInstant().toEpochMilli(),
+                existingMessage?.emotes
             )
             discordMessageRepository.save(discordMessage)
         }
+    }
+
+    fun findRecentMessages(guildId: Long, userId: Long, since: OffsetDateTime): List<StoredMessageReference> {
+        val cutoffEpochMillis = since.toInstant().toEpochMilli()
+
+        return discordMessageRepository.findAll()
+            .filter {
+                it.guildId == guildId &&
+                        it.userId == userId &&
+                        it.createdAtEpochMillis >= cutoffEpochMillis
+            }
+            .map {
+                StoredMessageReference(
+                    it.messageId,
+                    it.guildId,
+                    it.channelId,
+                    it.userId,
+                    it.content,
+                    it.createdAtEpochMillis
+                )
+            }
+            .toList()
     }
 
     /**
@@ -94,7 +121,7 @@ constructor(
         return attachmentProxyCreator.getAttachmentUrl(id)
     }
 
-    private fun linkEmotes(emotes: MutableList<CustomEmoji>): String? {
+    private fun linkEmotes(emotes: List<CustomEmoji>): String? {
         if (emotes.isEmpty()) {
             return null
         }

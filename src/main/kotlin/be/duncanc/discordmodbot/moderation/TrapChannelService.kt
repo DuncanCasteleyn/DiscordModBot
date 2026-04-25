@@ -1,0 +1,233 @@
+package be.duncanc.discordmodbot.moderation
+
+import be.duncanc.discordmodbot.discord.nicknameAndUsername
+import be.duncanc.discordmodbot.logging.GuildLogger
+import be.duncanc.discordmodbot.logging.MessageHistory
+import be.duncanc.discordmodbot.logging.StoredMessageReference
+import be.duncanc.discordmodbot.moderation.persistence.GuildTrapChannel
+import be.duncanc.discordmodbot.moderation.persistence.GuildTrapChannelRepository
+import be.duncanc.discordmodbot.moderation.persistence.TrapChannelUnban
+import be.duncanc.discordmodbot.moderation.persistence.TrapChannelUnbanRepository
+import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.entities.UserSnowflake
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.exceptions.ErrorResponseException
+import net.dv8tion.jda.api.requests.ErrorResponse
+import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Lazy
+import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+import java.awt.Color
+import java.time.OffsetDateTime
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
+
+@Service
+@Transactional(readOnly = true)
+class TrapChannelService(
+    private val guildTrapChannelRepository: GuildTrapChannelRepository,
+    private val trapChannelUnbanRepository: TrapChannelUnbanRepository,
+    private val messageHistory: MessageHistory,
+    private val guildLogger: GuildLogger,
+    @Lazy
+    private val jda: JDA
+) {
+    companion object {
+        private val LOG = LoggerFactory.getLogger(TrapChannelService::class.java)
+
+        private const val TRAP_BAN_REASON = "Triggered the configured spam trap channel"
+        private const val TRAP_UNBAN_REASON = "Automatic trap channel release"
+        private const val AUTO_UNBAN_DELAY_MINUTES = 1L
+    }
+
+    private val pendingTrapActions = ConcurrentHashMap.newKeySet<String>()
+
+    fun getTrapChannelId(guildId: Long): Long? {
+        return guildTrapChannelRepository.findById(guildId).orElse(null)?.channelId
+    }
+
+    fun getTrapChannel(guildId: Long, guild: Guild): TextChannel? {
+        return getTrapChannelId(guildId)?.let(guild::getTextChannelById)
+    }
+
+    @Transactional
+    fun setTrapChannel(guildId: Long, channelId: Long) {
+        guildTrapChannelRepository.save(GuildTrapChannel(guildId, channelId))
+    }
+
+    @Transactional
+    fun clearTrapChannel(guildId: Long) {
+        guildTrapChannelRepository.deleteById(guildId)
+    }
+
+    @Transactional
+    fun clearGuildState(guildId: Long) {
+        guildTrapChannelRepository.deleteById(guildId)
+        trapChannelUnbanRepository.deleteAllByGuildId(guildId)
+    }
+
+    fun handleTrapMessage(event: MessageReceivedEvent) {
+        if (!event.isFromGuild || event.author.isBot || event.isWebhookMessage) {
+            return
+        }
+
+        val guild = event.guild
+        val configuredChannelId = getTrapChannelId(guild.idLong) ?: return
+        if (configuredChannelId != event.channel.idLong) {
+            return
+        }
+
+        val member = event.member ?: return
+        val selfMember = guild.selfMember
+        if (!selfMember.hasPermission(Permission.BAN_MEMBERS) || !selfMember.canInteract(member)) {
+            LOG.warn("Unable to trap {} in guild {} due to missing permissions or role hierarchy", member.id, guild.id)
+            return
+        }
+
+        val actionKey = guild.id + ":" + member.id
+        if (!pendingTrapActions.add(actionKey)) {
+            return
+        }
+
+        val scheduledUnbanAt = OffsetDateTime.now().plusMinutes(AUTO_UNBAN_DELAY_MINUTES)
+        val recentMessages = collectRecentMessages(event)
+
+        guild.ban(member, 0, TimeUnit.DAYS)
+            .reason(TRAP_BAN_REASON)
+            .queue(
+                {
+                    trapChannelUnbanRepository.save(TrapChannelUnban(guild.idLong, member.idLong, scheduledUnbanAt))
+                    deleteRecentMessages(guild, recentMessages)
+                    logTrapBan(guild, member, event.channel.asMention, recentMessages.size, scheduledUnbanAt)
+                    pendingTrapActions.remove(actionKey)
+                },
+                { throwable ->
+                    LOG.warn("Failed to trap {} in guild {}", member.id, guild.id, throwable)
+                    pendingTrapActions.remove(actionKey)
+                }
+            )
+    }
+
+    @Scheduled(cron = "*/30 * * * * *")
+    @Transactional
+    fun performPendingUnbans() {
+        trapChannelUnbanRepository.findAllByUnbanAtLessThanEqual(OffsetDateTime.now())
+            .forEach { scheduledUnban ->
+                val guild = jda.getGuildById(scheduledUnban.guildId) ?: return@forEach
+                guild.unban(UserSnowflake.fromId(scheduledUnban.userId))
+                    .reason(TRAP_UNBAN_REASON)
+                    .queue(
+                        {
+                            trapChannelUnbanRepository.delete(scheduledUnban)
+                            logTrapUnban(guild, scheduledUnban.userId)
+                        },
+                        { throwable ->
+                            val errorResponse = (throwable as? ErrorResponseException)?.errorResponse
+                            if (errorResponse == ErrorResponse.UNKNOWN_BAN) {
+                                trapChannelUnbanRepository.delete(scheduledUnban)
+                                return@queue
+                            }
+
+                            LOG.warn(
+                                "Failed to automatically unban {} in guild {}",
+                                scheduledUnban.userId,
+                                scheduledUnban.guildId,
+                                throwable
+                            )
+                        }
+                    )
+            }
+    }
+
+    private fun collectRecentMessages(event: MessageReceivedEvent): List<StoredMessageReference> {
+        val recentMessages = messageHistory.findRecentMessages(
+            event.guild.idLong,
+            event.author.idLong,
+            OffsetDateTime.now().minusHours(1)
+        ).toMutableList()
+
+        recentMessages.add(
+            StoredMessageReference(
+                event.messageIdLong,
+                event.guild.idLong,
+                event.channel.idLong,
+                event.author.idLong,
+                event.message.contentDisplay,
+                event.message.timeCreated.toInstant().toEpochMilli()
+            )
+        )
+
+        return recentMessages.distinctBy { it.messageId }
+    }
+
+    private fun deleteRecentMessages(guild: Guild, recentMessages: List<StoredMessageReference>) {
+        recentMessages.groupBy { it.channelId }.forEach { (channelId, channelMessages) ->
+            val channel = guild.getChannelById(GuildMessageChannel::class.java, channelId) ?: return@forEach
+            if (!guild.selfMember.hasPermission(channel, Permission.MESSAGE_MANAGE)) {
+                return@forEach
+            }
+
+            channelMessages.map { it.messageId.toString() }
+                .distinct()
+                .chunked(100)
+                .forEach { messageIds ->
+                    if (messageIds.size == 1) {
+                        channel.deleteMessageById(messageIds.single()).queue(
+                            null,
+                            { throwable -> logDeleteFailure(channelId, throwable) }
+                        )
+                    } else {
+                        channel.deleteMessagesByIds(messageIds).queue(
+                            null,
+                            { throwable -> logDeleteFailure(channelId, throwable) }
+                        )
+                    }
+                }
+        }
+    }
+
+    private fun logDeleteFailure(channelId: Long, throwable: Throwable) {
+        val errorResponse = (throwable as? ErrorResponseException)?.errorResponse
+        if (errorResponse == ErrorResponse.UNKNOWN_MESSAGE) {
+            return
+        }
+
+        LOG.warn("Failed to delete trapped user messages in channel {}", channelId, throwable)
+    }
+
+    private fun logTrapBan(
+        guild: Guild,
+        member: Member,
+        trapChannel: String,
+        deletedMessages: Int,
+        scheduledUnbanAt: OffsetDateTime
+    ) {
+        val logEmbed = EmbedBuilder()
+            .setColor(Color.RED)
+            .setTitle("User banned by trap channel")
+            .addField("User", member.nicknameAndUsername, true)
+            .addField("Channel", trapChannel, true)
+            .addField("Deleted messages", deletedMessages.toString(), true)
+            .addField("Reason", TRAP_BAN_REASON, false)
+            .addField("Planned unban", scheduledUnbanAt.toString(), false)
+
+        guildLogger.log(logEmbed, member.user, guild, actionType = GuildLogger.LogTypeAction.MODERATOR)
+    }
+
+    private fun logTrapUnban(guild: Guild, userId: Long) {
+        val logEmbed = EmbedBuilder()
+            .setColor(Color.GREEN)
+            .setTitle("User unbanned after trap channel")
+            .addField("User", "<@$userId>", true)
+            .addField("Reason", TRAP_UNBAN_REASON, false)
+
+        guildLogger.log(logEmbed, guild = guild, actionType = GuildLogger.LogTypeAction.MODERATOR)
+    }
+}

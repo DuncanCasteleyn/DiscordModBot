@@ -13,6 +13,7 @@ data class DiscordMessage(
     val channelId: Long,
     val userId: Long,
     val content: String,
+    val createdAtEpochMillis: Long,
     val emotes: String? = null
 ) {
     @Transient
