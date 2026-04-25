@@ -41,7 +41,7 @@ class TrapChannelService(
 
         private const val TRAP_BAN_REASON = "Triggered the configured spam trap channel"
         private const val TRAP_UNBAN_REASON = "Automatic trap channel release"
-        private const val AUTO_UNBAN_DELAY_MINUTES = 1L
+        private const val AUTO_UNBAN_DELAY_HOURS = 1L
         private const val TRAP_WARNING_MESSAGE =
             "%s was automatically banned for posting in this channel. This channel is a spambot trap. Do not post here."
     }
@@ -99,7 +99,7 @@ class TrapChannelService(
             return
         }
 
-        val scheduledUnbanAt = OffsetDateTime.now().plusMinutes(AUTO_UNBAN_DELAY_MINUTES)
+        val scheduledUnbanAt = OffsetDateTime.now().plusHours(AUTO_UNBAN_DELAY_HOURS)
 
         guild.ban(member, 10, TimeUnit.MINUTES)
             .reason(TRAP_BAN_REASON)
@@ -117,7 +117,7 @@ class TrapChannelService(
             )
     }
 
-    @Scheduled(cron = "*/30 * * * * *")
+    @Scheduled(cron = "@hourly")
     @Transactional
     fun performPendingUnbans() {
         trapChannelUnbanRepository.findAllByUnbanAtLessThanEqual(OffsetDateTime.now())
