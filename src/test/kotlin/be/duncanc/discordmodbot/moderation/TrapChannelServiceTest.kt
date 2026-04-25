@@ -13,6 +13,7 @@ import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.requests.RestAction
+import net.dv8tion.jda.api.requests.restaction.MessageCreateAction
 import net.dv8tion.jda.api.requests.restaction.AuditableRestAction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -68,6 +69,9 @@ class TrapChannelServiceTest {
     private lateinit var banAction: AuditableRestAction<Void>
 
     @Mock
+    private lateinit var messageCreateAction: MessageCreateAction
+
+    @Mock
     private lateinit var unbanAction: AuditableRestAction<Void>
 
     private lateinit var service: TrapChannelService
@@ -87,6 +91,7 @@ class TrapChannelServiceTest {
         stubTrapEvent()
         whenever(guild.ban(member, 10, TimeUnit.MINUTES)).thenReturn(banAction)
         whenever(banAction.reason(any())).thenReturn(banAction)
+        whenever(channelUnion.sendMessage(any<String>())).thenReturn(messageCreateAction)
         doSuccess(banAction)
 
         service.handleTrapMessage(event)
@@ -98,6 +103,11 @@ class TrapChannelServiceTest {
         verify(trapChannelUnbanRepository).save(unbanCaptor.capture())
         kotlin.test.assertEquals(1L, unbanCaptor.firstValue.guildId)
         kotlin.test.assertEquals(5L, unbanCaptor.firstValue.userId)
+
+        verify(channelUnion).sendMessage(
+            "<@5> was automatically banned for posting in this channel. This channel is a spambot trap. Do not post here."
+        )
+        verify(messageCreateAction).queue()
 
         verify(guildLogger).log(
             any(),
