@@ -1,5 +1,6 @@
 package be.duncanc.discordmodbot.member.gate
 
+import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
@@ -8,9 +9,12 @@ import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleAddEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
+import org.springframework.context.annotation.Lazy
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.security.SecureRandom
+import java.time.OffsetDateTime
 import java.util.concurrent.TimeUnit
 
 @Component
@@ -18,7 +22,9 @@ import java.util.concurrent.TimeUnit
 class MemberGate(
     private val memberGateService: MemberGateService,
     private val welcomeMessageService: WelcomeMessageService,
-    private val reviewManager: ReviewManager
+    private val reviewManager: ReviewManager,
+    @Lazy
+    private val jda: JDA
 ) : ListenerAdapter() {
     companion object {
         private val random = SecureRandom()
@@ -68,6 +74,47 @@ class MemberGate(
             }.thenRun {
                 gateTextChannel.purgeMessages(userMessages)
             }
+    }
+
+    @Scheduled(cron = "0 */5 * * * *")
+    fun cleanExpiredGateMessages() {
+        memberGateService.getMemberGates()
+            .forEach { memberGate ->
+                val gateTextChannel = memberGate.gateTextChannel?.let { jda.getTextChannelById(it) } ?: return@forEach
+                val memberRole = memberGate.memberRole?.let { gateTextChannel.guild.getRoleById(it) } ?: return@forEach
+                cleanExpiredGateMessages(gateTextChannel, memberRole.idLong)
+            }
+    }
+
+    private fun cleanExpiredGateMessages(gateTextChannel: TextChannel, memberRoleId: Long) {
+        if (!gateTextChannel.guild.selfMember.hasPermission(
+                gateTextChannel,
+                Permission.MESSAGE_MANAGE,
+                Permission.MESSAGE_HISTORY
+            )
+        ) {
+            return
+        }
+        val oldestAllowed = OffsetDateTime.now().minusMinutes(5)
+        gateTextChannel.iterableHistory
+            .takeAsync(100)
+            .thenAccept { messages ->
+                val messagesToDelete = messages.filter { message ->
+                    shouldDeleteGateMessage(message, memberRoleId, oldestAllowed)
+                }
+                if (messagesToDelete.isNotEmpty()) {
+                    gateTextChannel.purgeMessages(messagesToDelete)
+                }
+            }
+    }
+
+    private fun shouldDeleteGateMessage(message: Message, memberRoleId: Long, oldestAllowed: OffsetDateTime): Boolean {
+        if (message.author.isBot || message.timeCreated.isAfter(oldestAllowed)) {
+            return false
+        }
+        val member = message.guild.getMember(message.author) ?: return true
+
+        return member.roles.none { it.idLong == memberRoleId }
     }
 
     /**
