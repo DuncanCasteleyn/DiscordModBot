@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.7.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.7.0...v2.7.1) (2026-05-01)
+
+
+### Bug Fixes
+
+* **moderation:** Trap channel defect did not correctly log failed unbans ([fb8c4ec](https://github.com/DuncanCasteleyn/DiscordModBot/commit/fb8c4ec7b73fcaee13ab0072b28efa4e2e0723af))
+
 ## [2.7.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.6.2...v2.7.0) (2026-04-25)
 
 
