@@ -64,6 +64,8 @@ class TrapChannelService(
 
     @Transactional
     fun clearGuildState(guildId: Long) {
+        LOG.info("Guild {} left", guildId)
+
         guildTrapChannelRepository.deleteById(guildId)
         trapChannelUnbanRepository.deleteAllByGuildId(guildId)
     }
@@ -81,12 +83,15 @@ class TrapChannelService(
 
         val member = event.member ?: return
         val selfMember = guild.selfMember
-        if (!selfMember.hasPermission(Permission.BAN_MEMBERS) || !selfMember.canInteract(member)) {
+        if (!selfMember.hasPermission(Permission.BAN_MEMBERS)) {
             LOG.warn("Unable to trap {} in guild {} due to missing permissions or role hierarchy", member.id, guild.id)
             return
         }
 
-        if (member.hasPermission(Permission.ADMINISTRATOR) || member.hasPermission(Permission.BAN_MEMBERS)) {
+        if (member.hasPermission(Permission.ADMINISTRATOR) || member.hasPermission(Permission.BAN_MEMBERS) || !selfMember.canInteract(
+                member
+            )
+        ) {
             return
         }
 
@@ -120,12 +125,11 @@ class TrapChannelService(
             .forEach { scheduledUnban ->
                 val guild = jda.getGuildById(scheduledUnban.guildId)
                 if (guild == null) {
-                    LOG.warn(
-                        "Dropping pending trap unban for user {} in guild {} because the guild is unavailable",
+                    LOG.error(
+                        "Can't unban for user {} in guild {} because the guild is unavailable",
                         scheduledUnban.userId,
                         scheduledUnban.guildId
                     )
-                    trapChannelUnbanRepository.delete(scheduledUnban)
                     return@forEach
                 }
 
@@ -133,22 +137,22 @@ class TrapChannelService(
                     .reason(TRAP_UNBAN_REASON)
                     .queue(
                         {
-                            trapChannelUnbanRepository.delete(scheduledUnban)
                             logTrapUnban(guild, scheduledUnban.userId)
+                            trapChannelUnbanRepository.delete(scheduledUnban)
                         },
                         { throwable ->
-                            val errorResponse = (throwable as? ErrorResponseException)?.errorResponse
-                            if (errorResponse == ErrorResponse.UNKNOWN_BAN) {
-                                trapChannelUnbanRepository.delete(scheduledUnban)
-                                return@queue
-                            }
-
-                            LOG.warn(
+                            LOG.error(
                                 "Failed to automatically unban {} in guild {}",
                                 scheduledUnban.userId,
                                 scheduledUnban.guildId,
                                 throwable
                             )
+
+                            val errorResponse = (throwable as? ErrorResponseException)?.errorResponse
+                            if (errorResponse == ErrorResponse.UNKNOWN_BAN) {
+                                trapChannelUnbanRepository.delete(scheduledUnban)
+                                return@queue
+                            }
                         }
                     )
             }

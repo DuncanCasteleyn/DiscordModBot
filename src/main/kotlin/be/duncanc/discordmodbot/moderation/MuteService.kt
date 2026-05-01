@@ -118,6 +118,9 @@ class MuteService(
                 try {
                     scheduledUnmuteService.planDefaultUnmute(muteRole.guildId, userId, defaultUnmuteDateTime)
                 } catch (ex: Exception) {
+                    if (ex.message?.contains("Duplicate entry") == true) {
+                        return@forEach
+                    }
                     logger.warn("Failed to plan unmute for user $userId in guild ${muteRole.guildId}", ex)
                 }
             }
