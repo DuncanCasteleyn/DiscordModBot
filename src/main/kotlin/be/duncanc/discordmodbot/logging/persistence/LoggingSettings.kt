@@ -30,7 +30,7 @@ data class LoggingSettings
         if (other == null || Hibernate.getClass(this) != Hibernate.getClass(other)) return false
         other as LoggingSettings
 
-        return guildId != null && guildId == other.guildId
+        return guildId == other.guildId
     }
 
     override fun hashCode(): Int = javaClass.hashCode()

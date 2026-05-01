@@ -27,7 +27,7 @@ class HelpCommand : ListenerAdapter(), SlashCommand {
                 }
                 helpEmbeds[helpEmbeds.lastIndex].addField(
                     "/${commandData.name}",
-                    commandData.description ?: "No description available.",
+                    commandData.description,
                     false
                 )
             }

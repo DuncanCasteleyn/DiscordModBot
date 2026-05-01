@@ -30,7 +30,7 @@ data class TrapChannelUnban(
 
         other as TrapChannelUnban
 
-        return guildId != null && guildId == other.guildId && userId != null && userId == other.userId
+        return guildId == other.guildId && userId == other.userId
     }
 
     final override fun hashCode(): Int = Objects.hash(guildId, userId)
