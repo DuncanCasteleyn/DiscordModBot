@@ -110,7 +110,7 @@ class TrapChannelServiceTest {
     }
 
     @Test
-    fun `perform pending unbans drops overdue entries when guild is unavailable`() {
+    fun `perform pending unbans keeps overdue entries when guild is unavailable`() {
         val scheduledUnban = TrapChannelUnban(1L, 5L, OffsetDateTime.now().minusMinutes(1))
         whenever(trapChannelUnbanRepository.findAllByUnbanAtLessThanEqual(any())).thenReturn(listOf(scheduledUnban))
         whenever(jda.getGuildById(1L)).thenReturn(null)
@@ -118,7 +118,7 @@ class TrapChannelServiceTest {
         service.performPendingUnbans()
 
         verify(jda).getGuildById(1L)
-        verify(trapChannelUnbanRepository).delete(scheduledUnban)
+        verify(trapChannelUnbanRepository, never()).delete(scheduledUnban)
         verify(guild, never()).unban(any())
         verifyNoInteractions(guildLogger)
     }
