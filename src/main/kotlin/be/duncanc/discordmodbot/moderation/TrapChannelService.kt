@@ -121,7 +121,9 @@ class TrapChannelService(
     @Scheduled(cron = "@hourly")
     @Transactional
     fun performPendingUnbans() {
-        trapChannelUnbanRepository.findAllByUnbanAtLessThanEqual(OffsetDateTime.now())
+        val availableGuildIds = jda.guilds.map { it.idLong }
+
+        trapChannelUnbanRepository.findAllByUnbanAtLessThanEqualAndGuildIdIn(OffsetDateTime.now(), availableGuildIds)
             .forEach { scheduledUnban ->
                 val guild = jda.getGuildById(scheduledUnban.guildId)
                 if (guild == null) {
@@ -130,6 +132,7 @@ class TrapChannelService(
                         scheduledUnban.userId,
                         scheduledUnban.guildId
                     )
+
                     return@forEach
                 }
 

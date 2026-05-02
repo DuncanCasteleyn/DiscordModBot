@@ -112,7 +112,11 @@ class TrapChannelServiceTest {
     @Test
     fun `perform pending unbans keeps overdue entries when guild is unavailable`() {
         val scheduledUnban = TrapChannelUnban(1L, 5L, OffsetDateTime.now().minusMinutes(1))
-        whenever(trapChannelUnbanRepository.findAllByUnbanAtLessThanEqual(any())).thenReturn(listOf(scheduledUnban))
+        whenever(trapChannelUnbanRepository.findAllByUnbanAtLessThanEqualAndGuildIdIn(any(), any())).thenReturn(
+            listOf(
+                scheduledUnban
+            )
+        )
         whenever(jda.getGuildById(1L)).thenReturn(null)
 
         service.performPendingUnbans()
@@ -126,7 +130,11 @@ class TrapChannelServiceTest {
     @Test
     fun `perform pending unbans removes completed entries`() {
         val scheduledUnban = TrapChannelUnban(1L, 5L, OffsetDateTime.now().minusMinutes(1))
-        whenever(trapChannelUnbanRepository.findAllByUnbanAtLessThanEqual(any())).thenReturn(listOf(scheduledUnban))
+        whenever(trapChannelUnbanRepository.findAllByUnbanAtLessThanEqualAndGuildIdIn(any(), any())).thenReturn(
+            listOf(
+                scheduledUnban
+            )
+        )
         whenever(jda.getGuildById(1L)).thenReturn(guild)
         whenever(guild.unban(any<UserSnowflake>())).thenReturn(unbanAction)
         whenever(unbanAction.reason(any())).thenReturn(unbanAction)

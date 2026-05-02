@@ -6,7 +6,10 @@ import java.time.OffsetDateTime
 
 @Repository
 interface TrapChannelUnbanRepository : JpaRepository<TrapChannelUnban, TrapChannelUnban.TrapChannelUnbanId> {
-    fun findAllByUnbanAtLessThanEqual(unbanAt: OffsetDateTime): List<TrapChannelUnban>
+    fun findAllByUnbanAtLessThanEqualAndGuildIdIn(
+        unbanAt: OffsetDateTime,
+        guildIds: Collection<Long>
+    ): List<TrapChannelUnban>
 
     fun deleteAllByGuildId(guildId: Long)
 }
