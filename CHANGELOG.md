@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.7.2](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.7.1...v2.7.2) (2026-05-02)
+
+
+### Bug Fixes
+
+* condition is always true issues and redundant elvis operator ([c7c82cd](https://github.com/DuncanCasteleyn/DiscordModBot/commit/c7c82cd296cb82177f321cd630f8748334f27ff9))
+* Don't take unbans from guilds a bot does not have ([3cfba0f](https://github.com/DuncanCasteleyn/DiscordModBot/commit/3cfba0f99f4eeee8e2a6bec21e83bdff0e49c20e))
+* **memberGate:** Keep the member gate channel clean ([#605](https://github.com/DuncanCasteleyn/DiscordModBot/issues/605)) ([4382492](https://github.com/DuncanCasteleyn/DiscordModBot/commit/4382492cf6fd79b1ab16ed5f77c7596b6e81935a))
+
 ## [2.7.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.7.0...v2.7.1) (2026-05-01)
 
 
