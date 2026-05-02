@@ -24,6 +24,10 @@ class MemberGateService(
     private val joinModalQuestionRepository: JoinModalQuestionRepository
 ) {
 
+    fun getMemberGates(): List<GuildMemberGate> {
+        return guildMemberGateRepository.findAll()
+    }
+
     /**
      * @return null when not configured or channel no longer exists.
      */
