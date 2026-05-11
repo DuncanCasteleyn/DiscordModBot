@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.7.3](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.7.2...v2.7.3) (2026-05-11)
+
+
+### Bug Fixes
+
+* **moderation:** require a target user for warn history ([#615](https://github.com/DuncanCasteleyn/DiscordModBot/issues/615)) ([2f3eb5a](https://github.com/DuncanCasteleyn/DiscordModBot/commit/2f3eb5a4f58825e0d291bc5c8f06c2026ad9d2a2))
+* **moderation:** stop purging at two-week-old messages ([#617](https://github.com/DuncanCasteleyn/DiscordModBot/issues/617)) ([691bba7](https://github.com/DuncanCasteleyn/DiscordModBot/commit/691bba782a62e27e14ee93ae3421329a31bd28e1))
+
 ## [2.7.2](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.7.1...v2.7.2) (2026-05-02)
 
 
