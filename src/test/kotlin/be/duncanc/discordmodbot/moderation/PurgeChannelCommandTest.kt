@@ -18,6 +18,7 @@ import org.mockito.Answers
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.*
+import java.time.OffsetDateTime
 import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
 
@@ -58,6 +59,9 @@ class PurgeChannelCommandTest {
 
     @Mock
     private lateinit var message: Message
+
+    @Mock
+    private lateinit var oldMessage: Message
 
     @Mock
     private lateinit var author: User
@@ -152,7 +156,7 @@ class PurgeChannelCommandTest {
     }
 
     @Test
-    fun `filtered mode deletes targeted messages and replies with the correct count`() {
+    fun `filtered mode only deletes messages from the last two weeks`() {
         stubGuildContext(subcommandName = "filtered")
         stubMemberPermission()
         stubBotPermissions()
@@ -171,9 +175,12 @@ class PurgeChannelCommandTest {
         doAnswer {
             val procedure = it.arguments[0] as Procedure<Message>
             procedure.execute(message)
+            procedure.execute(oldMessage)
             CompletableFuture.completedFuture(null)
         }.whenever(messagePaginationAction).forEachAsync(any())
         whenever(message.author).thenReturn(author)
+        whenever(message.timeCreated).thenReturn(OffsetDateTime.now().minusDays(1))
+        whenever(oldMessage.timeCreated).thenReturn(OffsetDateTime.now().minusWeeks(3))
         whenever(author.idLong).thenReturn(99L)
 
         command.onSlashCommandInteraction(slashEvent)

@@ -17,6 +17,7 @@ import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
 import org.springframework.stereotype.Component
 import java.awt.Color
+import java.time.OffsetDateTime
 import java.util.concurrent.CompletableFuture
 
 @Component
@@ -132,9 +133,14 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
         targetUserId: Long? = null
     ): CompletableFuture<ArrayList<Message>> {
         val messages = ArrayList<Message>()
+        val oldestPurgeableMessageDate = OffsetDateTime.now().minusWeeks(2)
 
         return channel.iterableHistory.cache(false)
             .forEachAsync { message ->
+                if (message.timeCreated.isBefore(oldestPurgeableMessageDate)) {
+                    return@forEachAsync false
+                }
+
                 if (targetUserId == null || targetUserId == message.author.idLong) {
                     messages.add(message)
                     if (messages.size >= amount) {
