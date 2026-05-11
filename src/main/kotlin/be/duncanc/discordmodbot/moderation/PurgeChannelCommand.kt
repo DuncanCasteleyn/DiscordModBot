@@ -17,6 +17,7 @@ import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
 import org.springframework.stereotype.Component
 import java.awt.Color
+import java.time.OffsetDateTime
 import java.util.concurrent.CompletableFuture
 
 @Component
@@ -132,9 +133,14 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
         targetUserId: Long? = null
     ): CompletableFuture<ArrayList<Message>> {
         val messages = ArrayList<Message>()
+        val oldestPurgeableMessageDate = OffsetDateTime.now().minusWeeks(2)
 
         return channel.iterableHistory.cache(false)
             .forEachAsync { message ->
+                if (message.timeCreated.isBefore(oldestPurgeableMessageDate)) {
+                    return@forEachAsync false
+                }
+
                 if (targetUserId == null || targetUserId == message.author.idLong) {
                     messages.add(message)
                     if (messages.size >= amount) {
@@ -171,7 +177,7 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
         return listOf(
             Commands.slash(COMMAND, DESCRIPTION)
                 .addSubcommands(
-                    SubcommandData(SUBCOMMAND_ALL, "Delete up to the specified number of messages.")
+                    SubcommandData(SUBCOMMAND_ALL, "Delete up to the specified number of messages, not older than 2 weeks.")
                         .addOption(
                             OptionType.INTEGER,
                             OPTION_AMOUNT,
@@ -180,7 +186,7 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
                         ),
                     SubcommandData(
                         SUBCOMMAND_FILTERED,
-                        "Delete up to the specified number of messages from targets."
+                        "Delete up to the specified number of messages from targets, not older than 2 weeks."
                     )
                         .addOption(
                             OptionType.INTEGER,
