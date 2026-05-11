@@ -177,7 +177,7 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
         return listOf(
             Commands.slash(COMMAND, DESCRIPTION)
                 .addSubcommands(
-                    SubcommandData(SUBCOMMAND_ALL, "Delete up to the specified number of messages.")
+                    SubcommandData(SUBCOMMAND_ALL, "Delete up to the specified number of messages, not older than 2 weeks.")
                         .addOption(
                             OptionType.INTEGER,
                             OPTION_AMOUNT,
@@ -186,7 +186,7 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
                         ),
                     SubcommandData(
                         SUBCOMMAND_FILTERED,
-                        "Delete up to the specified number of messages from targets."
+                        "Delete up to the specified number of messages from targets, not older than 2 weeks."
                     )
                         .addOption(
                             OptionType.INTEGER,
