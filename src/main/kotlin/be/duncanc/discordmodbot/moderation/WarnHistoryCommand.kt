@@ -44,31 +44,27 @@ class WarnHistoryCommand(
             return
         }
 
-        val member = event.member
         val targetUserOption = event.getOption(OPTION_USER)
-
-        if (targetUserOption != null && member != null && member.hasPermission(Permission.KICK_MEMBERS)) {
-            val targetMember = targetUserOption.asMember
-            if (targetMember != null) {
-                showWarnHistory(event, guild, targetMember.user, true)
-            } else {
-                val targetUser = targetUserOption.asUser
-                showWarnHistory(event, guild, targetUser, true)
-            }
-        } else if (member != null) {
-            showWarnHistory(event, guild, member.user, false)
-        } else {
+        if (targetUserOption == null) {
             event.reply("This command requires a user.").setEphemeral(true).queue()
+            return
+        }
+
+        val targetMember = targetUserOption.asMember
+        if (targetMember != null) {
+            showWarnHistory(event, guild, targetMember.user)
+        } else {
+            showWarnHistory(event, guild, targetUserOption.asUser)
         }
     }
 
-    private fun showWarnHistory(event: SlashCommandInteractionEvent, guild: Guild, user: User, moderator: Boolean) {
+    private fun showWarnHistory(event: SlashCommandInteractionEvent, guild: Guild, user: User) {
         val guildId = guild.idLong
         val userId = user.idLong
 
         event.deferReply(true).queue { hook ->
             if (!guildWarnPointsRepository.existsByGuildIdAndUserId(guildId, userId)) {
-                hook.sendMessage(if (moderator) "The user has not received any points." else "You haven't received any points. Good job!")
+                hook.sendMessage("The user has not received any points.")
                     .setEphemeral(true).queue()
                 return@queue
             }
@@ -80,18 +76,17 @@ class WarnHistoryCommand(
             )
 
             if (warnings.isEmpty()) {
-                hook.sendMessage(if (moderator) "The user has no active points." else "You have no active points. Good job!")
+                hook.sendMessage("The user has no active points.")
                     .setEphemeral(true).queue()
                 return@queue
             }
 
             val embeds = mutableListOf<net.dv8tion.jda.api.entities.MessageEmbed>()
-            val targetUser = user.jda.getUserById(userId)
 
             warnings.forEach { warning ->
                 val embedBuilder = EmbedBuilder()
-                    .setColor(if (moderator) Color.ORANGE else Color.YELLOW)
-                    .setTitle("Warning ${if (moderator) "for ${targetUser?.name ?: "Unknown"}" else ""}")
+                    .setColor(Color.ORANGE)
+                    .setTitle("Warning for ${user.name}")
                     .addField("Points", warning.points.toString(), true)
                     .addField(
                         "Moderator",
@@ -113,19 +108,11 @@ class WarnHistoryCommand(
                 embeds.add(embedBuilder.build())
             }
 
-            if (moderator) {
-                hook.sendMessage("Here is the list of points the user collected:")
-                    .setEphemeral(true)
-                    .queue()
-                embeds.forEach { embed ->
-                    hook.setEphemeral(true).sendMessageEmbeds(embed).queue()
-                }
-            } else {
-                hook.sendMessage("Here is your list of points:")
-                    .setEphemeral(true).queue()
-                embeds.forEach { embed ->
-                    hook.setEphemeral(true).sendMessageEmbeds(embed).queue()
-                }
+            hook.sendMessage("Here is the list of points the user collected:")
+                .setEphemeral(true)
+                .queue()
+            embeds.forEach { embed ->
+                hook.setEphemeral(true).sendMessageEmbeds(embed).queue()
             }
         }
     }
@@ -137,8 +124,8 @@ class WarnHistoryCommand(
                     OptionData(
                         OptionType.USER,
                         OPTION_USER,
-                        "The user to check (leave empty to check yourself)"
-                    ).setRequired(false)
+                        "The user to check"
+                    ).setRequired(true)
                 )
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.KICK_MEMBERS))
         )
