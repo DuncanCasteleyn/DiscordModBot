@@ -66,8 +66,8 @@ class AddWarnPointsCommand(
             return
         }
 
-        if (!moderator.hasPermission(Permission.KICK_MEMBERS)) {
-            event.reply("You need kick members permission to add warn points.").setEphemeral(true).queue()
+        if (!moderator.hasPermission(Permission.MANAGE_ROLES)) {
+            event.reply("You need manage roles permission to add warn points.").setEphemeral(true).queue()
             return
         }
 
@@ -97,6 +97,11 @@ class AddWarnPointsCommand(
         val action = event.getOption(OPTION_ACTION)?.asInt ?: 0
         if (action < 0 || action > 2) {
             event.reply("Action must be 0 (None), 1 (Mute), or 2 (Kick).").setEphemeral(true).queue()
+            return
+        }
+
+        if (action == 1 && !moderator.hasPermission(Permission.KICK_MEMBERS)) {
+            event.reply("You need kick members permission to apply the mute punishment.").setEphemeral(true).queue()
             return
         }
 
@@ -185,8 +190,8 @@ class AddWarnPointsCommand(
             return
         }
 
-        if (!moderator.hasPermission(Permission.KICK_MEMBERS)) {
-            event.reply("You need kick members permission to add warn points.").setEphemeral(true).queue()
+        if (!moderator.hasPermission(Permission.MANAGE_ROLES)) {
+            event.reply("You need manage roles permission to add warn points.").setEphemeral(true).queue()
             return
         }
 
@@ -198,6 +203,12 @@ class AddWarnPointsCommand(
         val points = parts[2].toInt()
         val days = parts[3].toInt()
         val action = parts[4].toInt()
+
+        if (action == 1 && !moderator.hasPermission(Permission.KICK_MEMBERS)) {
+            event.reply("You need kick members permission to apply the mute punishment.").setEphemeral(true).queue()
+            return
+        }
+
         val reason = event.getValue("reason")?.asString ?: ""
 
         if (reason.length > 1024) {
@@ -606,7 +617,7 @@ class AddWarnPointsCommand(
                         .setMaxValue(2L),
                     OptionData(OptionType.STRING, OPTION_REASON, "Reason for the warning", false)
                 )
-                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.KICK_MEMBERS))
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_ROLES))
         )
     }
 }

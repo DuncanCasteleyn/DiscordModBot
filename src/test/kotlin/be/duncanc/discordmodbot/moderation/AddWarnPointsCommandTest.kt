@@ -6,7 +6,9 @@ import net.dv8tion.jda.api.components.actionrow.ActionRow
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
+import net.dv8tion.jda.api.interactions.commands.OptionMapping
 import net.dv8tion.jda.api.interactions.modals.ModalMapping
 import net.dv8tion.jda.api.requests.restaction.interactions.MessageEditCallbackAction
 import net.dv8tion.jda.api.requests.restaction.interactions.ModalCallbackAction
@@ -40,6 +42,9 @@ class AddWarnPointsCommandTest {
     private lateinit var modalEvent: ModalInteractionEvent
 
     @Mock
+    private lateinit var slashEvent: SlashCommandInteractionEvent
+
+    @Mock
     private lateinit var member: Member
 
     @Mock
@@ -62,6 +67,18 @@ class AddWarnPointsCommandTest {
 
     @Mock
     private lateinit var messageEditAction: MessageEditCallbackAction
+
+    @Mock
+    private lateinit var userOption: OptionMapping
+
+    @Mock
+    private lateinit var pointsOption: OptionMapping
+
+    @Mock
+    private lateinit var daysOption: OptionMapping
+
+    @Mock
+    private lateinit var actionOption: OptionMapping
 
     private lateinit var command: AddWarnPointsCommand
 
@@ -89,6 +106,48 @@ class AddWarnPointsCommandTest {
 
         verify(buttonEvent).reply("You cannot plan an unmute initiated by another moderator.")
         verify(buttonEvent, never()).replyModal(any())
+    }
+
+    @Test
+    fun `slash command requires kick members when mute punishment is selected`() {
+        whenever(slashEvent.name).thenReturn("addwarnpoints")
+        whenever(slashEvent.member).thenReturn(member)
+        whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
+        whenever(member.hasPermission(Permission.KICK_MEMBERS)).thenReturn(false)
+        whenever(slashEvent.getOption("user")).thenReturn(userOption)
+        whenever(userOption.asMember).thenReturn(targetMember)
+        whenever(member.canInteract(targetMember)).thenReturn(true)
+        whenever(slashEvent.getOption("points")).thenReturn(pointsOption)
+        whenever(pointsOption.asInt).thenReturn(2)
+        whenever(slashEvent.getOption("days")).thenReturn(daysOption)
+        whenever(daysOption.asInt).thenReturn(3)
+        whenever(slashEvent.getOption("action")).thenReturn(actionOption)
+        whenever(actionOption.asInt).thenReturn(1)
+        whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        verify(slashEvent).reply("You need kick members permission to apply the mute punishment.")
+        verify(slashEvent, never()).replyModal(any())
+    }
+
+    @Test
+    fun `reason modal requires kick members when mute punishment is selected`() {
+        whenever(modalEvent.modalId).thenReturn("addwarnpoints_reason:99:2:3:1")
+        whenever(modalEvent.guild).thenReturn(guild)
+        whenever(guild.getMemberById("99")).thenReturn(targetMember)
+        whenever(modalEvent.member).thenReturn(member)
+        whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
+        whenever(member.hasPermission(Permission.KICK_MEMBERS)).thenReturn(false)
+        whenever(member.canInteract(targetMember)).thenReturn(true)
+        whenever(modalEvent.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+
+        command.onModalInteraction(modalEvent)
+
+        verify(modalEvent).reply("You need kick members permission to apply the mute punishment.")
+        verify(modalEvent, never()).deferReply(true)
     }
 
     @Test

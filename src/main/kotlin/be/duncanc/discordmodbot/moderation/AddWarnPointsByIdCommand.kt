@@ -61,8 +61,8 @@ class AddWarnPointsByIdCommand(
             return
         }
 
-        if (!moderator.hasPermission(Permission.KICK_MEMBERS)) {
-            event.reply("You need kick members permission to add warn points.").setEphemeral(true).queue()
+        if (!moderator.hasPermission(Permission.MANAGE_ROLES)) {
+            event.reply("You need manage roles permission to add warn points.").setEphemeral(true).queue()
             return
         }
 
@@ -136,8 +136,8 @@ class AddWarnPointsByIdCommand(
             return
         }
 
-        if (event.member?.hasPermission(Permission.KICK_MEMBERS) != true) {
-            event.reply("You need kick members permission to add warn points.").setEphemeral(true).queue()
+        if (event.member?.hasPermission(Permission.MANAGE_ROLES) != true) {
+            event.reply("You need manage roles permission to add warn points.").setEphemeral(true).queue()
             return
         }
 
@@ -466,7 +466,7 @@ The user was not warned by DM, please do so manually when they rejoin."""
                         .setMaxValue(1L),
                     OptionData(OptionType.STRING, OPTION_REASON, "Reason for the warning", false)
                 )
-                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.KICK_MEMBERS))
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_ROLES))
         )
     }
 }
