@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.7.4](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.7.3...v2.7.4) (2026-05-12)
+
+
+### Bug Fixes
+
+* **moderation:** align moderation and review permissions with manage roles ([#620](https://github.com/DuncanCasteleyn/DiscordModBot/issues/620)) ([7027c6f](https://github.com/DuncanCasteleyn/DiscordModBot/commit/7027c6f1c5b2948d9a8b8bf803d054dba1a8e53a))
+
 ## [2.7.3](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.7.2...v2.7.3) (2026-05-11)
 
 
