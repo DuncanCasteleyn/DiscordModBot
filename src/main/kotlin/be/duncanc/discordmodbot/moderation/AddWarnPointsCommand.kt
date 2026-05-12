@@ -95,12 +95,12 @@ class AddWarnPointsCommand(
         }
 
         val action = event.getOption(OPTION_ACTION)?.asInt ?: 0
-        if (action < 0 || action > 2) {
+        if (action !in 0..2) {
             event.reply("Action must be 0 (None), 1 (Mute), or 2 (Kick).").setEphemeral(true).queue()
             return
         }
 
-        if (action == 1 && !moderator.hasPermission(Permission.KICK_MEMBERS)) {
+        if (action == 2 && !moderator.hasPermission(Permission.KICK_MEMBERS)) {
             event.reply("You need kick members permission to apply the kick punishment.").setEphemeral(true).queue()
             return
         }
@@ -204,8 +204,8 @@ class AddWarnPointsCommand(
         val days = parts[3].toInt()
         val action = parts[4].toInt()
 
-        if (action == 1 && !moderator.hasPermission(Permission.KICK_MEMBERS)) {
-            event.reply("You need kick members permission to apply the mute punishment.").setEphemeral(true).queue()
+        if (action == 2 && !moderator.hasPermission(Permission.KICK_MEMBERS)) {
+            event.reply("You need kick members permission to apply the kick punishment.").setEphemeral(true).queue()
             return
         }
 

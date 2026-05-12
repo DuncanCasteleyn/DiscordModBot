@@ -109,7 +109,7 @@ class AddWarnPointsCommandTest {
     }
 
     @Test
-    fun `slash command requires kick members when mute punishment is selected`() {
+    fun `slash command requires kick members when kick punishment is selected`() {
         whenever(slashEvent.name).thenReturn("addwarnpoints")
         whenever(slashEvent.member).thenReturn(member)
         whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
@@ -122,7 +122,7 @@ class AddWarnPointsCommandTest {
         whenever(slashEvent.getOption("days")).thenReturn(daysOption)
         whenever(daysOption.asInt).thenReturn(3)
         whenever(slashEvent.getOption("action")).thenReturn(actionOption)
-        whenever(actionOption.asInt).thenReturn(1)
+        whenever(actionOption.asInt).thenReturn(2)
         whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
         whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
 
@@ -133,8 +133,8 @@ class AddWarnPointsCommandTest {
     }
 
     @Test
-    fun `reason modal requires kick members when mute punishment is selected`() {
-        whenever(modalEvent.modalId).thenReturn("addwarnpoints_reason:99:2:3:1")
+    fun `reason modal requires kick members when kick punishment is selected`() {
+        whenever(modalEvent.modalId).thenReturn("addwarnpoints_reason:99:2:3:2")
         whenever(modalEvent.guild).thenReturn(guild)
         whenever(guild.getMemberById("99")).thenReturn(targetMember)
         whenever(modalEvent.member).thenReturn(member)
@@ -146,7 +146,7 @@ class AddWarnPointsCommandTest {
 
         command.onModalInteraction(modalEvent)
 
-        verify(modalEvent).reply("You need kick members permission to apply the mute punishment.")
+        verify(modalEvent).reply("You need kick members permission to apply the kick punishment.")
         verify(modalEvent, never()).deferReply(true)
     }
 
