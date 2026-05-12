@@ -39,7 +39,7 @@ class ReviewCommand(
         return listOf(
             Commands.slash(COMMAND, "Review pending member gate applications")
                 .setContexts(InteractionContextType.GUILD)
-                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.KICK_MEMBERS))
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_ROLES))
         )
     }
 
@@ -49,8 +49,8 @@ class ReviewCommand(
             return
         }
 
-        if (event.member?.hasPermission(Permission.KICK_MEMBERS) != true) {
-            event.reply("You need the kick members permission to use this command.").setEphemeral(true).queue()
+        if (event.member?.hasPermission(Permission.MANAGE_ROLES) != true) {
+            event.reply("You need the manage roles permission to use this command.").setEphemeral(true).queue()
             return
         }
 
@@ -81,8 +81,8 @@ class ReviewCommand(
         }
 
         val guild = event.guild
-        if (guild == null || event.member?.hasPermission(Permission.KICK_MEMBERS) != true) {
-            event.reply("You need the kick members permission to use this command.").setEphemeral(true).queue()
+        if (guild == null || event.member?.hasPermission(Permission.MANAGE_ROLES) != true) {
+            event.reply("You need the manage roles permission to use this command.").setEphemeral(true).queue()
             return
         }
 
