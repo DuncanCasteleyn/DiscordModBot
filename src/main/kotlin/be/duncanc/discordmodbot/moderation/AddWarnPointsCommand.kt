@@ -101,7 +101,7 @@ class AddWarnPointsCommand(
         }
 
         if (action == 1 && !moderator.hasPermission(Permission.KICK_MEMBERS)) {
-            event.reply("You need kick members permission to apply the mute punishment.").setEphemeral(true).queue()
+            event.reply("You need kick members permission to apply the kick punishment.").setEphemeral(true).queue()
             return
         }
 

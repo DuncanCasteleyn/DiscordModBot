@@ -128,7 +128,7 @@ class AddWarnPointsCommandTest {
 
         command.onSlashCommandInteraction(slashEvent)
 
-        verify(slashEvent).reply("You need kick members permission to apply the mute punishment.")
+        verify(slashEvent).reply("You need kick members permission to apply the kick punishment.")
         verify(slashEvent, never()).replyModal(any())
     }
 
