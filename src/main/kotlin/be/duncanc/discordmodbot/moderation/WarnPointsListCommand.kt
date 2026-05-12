@@ -35,8 +35,8 @@ class WarnPointsListCommand(
         }
 
         val moderator = event.member!!
-        if (!moderator.hasPermission(Permission.KICK_MEMBERS)) {
-            event.reply("You need kick members permission to use this command.").setEphemeral(true).queue()
+        if (!moderator.hasPermission(Permission.MANAGE_ROLES)) {
+            event.reply("You need manage roles permission to use this command.").setEphemeral(true).queue()
             return
         }
 
@@ -80,7 +80,7 @@ class WarnPointsListCommand(
     override fun getCommandsData(): List<SlashCommandData> {
         return listOf(
             Commands.slash(COMMAND, DESCRIPTION)
-                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.KICK_MEMBERS))
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_ROLES))
         )
     }
 }

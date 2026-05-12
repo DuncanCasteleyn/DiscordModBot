@@ -42,8 +42,8 @@ class WarnCommand(
         }
 
         val moderator = event.member!!
-        if (!moderator.hasPermission(Permission.KICK_MEMBERS)) {
-            event.reply("You need kick members permission to use this command.").setEphemeral(true).queue()
+        if (!moderator.hasPermission(Permission.MANAGE_ROLES)) {
+            event.reply("You need manage roles permission to use this command.").setEphemeral(true).queue()
             return
         }
 
@@ -127,7 +127,7 @@ class WarnCommand(
                     OptionData(OptionType.USER, OPTION_USER, "The user to warn").setRequired(true),
                     OptionData(OptionType.STRING, OPTION_REASON, "The reason for the warning").setRequired(true)
                 )
-                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.KICK_MEMBERS))
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_ROLES))
         )
     }
 }
