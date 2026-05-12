@@ -45,7 +45,7 @@ class WarnHistoryCommandTest {
         whenever(slashEvent.name).thenReturn("warnhistory")
         whenever(slashEvent.guild).thenReturn(guild)
         whenever(slashEvent.member).thenReturn(member)
-        whenever(member.hasPermission(Permission.KICK_MEMBERS)).thenReturn(true)
+        whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
         whenever(slashEvent.getOption("user")).thenReturn(null)
         whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
         whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)

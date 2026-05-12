@@ -72,7 +72,7 @@ class ReviewCommandTest {
     private fun stubCommonIdentity() {
         whenever(guild.idLong).thenReturn(1L)
         whenever(user.idLong).thenReturn(99L)
-        whenever(member.hasPermission(Permission.KICK_MEMBERS)).thenReturn(true)
+        whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
     }
 
     private fun stubSlashReviewStart() {
