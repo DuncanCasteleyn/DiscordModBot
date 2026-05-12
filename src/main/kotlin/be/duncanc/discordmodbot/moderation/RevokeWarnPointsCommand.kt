@@ -58,8 +58,8 @@ class RevokeWarnPointsCommand(
             return
         }
 
-        if (!moderator.hasPermission(Permission.KICK_MEMBERS)) {
-            event.reply("You need kick members permission to revoke warn points.").setEphemeral(true).queue()
+        if (!moderator.hasPermission(Permission.MANAGE_ROLES)) {
+            event.reply("You need manage roles permission to revoke warn points.").setEphemeral(true).queue()
             return
         }
 
@@ -78,13 +78,8 @@ class RevokeWarnPointsCommand(
             return
         }
 
-        if (!member.hasPermission(Permission.KICK_MEMBERS)) {
-            event.reply("You need kick members permission to revoke warn points.").setEphemeral(true).queue()
-            return
-        }
-
-        if (state.moderatorId != event.user.idLong) {
-            event.reply("You cannot revoke warn points initiated by another moderator.").setEphemeral(true).queue()
+        if (!member.hasPermission(Permission.MANAGE_ROLES)) {
+            event.reply("You need manage roles permission to revoke warn points.").setEphemeral(true).queue()
             return
         }
 
@@ -114,13 +109,8 @@ class RevokeWarnPointsCommand(
             return
         }
 
-        if (!member.hasPermission(Permission.KICK_MEMBERS)) {
-            event.reply("You need kick members permission to revoke warn points.").setEphemeral(true).queue()
-            return
-        }
-
-        if (state.moderatorId != event.user.idLong) {
-            event.reply("You cannot revoke warn points initiated by another moderator.").setEphemeral(true).queue()
+        if (!member.hasPermission(Permission.MANAGE_ROLES)) {
+            event.reply("You need manage roles permission to revoke warn points.").setEphemeral(true).queue()
             return
         }
 
@@ -144,13 +134,8 @@ class RevokeWarnPointsCommand(
             return
         }
 
-        if (!member.hasPermission(Permission.KICK_MEMBERS)) {
-            event.reply("You need kick members permission to revoke warn points.").setEphemeral(true).queue()
-            return
-        }
-
-        if (state.moderatorId != event.user.idLong) {
-            event.reply("You cannot revoke warn points initiated by another moderator.").setEphemeral(true).queue()
+        if (!member.hasPermission(Permission.MANAGE_ROLES)) {
+            event.reply("You need manage roles permission to revoke warn points.").setEphemeral(true).queue()
             return
         }
 
@@ -445,7 +430,7 @@ class RevokeWarnPointsCommand(
                             OptionData(OptionType.USER, OPTION_USER, "The user to revoke points from", true)
                         )
                 )
-                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.KICK_MEMBERS))
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_ROLES))
         )
     }
 
