@@ -19,9 +19,11 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.function.Consumer
 import java.util.Optional
 import kotlin.test.assertEquals
 
@@ -113,9 +115,43 @@ class StickyRoleServiceTest {
 
         service.restoreRolesOnJoin(guild, member)
 
-        verify(stickyRoleSnapshotRepository).delete(StickyRoleSnapshot(1L, 99L, mutableSetOf(11L, 12L)))
         verify(guild).modifyMemberRoles(member, listOf(role), null)
-        verify(roleUpdateAction).queue(any(), any())
+        val successCaptor = argumentCaptor<Consumer<Void>>()
+        val failureCaptor = argumentCaptor<Consumer<Throwable>>()
+        verify(roleUpdateAction).queue(successCaptor.capture(), failureCaptor.capture())
+        verify(stickyRoleSnapshotRepository, never()).deleteById(snapshotId)
+    }
+
+    @Test
+    fun `restore roles on join keeps snapshot when role restore fails`() {
+        val snapshotId = StickyRoleSnapshot.StickyRoleSnapshotId(1L, 99L)
+        whenever(stickyRoleSnapshotRepository.findById(snapshotId)).thenReturn(
+            Optional.of(StickyRoleSnapshot(1L, 99L, mutableSetOf(11L)))
+        )
+        whenever(stickyRoleConfigRepository.findById(1L)).thenReturn(
+            Optional.of(StickyRoleConfig(1L, mutableSetOf(11L)))
+        )
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(member.idLong).thenReturn(99L)
+        whenever(member.roles).thenReturn(emptyList())
+        whenever(guild.getRoleById(11L)).thenReturn(role)
+        whenever(role.isPublicRole).thenReturn(false)
+        whenever(role.isManaged).thenReturn(false)
+        whenever(role.guild).thenReturn(guild)
+        whenever(guild.selfMember).thenReturn(selfMember)
+        whenever(selfMember.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
+        whenever(selfMember.canInteract(role)).thenReturn(true)
+        whenever(guild.modifyMemberRoles(member, listOf(role), null)).thenReturn(roleUpdateAction)
+        whenever(roleUpdateAction.reason(any())).thenReturn(roleUpdateAction)
+
+        service.restoreRolesOnJoin(guild, member)
+
+        val failureCaptor = argumentCaptor<Consumer<Throwable>>()
+        verify(roleUpdateAction).queue(any(), failureCaptor.capture())
+
+        failureCaptor.firstValue.accept(RuntimeException("restore failed"))
+
+        verify(stickyRoleSnapshotRepository, never()).deleteById(snapshotId)
     }
 
     @Test

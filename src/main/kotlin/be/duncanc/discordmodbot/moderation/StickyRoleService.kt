@@ -89,8 +89,6 @@ class StickyRoleService(
             .filter { role -> member.roles.none { it.idLong == role.idLong } }
             .toList()
 
-        stickyRoleSnapshotRepository.delete(snapshot)
-
         if (rolesToRestore.isEmpty()) {
             return
         }
@@ -104,6 +102,7 @@ class StickyRoleService(
             .reason(RESTORE_REASON)
             .queue(
                 {
+                    deleteSnapshot(guild.idLong, member.idLong)
                     logStickyRoleRestore(guild, member, rolesToRestore)
                 },
                 { throwable ->
