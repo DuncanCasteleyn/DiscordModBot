@@ -1,6 +1,7 @@
 package be.duncanc.discordmodbot.logging
 
 import be.duncanc.discordmodbot.discord.nicknameAndUsername
+import be.duncanc.discordmodbot.logging.persistence.DiscordMessage
 import be.duncanc.discordmodbot.logging.persistence.LoggingSettings
 import be.duncanc.discordmodbot.logging.persistence.LoggingSettingsRepository
 import net.dv8tion.jda.api.EmbedBuilder
@@ -79,7 +80,7 @@ class GuildLogger
     }
     private val lastCheckedLogEntries: HashMap<Long, AuditLogEntry?> =
         HashMap() //Long key is the guild id and the value is the last checked log entry.
-    private val messageDeleteAuditStates: HashMap<Pair<Long, Long>, MessageDeleteAuditState> = HashMap()
+    private val messageDeleteAuditStates: HashMap<MessageDeleteAuditKey, MessageDeleteAuditState> = HashMap()
 
     @Transactional(readOnly = true)
     override fun onMessageReceived(event: MessageReceivedEvent) {
@@ -197,7 +198,7 @@ class GuildLogger
                     user.name
                 }
                 guildLoggerExecutor.schedule({
-                    val moderator = findModerator(event)
+                    val moderator = findModerator(event, oldMessage)
 
                     if (moderator != null && moderator == event.jda.selfUser) {
                         return@schedule  //Bot has removed message no need to log, if needed it will be placed in the module that is issuing the remove.
@@ -236,31 +237,32 @@ class GuildLogger
         }
     }
 
-    private fun findModerator(event: MessageDeleteEvent): User? {
-        val auditStateKey = event.guild.idLong to event.channel.idLong
-        var i = 0
+    private fun findModerator(event: MessageDeleteEvent, oldMessage: DiscordMessage): User? {
+        val auditStateKey = MessageDeleteAuditKey(event.guild.idLong, event.channel.idLong, oldMessage.userId)
+        val relevantEntries = mutableListOf<Pair<AuditLogEntry, MessageDeleteAuditCandidate>>()
+
         for (logEntry in event.guild.retrieveAuditLogs().type(ActionType.MESSAGE_DELETE).cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
             val channelId = logEntry.getOption<String>(AuditLogOption.CHANNEL)?.toLongOrNull()
-            if (channelId != event.channel.idLong) {
-                i++
-                if (i >= LOG_ENTRY_CHECK_LIMIT) {
-                    break
-                }
+            if (channelId != event.channel.idLong || logEntry.targetIdLong != oldMessage.userId) {
                 continue
             }
 
             val count = logEntry.getOption<String>(AuditLogOption.COUNT)?.toIntOrNull() ?: 1
-            val consumeResult = MessageDeleteAuditTracker.consume(messageDeleteAuditStates[auditStateKey], logEntry.idLong, count)
-            messageDeleteAuditStates[auditStateKey] = consumeResult.nextState
-
-            if (consumeResult.matched) {
-                return logEntry.user
-            }
-
-            break
+            relevantEntries += logEntry to MessageDeleteAuditCandidate(logEntry.idLong, count)
         }
 
-        return null
+        val consumeResult = MessageDeleteAuditTracker.consume(
+            previousState = messageDeleteAuditStates[auditStateKey],
+            candidates = relevantEntries.map { it.second }
+        )
+
+        if (consumeResult.nextState.consumedCounts.isEmpty()) {
+            messageDeleteAuditStates.remove(auditStateKey)
+        } else {
+            messageDeleteAuditStates[auditStateKey] = consumeResult.nextState
+        }
+
+        return relevantEntries.firstOrNull { it.first.idLong == consumeResult.matchedEntryId }?.first?.user
     }
 
     @Transactional(readOnly = true)
