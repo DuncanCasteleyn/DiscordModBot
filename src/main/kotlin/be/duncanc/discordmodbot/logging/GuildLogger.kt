@@ -62,7 +62,8 @@ import kotlin.concurrent.thread
 class GuildLogger
 @Autowired constructor(
     val messageHistory: MessageHistory,
-    val loggingSettingsRepository: LoggingSettingsRepository
+    val loggingSettingsRepository: LoggingSettingsRepository,
+    private val messageDeleteAuditStateRegistry: MessageDeleteAuditStateRegistry
 ) : ListenerAdapter() {
 
     companion object {
@@ -80,8 +81,6 @@ class GuildLogger
     }
     private val lastCheckedLogEntries: HashMap<Long, AuditLogEntry?> =
         HashMap() //Long key is the guild id and the value is the last checked log entry.
-    private val messageDeleteAuditStates: HashMap<MessageDeleteAuditKey, MessageDeleteAuditState> = HashMap()
-
     @Transactional(readOnly = true)
     override fun onMessageReceived(event: MessageReceivedEvent) {
         if (!event.isFromGuild) {
@@ -252,15 +251,20 @@ class GuildLogger
         }
 
         val consumeResult = MessageDeleteAuditTracker.consume(
-            previousState = messageDeleteAuditStates[auditStateKey],
+            previousState = messageDeleteAuditStateRegistry.get(
+                auditStateKey.guildId,
+                auditStateKey.channelId,
+                auditStateKey.targetUserId
+            ),
             candidates = relevantEntries.map { it.second }
         )
 
-        if (consumeResult.nextState.consumedCounts.isEmpty()) {
-            messageDeleteAuditStates.remove(auditStateKey)
-        } else {
-            messageDeleteAuditStates[auditStateKey] = consumeResult.nextState
-        }
+        messageDeleteAuditStateRegistry.remember(
+            auditStateKey.guildId,
+            auditStateKey.channelId,
+            auditStateKey.targetUserId,
+            consumeResult.nextState
+        )
 
         return relevantEntries.firstOrNull { it.first.idLong == consumeResult.matchedEntryId }?.first?.user
     }
