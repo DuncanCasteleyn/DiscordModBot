@@ -188,51 +188,57 @@ class GuildLogger
         if (oldMessage != null) {
             val attachmentString = messageHistory.getAttachmentsString(event.messageIdLong)
 
-            event.jda.retrieveUserById(oldMessage.userId).queue { user ->
+            guildLoggerExecutor.schedule({
+                logDeletedMessage(event, oldMessage, attachmentString)
+            }, 1, TimeUnit.SECONDS)
+        }
+    }
 
-                val name: String = try {
-                    event.jda.getGuildChannelById(oldMessage.channelId)?.guild?.getMember(user)?.nicknameAndUsername
-                        ?: user.name
-                } catch (e: IllegalArgumentException) {
-                    user.name
-                }
-                guildLoggerExecutor.schedule({
-                    val moderator = findModerator(event, oldMessage)
+    internal fun logDeletedMessage(event: MessageDeleteEvent, oldMessage: DiscordMessage, attachmentString: String?) {
+        val guild = event.guild
+        val channel = event.channel
+        val moderator = findModerator(event, oldMessage)
 
-                    if (moderator != null && moderator == event.jda.selfUser) {
-                        return@schedule  //Bot has removed message no need to log, if needed it will be placed in the module that is issuing the remove.
-                    }
+        if (moderator != null && moderator == event.jda.selfUser) {
+            return  //Bot has removed message no need to log, if needed it will be placed in the module that is issuing the remove.
+        }
 
-                    val logEmbed = EmbedBuilder()
-                        .setTitle("#" + channel.name + ": Message was deleted!")
-                        .setDescription("Old message was:\n" + oldMessage.content)
-                    if (attachmentString != null) {
-                        logEmbed.addField("Attachment(s)", attachmentString, false)
-                    }
-                    logEmbed.addField("Author", name, true)
-                    if (moderator != null) {
-                        logEmbed.addField(
-                            "Deleted by",
-                            event.guild.getMember(moderator)?.nicknameAndUsername ?: "Unkown",
-                            true
-                        )
-                            .setColor(Color.YELLOW)
-                    } else {
-                        logEmbed.setColor(LIGHT_BLUE)
-                    }
-                    logEmbed.addField("Message URL", "[Link](${oldMessage.jumpUrl})", false)
-                    oldMessage.emotes?.let {
-                        logEmbed.addField("Emote(s)", oldMessage.emotes, false)
-                    }
-                    log(
-                        logEmbed,
-                        user,
-                        guild,
-                        null,
-                        if (moderator == null) LogTypeAction.USER else LogTypeAction.MODERATOR
-                    )
-                }, 1, TimeUnit.SECONDS)
+        event.jda.retrieveUserById(oldMessage.userId).queue { user ->
+            val name: String = try {
+                event.jda.getGuildChannelById(oldMessage.channelId)?.guild?.getMember(user)?.nicknameAndUsername
+                    ?: user.name
+            } catch (e: IllegalArgumentException) {
+                user.name
             }
+
+            val logEmbed = EmbedBuilder()
+                .setTitle("#" + channel.name + ": Message was deleted!")
+                .setDescription("Old message was:\n" + oldMessage.content)
+            if (attachmentString != null) {
+                logEmbed.addField("Attachment(s)", attachmentString, false)
+            }
+            logEmbed.addField("Author", name, true)
+            if (moderator != null) {
+                logEmbed.addField(
+                    "Deleted by",
+                    event.guild.getMember(moderator)?.nicknameAndUsername ?: "Unkown",
+                    true
+                )
+                    .setColor(Color.YELLOW)
+            } else {
+                logEmbed.setColor(LIGHT_BLUE)
+            }
+            logEmbed.addField("Message URL", "[Link](${oldMessage.jumpUrl})", false)
+            oldMessage.emotes?.let {
+                logEmbed.addField("Emote(s)", oldMessage.emotes, false)
+            }
+            log(
+                logEmbed,
+                user,
+                guild,
+                null,
+                if (moderator == null) LogTypeAction.USER else LogTypeAction.MODERATOR
+            )
         }
     }
 
