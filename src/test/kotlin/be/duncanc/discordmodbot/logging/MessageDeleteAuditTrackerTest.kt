@@ -79,7 +79,36 @@ class MessageDeleteAuditTrackerTest {
         assertEquals(MessageDeleteAuditState(consumedCounts = mapOf(43L to 1, 42L to 1)), result.nextState)
     }
 
+    @Test
+    fun `consume should ignore historical entries at or before the watermark`() {
+        val result = MessageDeleteAuditTracker.consume(
+            previousState = null,
+            candidates = listOf(candidate(43L, 1), candidate(42L, 1)),
+            watermark = watermark(43L, 1)
+        )
+
+        assertEquals(null, result.matchedEntryId)
+        assertEquals(MessageDeleteAuditState(consumedCounts = mapOf(43L to 1, 42L to 1)), result.nextState)
+    }
+
+    @Test
+    fun `consume should still match newly increased count on the watermark entry`() {
+        val result = MessageDeleteAuditTracker.consume(
+            previousState = null,
+            candidates = listOf(candidate(43L, 2)),
+            watermark = watermark(43L, 1)
+        )
+
+        assertEquals(43L, result.matchedEntryId)
+        assertEquals(MessageDeleteAuditState(consumedCounts = mapOf(43L to 2)), result.nextState)
+    }
+
     private fun candidate(entryId: Long, count: Int): MessageDeleteAuditCandidate = MessageDeleteAuditCandidate(
+        entryId = entryId,
+        count = count
+    )
+
+    private fun watermark(entryId: Long, count: Int): MessageDeleteAuditWatermark = MessageDeleteAuditWatermark(
         entryId = entryId,
         count = count
     )

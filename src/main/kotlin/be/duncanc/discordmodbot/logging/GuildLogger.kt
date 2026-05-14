@@ -238,16 +238,44 @@ class GuildLogger
 
     private fun findModerator(event: MessageDeleteEvent, oldMessage: DiscordMessage): User? {
         val auditStateKey = MessageDeleteAuditKey(event.guild.idLong, event.channel.idLong, oldMessage.userId)
+        val previousLatestLogEntry = lastCheckedLogEntries[event.guild.idLong]
         val relevantEntries = mutableListOf<Pair<AuditLogEntry, MessageDeleteAuditCandidate>>()
+        var latestLogEntry: AuditLogEntry? = null
 
-        for (logEntry in event.guild.retrieveAuditLogs().type(ActionType.MESSAGE_DELETE).cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
-            val channelId = logEntry.getOption<String>(AuditLogOption.CHANNEL)?.toLongOrNull()
-            if (channelId != event.channel.idLong || logEntry.targetIdLong != oldMessage.userId) {
+        for (logEntry in event.guild.retrieveAuditLogs().cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
+            if (latestLogEntry == null) {
+                latestLogEntry = logEntry
+            }
+
+            if (logEntry.type != ActionType.MESSAGE_DELETE) {
+                if (logEntry.idLong == previousLatestLogEntry?.idLong) {
+                    break
+                }
                 continue
             }
 
-            val count = logEntry.getOption<String>(AuditLogOption.COUNT)?.toIntOrNull() ?: 1
-            relevantEntries += logEntry to MessageDeleteAuditCandidate(logEntry.idLong, count)
+            val channelId = logEntry.getOption<String>(AuditLogOption.CHANNEL)?.toLongOrNull()
+            if (channelId == event.channel.idLong && logEntry.targetIdLong == oldMessage.userId) {
+                val count = logEntry.getOption<String>(AuditLogOption.COUNT)?.toIntOrNull() ?: 1
+                relevantEntries += logEntry to MessageDeleteAuditCandidate(logEntry.idLong, count)
+            }
+
+            if (logEntry.idLong == previousLatestLogEntry?.idLong) {
+                break
+            }
+        }
+
+        latestLogEntry?.let { lastCheckedLogEntries[event.guild.idLong] = it }
+
+        val startupWatermark = previousLatestLogEntry?.let { logEntry ->
+            MessageDeleteAuditWatermark(
+                entryId = logEntry.idLong,
+                count = if (logEntry.type == ActionType.MESSAGE_DELETE) {
+                    logEntry.getOption<String>(AuditLogOption.COUNT)?.toIntOrNull() ?: 1
+                } else {
+                    0
+                }
+            )
         }
 
         val consumeResult = MessageDeleteAuditTracker.consume(
@@ -256,7 +284,8 @@ class GuildLogger
                 auditStateKey.channelId,
                 auditStateKey.targetUserId
             ),
-            candidates = relevantEntries.map { it.second }
+            candidates = relevantEntries.map { it.second },
+            watermark = startupWatermark
         )
 
         messageDeleteAuditStateRegistry.remember(
