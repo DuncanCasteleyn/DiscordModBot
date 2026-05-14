@@ -1,7 +1,6 @@
 package be.duncanc.discordmodbot.logging
 
 import be.duncanc.discordmodbot.discord.nicknameAndUsername
-import be.duncanc.discordmodbot.logging.persistence.DiscordMessage
 import be.duncanc.discordmodbot.logging.persistence.LoggingSettings
 import be.duncanc.discordmodbot.logging.persistence.LoggingSettingsRepository
 import net.dv8tion.jda.api.EmbedBuilder
@@ -80,6 +79,7 @@ class GuildLogger
     }
     private val lastCheckedLogEntries: HashMap<Long, AuditLogEntry?> =
         HashMap() //Long key is the guild id and the value is the last checked log entry.
+    private val messageDeleteAuditStates: HashMap<Pair<Long, Long>, MessageDeleteAuditState> = HashMap()
 
     @Transactional(readOnly = true)
     override fun onMessageReceived(event: MessageReceivedEvent) {
@@ -197,7 +197,7 @@ class GuildLogger
                     user.name
                 }
                 guildLoggerExecutor.schedule({
-                    val moderator = findModerator(event, oldMessage)
+                    val moderator = findModerator(event)
 
                     if (moderator != null && moderator == event.jda.selfUser) {
                         return@schedule  //Bot has removed message no need to log, if needed it will be placed in the module that is issuing the remove.
@@ -236,39 +236,31 @@ class GuildLogger
         }
     }
 
-    private fun findModerator(event: MessageDeleteEvent, oldMessage: DiscordMessage): User? {
-        var foundModerator: User? = null
+    private fun findModerator(event: MessageDeleteEvent): User? {
+        val auditStateKey = event.guild.idLong to event.channel.idLong
         var i = 0
-        for (logEntry in event.guild.retrieveAuditLogs().cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
-            if (i == 0) {
-                guildLoggerExecutor.execute {
-                    lastCheckedLogEntries[event.guild.idLong] = logEntry
-                }
-            }
-            if (!lastCheckedLogEntries.containsKey(event.guild.idLong)) {
-                i = LOG_ENTRY_CHECK_LIMIT
-            } else {
-                val cachedAuditLogEntry = lastCheckedLogEntries[event.guild.idLong]
-                if (logEntry.idLong == cachedAuditLogEntry?.idLong) {
-                    if (logEntry.type == ActionType.MESSAGE_DELETE && logEntry.targetIdLong == oldMessage.userId && logEntry.getOption<Any>(
-                            AuditLogOption.COUNT
-                        ) != cachedAuditLogEntry.getOption<Any>(AuditLogOption.COUNT)
-                    ) {
-                        foundModerator = logEntry.user
-                    }
+        for (logEntry in event.guild.retrieveAuditLogs().type(ActionType.MESSAGE_DELETE).cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
+            val channelId = logEntry.getOption<String>(AuditLogOption.CHANNEL)?.toLongOrNull()
+            if (channelId != event.channel.idLong) {
+                i++
+                if (i >= LOG_ENTRY_CHECK_LIMIT) {
                     break
                 }
+                continue
             }
-            if (logEntry.type == ActionType.MESSAGE_DELETE && logEntry.targetIdLong == oldMessage.userId) {
-                foundModerator = logEntry.user
-                break
+
+            val count = logEntry.getOption<String>(AuditLogOption.COUNT)?.toIntOrNull() ?: 1
+            val consumeResult = MessageDeleteAuditTracker.consume(messageDeleteAuditStates[auditStateKey], logEntry.idLong, count)
+            messageDeleteAuditStates[auditStateKey] = consumeResult.nextState
+
+            if (consumeResult.matched) {
+                return logEntry.user
             }
-            i++
-            if (i >= LOG_ENTRY_CHECK_LIMIT) {
-                break
-            }
+
+            break
         }
-        return foundModerator
+
+        return null
     }
 
     @Transactional(readOnly = true)
