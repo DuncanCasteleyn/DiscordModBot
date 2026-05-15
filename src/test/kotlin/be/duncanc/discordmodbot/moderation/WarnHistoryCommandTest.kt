@@ -5,7 +5,9 @@ import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -43,6 +45,7 @@ class WarnHistoryCommandTest {
     @Test
     fun `missing user option returns an error`() {
         whenever(slashEvent.name).thenReturn("warnhistory")
+        whenever(slashEvent.subcommandName).thenReturn("active")
         whenever(slashEvent.guild).thenReturn(guild)
         whenever(slashEvent.member).thenReturn(member)
         whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
@@ -56,10 +59,28 @@ class WarnHistoryCommandTest {
     }
 
     @Test
-    fun `command data requires the user option`() {
-        val commandData = command.getCommandsData().single()
-        val userOption = commandData.options.single { it.name == "user" }
+    fun `missing subcommand returns an error`() {
+        whenever(slashEvent.name).thenReturn("warnhistory")
+        whenever(slashEvent.subcommandName).thenReturn(null)
+        whenever(slashEvent.guild).thenReturn(guild)
+        whenever(slashEvent.member).thenReturn(member)
+        whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
+        whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
 
-        assertTrue(userOption.isRequired)
+        command.onSlashCommandInteraction(slashEvent)
+
+        verify(slashEvent).reply("Please choose a valid /warnhistory subcommand.")
+    }
+
+    @Test
+    fun `command data exposes active and all subcommands`() {
+        val commandData = command.getCommandsData().single()
+
+        assertEquals(listOf("active", "all"), commandData.subcommands.map(SubcommandData::getName))
+        commandData.subcommands.forEach { subcommand ->
+            val userOption = subcommand.options.single { it.name == "user" }
+            assertTrue(userOption.isRequired)
+        }
     }
 }
