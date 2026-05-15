@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.8.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.7.4...v2.8.0) (2026-05-14)
+
+
+### Features
+
+* **moderation:** add sticky role restoration on rejoin ([#627](https://github.com/DuncanCasteleyn/DiscordModBot/issues/627)) ([20fc6bf](https://github.com/DuncanCasteleyn/DiscordModBot/commit/20fc6bf2f01dc3a0cd0b5bed56547b8355db1ef8))
+
+
+### Bug Fixes
+
+* **moderation:** align warn command permissions with manage roles ([#623](https://github.com/DuncanCasteleyn/DiscordModBot/issues/623)) ([38f5d48](https://github.com/DuncanCasteleyn/DiscordModBot/commit/38f5d486a9025352abf44dec3df163befbf175eb))
+
 ## [2.7.4](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.7.3...v2.7.4) (2026-05-12)
 
 
