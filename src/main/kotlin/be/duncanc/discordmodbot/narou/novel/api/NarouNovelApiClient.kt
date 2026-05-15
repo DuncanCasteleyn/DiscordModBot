@@ -11,7 +11,6 @@ interface NarouNovelApiClient {
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class NarouNovelApiResponseEntry(
-    val allcount: Int? = null,
     @JsonProperty("general_lastup")
     val generalLastup: String? = null,
     @JsonProperty("general_all_no")

@@ -1,15 +1,14 @@
 package be.duncanc.discordmodbot.narou.novel.api
 
+import jakarta.validation.constraints.NotEmpty
 import org.springframework.boot.context.properties.ConfigurationProperties
-import java.time.Duration
+import org.springframework.boot.context.properties.bind.DefaultValue
+import org.springframework.validation.annotation.Validated
 
+@Validated
 @ConfigurationProperties("discord-mod-bot.narou-novel-api")
-class NarouNovelApiProperties(
-    val pollCron: String = DEFAULT_POLL_CRON,
-    val requestTimeout: Duration = DEFAULT_REQUEST_TIMEOUT
-) {
-    companion object {
-        const val DEFAULT_POLL_CRON = "0/15 * * * * *"
-        val DEFAULT_REQUEST_TIMEOUT: Duration = Duration.ofSeconds(5)
-    }
-}
+data class NarouNovelApiProperties(
+    @NotEmpty
+    @DefaultValue("0/15 * * * * *")
+    val pollCron: String,
+)

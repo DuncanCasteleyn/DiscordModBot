@@ -2,7 +2,6 @@ package be.duncanc.discordmodbot.narou.novel.api
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.support.RestClientAdapter
 import org.springframework.web.service.invoker.HttpServiceProxyFactory
@@ -15,17 +14,16 @@ class NarouNovelApiClientConfig {
     }
 
     @Bean
-    fun narouNovelApiClient(properties: NarouNovelApiProperties): NarouNovelApiClient {
-        val timeoutMillis = properties.requestTimeout.toMillis().toInt()
-        val requestFactory = SimpleClientHttpRequestFactory().apply {
-            setConnectTimeout(timeoutMillis)
-            setReadTimeout(timeoutMillis)
-        }
-        val restClient = RestClient.builder()
+    fun narouNovelApiClient(restClientBuilder: RestClient.Builder): NarouNovelApiClient {
+        val restClient = restClientBuilder
             .baseUrl(BASE_URL)
-            .requestFactory(requestFactory)
             .build()
-        val proxyFactory = HttpServiceProxyFactory.builderFor(RestClientAdapter.create(restClient)).build()
+
+        val proxyFactory = HttpServiceProxyFactory
+            .builderFor(
+                RestClientAdapter.create(restClient)
+            )
+            .build()
 
         return proxyFactory.createClient<NarouNovelApiClient>()
     }
