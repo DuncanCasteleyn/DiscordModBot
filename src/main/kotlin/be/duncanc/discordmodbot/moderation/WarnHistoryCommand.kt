@@ -6,7 +6,6 @@ import be.duncanc.discordmodbot.moderation.persistence.GuildWarnPointsRepository
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
-import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions
@@ -14,6 +13,7 @@ import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
+import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
 import net.dv8tion.jda.api.utils.TimeFormat
 import org.springframework.stereotype.Component
 import java.awt.Color
@@ -26,6 +26,8 @@ class WarnHistoryCommand(
     companion object {
         private const val COMMAND = "warnhistory"
         private const val DESCRIPTION = "Shows the warn history for a user."
+        private const val SUBCOMMAND_ACTIVE = "active"
+        private const val SUBCOMMAND_ALL = "all"
         private const val OPTION_USER = "user"
     }
 
@@ -44,6 +46,14 @@ class WarnHistoryCommand(
             return
         }
 
+        when (event.subcommandName) {
+            SUBCOMMAND_ACTIVE -> showWarnHistory(event, guild, activeOnly = true)
+            SUBCOMMAND_ALL -> showWarnHistory(event, guild, activeOnly = false)
+            else -> event.reply("Please choose a valid /warnhistory subcommand.").setEphemeral(true).queue()
+        }
+    }
+
+    private fun showWarnHistory(event: SlashCommandInteractionEvent, guild: Guild, activeOnly: Boolean) {
         val targetUserOption = event.getOption(OPTION_USER)
         if (targetUserOption == null) {
             event.reply("This command requires a user.").setEphemeral(true).queue()
@@ -51,32 +61,29 @@ class WarnHistoryCommand(
         }
 
         val targetMember = targetUserOption.asMember
-        if (targetMember != null) {
-            showWarnHistory(event, guild, targetMember.user)
-        } else {
-            showWarnHistory(event, guild, targetUserOption.asUser)
-        }
-    }
-
-    private fun showWarnHistory(event: SlashCommandInteractionEvent, guild: Guild, user: User) {
+        val user = if (targetMember != null) targetMember.user else targetUserOption.asUser
         val guildId = guild.idLong
         val userId = user.idLong
 
         event.deferReply(true).queue { hook ->
-            if (!guildWarnPointsRepository.existsByGuildIdAndUserId(guildId, userId)) {
-                hook.sendMessage("The user has not received any points.")
-                    .setEphemeral(true).queue()
-                return@queue
+            val warnings = if (activeOnly) {
+                guildWarnPointsRepository.findAllByGuildIdAndUserIdAndExpireDateAfter(
+                    guildId,
+                    userId,
+                    OffsetDateTime.now()
+                )
+            } else {
+                guildWarnPointsRepository.findAllByGuildIdAndUserId(guildId, userId)
             }
 
-            val warnings = guildWarnPointsRepository.findAllByGuildIdAndUserIdAndExpireDateAfter(
-                guildId,
-                userId,
-                OffsetDateTime.now()
-            )
-
             if (warnings.isEmpty()) {
-                hook.sendMessage("The user has no active points.")
+                val emptyMessage = if (activeOnly) {
+                    "The user has no active points."
+                } else {
+                    "The user has not received any points."
+                }
+
+                hook.sendMessage(emptyMessage)
                     .setEphemeral(true).queue()
                 return@queue
             }
@@ -120,12 +127,23 @@ class WarnHistoryCommand(
     override fun getCommandsData(): List<SlashCommandData> {
         return listOf(
             Commands.slash(COMMAND, DESCRIPTION)
-                .addOptions(
-                    OptionData(
-                        OptionType.USER,
-                        OPTION_USER,
-                        "The user to check"
-                    ).setRequired(true)
+                .addSubcommands(
+                    SubcommandData(SUBCOMMAND_ACTIVE, "Show the active warn history for a user")
+                        .addOptions(
+                            OptionData(
+                                OptionType.USER,
+                                OPTION_USER,
+                                "The user to check"
+                            ).setRequired(true)
+                        ),
+                    SubcommandData(SUBCOMMAND_ALL, "Show the full warn history for a user")
+                        .addOptions(
+                            OptionData(
+                                OptionType.USER,
+                                OPTION_USER,
+                                "The user to check"
+                            ).setRequired(true)
+                        )
                 )
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_ROLES))
         )
