@@ -48,10 +48,10 @@ class NarouNovelPollingServiceTest {
     }
 
     @Test
-    fun `first poll ignores allcount and stores latest payload`() {
+    fun `first poll ignores incomplete entries and stores latest payload`() {
         whenever(narouNovelApiClient.fetchNovel()).thenReturn(
             listOf(
-                NarouNovelApiResponseEntry(allcount = 1),
+                NarouNovelApiResponseEntry(),
                 payload(length = 9_445_269, generalAllNo = 778)
             )
         )
@@ -144,6 +144,43 @@ class NarouNovelPollingServiceTest {
     }
 
     @Test
+    fun `alert baseline updates before Discord send callback to prevent duplicate alerts`() {
+        service = TestNarouNovelPollingService(
+            narouNovelApiClient,
+            narouNovelSnapshotRepository,
+            narouNovelAlertSettingsRepository,
+            jda,
+            completeSendsImmediately = false
+        )
+        val snapshot = snapshot(length = 9_446_500, generalAllNo = 780)
+        val settings = NarouNovelAlertSettings(
+            guildId = 1L,
+            channelId = 11L,
+            lengthThreshold = 1_000L,
+            lastAlertedLength = 9_445_269L,
+            lastAlertedGeneralAllNo = 778
+        )
+        whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 780)))
+        whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
+        whenever(narouNovelAlertSettingsRepository.findAll()).thenReturn(listOf(settings))
+        whenever(jda.getTextChannelById(11L)).thenReturn(textChannel)
+
+        service.pollNovel()
+        service.pollNovel()
+
+        assertEquals(
+            listOf(
+                "Narou update for n2267be: 2 new chapters were published and the novel grew by 1231 characters. Total chapters: 780. Total characters: 9446500. https://ncode.syosetu.com/n2267be/"
+            ),
+            service.sentMessages
+        )
+        val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
+        verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
+        assertEquals(9_446_500L, settingsCaptor.lastValue.lastAlertedLength)
+        assertEquals(780, settingsCaptor.lastValue.lastAlertedGeneralAllNo)
+    }
+
+    @Test
     fun `missing baselines are initialized without alerting`() {
         val snapshot = snapshot(length = 9_445_500, generalAllNo = 779)
         val settings = NarouNovelAlertSettings(guildId = 1L, channelId = 11L, lastAlertedLength = null, lastAlertedGeneralAllNo = null)
@@ -187,7 +224,8 @@ class NarouNovelPollingServiceTest {
         narouNovelApiClient: NarouNovelApiClient,
         narouNovelSnapshotRepository: NarouNovelSnapshotRepository,
         narouNovelAlertSettingsRepository: NarouNovelAlertSettingsRepository,
-        jda: JDA
+        jda: JDA,
+        private val completeSendsImmediately: Boolean = true
     ) : NarouNovelPollingService(
         narouNovelApiClient,
         narouNovelSnapshotRepository,
@@ -203,7 +241,9 @@ class NarouNovelPollingServiceTest {
             onFailure: (Throwable) -> Unit
         ) {
             sentMessages += message
-            onSuccess()
+            if (completeSendsImmediately) {
+                onSuccess()
+            }
         }
     }
 }

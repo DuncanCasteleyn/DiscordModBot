@@ -100,18 +100,18 @@ class NarouNovelPollingService(
             }
 
             val message = buildAlertMessage(lengthTriggered, lengthDelta, chapterTriggered, chapterDelta, snapshot)
+            if (lengthTriggered) {
+                settings.lastAlertedLength = snapshot.length
+            }
+            if (chapterTriggered) {
+                settings.lastAlertedGeneralAllNo = snapshot.generalAllNo
+            }
+            narouNovelAlertSettingsRepository.save(settings)
+
             sendAlertMessage(
                 channel = channel,
                 message = message,
-                onSuccess = {
-                    if (lengthTriggered) {
-                        settings.lastAlertedLength = snapshot.length
-                    }
-                    if (chapterTriggered) {
-                        settings.lastAlertedGeneralAllNo = snapshot.generalAllNo
-                    }
-                    narouNovelAlertSettingsRepository.save(settings)
-                },
+                onSuccess = {},
                 onFailure = { exception ->
                     LOG.warn("Failed to send Narou novel alert for guild {}", settings.guildId, exception)
                 }
