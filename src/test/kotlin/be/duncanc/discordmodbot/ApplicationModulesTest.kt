@@ -17,6 +17,7 @@ class ApplicationModulesTest {
                 "logging",
                 "member.gate",
                 "moderation",
+                "narou.novel.api",
                 "reporting",
                 "roles",
                 "server.config",
