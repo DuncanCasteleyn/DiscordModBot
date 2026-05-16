@@ -9,6 +9,7 @@ import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelSnapshotRe
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -200,6 +201,26 @@ class NarouNovelPollingServiceTest {
     }
 
     @Test
+    fun `poll skips resend when matching pending snapshot already exists`() {
+        val snapshot = snapshot(length = 9_446_500, generalAllNo = 780)
+        val settings = NarouNovelAlertSettings(
+            guildId = 1L,
+            channelId = 11L,
+            lengthThreshold = 1_000L,
+            lastAlertedLength = 9_445_269L,
+            lastAlertedGeneralAllNo = 778
+        )
+        pendingAlerts[1L] = NarouNovelPendingAlert(1L, 9_446_500L, 780)
+        whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 780)))
+        whenever(narouNovelAlertSettingsRepository.findAll()).thenReturn(listOf(settings))
+
+        service.pollNovel()
+
+        assertEquals(emptyList<String>(), service.sentMessages)
+        verify(jda, never()).getTextChannelById(any<Long>())
+    }
+
+    @Test
     fun `poll retries after alert failure callback clears pending lock`() {
         stubPendingAlertRepository()
         service = TestNarouNovelPollingService(
@@ -230,6 +251,37 @@ class NarouNovelPollingServiceTest {
         assertEquals(2, service.sentMessages.size)
         verify(narouNovelAlertSettingsRepository, never()).save(settings)
         assertEquals(emptyMap<Long, NarouNovelPendingAlert>(), pendingAlerts)
+    }
+
+    @Test
+    fun `poll keeps matching pending alert after baseline save failure to avoid duplicate resend`() {
+        stubPendingAlertRepository(includeDeleteById = false)
+        service = TestNarouNovelPollingService(
+            narouNovelApiClient,
+            narouNovelSnapshotRepository,
+            narouNovelAlertSettingsRepository,
+            narouNovelPendingAlertRepository,
+            jda
+        )
+        val snapshot = snapshot(length = 9_446_500, generalAllNo = 780)
+        val settings = NarouNovelAlertSettings(
+            guildId = 1L,
+            channelId = 11L,
+            lengthThreshold = 1_000L,
+            lastAlertedLength = 9_445_269L,
+            lastAlertedGeneralAllNo = 778
+        )
+        whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 780)))
+        whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
+        whenever(narouNovelAlertSettingsRepository.findAll()).thenReturn(listOf(settings))
+        whenever(jda.getTextChannelById(11L)).thenReturn(textChannel)
+        whenever(narouNovelAlertSettingsRepository.save(settings)).thenThrow(IllegalStateException("db down"))
+
+        service.pollNovel()
+        service.pollNovel()
+
+        assertEquals(1, service.sentMessages.size)
+        assertEquals(NarouNovelPendingAlert(1L, 9_446_500L, 780), pendingAlerts[1L])
     }
 
     @Test
@@ -266,6 +318,39 @@ class NarouNovelPollingServiceTest {
         assertEquals("boom", firstFailure.message)
         assertEquals("boom", secondFailure.message)
         assertEquals(2, service.sentMessages.size)
+        assertEquals(emptyMap<Long, NarouNovelPendingAlert>(), pendingAlerts)
+    }
+
+    @Test
+    fun `terminal send failure disables configured channel`() {
+        stubPendingAlertRepository()
+        service = TestNarouNovelPollingService(
+            narouNovelApiClient,
+            narouNovelSnapshotRepository,
+            narouNovelAlertSettingsRepository,
+            narouNovelPendingAlertRepository,
+            jda,
+            failWith = IllegalStateException("missing access"),
+            terminalFailurePredicate = { true }
+        )
+        val snapshot = snapshot(length = 9_446_500, generalAllNo = 780)
+        val settings = NarouNovelAlertSettings(
+            guildId = 1L,
+            channelId = 11L,
+            lengthThreshold = 1_000L,
+            lastAlertedLength = 9_445_269L,
+            lastAlertedGeneralAllNo = 778
+        )
+        whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 780)))
+        whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
+        whenever(narouNovelAlertSettingsRepository.findAll()).thenReturn(listOf(settings))
+        whenever(jda.getTextChannelById(11L)).thenReturn(textChannel)
+
+        service.pollNovel()
+        service.pollNovel()
+
+        assertEquals(1, service.sentMessages.size)
+        assertNull(settings.channelId)
         assertEquals(emptyMap<Long, NarouNovelPendingAlert>(), pendingAlerts)
     }
 
@@ -333,6 +418,8 @@ class NarouNovelPollingServiceTest {
         private val completeSendsImmediately: Boolean = true,
         private val failSendsImmediately: Boolean = false,
         private val throwOnSend: RuntimeException? = null,
+        private val failWith: Throwable? = null,
+        private val terminalFailurePredicate: (Throwable) -> Boolean = { false },
         private val onSend: (() -> Unit)? = null
     ) : NarouNovelPollingService(
         narouNovelApiClient,
@@ -343,6 +430,10 @@ class NarouNovelPollingServiceTest {
     ) {
         val sentMessages = mutableListOf<String>()
 
+        override fun isTerminalChannelFailure(exception: Throwable): Boolean {
+            return terminalFailurePredicate(exception)
+        }
+
         override fun sendAlertMessage(
             channel: TextChannel,
             message: String,
@@ -352,6 +443,10 @@ class NarouNovelPollingServiceTest {
             sentMessages += message
             onSend?.invoke()
             throwOnSend?.let { throw it }
+            failWith?.let {
+                onFailure(it)
+                return
+            }
             if (failSendsImmediately) {
                 onFailure(IllegalStateException("send failed"))
                 return

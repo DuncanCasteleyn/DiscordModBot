@@ -3,6 +3,8 @@ package be.duncanc.discordmodbot.narou.novel.api
 import be.duncanc.discordmodbot.narou.novel.api.persistence.*
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.exceptions.ErrorResponseException
+import net.dv8tion.jda.api.requests.ErrorResponse
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
@@ -90,6 +92,15 @@ class NarouNovelPollingService(
 
             val pendingAlert = narouNovelPendingAlertRepository.findById(settings.guildId).orElse(null)
             if (pendingAlert != null) {
+                if (pendingAlert.snapshotGeneralAllNo == snapshot.generalAllNo && pendingAlert.snapshotLength == snapshot.length) {
+                    LOG.debug(
+                        "Skipping Narou novel alert for guild {} because snapshot {}:{} was already sent or is still being finalized",
+                        settings.guildId,
+                        pendingAlert.snapshotGeneralAllNo,
+                        pendingAlert.snapshotLength
+                    )
+                    return@forEach
+                }
                 LOG.debug(
                     "Skipping Narou novel alert for guild {} because a pending alert lock exists for snapshot {}:{}",
                     settings.guildId,
@@ -131,11 +142,40 @@ class NarouNovelPollingService(
                                 settings.lastAlertedGeneralAllNo = snapshot.generalAllNo
                             }
                             narouNovelAlertSettingsRepository.save(settings)
-                        } finally {
                             narouNovelPendingAlertRepository.deleteById(settings.guildId)
+                        } catch (exception: Exception) {
+                            LOG.warn(
+                                "Failed to persist Narou novel alert baselines for guild {} after sending snapshot {}:{}",
+                                settings.guildId,
+                                snapshot.generalAllNo,
+                                snapshot.length,
+                                exception
+                            )
                         }
                     },
                     onFailure = { exception ->
+                        if (isTerminalChannelFailure(exception)) {
+                            try {
+                                settings.channelId = null
+                                narouNovelAlertSettingsRepository.save(settings)
+                                narouNovelPendingAlertRepository.deleteById(settings.guildId)
+                                LOG.warn(
+                                    "Disabled Narou novel alerts for guild {} because the bot can no longer post in channel {}",
+                                    settings.guildId,
+                                    channelId,
+                                    exception
+                                )
+                            } catch (persistenceException: Exception) {
+                                LOG.warn(
+                                    "Failed to disable Narou novel alerts for guild {} after terminal send failure in channel {}",
+                                    settings.guildId,
+                                    channelId,
+                                    persistenceException
+                                )
+                            }
+                            return@sendAlertMessage
+                        }
+
                         try {
                             LOG.warn("Failed to send Narou novel alert for guild {}", settings.guildId, exception)
                         } finally {
@@ -191,6 +231,16 @@ class NarouNovelPollingService(
         onFailure: (Throwable) -> Unit
     ) {
         channel.sendMessage(message).queue({ onSuccess() }, onFailure)
+    }
+
+    internal open fun isTerminalChannelFailure(exception: Throwable): Boolean {
+        val errorResponseException = exception as? ErrorResponseException ?: return false
+        return when (errorResponseException.errorResponse) {
+            ErrorResponse.MISSING_PERMISSIONS,
+            ErrorResponse.MISSING_ACCESS,
+            ErrorResponse.UNKNOWN_CHANNEL -> true
+            else -> false
+        }
     }
 
     private fun buildAlertMessage(
