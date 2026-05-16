@@ -182,7 +182,7 @@ class NarouNovelPollingService(
         }
 
         return buildString {
-            append("Narou update for ")
+            append("@everyone Narou update for ")
             append(NOVEL_CODE)
             append(": ")
             append(updates.joinToString(" and "))
