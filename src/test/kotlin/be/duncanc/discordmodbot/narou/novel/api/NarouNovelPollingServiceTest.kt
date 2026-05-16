@@ -144,7 +144,7 @@ class NarouNovelPollingServiceTest {
     }
 
     @Test
-    fun `alert baseline updates before Discord send callback to prevent duplicate alerts`() {
+    fun `alert baseline updates only after Discord send callback`() {
         service = TestNarouNovelPollingService(
             narouNovelApiClient,
             narouNovelSnapshotRepository,
@@ -170,14 +170,14 @@ class NarouNovelPollingServiceTest {
 
         assertEquals(
             listOf(
+                "@everyone Narou update for n2267be: 2 new chapters were published and the novel grew by 1231 characters. Total chapters: 780. Total characters: 9446500. https://ncode.syosetu.com/n2267be/",
                 "@everyone Narou update for n2267be: 2 new chapters were published and the novel grew by 1231 characters. Total chapters: 780. Total characters: 9446500. https://ncode.syosetu.com/n2267be/"
             ),
             service.sentMessages
         )
-        val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
-        verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
-        assertEquals(9_446_500L, settingsCaptor.lastValue.lastAlertedLength)
-        assertEquals(780, settingsCaptor.lastValue.lastAlertedGeneralAllNo)
+        verify(narouNovelAlertSettingsRepository, never()).save(settings)
+        assertEquals(9_445_269L, settings.lastAlertedLength)
+        assertEquals(778, settings.lastAlertedGeneralAllNo)
     }
 
     @Test
