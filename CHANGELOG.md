@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.9.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.8.0...v2.9.0) (2026-05-16)
+
+
+### Features
+
+* **moderation:** add warnhistory history filters ([#630](https://github.com/DuncanCasteleyn/DiscordModBot/issues/630)) ([1c17b5e](https://github.com/DuncanCasteleyn/DiscordModBot/commit/1c17b5ed04f6080369ed3637cb5e0a708f435c4f))
+* **narouNovelApi:** add Narou novel update alerts ([#629](https://github.com/DuncanCasteleyn/DiscordModBot/issues/629)) ([534cb0b](https://github.com/DuncanCasteleyn/DiscordModBot/commit/534cb0b74a54bc59018cf18928ab081e32d44aa3))
+
 ## [2.8.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.7.4...v2.8.0) (2026-05-14)
 
 
