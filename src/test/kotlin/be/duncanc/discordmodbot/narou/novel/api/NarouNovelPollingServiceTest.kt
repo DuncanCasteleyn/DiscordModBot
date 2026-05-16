@@ -210,14 +210,16 @@ class NarouNovelPollingServiceTest {
             lastAlertedLength = 9_445_269L,
             lastAlertedGeneralAllNo = 778
         )
-        pendingAlerts[1L] = NarouNovelPendingAlert(1L, 9_446_500L, 780)
+        whenever(narouNovelPendingAlertRepository.findById(1L)).thenReturn(Optional.of(NarouNovelPendingAlert(1L, 9_446_500L, 780)))
         whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 780)))
+        whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
         whenever(narouNovelAlertSettingsRepository.findAll()).thenReturn(listOf(settings))
 
         service.pollNovel()
 
         assertEquals(emptyList<String>(), service.sentMessages)
         verify(jda, never()).getTextChannelById(any<Long>())
+        verify(narouNovelPendingAlertRepository).findById(1L)
     }
 
     @Test
