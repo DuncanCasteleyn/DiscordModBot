@@ -355,6 +355,29 @@ class NarouNovelPollingServiceTest {
     }
 
     @Test
+    fun `missing channel disables configured channel`() {
+        val snapshot = snapshot(length = 9_446_500, generalAllNo = 780)
+        val settings = NarouNovelAlertSettings(
+            guildId = 1L,
+            channelId = 11L,
+            lengthThreshold = 1_000L,
+            lastAlertedLength = 9_445_269L,
+            lastAlertedGeneralAllNo = 778
+        )
+        whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 780)))
+        whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
+        whenever(narouNovelAlertSettingsRepository.findAll()).thenReturn(listOf(settings))
+        whenever(jda.getTextChannelById(11L)).thenReturn(null)
+
+        service.pollNovel()
+        service.pollNovel()
+
+        assertEquals(emptyList<String>(), service.sentMessages)
+        assertNull(settings.channelId)
+        assertEquals(emptyMap<Long, NarouNovelPendingAlert>(), pendingAlerts)
+    }
+
+    @Test
     fun `missing baselines are initialized without alerting`() {
         val snapshot = snapshot(length = 9_445_500, generalAllNo = 779)
         val settings = NarouNovelAlertSettings(guildId = 1L, channelId = 11L, lastAlertedLength = null, lastAlertedGeneralAllNo = null)

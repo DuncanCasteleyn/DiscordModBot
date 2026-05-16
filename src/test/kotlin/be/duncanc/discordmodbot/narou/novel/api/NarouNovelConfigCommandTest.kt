@@ -2,12 +2,14 @@ package be.duncanc.discordmodbot.narou.novel.api
 
 import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelAlertSettings
 import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelAlertSettingsRepository
+import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelPendingAlertRepository
 import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelSnapshot
 import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelSnapshotRepository
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.events.guild.GuildLeaveEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.InteractionContextType
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
@@ -33,6 +35,9 @@ class NarouNovelConfigCommandTest {
     private lateinit var narouNovelSnapshotRepository: NarouNovelSnapshotRepository
 
     @Mock
+    private lateinit var narouNovelPendingAlertRepository: NarouNovelPendingAlertRepository
+
+    @Mock
     private lateinit var slashEvent: SlashCommandInteractionEvent
 
     @Mock
@@ -47,11 +52,18 @@ class NarouNovelConfigCommandTest {
     @Mock
     private lateinit var replyAction: ReplyCallbackAction
 
+    @Mock
+    private lateinit var guildLeaveEvent: GuildLeaveEvent
+
     private lateinit var command: TestNarouNovelConfigCommand
 
     @BeforeEach
     fun setUp() {
-        command = TestNarouNovelConfigCommand(narouNovelAlertSettingsRepository, narouNovelSnapshotRepository)
+        command = TestNarouNovelConfigCommand(
+            narouNovelAlertSettingsRepository,
+            narouNovelPendingAlertRepository,
+            narouNovelSnapshotRepository
+        )
     }
 
     @Test
@@ -143,7 +155,19 @@ class NarouNovelConfigCommandTest {
         command.onSlashCommandInteraction(slashEvent)
 
         verify(narouNovelAlertSettingsRepository).deleteById(1L)
+        verify(narouNovelPendingAlertRepository).deleteById(1L)
         verify(slashEvent).reply("Narou novel alerts disabled.")
+    }
+
+    @Test
+    fun `guild leave removes narou novel configuration and pending alert`() {
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(guildLeaveEvent.guild).thenReturn(guild)
+
+        command.onGuildLeave(guildLeaveEvent)
+
+        verify(narouNovelAlertSettingsRepository).deleteById(1L)
+        verify(narouNovelPendingAlertRepository).deleteById(1L)
     }
 
     @Test
@@ -175,8 +199,13 @@ class NarouNovelConfigCommandTest {
 
     private class TestNarouNovelConfigCommand(
         narouNovelAlertSettingsRepository: NarouNovelAlertSettingsRepository,
+        narouNovelPendingAlertRepository: NarouNovelPendingAlertRepository,
         narouNovelSnapshotRepository: NarouNovelSnapshotRepository
-    ) : NarouNovelConfigCommand(narouNovelAlertSettingsRepository, narouNovelSnapshotRepository) {
+    ) : NarouNovelConfigCommand(
+        narouNovelAlertSettingsRepository,
+        narouNovelPendingAlertRepository,
+        narouNovelSnapshotRepository
+    ) {
         var selectedChannel: TextChannel? = null
         var threshold: Long? = null
 

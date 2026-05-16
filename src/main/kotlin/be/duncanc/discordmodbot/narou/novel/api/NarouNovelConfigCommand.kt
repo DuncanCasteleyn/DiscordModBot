@@ -3,6 +3,7 @@ package be.duncanc.discordmodbot.narou.novel.api
 import be.duncanc.discordmodbot.discord.SlashCommand
 import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelAlertSettings
 import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelAlertSettingsRepository
+import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelPendingAlertRepository
 import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelSnapshotRepository
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Component
 @Component
 class NarouNovelConfigCommand(
     private val narouNovelAlertSettingsRepository: NarouNovelAlertSettingsRepository,
+    private val narouNovelPendingAlertRepository: NarouNovelPendingAlertRepository,
     private val narouNovelSnapshotRepository: NarouNovelSnapshotRepository
 ) : ListenerAdapter(), SlashCommand {
     companion object {
@@ -38,7 +40,7 @@ class NarouNovelConfigCommand(
     }
 
     override fun onGuildLeave(event: GuildLeaveEvent) {
-        narouNovelAlertSettingsRepository.deleteById(event.guild.idLong)
+        clearAlertConfiguration(event.guild.idLong)
     }
 
     override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
@@ -89,7 +91,7 @@ class NarouNovelConfigCommand(
             }
 
             SUBCOMMAND_DISABLE -> {
-                narouNovelAlertSettingsRepository.deleteById(guild.idLong)
+                clearAlertConfiguration(guild.idLong)
                 event.reply("Narou novel alerts disabled.").setEphemeral(true).queue()
             }
 
@@ -152,6 +154,11 @@ class NarouNovelConfigCommand(
         if (settings.lastAlertedGeneralAllNo == null) {
             settings.lastAlertedGeneralAllNo = snapshot.generalAllNo
         }
+    }
+
+    private fun clearAlertConfiguration(guildId: Long) {
+        narouNovelAlertSettingsRepository.deleteById(guildId)
+        narouNovelPendingAlertRepository.deleteById(guildId)
     }
 
     private fun showCurrentSettings(event: SlashCommandInteractionEvent, guild: Guild) {

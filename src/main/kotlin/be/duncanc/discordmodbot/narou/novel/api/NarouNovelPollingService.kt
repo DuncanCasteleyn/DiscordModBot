@@ -113,10 +113,10 @@ class NarouNovelPollingService(
             val channelId = settings.channelId ?: return@forEach
             val channel = jda.getTextChannelById(channelId)
             if (channel == null) {
-                LOG.warn(
-                    "Narou novel alert channel {} for guild {} no longer exists",
-                    settings.channelId,
-                    settings.guildId
+                disableAlertChannel(
+                    settings = settings,
+                    channelId = channelId,
+                    reason = "channel {} no longer exists"
                 )
                 return@forEach
             }
@@ -155,24 +155,12 @@ class NarouNovelPollingService(
                     },
                     onFailure = { exception ->
                         if (isTerminalChannelFailure(exception)) {
-                            try {
-                                settings.channelId = null
-                                narouNovelAlertSettingsRepository.save(settings)
-                                narouNovelPendingAlertRepository.deleteById(settings.guildId)
-                                LOG.warn(
-                                    "Disabled Narou novel alerts for guild {} because the bot can no longer post in channel {}",
-                                    settings.guildId,
-                                    channelId,
-                                    exception
-                                )
-                            } catch (persistenceException: Exception) {
-                                LOG.warn(
-                                    "Failed to disable Narou novel alerts for guild {} after terminal send failure in channel {}",
-                                    settings.guildId,
-                                    channelId,
-                                    persistenceException
-                                )
-                            }
+                            disableAlertChannel(
+                                settings = settings,
+                                channelId = channelId,
+                                reason = "the bot can no longer post in channel {}",
+                                cause = exception
+                            )
                             return@sendAlertMessage
                         }
 
@@ -187,6 +175,40 @@ class NarouNovelPollingService(
                 narouNovelPendingAlertRepository.deleteById(settings.guildId)
                 throw exception
             }
+        }
+    }
+
+    private fun disableAlertChannel(
+        settings: NarouNovelAlertSettings,
+        channelId: Long,
+        reason: String,
+        cause: Throwable? = null
+    ) {
+        try {
+            settings.channelId = null
+            narouNovelAlertSettingsRepository.save(settings)
+            narouNovelPendingAlertRepository.deleteById(settings.guildId)
+            if (cause == null) {
+                LOG.warn(
+                    "Disabled Narou novel alerts for guild {} because $reason",
+                    settings.guildId,
+                    channelId
+                )
+            } else {
+                LOG.warn(
+                    "Disabled Narou novel alerts for guild {} because $reason",
+                    settings.guildId,
+                    channelId,
+                    cause
+                )
+            }
+        } catch (persistenceException: Exception) {
+            LOG.warn(
+                "Failed to disable Narou novel alerts for guild {} after channel failure in channel {}",
+                settings.guildId,
+                channelId,
+                persistenceException
+            )
         }
     }
 
