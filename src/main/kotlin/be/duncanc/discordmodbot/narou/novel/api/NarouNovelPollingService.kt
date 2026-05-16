@@ -1,9 +1,6 @@
 package be.duncanc.discordmodbot.narou.novel.api
 
-import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelAlertSettings
-import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelAlertSettingsRepository
-import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelSnapshot
-import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelSnapshotRepository
+import be.duncanc.discordmodbot.narou.novel.api.persistence.*
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import org.slf4j.LoggerFactory
@@ -16,6 +13,7 @@ class NarouNovelPollingService(
     private val narouNovelApiClient: NarouNovelApiClient,
     private val narouNovelSnapshotRepository: NarouNovelSnapshotRepository,
     private val narouNovelAlertSettingsRepository: NarouNovelAlertSettingsRepository,
+    private val narouNovelPendingAlertRepository: NarouNovelPendingAlertRepository,
     private val jda: JDA
 ) {
     companion object {
@@ -90,6 +88,17 @@ class NarouNovelPollingService(
                 return@forEach
             }
 
+            val pendingAlert = narouNovelPendingAlertRepository.findById(settings.guildId).orElse(null)
+            if (pendingAlert != null) {
+                LOG.debug(
+                    "Skipping Narou novel alert for guild {} because a pending alert lock exists for snapshot {}:{}",
+                    settings.guildId,
+                    pendingAlert.snapshotGeneralAllNo,
+                    pendingAlert.snapshotLength
+                )
+                return@forEach
+            }
+
             val channelId = settings.channelId ?: return@forEach
             val channel = jda.getTextChannelById(channelId)
             if (channel == null) {
@@ -102,22 +111,42 @@ class NarouNovelPollingService(
             }
 
             val message = buildAlertMessage(lengthTriggered, lengthDelta, chapterTriggered, chapterDelta, snapshot)
-            sendAlertMessage(
-                channel = channel,
-                message = message,
-                onSuccess = {
-                    if (lengthTriggered) {
-                        settings.lastAlertedLength = snapshot.length
-                    }
-                    if (chapterTriggered) {
-                        settings.lastAlertedGeneralAllNo = snapshot.generalAllNo
-                    }
-                    narouNovelAlertSettingsRepository.save(settings)
-                },
-                onFailure = { exception ->
-                    LOG.warn("Failed to send Narou novel alert for guild {}", settings.guildId, exception)
-                }
+            narouNovelPendingAlertRepository.save(
+                NarouNovelPendingAlert(
+                    guildId = settings.guildId,
+                    snapshotLength = snapshot.length,
+                    snapshotGeneralAllNo = snapshot.generalAllNo
+                )
             )
+            try {
+                sendAlertMessage(
+                    channel = channel,
+                    message = message,
+                    onSuccess = {
+                        try {
+                            if (lengthTriggered) {
+                                settings.lastAlertedLength = snapshot.length
+                            }
+                            if (chapterTriggered) {
+                                settings.lastAlertedGeneralAllNo = snapshot.generalAllNo
+                            }
+                            narouNovelAlertSettingsRepository.save(settings)
+                        } finally {
+                            narouNovelPendingAlertRepository.deleteById(settings.guildId)
+                        }
+                    },
+                    onFailure = { exception ->
+                        try {
+                            LOG.warn("Failed to send Narou novel alert for guild {}", settings.guildId, exception)
+                        } finally {
+                            narouNovelPendingAlertRepository.deleteById(settings.guildId)
+                        }
+                    }
+                )
+            } catch (exception: Exception) {
+                narouNovelPendingAlertRepository.deleteById(settings.guildId)
+                throw exception
+            }
         }
     }
 

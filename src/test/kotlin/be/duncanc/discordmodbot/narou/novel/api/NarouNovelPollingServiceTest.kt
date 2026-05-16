@@ -2,17 +2,22 @@ package be.duncanc.discordmodbot.narou.novel.api
 
 import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelAlertSettings
 import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelAlertSettingsRepository
+import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelPendingAlert
+import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelPendingAlertRepository
 import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelSnapshot
 import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelSnapshotRepository
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -30,19 +35,25 @@ class NarouNovelPollingServiceTest {
     private lateinit var narouNovelAlertSettingsRepository: NarouNovelAlertSettingsRepository
 
     @Mock
+    private lateinit var narouNovelPendingAlertRepository: NarouNovelPendingAlertRepository
+
+    @Mock
     private lateinit var jda: JDA
 
     @Mock
     private lateinit var textChannel: TextChannel
 
     private lateinit var service: TestNarouNovelPollingService
+    private val pendingAlerts = mutableMapOf<Long, NarouNovelPendingAlert>()
 
     @BeforeEach
     fun setUp() {
+        pendingAlerts.clear()
         service = TestNarouNovelPollingService(
             narouNovelApiClient,
             narouNovelSnapshotRepository,
             narouNovelAlertSettingsRepository,
+            narouNovelPendingAlertRepository,
             jda
         )
     }
@@ -68,6 +79,7 @@ class NarouNovelPollingServiceTest {
 
     @Test
     fun `chapter alert does not reset length baseline when threshold not met`() {
+        stubPendingAlertRepository()
         val snapshot = snapshot(length = 9_445_500, generalAllNo = 779)
         val settings = NarouNovelAlertSettings(
             guildId = 1L,
@@ -88,10 +100,12 @@ class NarouNovelPollingServiceTest {
         verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
         assertEquals(9_445_269L, settingsCaptor.lastValue.lastAlertedLength)
         assertEquals(779, settingsCaptor.lastValue.lastAlertedGeneralAllNo)
+        assertEquals(emptyMap<Long, NarouNovelPendingAlert>(), pendingAlerts)
     }
 
     @Test
     fun `length alert triggers when threshold is reached`() {
+        stubPendingAlertRepository()
         val snapshot = snapshot(length = 9_446_500, generalAllNo = 778)
         val settings = NarouNovelAlertSettings(
             guildId = 1L,
@@ -112,10 +126,12 @@ class NarouNovelPollingServiceTest {
         verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
         assertEquals(9_446_500L, settingsCaptor.lastValue.lastAlertedLength)
         assertEquals(778, settingsCaptor.lastValue.lastAlertedGeneralAllNo)
+        assertEquals(emptyMap<Long, NarouNovelPendingAlert>(), pendingAlerts)
     }
 
     @Test
     fun `combined alert updates both baselines`() {
+        stubPendingAlertRepository()
         val snapshot = snapshot(length = 9_446_500, generalAllNo = 780)
         val settings = NarouNovelAlertSettings(
             guildId = 1L,
@@ -141,14 +157,17 @@ class NarouNovelPollingServiceTest {
         verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
         assertEquals(9_446_500L, settingsCaptor.lastValue.lastAlertedLength)
         assertEquals(780, settingsCaptor.lastValue.lastAlertedGeneralAllNo)
+        assertEquals(emptyMap<Long, NarouNovelPendingAlert>(), pendingAlerts)
     }
 
     @Test
-    fun `alert baseline updates only after Discord send callback`() {
+    fun `poll skips duplicate guild alert while Discord send callback is still pending`() {
+        stubPendingAlertRepository(includeDeleteById = false)
         service = TestNarouNovelPollingService(
             narouNovelApiClient,
             narouNovelSnapshotRepository,
             narouNovelAlertSettingsRepository,
+            narouNovelPendingAlertRepository,
             jda,
             completeSendsImmediately = false
         )
@@ -170,14 +189,84 @@ class NarouNovelPollingServiceTest {
 
         assertEquals(
             listOf(
-                "@everyone Narou update for n2267be: 2 new chapters were published and the novel grew by 1231 characters. Total chapters: 780. Total characters: 9446500. https://ncode.syosetu.com/n2267be/",
                 "@everyone Narou update for n2267be: 2 new chapters were published and the novel grew by 1231 characters. Total chapters: 780. Total characters: 9446500. https://ncode.syosetu.com/n2267be/"
             ),
             service.sentMessages
         )
+        assertEquals(NarouNovelPendingAlert(1L, 9_446_500L, 780), pendingAlerts[1L])
         verify(narouNovelAlertSettingsRepository, never()).save(settings)
         assertEquals(9_445_269L, settings.lastAlertedLength)
         assertEquals(778, settings.lastAlertedGeneralAllNo)
+    }
+
+    @Test
+    fun `poll retries after alert failure callback clears pending lock`() {
+        stubPendingAlertRepository()
+        service = TestNarouNovelPollingService(
+            narouNovelApiClient,
+            narouNovelSnapshotRepository,
+            narouNovelAlertSettingsRepository,
+            narouNovelPendingAlertRepository,
+            jda,
+            completeSendsImmediately = false,
+            failSendsImmediately = true
+        )
+        val snapshot = snapshot(length = 9_446_500, generalAllNo = 780)
+        val settings = NarouNovelAlertSettings(
+            guildId = 1L,
+            channelId = 11L,
+            lengthThreshold = 1_000L,
+            lastAlertedLength = 9_445_269L,
+            lastAlertedGeneralAllNo = 778
+        )
+        whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 780)))
+        whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
+        whenever(narouNovelAlertSettingsRepository.findAll()).thenReturn(listOf(settings))
+        whenever(jda.getTextChannelById(11L)).thenReturn(textChannel)
+
+        service.pollNovel()
+        service.pollNovel()
+
+        assertEquals(2, service.sentMessages.size)
+        verify(narouNovelAlertSettingsRepository, never()).save(settings)
+        assertEquals(emptyMap<Long, NarouNovelPendingAlert>(), pendingAlerts)
+    }
+
+    @Test
+    fun `poll retries after synchronous send exception clears pending lock`() {
+        stubPendingAlertRepository()
+        service = TestNarouNovelPollingService(
+            narouNovelApiClient,
+            narouNovelSnapshotRepository,
+            narouNovelAlertSettingsRepository,
+            narouNovelPendingAlertRepository,
+            jda,
+            throwOnSend = IllegalStateException("boom")
+        )
+        val snapshot = snapshot(length = 9_446_500, generalAllNo = 780)
+        val settings = NarouNovelAlertSettings(
+            guildId = 1L,
+            channelId = 11L,
+            lengthThreshold = 1_000L,
+            lastAlertedLength = 9_445_269L,
+            lastAlertedGeneralAllNo = 778
+        )
+        whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 780)))
+        whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
+        whenever(narouNovelAlertSettingsRepository.findAll()).thenReturn(listOf(settings))
+        whenever(jda.getTextChannelById(11L)).thenReturn(textChannel)
+
+        val firstFailure = assertThrows(IllegalStateException::class.java) {
+            service.pollNovel()
+        }
+        val secondFailure = assertThrows(IllegalStateException::class.java) {
+            service.pollNovel()
+        }
+
+        assertEquals("boom", firstFailure.message)
+        assertEquals("boom", secondFailure.message)
+        assertEquals(2, service.sentMessages.size)
+        assertEquals(emptyMap<Long, NarouNovelPendingAlert>(), pendingAlerts)
     }
 
     @Test
@@ -220,16 +309,36 @@ class NarouNovelPollingServiceTest {
         )
     }
 
+    private fun stubPendingAlertRepository(includeDeleteById: Boolean = true) {
+        whenever(narouNovelPendingAlertRepository.findById(any<Long>())).thenAnswer { invocation ->
+            Optional.ofNullable(pendingAlerts[invocation.getArgument(0)])
+        }
+        whenever(narouNovelPendingAlertRepository.save(any<NarouNovelPendingAlert>())).thenAnswer { invocation ->
+            invocation.getArgument<NarouNovelPendingAlert>(0).also { pendingAlerts[it.guildId] = it }
+        }
+        if (includeDeleteById) {
+            doAnswer { invocation ->
+                pendingAlerts.remove(invocation.getArgument(0))
+                null
+            }.whenever(narouNovelPendingAlertRepository).deleteById(any<Long>())
+        }
+    }
+
     private class TestNarouNovelPollingService(
         narouNovelApiClient: NarouNovelApiClient,
         narouNovelSnapshotRepository: NarouNovelSnapshotRepository,
         narouNovelAlertSettingsRepository: NarouNovelAlertSettingsRepository,
+        narouNovelPendingAlertRepository: NarouNovelPendingAlertRepository,
         jda: JDA,
-        private val completeSendsImmediately: Boolean = true
+        private val completeSendsImmediately: Boolean = true,
+        private val failSendsImmediately: Boolean = false,
+        private val throwOnSend: RuntimeException? = null,
+        private val onSend: (() -> Unit)? = null
     ) : NarouNovelPollingService(
         narouNovelApiClient,
         narouNovelSnapshotRepository,
         narouNovelAlertSettingsRepository,
+        narouNovelPendingAlertRepository,
         jda
     ) {
         val sentMessages = mutableListOf<String>()
@@ -241,6 +350,12 @@ class NarouNovelPollingServiceTest {
             onFailure: (Throwable) -> Unit
         ) {
             sentMessages += message
+            onSend?.invoke()
+            throwOnSend?.let { throw it }
+            if (failSendsImmediately) {
+                onFailure(IllegalStateException("send failed"))
+                return
+            }
             if (completeSendsImmediately) {
                 onSuccess()
             }
