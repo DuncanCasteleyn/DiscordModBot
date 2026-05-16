@@ -9,6 +9,7 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class NarouNovelPollingService(
@@ -24,6 +25,7 @@ class NarouNovelPollingService(
     }
 
     @Scheduled(cron = $$"${discord-mod-bot.narou-novel-api.poll-cron:0/15 * * * * *}")
+    @Transactional
     fun pollNovel() {
         val payload = try {
             fetchPayload()
@@ -63,11 +65,11 @@ class NarouNovelPollingService(
     internal fun fetchPayload(): NarouNovelApiResponseEntry {
         return narouNovelApiClient.fetchNovel().firstOrNull {
             it.generalLastup != null &&
-                it.generalAllNo != null &&
-                it.length != null &&
-                it.time != null &&
-                it.novelUpdatedAt != null &&
-                it.updatedAt != null
+                    it.generalAllNo != null &&
+                    it.length != null &&
+                    it.time != null &&
+                    it.novelUpdatedAt != null &&
+                    it.updatedAt != null
         } ?: throw IllegalStateException("Narou novel API response did not contain a novel payload")
     }
 
@@ -106,12 +108,11 @@ class NarouNovelPollingService(
             if (chapterTriggered) {
                 settings.lastAlertedGeneralAllNo = snapshot.generalAllNo
             }
-            narouNovelAlertSettingsRepository.save(settings)
 
             sendAlertMessage(
                 channel = channel,
                 message = message,
-                onSuccess = {},
+                onSuccess = { narouNovelAlertSettingsRepository.save(settings) },
                 onFailure = { exception ->
                     LOG.warn("Failed to send Narou novel alert for guild {}", settings.guildId, exception)
                 }

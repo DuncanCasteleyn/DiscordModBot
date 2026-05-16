@@ -7,7 +7,6 @@ import org.springframework.web.client.RestClient
 import org.springframework.web.client.support.RestClientAdapter
 import org.springframework.web.service.invoker.HttpServiceProxyFactory
 import org.springframework.web.service.invoker.createClient
-import java.time.Duration
 
 @Configuration
 class NarouNovelApiClientConfig {
@@ -16,10 +15,14 @@ class NarouNovelApiClientConfig {
     }
 
     @Bean
-    fun narouNovelApiClient(restClientBuilder: RestClient.Builder): NarouNovelApiClient {
+    fun narouNovelApiClient(
+        narouNovelApiProperties: NarouNovelApiProperties,
+        restClientBuilder: RestClient.Builder
+    ): NarouNovelApiClient {
+
         val requestFactory = JdkClientHttpRequestFactory()
 
-        requestFactory.setReadTimeout(Duration.ofSeconds(10))
+        requestFactory.setReadTimeout(narouNovelApiProperties.readTimeout)
 
         val restClient = restClientBuilder
             .baseUrl(BASE_URL)
