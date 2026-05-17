@@ -111,7 +111,8 @@ class NarouNovelPollingServiceTest {
             description = "1 new chapter was published.",
             totalChapters = 779,
             totalCharacters = 9_445_500L,
-            chapterLink = "https://ncode.syosetu.com/n2267be/779"
+            chapterLink = "https://ncode.syosetu.com/n2267be/779",
+            nextChapterLink = "https://ncode.syosetu.com/n2267be/780"
         )
         val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
         verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
@@ -146,7 +147,8 @@ class NarouNovelPollingServiceTest {
             description = "the novel grew by 1231 characters.",
             totalChapters = 778,
             totalCharacters = 9_446_500L,
-            chapterLink = "https://ncode.syosetu.com/n2267be/778"
+            chapterLink = "https://ncode.syosetu.com/n2267be/778",
+            nextChapterLink = "https://ncode.syosetu.com/n2267be/779"
         )
         val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
         verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
@@ -185,6 +187,7 @@ class NarouNovelPollingServiceTest {
             totalChapters = 778,
             totalCharacters = 9_446_500L,
             chapterLink = "https://ncode.syosetu.com/n2267be/778",
+            nextChapterLink = "https://ncode.syosetu.com/n2267be/779",
             expectedMessageContent = "<@&15>"
         )
     }
@@ -217,6 +220,7 @@ class NarouNovelPollingServiceTest {
             totalChapters = 778,
             totalCharacters = 9_446_500L,
             chapterLink = "https://ncode.syosetu.com/n2267be/778",
+            nextChapterLink = "https://ncode.syosetu.com/n2267be/779",
             expectedMessageContent = ""
         )
         val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
@@ -249,7 +253,8 @@ class NarouNovelPollingServiceTest {
             description = "2 new chapters were published and the novel grew by 1231 characters.",
             totalChapters = 780,
             totalCharacters = 9_446_500L,
-            chapterLink = "https://ncode.syosetu.com/n2267be/780"
+            chapterLink = "https://ncode.syosetu.com/n2267be/780",
+            nextChapterLink = "https://ncode.syosetu.com/n2267be/781"
         )
         val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
         verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
@@ -285,7 +290,9 @@ class NarouNovelPollingServiceTest {
             description = "Detected an increase in the author's profile character count. This may indicate that a new chapter is coming soon.",
             totalChapters = 779,
             totalCharacters = 9_445_500L,
-            chapterLink = "https://ncode.syosetu.com/n2267be/779"
+            chapterLink = "https://ncode.syosetu.com/n2267be/779",
+            nextChapterLink = "https://ncode.syosetu.com/n2267be/780",
+            authorProfileLength = "9877250 (+1250)"
         )
         val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
         verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
@@ -320,7 +327,8 @@ class NarouNovelPollingServiceTest {
             description = "1 new chapter was published.",
             totalChapters = 779,
             totalCharacters = 9_445_500L,
-            chapterLink = "https://ncode.syosetu.com/n2267be/779"
+            chapterLink = "https://ncode.syosetu.com/n2267be/779",
+            nextChapterLink = "https://ncode.syosetu.com/n2267be/780"
         )
         val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
         verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
@@ -388,7 +396,8 @@ class NarouNovelPollingServiceTest {
             description = "2 new chapters were published and the novel grew by 1231 characters.",
             totalChapters = 780,
             totalCharacters = 9_446_500L,
-            chapterLink = "https://ncode.syosetu.com/n2267be/780"
+            chapterLink = "https://ncode.syosetu.com/n2267be/780",
+            nextChapterLink = "https://ncode.syosetu.com/n2267be/781"
         )
         assertEquals(NarouNovelPendingAlert(1L, 9_446_500L, 9_876_000L, 780), pendingAlerts[1L])
         verify(narouNovelAlertSettingsRepository, never()).save(settings)
@@ -653,6 +662,8 @@ class NarouNovelPollingServiceTest {
         totalChapters: Int,
         totalCharacters: Long,
         chapterLink: String,
+        nextChapterLink: String,
+        authorProfileLength: String? = null,
         expectedMessageContent: String = "@everyone",
         index: Int = 0
     ) {
@@ -663,6 +674,8 @@ class NarouNovelPollingServiceTest {
         assertEquals(totalChapters.toString(), embed.fieldValue("Total chapters"))
         assertEquals(totalCharacters.toString(), embed.fieldValue("Total characters"))
         assertEquals(chapterLink, embed.fieldValue("Chapter link"))
+        assertEquals(nextChapterLink, embed.fieldValue("Next chapter link"))
+        assertEquals(authorProfileLength, embed.fieldValue("Author profile length"))
     }
 
     private fun MessageEmbed.fieldValue(name: String): String? {
