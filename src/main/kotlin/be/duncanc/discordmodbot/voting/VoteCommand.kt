@@ -124,7 +124,12 @@ class VoteCommand(
         onSuccess: (Message) -> Unit,
         onFailure: (Throwable) -> Unit
     ) {
-        event.channel.sendMessage(content).queue(onSuccess, onFailure)
+        event.deferReply(false).queue(
+            { hook ->
+                hook.editOriginal(content).queue(onSuccess, onFailure)
+            },
+            onFailure
+        )
     }
 
     internal fun resolveYesNoReactions(guildId: Long, event: SlashCommandInteractionEvent): List<Emoji> {
@@ -148,29 +153,25 @@ class VoteCommand(
     }
 
     private fun createVote(event: SlashCommandInteractionEvent, content: String, reactions: List<Emoji>) {
-        event.deferReply(true).queue { hook ->
-            createVoteMessage(
-                event = event,
-                content = content,
-                onSuccess = { message ->
-                    addReactions(
-                        message = message,
-                        reactions = reactions,
-                        onSuccess = {
-                            hook.sendMessage("Vote created in ${event.channel.asMention}.").setEphemeral(true).queue()
-                        },
-                        onFailure = {
-                            hook.sendMessage("The vote message was posted, but I could not add all reactions.")
-                                .setEphemeral(true)
-                                .queue()
-                        }
-                    )
-                },
-                onFailure = {
-                    hook.sendMessage("I could not post the vote message in this channel.").setEphemeral(true).queue()
-                }
-            )
-        }
+        createVoteMessage(
+            event = event,
+            content = content,
+            onSuccess = { message ->
+                addReactions(
+                    message = message,
+                    reactions = reactions,
+                    onSuccess = {},
+                    onFailure = {
+                        event.hook.sendMessage("The vote message was posted, but I could not add all reactions.")
+                            .setEphemeral(true)
+                            .queue()
+                    }
+                )
+            },
+            onFailure = {
+                event.reply("I could not post the vote message in this channel.").setEphemeral(true).queue()
+            }
+        )
     }
 
     private fun addReactionSequentially(
