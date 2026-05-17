@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.10.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.10.0...v2.10.1) (2026-05-17)
+
+
+### Bug Fixes
+
+* **narouNovelApi:** add next chapter and profile length to alerts ([#640](https://github.com/DuncanCasteleyn/DiscordModBot/issues/640)) ([7d50b12](https://github.com/DuncanCasteleyn/DiscordModBot/commit/7d50b12e08241e5692caa1e0264d8726ea7758f5))
+
 ## [2.10.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.9.1...v2.10.0) (2026-05-17)
 
 
