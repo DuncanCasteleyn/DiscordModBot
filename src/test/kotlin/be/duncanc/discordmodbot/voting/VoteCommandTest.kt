@@ -144,15 +144,16 @@ class VoteCommandTest {
         stubSlashCommandContext("yesno")
         stubGuildId()
         stubVoteMessageContext()
-        stubReply()
+        stubFollowupReply()
         command.prompt = "Should we do this?"
         command.voteMessageFailure = IllegalStateException("boom")
+        whenever(slashEvent.hook).thenReturn(interactionHook)
         whenever(votingEmotesRepository.findById(1L)).thenReturn(Optional.empty())
 
         command.onSlashCommandInteraction(slashEvent)
 
-        verify(slashEvent).reply("I could not post the vote message in this channel.")
-        verify(replyAction).setEphemeral(true)
+        verify(interactionHook).sendMessage("I could not post the vote message in this channel.")
+        verify(followupAction).setEphemeral(true)
     }
 
     @Test
