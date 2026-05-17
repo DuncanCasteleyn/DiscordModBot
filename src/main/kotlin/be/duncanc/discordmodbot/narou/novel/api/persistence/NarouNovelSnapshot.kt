@@ -17,6 +17,8 @@ data class NarouNovelSnapshot(
     var generalAllNo: Int,
     @Column(name = "length_value", nullable = false)
     var length: Long,
+    @Column(name = "author_profile_length", nullable = false)
+    var authorProfileLength: Long,
     @Column(name = "reading_time", nullable = false)
     var time: Int,
     @Column(name = "novel_updated_at", nullable = false)
