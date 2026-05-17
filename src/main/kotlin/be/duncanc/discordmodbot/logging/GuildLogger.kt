@@ -62,7 +62,8 @@ import kotlin.concurrent.thread
 class GuildLogger
 @Autowired constructor(
     val messageHistory: MessageHistory,
-    val loggingSettingsRepository: LoggingSettingsRepository
+    val loggingSettingsRepository: LoggingSettingsRepository,
+    private val messageDeleteAuditStateRegistry: MessageDeleteAuditStateRegistry
 ) : ListenerAdapter() {
 
     companion object {
@@ -80,7 +81,6 @@ class GuildLogger
     }
     private val lastCheckedLogEntries: HashMap<Long, AuditLogEntry?> =
         HashMap() //Long key is the guild id and the value is the last checked log entry.
-
     @Transactional(readOnly = true)
     override fun onMessageReceived(event: MessageReceivedEvent) {
         if (!event.isFromGuild) {
@@ -188,87 +188,120 @@ class GuildLogger
         if (oldMessage != null) {
             val attachmentString = messageHistory.getAttachmentsString(event.messageIdLong)
 
-            event.jda.retrieveUserById(oldMessage.userId).queue { user ->
+            guildLoggerExecutor.schedule({
+                logDeletedMessage(event, oldMessage, attachmentString)
+            }, 1, TimeUnit.SECONDS)
+        }
+    }
 
-                val name: String = try {
-                    event.jda.getGuildChannelById(oldMessage.channelId)?.guild?.getMember(user)?.nicknameAndUsername
-                        ?: user.name
-                } catch (e: IllegalArgumentException) {
-                    user.name
-                }
-                guildLoggerExecutor.schedule({
-                    val moderator = findModerator(event, oldMessage)
+    internal fun logDeletedMessage(event: MessageDeleteEvent, oldMessage: DiscordMessage, attachmentString: String?) {
+        val guild = event.guild
+        val channel = event.channel
+        val moderator = findModerator(event, oldMessage)
 
-                    if (moderator != null && moderator == event.jda.selfUser) {
-                        return@schedule  //Bot has removed message no need to log, if needed it will be placed in the module that is issuing the remove.
-                    }
+        if (moderator != null && moderator == event.jda.selfUser) {
+            return  //Bot has removed message no need to log, if needed it will be placed in the module that is issuing the remove.
+        }
 
-                    val logEmbed = EmbedBuilder()
-                        .setTitle("#" + channel.name + ": Message was deleted!")
-                        .setDescription("Old message was:\n" + oldMessage.content)
-                    if (attachmentString != null) {
-                        logEmbed.addField("Attachment(s)", attachmentString, false)
-                    }
-                    logEmbed.addField("Author", name, true)
-                    if (moderator != null) {
-                        logEmbed.addField(
-                            "Deleted by",
-                            event.guild.getMember(moderator)?.nicknameAndUsername ?: "Unkown",
-                            true
-                        )
-                            .setColor(Color.YELLOW)
-                    } else {
-                        logEmbed.setColor(LIGHT_BLUE)
-                    }
-                    logEmbed.addField("Message URL", "[Link](${oldMessage.jumpUrl})", false)
-                    oldMessage.emotes?.let {
-                        logEmbed.addField("Emote(s)", oldMessage.emotes, false)
-                    }
-                    log(
-                        logEmbed,
-                        user,
-                        guild,
-                        null,
-                        if (moderator == null) LogTypeAction.USER else LogTypeAction.MODERATOR
-                    )
-                }, 1, TimeUnit.SECONDS)
+        event.jda.retrieveUserById(oldMessage.userId).queue { user ->
+            val name: String = try {
+                event.jda.getGuildChannelById(oldMessage.channelId)?.guild?.getMember(user)?.nicknameAndUsername
+                    ?: user.name
+            } catch (e: IllegalArgumentException) {
+                user.name
             }
+
+            val logEmbed = EmbedBuilder()
+                .setTitle("#" + channel.name + ": Message was deleted!")
+                .setDescription("Old message was:\n" + oldMessage.content)
+            if (attachmentString != null) {
+                logEmbed.addField("Attachment(s)", attachmentString, false)
+            }
+            logEmbed.addField("Author", name, true)
+            if (moderator != null) {
+                logEmbed.addField(
+                    "Deleted by",
+                    event.guild.getMember(moderator)?.nicknameAndUsername ?: "Unkown",
+                    true
+                )
+                    .setColor(Color.YELLOW)
+            } else {
+                logEmbed.setColor(LIGHT_BLUE)
+            }
+            logEmbed.addField("Message URL", "[Link](${oldMessage.jumpUrl})", false)
+            oldMessage.emotes?.let {
+                logEmbed.addField("Emote(s)", oldMessage.emotes, false)
+            }
+            log(
+                logEmbed,
+                user,
+                guild,
+                null,
+                if (moderator == null) LogTypeAction.USER else LogTypeAction.MODERATOR
+            )
         }
     }
 
     private fun findModerator(event: MessageDeleteEvent, oldMessage: DiscordMessage): User? {
-        var foundModerator: User? = null
-        var i = 0
+        val auditStateKey = MessageDeleteAuditKey(event.guild.idLong, event.channel.idLong, oldMessage.userId)
+        val previousLatestLogEntry = lastCheckedLogEntries[event.guild.idLong]
+        val relevantEntries = mutableListOf<Pair<AuditLogEntry, MessageDeleteAuditCandidate>>()
+        var latestLogEntry: AuditLogEntry? = null
+
         for (logEntry in event.guild.retrieveAuditLogs().cache(false).limit(LOG_ENTRY_CHECK_LIMIT)) {
-            if (i == 0) {
-                guildLoggerExecutor.execute {
-                    lastCheckedLogEntries[event.guild.idLong] = logEntry
-                }
+            if (latestLogEntry == null) {
+                latestLogEntry = logEntry
             }
-            if (!lastCheckedLogEntries.containsKey(event.guild.idLong)) {
-                i = LOG_ENTRY_CHECK_LIMIT
-            } else {
-                val cachedAuditLogEntry = lastCheckedLogEntries[event.guild.idLong]
-                if (logEntry.idLong == cachedAuditLogEntry?.idLong) {
-                    if (logEntry.type == ActionType.MESSAGE_DELETE && logEntry.targetIdLong == oldMessage.userId && logEntry.getOption<Any>(
-                            AuditLogOption.COUNT
-                        ) != cachedAuditLogEntry.getOption<Any>(AuditLogOption.COUNT)
-                    ) {
-                        foundModerator = logEntry.user
-                    }
+
+            if (logEntry.type != ActionType.MESSAGE_DELETE) {
+                if (logEntry.idLong == previousLatestLogEntry?.idLong) {
                     break
                 }
+                continue
             }
-            if (logEntry.type == ActionType.MESSAGE_DELETE && logEntry.targetIdLong == oldMessage.userId) {
-                foundModerator = logEntry.user
-                break
+
+            val channelId = logEntry.getOption<String>(AuditLogOption.CHANNEL)?.toLongOrNull()
+            if (channelId == event.channel.idLong && logEntry.targetIdLong == oldMessage.userId) {
+                val count = logEntry.getOption<String>(AuditLogOption.COUNT)?.toIntOrNull() ?: 1
+                relevantEntries += logEntry to MessageDeleteAuditCandidate(logEntry.idLong, count)
             }
-            i++
-            if (i >= LOG_ENTRY_CHECK_LIMIT) {
+
+            if (logEntry.idLong == previousLatestLogEntry?.idLong) {
                 break
             }
         }
-        return foundModerator
+
+        latestLogEntry?.let { lastCheckedLogEntries[event.guild.idLong] = it }
+
+        val startupWatermark = previousLatestLogEntry?.let { logEntry ->
+            MessageDeleteAuditWatermark(
+                entryId = logEntry.idLong,
+                count = if (logEntry.type == ActionType.MESSAGE_DELETE) {
+                    logEntry.getOption<String>(AuditLogOption.COUNT)?.toIntOrNull() ?: 1
+                } else {
+                    0
+                }
+            )
+        }
+
+        val consumeResult = MessageDeleteAuditTracker.consume(
+            previousState = messageDeleteAuditStateRegistry.get(
+                auditStateKey.guildId,
+                auditStateKey.channelId,
+                auditStateKey.targetUserId
+            ),
+            candidates = relevantEntries.map { it.second },
+            watermark = startupWatermark
+        )
+
+        messageDeleteAuditStateRegistry.remember(
+            auditStateKey.guildId,
+            auditStateKey.channelId,
+            auditStateKey.targetUserId,
+            consumeResult.nextState
+        )
+
+        return relevantEntries.firstOrNull { it.first.idLong == consumeResult.matchedEntryId }?.first?.user
     }
 
     @Transactional(readOnly = true)
