@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.10.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.9.1...v2.10.0) (2026-05-17)
+
+
+### Features
+
+* **narouNovelApi:** add configurable alert ping role ([#638](https://github.com/DuncanCasteleyn/DiscordModBot/issues/638)) ([a06fdce](https://github.com/DuncanCasteleyn/DiscordModBot/commit/a06fdcebbbb378249e423660d0ae6107fed2d92d))
+* **voting:** use public replies for vote messages ([#636](https://github.com/DuncanCasteleyn/DiscordModBot/issues/636)) ([650759f](https://github.com/DuncanCasteleyn/DiscordModBot/commit/650759f38b665ddfc62990d79bb8ec7a7d33514e))
+
 ## [2.9.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.9.0...v2.9.1) (2026-05-17)
 
 
