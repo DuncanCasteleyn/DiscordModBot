@@ -222,6 +222,66 @@ class NarouNovelPollingServiceTest {
     }
 
     @Test
+    fun `chapter alert still sends when author profile fetch fails`() {
+        stubPendingAlertRepository()
+        val snapshot = snapshot(length = 9_445_500, generalAllNo = 779, authorProfileLength = 9_876_000)
+        val settings = NarouNovelAlertSettings(
+            guildId = 1L,
+            channelId = 11L,
+            lengthThreshold = 1_000L,
+            predictionLengthThreshold = 1_000L,
+            lastAlertedLength = 9_445_269L,
+            lastAlertedAuthorProfileLength = 9_876_000L,
+            lastAlertedGeneralAllNo = 778
+        )
+        whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_445_500, generalAllNo = 779)))
+        whenever(narouNovelApiClient.fetchAuthorProfile()).thenThrow(IllegalStateException("profile down"))
+        whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
+        whenever(narouNovelAlertSettingsRepository.findAll()).thenReturn(listOf(settings))
+        whenever(jda.getTextChannelById(11L)).thenReturn(textChannel)
+
+        service.pollNovel()
+
+        assertAlert(
+            service = service,
+            description = "1 new chapter was published.",
+            totalChapters = 779,
+            totalCharacters = 9_445_500L,
+            chapterLink = "https://ncode.syosetu.com/n2267be/779"
+        )
+        val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
+        verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
+        assertEquals(9_445_269L, settingsCaptor.lastValue.lastAlertedLength)
+        assertEquals(9_876_000L, settingsCaptor.lastValue.lastAlertedAuthorProfileLength)
+        assertEquals(779, settingsCaptor.lastValue.lastAlertedGeneralAllNo)
+    }
+
+    @Test
+    fun `missing baselines stay unset for zero author profile snapshot when profile fetch fails`() {
+        val snapshot = snapshot(length = 9_445_500, generalAllNo = 779, authorProfileLength = 0)
+        val settings = NarouNovelAlertSettings(
+            guildId = 1L,
+            channelId = 11L,
+            lastAlertedLength = null,
+            lastAlertedAuthorProfileLength = null,
+            lastAlertedGeneralAllNo = null
+        )
+        whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_445_500, generalAllNo = 779)))
+        whenever(narouNovelApiClient.fetchAuthorProfile()).thenThrow(IllegalStateException("profile down"))
+        whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
+        whenever(narouNovelAlertSettingsRepository.findAll()).thenReturn(listOf(settings))
+
+        service.pollNovel()
+
+        verify(jda, never()).getTextChannelById(11L)
+        val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
+        verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
+        assertEquals(9_445_500L, settingsCaptor.lastValue.lastAlertedLength)
+        assertEquals(null, settingsCaptor.lastValue.lastAlertedAuthorProfileLength)
+        assertEquals(779, settingsCaptor.lastValue.lastAlertedGeneralAllNo)
+    }
+
+    @Test
     fun `poll skips duplicate guild alert while Discord send callback is still pending`() {
         stubPendingAlertRepository(includeDeleteById = false)
         service = TestNarouNovelPollingService(

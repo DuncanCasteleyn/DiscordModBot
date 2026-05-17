@@ -125,6 +125,39 @@ class NarouNovelConfigCommandTest {
     }
 
     @Test
+    fun `set channel does not initialize author profile baseline from zero snapshot`() {
+        stubAuthorizedSlashCommand("set-channel")
+        whenever(textChannel.idLong).thenReturn(11L)
+        whenever(textChannel.asMention).thenReturn("<#11>")
+        whenever(narouNovelAlertSettingsRepository.findById(1L)).thenReturn(Optional.empty())
+        whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(
+            Optional.of(
+                NarouNovelSnapshot(
+                    ncode = NarouNovelPollingService.NOVEL_CODE,
+                    generalLastup = "2026-05-15 07:00:00",
+                    generalAllNo = 778,
+                    length = 9_445_269,
+                    authorProfileLength = 0,
+                    time = 18_891,
+                    novelUpdatedAt = "2026-05-15 07:00:36",
+                    updatedAt = "2026-05-15 20:14:23"
+                )
+            )
+        )
+        command.selectedChannel = textChannel
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
+        verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
+        assertEquals(11L, settingsCaptor.firstValue.channelId)
+        assertEquals(9_445_269L, settingsCaptor.firstValue.lastAlertedLength)
+        assertEquals(null, settingsCaptor.firstValue.lastAlertedAuthorProfileLength)
+        assertEquals(778, settingsCaptor.firstValue.lastAlertedGeneralAllNo)
+        verify(slashEvent).reply("Narou novel alerts will be sent to <#11>.")
+    }
+
+    @Test
     fun `set threshold rejects small values`() {
         stubSlashCommandContext()
         whenever(member.hasPermission(Permission.MANAGE_CHANNEL)).thenReturn(true)

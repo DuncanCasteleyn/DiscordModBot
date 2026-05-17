@@ -26,6 +26,7 @@ class NarouNovelPollingService(
         val generalAllNo: Int,
         val length: Long,
         val authorProfileLength: Long,
+        val hasFreshAuthorProfileLength: Boolean,
         val time: Int,
         val novelUpdatedAt: String,
         val updatedAt: String
@@ -44,14 +45,14 @@ class NarouNovelPollingService(
     @Scheduled(cron = $$"${discord-mod-bot.narou-novel-api.poll-cron:0/15 * * * * *}")
     @Transactional
     fun pollNovel() {
+        val snapshot = narouNovelSnapshotRepository.findById(NOVEL_CODE).orElse(null)
         val payload = try {
-            fetchPayload()
+            fetchPayload(snapshot)
         } catch (exception: Exception) {
             LOG.warn("Failed to poll Narou novel API", exception)
             return
         }
 
-        val snapshot = narouNovelSnapshotRepository.findById(NOVEL_CODE).orElse(null)
         if (snapshot == null) {
             narouNovelSnapshotRepository.save(
                 NarouNovelSnapshot(
@@ -65,7 +66,7 @@ class NarouNovelPollingService(
                     updatedAt = payload.updatedAt
                 )
             )
-            initializeMissingBaselines(payload.length, payload.authorProfileLength, payload.generalAllNo)
+            initializeMissingBaselines(payload.length, payload.authorProfileLength, payload.hasFreshAuthorProfileLength, payload.generalAllNo)
             return
         }
 
@@ -78,10 +79,10 @@ class NarouNovelPollingService(
         snapshot.updatedAt = payload.updatedAt
         narouNovelSnapshotRepository.save(snapshot)
 
-        processAlerts(snapshot)
+        processAlerts(snapshot, payload.hasFreshAuthorProfileLength)
     }
 
-    internal fun fetchPayload(): NarouNovelPollSnapshot {
+    internal fun fetchPayload(existingSnapshot: NarouNovelSnapshot?): NarouNovelPollSnapshot {
         val novelPayload = narouNovelApiClient.fetchNovel().firstOrNull {
             it.generalLastup != null &&
                     it.generalAllNo != null &&
@@ -90,24 +91,36 @@ class NarouNovelPollingService(
                     it.novelUpdatedAt != null &&
                     it.updatedAt != null
         } ?: throw IllegalStateException("Narou novel API response did not contain a novel payload")
-        val authorProfilePayload = narouNovelApiClient.fetchAuthorProfile().firstOrNull {
-            it.novelLength != null
-        } ?: throw IllegalStateException("Narou author profile API response did not contain a profile length payload")
+
+        val authorProfileLength = try {
+            narouNovelApiClient.fetchAuthorProfile().firstOrNull {
+                it.novelLength != null
+            }?.novelLength ?: throw IllegalStateException("Narou author profile API response did not contain a profile length payload")
+        } catch (exception: Exception) {
+            if (existingSnapshot == null) {
+                LOG.warn("Failed to poll Narou author profile API; prediction alerts will remain disabled until a profile length is fetched", exception)
+                null
+            } else {
+                LOG.warn("Failed to poll Narou author profile API; continuing with stored author profile length", exception)
+                existingSnapshot.authorProfileLength.takeIf { it > 0 }
+            }
+        }
 
         return NarouNovelPollSnapshot(
             generalLastup = novelPayload.generalLastup!!,
             generalAllNo = novelPayload.generalAllNo!!,
             length = novelPayload.length!!,
-            authorProfileLength = authorProfilePayload.novelLength!!,
+            authorProfileLength = authorProfileLength ?: 0,
+            hasFreshAuthorProfileLength = authorProfileLength != null,
             time = novelPayload.time!!,
             novelUpdatedAt = novelPayload.novelUpdatedAt!!,
             updatedAt = novelPayload.updatedAt!!
         )
     }
 
-    private fun processAlerts(snapshot: NarouNovelSnapshot) {
+    private fun processAlerts(snapshot: NarouNovelSnapshot, hasFreshAuthorProfileLength: Boolean) {
         narouNovelAlertSettingsRepository.findAll().forEach { settings ->
-            val updatedSettings = initializeOrRebaseBaselines(settings, snapshot)
+            val updatedSettings = initializeOrRebaseBaselines(settings, snapshot, hasFreshAuthorProfileLength)
             if (updatedSettings) {
                 return@forEach
             }
@@ -116,10 +129,14 @@ class NarouNovelPollingService(
             val lastAlertedAuthorProfileLength = settings.lastAlertedAuthorProfileLength ?: return@forEach
             val lastAlertedGeneralAllNo = settings.lastAlertedGeneralAllNo ?: return@forEach
             val lengthDelta = snapshot.length - lastAlertedLength
-            val predictionLengthDelta = snapshot.authorProfileLength - lastAlertedAuthorProfileLength
+            val predictionLengthDelta = if (hasFreshAuthorProfileLength) {
+                snapshot.authorProfileLength - lastAlertedAuthorProfileLength
+            } else {
+                0
+            }
             val chapterDelta = snapshot.generalAllNo - lastAlertedGeneralAllNo
             val lengthTriggered = lengthDelta >= settings.lengthThreshold
-            val predictionTriggered = predictionLengthDelta >= settings.predictionLengthThreshold
+            val predictionTriggered = hasFreshAuthorProfileLength && predictionLengthDelta >= settings.predictionLengthThreshold
             val chapterTriggered = chapterDelta > 0
             if (!lengthTriggered && !predictionTriggered && !chapterTriggered) {
                 return@forEach
@@ -188,7 +205,7 @@ class NarouNovelPollingService(
                             if (lengthTriggered) {
                                 settings.lastAlertedLength = snapshot.length
                             }
-                            if (predictionTriggered || chapterTriggered) {
+                            if (predictionTriggered || (chapterTriggered && hasFreshAuthorProfileLength)) {
                                 settings.lastAlertedAuthorProfileLength = snapshot.authorProfileLength
                             }
                             if (chapterTriggered) {
@@ -265,14 +282,19 @@ class NarouNovelPollingService(
         }
     }
 
-    private fun initializeMissingBaselines(length: Long, authorProfileLength: Long, generalAllNo: Int) {
+    private fun initializeMissingBaselines(
+        length: Long,
+        authorProfileLength: Long,
+        hasFreshAuthorProfileLength: Boolean,
+        generalAllNo: Int
+    ) {
         narouNovelAlertSettingsRepository.findAll().forEach { settings ->
             var changed = false
             if (settings.lastAlertedLength == null) {
                 settings.lastAlertedLength = length
                 changed = true
             }
-            if (settings.lastAlertedAuthorProfileLength == null) {
+            if (settings.lastAlertedAuthorProfileLength == null && hasFreshAuthorProfileLength && authorProfileLength > 0) {
                 settings.lastAlertedAuthorProfileLength = authorProfileLength
                 changed = true
             }
@@ -286,15 +308,21 @@ class NarouNovelPollingService(
         }
     }
 
-    private fun initializeOrRebaseBaselines(settings: NarouNovelAlertSettings, snapshot: NarouNovelSnapshot): Boolean {
+    private fun initializeOrRebaseBaselines(
+        settings: NarouNovelAlertSettings,
+        snapshot: NarouNovelSnapshot,
+        hasFreshAuthorProfileLength: Boolean
+    ): Boolean {
         var changed = false
         if (settings.lastAlertedLength == null || settings.lastAlertedLength!! > snapshot.length) {
             settings.lastAlertedLength = snapshot.length
             changed = true
         }
         if (
-            settings.lastAlertedAuthorProfileLength == null ||
-            settings.lastAlertedAuthorProfileLength!! > snapshot.authorProfileLength
+            hasFreshAuthorProfileLength && snapshot.authorProfileLength > 0 && (
+                settings.lastAlertedAuthorProfileLength == null ||
+                    settings.lastAlertedAuthorProfileLength!! > snapshot.authorProfileLength
+            )
         ) {
             settings.lastAlertedAuthorProfileLength = snapshot.authorProfileLength
             changed = true

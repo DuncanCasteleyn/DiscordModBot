@@ -169,7 +169,7 @@ class NarouNovelConfigCommand(
         if (settings.lastAlertedLength == null) {
             settings.lastAlertedLength = snapshot.length
         }
-        if (settings.lastAlertedAuthorProfileLength == null) {
+        if (settings.lastAlertedAuthorProfileLength == null && snapshot.authorProfileLength > 0) {
             settings.lastAlertedAuthorProfileLength = snapshot.authorProfileLength
         }
         if (settings.lastAlertedGeneralAllNo == null) {
