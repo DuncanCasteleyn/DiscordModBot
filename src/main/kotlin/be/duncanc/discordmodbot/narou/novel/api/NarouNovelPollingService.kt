@@ -4,7 +4,6 @@ import be.duncanc.discordmodbot.narou.novel.api.persistence.*
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.MessageEmbed
-import net.dv8tion.jda.api.entities.Role
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.exceptions.ErrorResponseException
 import net.dv8tion.jda.api.requests.ErrorResponse
@@ -184,6 +183,7 @@ class NarouNovelPollingService(
                 lengthTriggered,
                 lengthDelta,
                 predictionTriggered,
+                predictionLengthDelta,
                 chapterTriggered,
                 chapterDelta,
                 snapshot
@@ -400,6 +400,7 @@ class NarouNovelPollingService(
         lengthTriggered: Boolean,
         lengthDelta: Long,
         predictionTriggered: Boolean,
+        predictionLengthDelta: Long,
         chapterTriggered: Boolean,
         chapterDelta: Int,
         snapshot: NarouNovelSnapshot
@@ -421,14 +422,26 @@ class NarouNovelPollingService(
 
         val summary = truncate(updates.joinToString(" and ") + ".", MessageEmbed.DESCRIPTION_MAX_LENGTH)
         val chapterLink = truncate(NOVEL_URL + snapshot.generalAllNo, MessageEmbed.VALUE_MAX_LENGTH)
+        val nextChapterLink = truncate(NOVEL_URL + (snapshot.generalAllNo + 1), MessageEmbed.VALUE_MAX_LENGTH)
 
-        return EmbedBuilder()
+        val embedBuilder = EmbedBuilder()
             .setColor(Color.ORANGE)
             .setTitle(truncate(EMBED_TITLE, MessageEmbed.TITLE_MAX_LENGTH))
             .setDescription(summary)
             .addField("Total chapters", snapshot.generalAllNo.toString(), true)
             .addField("Total characters", snapshot.length.toString(), true)
             .addField("Chapter link", chapterLink, false)
+
+        if (predictionLengthDelta > 0) {
+            embedBuilder.addField(
+                "Author profile length",
+                "${snapshot.authorProfileLength} (+$predictionLengthDelta)",
+                false
+            )
+        }
+
+        return embedBuilder
+            .addField("Next chapter link", nextChapterLink, false)
             .build()
     }
 
