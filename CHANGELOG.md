@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.9.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.9.0...v2.9.1) (2026-05-17)
+
+
+### Bug Fixes
+
+* **logging:** preserve moderator attribution for message deletes ([#626](https://github.com/DuncanCasteleyn/DiscordModBot/issues/626)) ([0c6f032](https://github.com/DuncanCasteleyn/DiscordModBot/commit/0c6f03201cbe04b559632a973399b5e31ce098aa))
+* **narouNovelApi:** preserve alerts when profile polling fails ([#634](https://github.com/DuncanCasteleyn/DiscordModBot/issues/634)) ([ca92168](https://github.com/DuncanCasteleyn/DiscordModBot/commit/ca921685e79cdeeccdf294c23bdd096a350ecd65))
+
 ## [2.9.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.8.0...v2.9.0) (2026-05-16)
 
 
