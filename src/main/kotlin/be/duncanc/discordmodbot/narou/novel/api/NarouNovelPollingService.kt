@@ -1,7 +1,9 @@
 package be.duncanc.discordmodbot.narou.novel.api
 
 import be.duncanc.discordmodbot.narou.novel.api.persistence.*
+import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.exceptions.ErrorResponseException
 import net.dv8tion.jda.api.requests.ErrorResponse
@@ -9,6 +11,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.awt.Color
 
 @Service
 class NarouNovelPollingService(
@@ -31,6 +34,8 @@ class NarouNovelPollingService(
     companion object {
         internal const val NOVEL_CODE = "n2267be"
         private const val NOVEL_URL = "https://ncode.syosetu.com/n2267be/"
+        private const val ALERT_MENTION = "@everyone"
+        private const val EMBED_TITLE = "Narou update for $NOVEL_CODE"
         private const val PREDICTION_ALERT_MESSAGE =
             "Detected an increase in the author's profile character count. This may indicate that a new chapter is coming soon"
         private val LOG = LoggerFactory.getLogger(NarouNovelPollingService::class.java)
@@ -157,7 +162,7 @@ class NarouNovelPollingService(
                 return@forEach
             }
 
-            val message = buildAlertMessage(
+            val embed = buildAlertEmbed(
                 lengthTriggered,
                 lengthDelta,
                 predictionTriggered,
@@ -176,7 +181,8 @@ class NarouNovelPollingService(
             try {
                 sendAlertMessage(
                     channel = channel,
-                    message = message,
+                    messageContent = ALERT_MENTION,
+                    embed = embed,
                     onSuccess = {
                         try {
                             if (lengthTriggered) {
@@ -306,11 +312,12 @@ class NarouNovelPollingService(
 
     internal fun sendAlertMessage(
         channel: TextChannel,
-        message: String,
+        messageContent: String,
+        embed: MessageEmbed,
         onSuccess: () -> Unit,
         onFailure: (Throwable) -> Unit
     ) {
-        channel.sendMessage(message).queue({ onSuccess() }, onFailure)
+        channel.sendMessage(messageContent).addEmbeds(embed).queue({ onSuccess() }, onFailure)
     }
 
     internal fun isTerminalChannelFailure(exception: Throwable): Boolean {
@@ -324,14 +331,14 @@ class NarouNovelPollingService(
         }
     }
 
-    private fun buildAlertMessage(
+    private fun buildAlertEmbed(
         lengthTriggered: Boolean,
         lengthDelta: Long,
         predictionTriggered: Boolean,
         chapterTriggered: Boolean,
         chapterDelta: Int,
         snapshot: NarouNovelSnapshot
-    ): String {
+    ): MessageEmbed {
         val updates = mutableListOf<String>()
         if (chapterTriggered) {
             updates += if (chapterDelta == 1) {
@@ -347,20 +354,24 @@ class NarouNovelPollingService(
             updates += PREDICTION_ALERT_MESSAGE
         }
 
-        return buildString {
-            append("@everyone Narou update for ")
-            append(NOVEL_CODE)
-            append(": ")
-            append(updates.joinToString(" and "))
-            append(". Total chapters: ")
-            append(snapshot.generalAllNo)
-            append(". Total characters: ")
-            append(snapshot.length)
-            append(". ")
-            append("Current chapter: ")
-            append(NOVEL_URL + snapshot.generalAllNo)
-            append("Next chapter: ")
-            append(NOVEL_URL + snapshot.generalAllNo)
+        val summary = truncate(updates.joinToString(" and ") + ".", MessageEmbed.DESCRIPTION_MAX_LENGTH)
+        val chapterLink = truncate(NOVEL_URL + snapshot.generalAllNo, MessageEmbed.VALUE_MAX_LENGTH)
+
+        return EmbedBuilder()
+            .setColor(Color.ORANGE)
+            .setTitle(truncate(EMBED_TITLE, MessageEmbed.TITLE_MAX_LENGTH))
+            .setDescription(summary)
+            .addField("Total chapters", snapshot.generalAllNo.toString(), true)
+            .addField("Total characters", snapshot.length.toString(), true)
+            .addField("Chapter link", chapterLink, false)
+            .build()
+    }
+
+    private fun truncate(value: String, maxLength: Int): String {
+        if (value.length <= maxLength) {
+            return value
         }
+
+        return value.take(maxLength - 3) + "..."
     }
 }

@@ -7,6 +7,7 @@ import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelPendingAle
 import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelSnapshot
 import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelSnapshotRepository
 import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -100,7 +101,13 @@ class NarouNovelPollingServiceTest {
 
         service.pollNovel()
 
-        assertEquals(listOf("@everyone Narou update for n2267be: 1 new chapter was published. Total chapters: 779. Total characters: 9445500. https://ncode.syosetu.com/n2267be/779"), service.sentMessages)
+        assertAlert(
+            service = service,
+            description = "1 new chapter was published.",
+            totalChapters = 779,
+            totalCharacters = 9_445_500L,
+            chapterLink = "https://ncode.syosetu.com/n2267be/779"
+        )
         val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
         verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
         assertEquals(9_445_269L, settingsCaptor.lastValue.lastAlertedLength)
@@ -129,7 +136,13 @@ class NarouNovelPollingServiceTest {
 
         service.pollNovel()
 
-        assertEquals(listOf("@everyone Narou update for n2267be: the novel grew by 1231 characters. Total chapters: 778. Total characters: 9446500. https://ncode.syosetu.com/n2267be/778"), service.sentMessages)
+        assertAlert(
+            service = service,
+            description = "the novel grew by 1231 characters.",
+            totalChapters = 778,
+            totalCharacters = 9_446_500L,
+            chapterLink = "https://ncode.syosetu.com/n2267be/778"
+        )
         val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
         verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
         assertEquals(9_446_500L, settingsCaptor.lastValue.lastAlertedLength)
@@ -158,12 +171,12 @@ class NarouNovelPollingServiceTest {
 
         service.pollNovel()
 
-        assertEquals(
-            listOf(
-                "@everyone Narou update for n2267be: 2 new chapters were published and the novel grew by 1231 characters. Total chapters: 780. Total characters: 9446500. https://ncode.syosetu.com/n2267be/"
-                .replace("https://ncode.syosetu.com/n2267be/", "https://ncode.syosetu.com/n2267be/780")
-            ),
-            service.sentMessages
+        assertAlert(
+            service = service,
+            description = "2 new chapters were published and the novel grew by 1231 characters.",
+            totalChapters = 780,
+            totalCharacters = 9_446_500L,
+            chapterLink = "https://ncode.syosetu.com/n2267be/780"
         )
         val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
         verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
@@ -194,11 +207,12 @@ class NarouNovelPollingServiceTest {
 
         service.pollNovel()
 
-        assertEquals(
-            listOf(
-                "@everyone Narou update for n2267be: Detected an increase in the author's profile character count. This may indicate that a new chapter is coming soon. Total chapters: 779. Total characters: 9445500. https://ncode.syosetu.com/n2267be/779"
-            ),
-            service.sentMessages
+        assertAlert(
+            service = service,
+            description = "Detected an increase in the author's profile character count. This may indicate that a new chapter is coming soon.",
+            totalChapters = 779,
+            totalCharacters = 9_445_500L,
+            chapterLink = "https://ncode.syosetu.com/n2267be/779"
         )
         val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
         verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
@@ -236,12 +250,12 @@ class NarouNovelPollingServiceTest {
         service.pollNovel()
         service.pollNovel()
 
-        assertEquals(
-            listOf(
-                "@everyone Narou update for n2267be: 2 new chapters were published and the novel grew by 1231 characters. Total chapters: 780. Total characters: 9446500. https://ncode.syosetu.com/n2267be/"
-                .replace("https://ncode.syosetu.com/n2267be/", "https://ncode.syosetu.com/n2267be/780")
-            ),
-            service.sentMessages
+        assertAlert(
+            service = service,
+            description = "2 new chapters were published and the novel grew by 1231 characters.",
+            totalChapters = 780,
+            totalCharacters = 9_446_500L,
+            chapterLink = "https://ncode.syosetu.com/n2267be/780"
         )
         assertEquals(NarouNovelPendingAlert(1L, 9_446_500L, 9_876_000L, 780), pendingAlerts[1L])
         verify(narouNovelAlertSettingsRepository, never()).save(settings)
@@ -269,7 +283,8 @@ class NarouNovelPollingServiceTest {
 
         service.pollNovel()
 
-        assertEquals(emptyList<String>(), service.sentMessages)
+        assertEquals(emptyList<String>(), service.sentMessageContents)
+        assertEquals(emptyList<MessageEmbed>(), service.sentEmbeds)
         verify(jda, never()).getTextChannelById(any<Long>())
         verify(narouNovelPendingAlertRepository).findById(1L)
     }
@@ -304,7 +319,8 @@ class NarouNovelPollingServiceTest {
         service.pollNovel()
         service.pollNovel()
 
-        assertEquals(2, service.sentMessages.size)
+        assertEquals(2, service.sentMessageContents.size)
+        assertEquals(2, service.sentEmbeds.size)
         verify(narouNovelAlertSettingsRepository, never()).save(settings)
         assertEquals(emptyMap<Long, NarouNovelPendingAlert>(), pendingAlerts)
     }
@@ -338,7 +354,8 @@ class NarouNovelPollingServiceTest {
         service.pollNovel()
         service.pollNovel()
 
-        assertEquals(1, service.sentMessages.size)
+        assertEquals(1, service.sentMessageContents.size)
+        assertEquals(1, service.sentEmbeds.size)
         assertEquals(NarouNovelPendingAlert(1L, 9_446_500L, 9_876_000L, 780), pendingAlerts[1L])
     }
 
@@ -377,7 +394,8 @@ class NarouNovelPollingServiceTest {
 
         assertEquals("boom", firstFailure.message)
         assertEquals("boom", secondFailure.message)
-        assertEquals(2, service.sentMessages.size)
+        assertEquals(2, service.sentMessageContents.size)
+        assertEquals(2, service.sentEmbeds.size)
         assertEquals(emptyMap<Long, NarouNovelPendingAlert>(), pendingAlerts)
     }
 
@@ -411,7 +429,8 @@ class NarouNovelPollingServiceTest {
         service.pollNovel()
         service.pollNovel()
 
-        assertEquals(1, service.sentMessages.size)
+        assertEquals(1, service.sentMessageContents.size)
+        assertEquals(1, service.sentEmbeds.size)
         assertNull(settings.channelId)
         assertEquals(emptyMap<Long, NarouNovelPendingAlert>(), pendingAlerts)
     }
@@ -436,7 +455,8 @@ class NarouNovelPollingServiceTest {
         service.pollNovel()
         service.pollNovel()
 
-        assertEquals(emptyList<String>(), service.sentMessages)
+        assertEquals(emptyList<String>(), service.sentMessageContents)
+        assertEquals(emptyList<MessageEmbed>(), service.sentEmbeds)
         assertNull(settings.channelId)
         assertEquals(emptyMap<Long, NarouNovelPendingAlert>(), pendingAlerts)
     }
@@ -494,6 +514,27 @@ class NarouNovelPollingServiceTest {
         return NarouAuthorProfileApiResponseEntry(novelLength = novelLength)
     }
 
+    private fun assertAlert(
+        service: TestNarouNovelPollingService,
+        description: String,
+        totalChapters: Int,
+        totalCharacters: Long,
+        chapterLink: String,
+        index: Int = 0
+    ) {
+        assertEquals("@everyone", service.sentMessageContents[index])
+        val embed = service.sentEmbeds[index]
+        assertEquals("Narou update for n2267be", embed.title)
+        assertEquals(description, embed.description)
+        assertEquals(totalChapters.toString(), embed.fieldValue("Total chapters"))
+        assertEquals(totalCharacters.toString(), embed.fieldValue("Total characters"))
+        assertEquals(chapterLink, embed.fieldValue("Chapter link"))
+    }
+
+    private fun MessageEmbed.fieldValue(name: String): String? {
+        return fields.firstOrNull { it.name == name }?.value
+    }
+
     private fun snapshot(length: Long, generalAllNo: Int, authorProfileLength: Long = 9_876_000): NarouNovelSnapshot {
         return NarouNovelSnapshot(
             ncode = NarouNovelPollingService.NOVEL_CODE,
@@ -541,7 +582,8 @@ class NarouNovelPollingServiceTest {
         narouNovelPendingAlertRepository,
         jda
     ) {
-        val sentMessages = mutableListOf<String>()
+        val sentMessageContents = mutableListOf<String>()
+        val sentEmbeds = mutableListOf<MessageEmbed>()
 
         override fun isTerminalChannelFailure(exception: Throwable): Boolean {
             return terminalFailurePredicate(exception)
@@ -549,11 +591,13 @@ class NarouNovelPollingServiceTest {
 
         override fun sendAlertMessage(
             channel: TextChannel,
-            message: String,
+            messageContent: String,
+            embed: MessageEmbed,
             onSuccess: () -> Unit,
             onFailure: (Throwable) -> Unit
         ) {
-            sentMessages += message
+            sentMessageContents += messageContent
+            sentEmbeds += embed
             onSend?.invoke()
             throwOnSend?.let { throw it }
             failWith?.let {
