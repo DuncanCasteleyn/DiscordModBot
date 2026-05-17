@@ -101,9 +101,6 @@ class AddWarnPointsByIdCommandTest {
     private lateinit var actionOption: OptionMapping
 
     @Mock
-    private lateinit var reasonOption: OptionMapping
-
-    @Mock
     private lateinit var reasonValue: ModalMapping
 
     @Mock
@@ -126,121 +123,13 @@ class AddWarnPointsByIdCommandTest {
     }
 
     @Test
-    fun `opens a reason modal when reason is omitted`() {
-        stubSlashContext(reason = null, targetMember = null, configureSettings = false)
+    fun `opens a reason modal`() {
+        stubSlashContext(targetMember = null)
         whenever(slashEvent.replyModal(any())).thenReturn(modalAction)
 
         command.onSlashCommandInteraction(slashEvent)
 
         verify(slashEvent).replyModal(argThat { id == "addwarnpointsbyid_reason:99:2:3:0" })
-    }
-
-    @Test
-    fun `stores warn points for a user who left the server`() {
-        val warnPoint = warnPoint()
-        val settings = settings()
-
-        stubSlashContext(reason = "Spamming", targetMember = null, settings = settings)
-        whenever(
-            guildWarnPointsService.addWarnPoint(
-                eq(99L),
-                eq(1L),
-                eq(2),
-                eq(12L),
-                eq("Spamming"),
-                any<OffsetDateTime>()
-            )
-        ).thenReturn(warnPoint)
-        whenever(guildWarnPointsService.getActivePointsCount(1L, 99L)).thenReturn(1)
-        whenever(slashEvent.deferReply(true)).thenReturn(replyAction)
-        whenever(interactionHook.editOriginal(any<String>())).thenReturn(editAction)
-        doQueue(replyAction)
-
-        command.onSlashCommandInteraction(slashEvent)
-
-        verify(guildWarnPointsService).addWarnPoint(
-            eq(99L),
-            eq(1L),
-            eq(2),
-            eq(12L),
-            eq("Spamming"),
-            any<OffsetDateTime>()
-        )
-        verify(interactionHook).editOriginal(
-            """Added warn points to <@99>.
-The user was not warned by DM, please do so manually when they rejoin."""
-        )
-        verify(muteService, never()).muteUserById(1L, 99L)
-    }
-
-    @Test
-    fun `mutes a present user by id`() {
-        val warnPoint = warnPoint()
-        val settings = settings()
-
-        stubSlashContext(reason = "Spamming", targetMember = targetMember, settings = settings, action = 1)
-        whenever(member.canInteract(targetMember)).thenReturn(true)
-        whenever(targetMember.asMention).thenReturn("<@99>")
-        whenever(targetMember.user).thenReturn(targetUser)
-        whenever(muteRoleCommandAndEventsListener.getMuteRole(guild)).thenReturn(muteRole)
-        whenever(guild.addRoleToMember(targetMember, muteRole)).thenReturn(addRoleAction)
-        whenever(addRoleAction.reason("Spamming")).thenReturn(addRoleAction)
-        whenever(
-            guildWarnPointsService.addWarnPoint(
-                eq(99L),
-                eq(1L),
-                eq(2),
-                eq(12L),
-                eq("Spamming"),
-                any<OffsetDateTime>()
-            )
-        ).thenReturn(warnPoint)
-        whenever(guildWarnPointsService.getActivePointsCount(1L, 99L)).thenReturn(1)
-        whenever(slashEvent.deferReply(true)).thenReturn(replyAction)
-        whenever(interactionHook.editOriginal(any<String>())).thenReturn(editAction)
-        doQueue(replyAction)
-
-        command.onSlashCommandInteraction(slashEvent)
-
-        verify(muteService).muteUserById(1L, 99L)
-        verify(addRoleAction).queue()
-        verify(interactionHook).editOriginal(
-            """Added warn points to <@99> and tried to apply the mute role.
-The user was present but not warned by DM, please do so manually."""
-        )
-    }
-
-    @Test
-    fun `mutes a departed user by id without trying to add the role immediately`() {
-        val warnPoint = warnPoint()
-        val settings = settings()
-
-        stubSlashContext(reason = "Spamming", targetMember = null, settings = settings, action = 1)
-        whenever(muteRoleCommandAndEventsListener.getMuteRole(guild)).thenReturn(muteRole)
-        whenever(
-            guildWarnPointsService.addWarnPoint(
-                eq(99L),
-                eq(1L),
-                eq(2),
-                eq(12L),
-                eq("Spamming"),
-                any<OffsetDateTime>()
-            )
-        ).thenReturn(warnPoint)
-        whenever(guildWarnPointsService.getActivePointsCount(1L, 99L)).thenReturn(1)
-        whenever(slashEvent.deferReply(true)).thenReturn(replyAction)
-        whenever(interactionHook.editOriginal(any<String>())).thenReturn(editAction)
-        doQueue(replyAction)
-
-        command.onSlashCommandInteraction(slashEvent)
-
-        verify(muteService).muteUserById(1L, 99L)
-        verify(guild, never()).addRoleToMember(targetMember, muteRole)
-        verify(interactionHook).editOriginal(
-            """Added warn points to <@99>.
-The mute will be applied when they rejoin.
-The user was not warned by DM, please do so manually when they rejoin."""
-        )
     }
 
     @Test
@@ -318,11 +207,8 @@ The user was not warned by DM, please do so manually when they rejoin."""
     }
 
     private fun stubSlashContext(
-        reason: String?,
         targetMember: Member?,
-        settings: GuildWarnPointsSettings = settings(),
-        action: Int = 0,
-        configureSettings: Boolean = true
+        action: Int = 0
     ) {
         whenever(slashEvent.name).thenReturn("addwarnpointsbyid")
         whenever(slashEvent.member).thenReturn(member)
@@ -331,28 +217,11 @@ The user was not warned by DM, please do so manually when they rejoin."""
         whenever(slashEvent.getOption("points")).thenReturn(pointsOption)
         whenever(slashEvent.getOption("days")).thenReturn(daysOption)
         whenever(slashEvent.getOption("action")).thenReturn(actionOption)
-        whenever(slashEvent.getOption("reason")).thenReturn(reasonOption)
         whenever(userOption.asLong).thenReturn(99L)
         whenever(userOption.asMember).thenReturn(targetMember)
         whenever(pointsOption.asInt).thenReturn(2)
         whenever(daysOption.asInt).thenReturn(3)
         whenever(actionOption.asInt).thenReturn(action)
-        whenever(reasonOption.asString).thenReturn(reason)
-        if (reason != null) {
-            whenever(slashEvent.guild).thenReturn(guild)
-            whenever(member.guild).thenReturn(guild)
-            whenever(member.idLong).thenReturn(12L)
-            whenever(guild.idLong).thenReturn(1L)
-        }
-        if (configureSettings) {
-            whenever(slashEvent.jda).thenReturn(jda)
-            whenever(guildWarnPointsSettingsRepository.findById(1L)).thenReturn(Optional.of(settings))
-            whenever(jda.getTextChannelById(1L)).thenReturn(textChannel)
-        }
-        if (reason != null) {
-            whenever(moderatorUser.name).thenReturn("ModeratorUser")
-            whenever(member.user).thenReturn(moderatorUser)
-        }
     }
 
     private fun settings(): GuildWarnPointsSettings {

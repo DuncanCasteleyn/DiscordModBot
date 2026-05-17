@@ -46,7 +46,6 @@ class AddWarnPointsByIdCommand(
         private const val OPTION_POINTS = "points"
         private const val OPTION_DAYS = "days"
         private const val OPTION_ACTION = "action"
-        private const val OPTION_REASON = "reason"
         private const val MODAL_ID = "addwarnpointsbyid_reason"
 
         val LOG: Logger = LoggerFactory.getLogger(AddWarnPointsByIdCommand::class.java)
@@ -101,17 +100,7 @@ class AddWarnPointsByIdCommand(
             return
         }
 
-        val reason = event.getOption(OPTION_REASON)?.asString
-        if (reason == null) {
-            event.replyModal(createReasonModal(targetUserId, points, days, action)).queue()
-            return
-        }
-        if (reason.length > 1024) {
-            event.reply("Reason must be 1024 characters or less.").setEphemeral(true).queue()
-            return
-        }
-
-        processSlashCommand(event, moderator, targetUserId, targetMember, points, days, action, reason)
+        event.replyModal(createReasonModal(targetUserId, points, days, action)).queue()
     }
 
     override fun onModalInteraction(event: ModalInteractionEvent) {
@@ -167,43 +156,6 @@ class AddWarnPointsByIdCommand(
         processModalCommand(event, moderator, targetUserId, targetMember, points, days, action, reason)
     }
 
-    private fun processSlashCommand(
-        event: SlashCommandInteractionEvent,
-        moderator: Member,
-        targetUserId: Long,
-        targetMember: Member?,
-        points: Int,
-        days: Int,
-        action: Int,
-        reason: String
-    ) {
-        val guild = event.guild!!
-        val guildPointsSettings = getGuildWarnPointsSettings(event, points)
-        if (guildPointsSettings == null) {
-            return
-        }
-
-        event.deferReply(true).queue { hook ->
-            try {
-                processWarnPoints(
-                    guild,
-                    moderator,
-                    targetUserId,
-                    targetMember,
-                    points,
-                    days,
-                    action,
-                    reason,
-                    guildPointsSettings,
-                    hook
-                )
-            } catch (t: Throwable) {
-                LOG.error("Error processing warn points", t)
-                hook.editOriginal("Error: ${t.message}").queue()
-            }
-        }
-    }
-
     private fun processModalCommand(
         event: ModalInteractionEvent,
         moderator: Member,
@@ -239,29 +191,6 @@ class AddWarnPointsByIdCommand(
                 hook.editOriginal("Error: ${t.message}").queue()
             }
         }
-    }
-
-    private fun getGuildWarnPointsSettings(
-        event: SlashCommandInteractionEvent,
-        requestedPoints: Int
-    ): GuildWarnPointsSettings? {
-        val guildId = event.guild!!.idLong
-        val guildPointsSettings = guildWarnPointsSettingsRepository.findById(guildId)
-            .orElse(null) ?: GuildWarnPointsSettings(guildId, announceChannelId = -1)
-
-        if (requestedPoints > guildPointsSettings.maxPointsPerReason) {
-            event.reply("The maximum points per reason is ${guildPointsSettings.maxPointsPerReason}.")
-                .setEphemeral(true).queue()
-            return null
-        }
-
-        if (guildPointsSettings.announceChannelId.let { event.jda.getTextChannelById(it) == null }) {
-            event.reply("The announcement channel is not configured. Please contact an administrator.")
-                .setEphemeral(true).queue()
-            return null
-        }
-
-        return guildPointsSettings
     }
 
     private fun getGuildWarnPointsSettings(
@@ -464,7 +393,6 @@ The user was not warned by DM, please do so manually when they rejoin."""
                         .addChoice("Mute", 1L)
                         .setMinValue(0L)
                         .setMaxValue(1L),
-                    OptionData(OptionType.STRING, OPTION_REASON, "Reason for the warning", false)
                 )
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_ROLES))
         )
