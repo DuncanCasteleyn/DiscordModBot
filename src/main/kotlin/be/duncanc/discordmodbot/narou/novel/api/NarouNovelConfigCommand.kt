@@ -7,6 +7,7 @@ import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelPendingAle
 import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelSnapshotRepository
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.Role
 import net.dv8tion.jda.api.entities.channel.ChannelType
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent
@@ -31,9 +32,11 @@ class NarouNovelConfigCommand(
         private const val COMMAND = "narounovelapi"
         private const val DESCRIPTION = "Configure Narou novel update alerts for this server."
         private const val OPTION_CHANNEL = "channel"
+        private const val OPTION_ROLE = "role"
         private const val OPTION_THRESHOLD = "threshold"
         private const val SUBCOMMAND_SHOW = "show"
         private const val SUBCOMMAND_SET_CHANNEL = "set-channel"
+        private const val SUBCOMMAND_SET_PING_ROLE = "set-ping-role"
         private const val SUBCOMMAND_SET_THRESHOLD = "set-threshold"
         private const val SUBCOMMAND_SET_PREDICTION_THRESHOLD = "set-prediction-threshold"
         private const val SUBCOMMAND_DISABLE = "disable"
@@ -72,6 +75,22 @@ class NarouNovelConfigCommand(
                 initializeBaselines(settings)
                 narouNovelAlertSettingsRepository.save(settings)
                 event.reply("Narou novel alerts will be sent to ${channel.asMention}.").setEphemeral(true).queue()
+            }
+
+            SUBCOMMAND_SET_PING_ROLE -> {
+                val role = getOptionalRole(event)
+                val settings = narouNovelAlertSettingsRepository.findById(guild.idLong).orElseGet {
+                    NarouNovelAlertSettings(guildId = guild.idLong)
+                }
+                settings.pingRoleId = role?.idLong
+                initializeBaselines(settings)
+                narouNovelAlertSettingsRepository.save(settings)
+                val reply = if (role == null) {
+                    "Narou novel alerts will now ping @everyone."
+                } else {
+                    "Narou novel alerts will now ping ${role.asMention}."
+                }
+                event.reply(reply).setEphemeral(true).queue()
             }
 
             SUBCOMMAND_SET_THRESHOLD -> {
@@ -126,6 +145,8 @@ class NarouNovelConfigCommand(
                     SubcommandData(SUBCOMMAND_SHOW, "Show the current Narou novel alert settings"),
                     SubcommandData(SUBCOMMAND_SET_CHANNEL, "Set the channel that receives Narou novel alerts")
                         .addOptions(textChannelOption("The channel used for Narou novel alerts")),
+                    SubcommandData(SUBCOMMAND_SET_PING_ROLE, "Set which role Narou novel alerts ping")
+                        .addOptions(roleOption("Role to ping for Narou novel alerts (omit to use @everyone)", false)),
                     SubcommandData(SUBCOMMAND_SET_THRESHOLD, "Set the character growth threshold for alerts")
                         .addOptions(thresholdOption("Minimum published novel growth required before an alert is sent")),
                     SubcommandData(
@@ -148,6 +169,10 @@ class NarouNovelConfigCommand(
         }
 
         return channel
+    }
+
+    internal fun getOptionalRole(event: SlashCommandInteractionEvent): Role? {
+        return event.getOption(OPTION_ROLE)?.asRole
     }
 
     internal fun getRequiredThreshold(event: SlashCommandInteractionEvent): Long? {
@@ -188,6 +213,7 @@ class NarouNovelConfigCommand(
             appendLine("Narou novel alert settings for ${guild.name}")
             appendLine()
             appendLine("- Alert channel: ${formatChannel(guild, settings?.channelId)}")
+            appendLine("- Ping target: ${formatPingTarget(guild, settings?.pingRoleId)}")
             appendLine("- Published novel growth threshold: ${settings?.lengthThreshold ?: NarouNovelAlertSettings.DEFAULT_LENGTH_THRESHOLD}")
             appendLine(
                 "- Author profile prediction threshold: " +
@@ -206,9 +232,21 @@ class NarouNovelConfigCommand(
         return guild.getTextChannelById(channelId)?.asMention ?: "Channel not found (ID: $channelId)"
     }
 
+    private fun formatPingTarget(guild: Guild, pingRoleId: Long?): String {
+        if (pingRoleId == null) {
+            return "@everyone"
+        }
+
+        return guild.getRoleById(pingRoleId)?.asMention ?: "Missing role (ID: $pingRoleId)"
+    }
+
     private fun textChannelOption(description: String): OptionData {
         return OptionData(OptionType.CHANNEL, OPTION_CHANNEL, description, true)
             .setChannelTypes(ChannelType.TEXT)
+    }
+
+    private fun roleOption(description: String, required: Boolean): OptionData {
+        return OptionData(OptionType.ROLE, OPTION_ROLE, description, required)
     }
 
     private fun thresholdOption(description: String): OptionData {

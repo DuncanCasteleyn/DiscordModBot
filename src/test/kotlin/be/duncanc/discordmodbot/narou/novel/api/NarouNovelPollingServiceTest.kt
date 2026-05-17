@@ -8,6 +8,7 @@ import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelSnapshot
 import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelSnapshotRepository
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.MessageEmbed
+import net.dv8tion.jda.api.entities.Role
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
+import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.never
@@ -44,6 +46,9 @@ class NarouNovelPollingServiceTest {
 
     @Mock
     private lateinit var textChannel: TextChannel
+
+    @Mock
+    private lateinit var role: Role
 
     private lateinit var service: TestNarouNovelPollingService
     private val pendingAlerts = mutableMapOf<Long, NarouNovelPendingAlert>()
@@ -149,6 +154,74 @@ class NarouNovelPollingServiceTest {
         assertEquals(9_876_000L, settingsCaptor.lastValue.lastAlertedAuthorProfileLength)
         assertEquals(778, settingsCaptor.lastValue.lastAlertedGeneralAllNo)
         assertEquals(emptyMap<Long, NarouNovelPendingAlert>(), pendingAlerts)
+    }
+
+    @Test
+    fun `configured ping role is used for alert mention`() {
+        stubPendingAlertRepository()
+        val snapshot = snapshot(length = 9_446_500, generalAllNo = 778)
+        val settings = NarouNovelAlertSettings(
+            guildId = 1L,
+            channelId = 11L,
+            pingRoleId = 15L,
+            lengthThreshold = 1_000L,
+            predictionLengthThreshold = 1_000L,
+            lastAlertedLength = 9_445_269L,
+            lastAlertedAuthorProfileLength = 9_876_000L,
+            lastAlertedGeneralAllNo = 778
+        )
+        whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 778)))
+        whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
+        whenever(narouNovelAlertSettingsRepository.findAll()).thenReturn(listOf(settings))
+        whenever(jda.getTextChannelById(11L)).thenReturn(textChannel)
+        whenever(jda.getRoleById(15L)).thenReturn(role)
+        whenever(role.asMention).thenReturn("<@&15>")
+
+        service.pollNovel()
+
+        assertAlert(
+            service = service,
+            description = "the novel grew by 1231 characters.",
+            totalChapters = 778,
+            totalCharacters = 9_446_500L,
+            chapterLink = "https://ncode.syosetu.com/n2267be/778",
+            expectedMessageContent = "<@&15>"
+        )
+    }
+
+    @Test
+    fun `missing configured ping role is cleared and alert sends without mention`() {
+        stubPendingAlertRepository()
+        val snapshot = snapshot(length = 9_446_500, generalAllNo = 778)
+        val settings = NarouNovelAlertSettings(
+            guildId = 1L,
+            channelId = 11L,
+            pingRoleId = 15L,
+            lengthThreshold = 1_000L,
+            predictionLengthThreshold = 1_000L,
+            lastAlertedLength = 9_445_269L,
+            lastAlertedAuthorProfileLength = 9_876_000L,
+            lastAlertedGeneralAllNo = 778
+        )
+        whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 778)))
+        whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
+        whenever(narouNovelAlertSettingsRepository.findAll()).thenReturn(listOf(settings))
+        whenever(jda.getTextChannelById(11L)).thenReturn(textChannel)
+        whenever(jda.getRoleById(15L)).thenReturn(null)
+
+        service.pollNovel()
+
+        assertAlert(
+            service = service,
+            description = "the novel grew by 1231 characters.",
+            totalChapters = 778,
+            totalCharacters = 9_446_500L,
+            chapterLink = "https://ncode.syosetu.com/n2267be/778",
+            expectedMessageContent = ""
+        )
+        val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
+        verify(narouNovelAlertSettingsRepository, atLeastOnce()).save(settingsCaptor.capture())
+        assertEquals(null, settingsCaptor.firstValue.pingRoleId)
     }
 
     @Test
@@ -580,9 +653,10 @@ class NarouNovelPollingServiceTest {
         totalChapters: Int,
         totalCharacters: Long,
         chapterLink: String,
+        expectedMessageContent: String = "@everyone",
         index: Int = 0
     ) {
-        assertEquals("@everyone", service.sentMessageContents[index])
+        assertEquals(expectedMessageContent, service.sentMessageContents[index])
         val embed = service.sentEmbeds[index]
         assertEquals("Narou update for n2267be", embed.title)
         assertEquals(description, embed.description)

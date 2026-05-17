@@ -8,6 +8,7 @@ import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelSnapshotRe
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.entities.Role
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
@@ -50,6 +51,9 @@ class NarouNovelConfigCommandTest {
     private lateinit var textChannel: TextChannel
 
     @Mock
+    private lateinit var role: Role
+
+    @Mock
     private lateinit var replyAction: ReplyCallbackAction
 
     @Mock
@@ -87,8 +91,42 @@ class NarouNovelConfigCommandTest {
         val replyCaptor = argumentCaptor<String>()
         verify(slashEvent).reply(replyCaptor.capture())
         assertEquals(true, replyCaptor.firstValue.contains("- Alert channel: Disabled"))
+        assertEquals(true, replyCaptor.firstValue.contains("- Ping target: @everyone"))
         assertEquals(true, replyCaptor.firstValue.contains("- Published novel growth threshold: 1000"))
         assertEquals(true, replyCaptor.firstValue.contains("- Author profile prediction threshold: 1000"))
+    }
+
+    @Test
+    fun `show displays configured ping role`() {
+        stubAuthorizedSlashCommand("show")
+        whenever(guild.name).thenReturn("Test Guild")
+        whenever(guild.getRoleById(15L)).thenReturn(role)
+        whenever(role.asMention).thenReturn("<@&15>")
+        whenever(narouNovelAlertSettingsRepository.findById(1L)).thenReturn(
+            Optional.of(NarouNovelAlertSettings(guildId = 1L, pingRoleId = 15L))
+        )
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        val replyCaptor = argumentCaptor<String>()
+        verify(slashEvent).reply(replyCaptor.capture())
+        assertEquals(true, replyCaptor.firstValue.contains("- Ping target: <@&15>"))
+    }
+
+    @Test
+    fun `show displays missing ping role`() {
+        stubAuthorizedSlashCommand("show")
+        whenever(guild.name).thenReturn("Test Guild")
+        whenever(guild.getRoleById(15L)).thenReturn(null)
+        whenever(narouNovelAlertSettingsRepository.findById(1L)).thenReturn(
+            Optional.of(NarouNovelAlertSettings(guildId = 1L, pingRoleId = 15L))
+        )
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        val replyCaptor = argumentCaptor<String>()
+        verify(slashEvent).reply(replyCaptor.capture())
+        assertEquals(true, replyCaptor.firstValue.contains("- Ping target: Missing role (ID: 15)"))
     }
 
     @Test
@@ -170,6 +208,40 @@ class NarouNovelConfigCommandTest {
     }
 
     @Test
+    fun `set ping role stores selected role`() {
+        stubAuthorizedSlashCommand("set-ping-role")
+        whenever(role.idLong).thenReturn(15L)
+        whenever(role.asMention).thenReturn("<@&15>")
+        whenever(narouNovelAlertSettingsRepository.findById(1L)).thenReturn(Optional.empty())
+        whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.empty())
+        command.selectedRole = role
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
+        verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
+        assertEquals(15L, settingsCaptor.firstValue.pingRoleId)
+        verify(slashEvent).reply("Narou novel alerts will now ping <@&15>.")
+    }
+
+    @Test
+    fun `set ping role clears configured role when omitted`() {
+        stubAuthorizedSlashCommand("set-ping-role")
+        whenever(narouNovelAlertSettingsRepository.findById(1L)).thenReturn(
+            Optional.of(NarouNovelAlertSettings(guildId = 1L, pingRoleId = 15L))
+        )
+        whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.empty())
+        command.selectedRole = null
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
+        verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
+        assertEquals(null, settingsCaptor.firstValue.pingRoleId)
+        verify(slashEvent).reply("Narou novel alerts will now ping @everyone.")
+    }
+
+    @Test
     fun `set threshold stores configured value`() {
         stubAuthorizedSlashCommand("set-threshold")
         command.threshold = 500L
@@ -228,7 +300,7 @@ class NarouNovelConfigCommandTest {
         assertEquals("narounovelapi", commandData.name)
         assertEquals(setOf(InteractionContextType.GUILD), commandData.contexts)
         assertEquals(
-            listOf("show", "set-channel", "set-threshold", "set-prediction-threshold", "disable"),
+            listOf("show", "set-channel", "set-ping-role", "set-threshold", "set-prediction-threshold", "disable"),
             commandData.subcommands.map(SubcommandData::getName)
         )
     }
@@ -258,10 +330,15 @@ class NarouNovelConfigCommandTest {
         narouNovelSnapshotRepository
     ) {
         var selectedChannel: TextChannel? = null
+        var selectedRole: Role? = null
         var threshold: Long? = null
 
         override fun getRequiredTextChannel(event: SlashCommandInteractionEvent): TextChannel? {
             return selectedChannel ?: super.getRequiredTextChannel(event)
+        }
+
+        override fun getOptionalRole(event: SlashCommandInteractionEvent): Role? {
+            return selectedRole ?: super.getOptionalRole(event)
         }
 
         override fun getRequiredThreshold(event: SlashCommandInteractionEvent): Long? {

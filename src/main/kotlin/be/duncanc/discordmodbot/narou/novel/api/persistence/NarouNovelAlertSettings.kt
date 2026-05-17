@@ -13,6 +13,8 @@ data class NarouNovelAlertSettings(
     val guildId: Long,
     @Column(nullable = true)
     var channelId: Long? = null,
+    @Column(nullable = true)
+    var pingRoleId: Long? = null,
     @Column(nullable = false)
     var lengthThreshold: Long = DEFAULT_LENGTH_THRESHOLD,
     @Column(nullable = false)
