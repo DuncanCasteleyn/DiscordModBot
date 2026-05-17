@@ -169,7 +169,7 @@ class VoteCommand(
                 )
             },
             onFailure = {
-                event.reply("I could not post the vote message in this channel.").setEphemeral(true).queue()
+                event.hook.sendMessage("I could not post the vote message in this channel.").setEphemeral(true).queue()
             }
         )
     }
