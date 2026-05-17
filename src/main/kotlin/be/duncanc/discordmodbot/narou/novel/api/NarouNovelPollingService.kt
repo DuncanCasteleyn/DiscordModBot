@@ -4,6 +4,7 @@ import be.duncanc.discordmodbot.narou.novel.api.persistence.*
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.MessageEmbed
+import net.dv8tion.jda.api.entities.Role
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.exceptions.ErrorResponseException
 import net.dv8tion.jda.api.requests.ErrorResponse
@@ -35,7 +36,7 @@ class NarouNovelPollingService(
     companion object {
         internal const val NOVEL_CODE = "n2267be"
         private const val NOVEL_URL = "https://ncode.syosetu.com/n2267be/"
-        private const val ALERT_MENTION = "@everyone"
+        private const val DEFAULT_ALERT_MENTION = "@everyone"
         private const val EMBED_TITLE = "Narou update for $NOVEL_CODE"
         private const val PREDICTION_ALERT_MESSAGE =
             "Detected an increase in the author's profile character count. This may indicate that a new chapter is coming soon"
@@ -187,6 +188,7 @@ class NarouNovelPollingService(
                 chapterDelta,
                 snapshot
             )
+            val messageContent = resolveAlertMention(settings)
             narouNovelPendingAlertRepository.save(
                 NarouNovelPendingAlert(
                     guildId = settings.guildId,
@@ -198,7 +200,7 @@ class NarouNovelPollingService(
             try {
                 sendAlertMessage(
                     channel = channel,
-                    messageContent = ALERT_MENTION,
+                    messageContent = messageContent,
                     embed = embed,
                     onSuccess = {
                         try {
@@ -245,6 +247,36 @@ class NarouNovelPollingService(
                 narouNovelPendingAlertRepository.deleteById(settings.guildId)
                 throw exception
             }
+        }
+    }
+
+    private fun resolveAlertMention(settings: NarouNovelAlertSettings): String {
+        val pingRoleId = settings.pingRoleId ?: return DEFAULT_ALERT_MENTION
+        val role = jda.getRoleById(pingRoleId)
+        if (role != null) {
+            return role.asMention
+        }
+
+        clearMissingPingRole(settings, pingRoleId)
+        return ""
+    }
+
+    private fun clearMissingPingRole(settings: NarouNovelAlertSettings, pingRoleId: Long) {
+        try {
+            settings.pingRoleId = null
+            narouNovelAlertSettingsRepository.save(settings)
+            LOG.warn(
+                "Cleared missing Narou novel ping role {} for guild {}",
+                pingRoleId,
+                settings.guildId
+            )
+        } catch (exception: Exception) {
+            LOG.warn(
+                "Failed to clear missing Narou novel ping role {} for guild {}",
+                pingRoleId,
+                settings.guildId,
+                exception
+            )
         }
     }
 
@@ -345,7 +377,12 @@ class NarouNovelPollingService(
         onSuccess: () -> Unit,
         onFailure: (Throwable) -> Unit
     ) {
-        channel.sendMessage(messageContent).addEmbeds(embed).queue({ onSuccess() }, onFailure)
+        val action = if (messageContent.isBlank()) {
+            channel.sendMessageEmbeds(embed)
+        } else {
+            channel.sendMessage(messageContent).addEmbeds(embed)
+        }
+        action.queue({ onSuccess() }, onFailure)
     }
 
     internal fun isTerminalChannelFailure(exception: Throwable): Boolean {
