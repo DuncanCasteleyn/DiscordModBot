@@ -35,6 +35,7 @@ class NarouNovelConfigCommand(
         private const val SUBCOMMAND_SHOW = "show"
         private const val SUBCOMMAND_SET_CHANNEL = "set-channel"
         private const val SUBCOMMAND_SET_THRESHOLD = "set-threshold"
+        private const val SUBCOMMAND_SET_PREDICTION_THRESHOLD = "set-prediction-threshold"
         private const val SUBCOMMAND_DISABLE = "disable"
         internal const val MINIMUM_THRESHOLD = 50L
     }
@@ -90,6 +91,23 @@ class NarouNovelConfigCommand(
                     .queue()
             }
 
+            SUBCOMMAND_SET_PREDICTION_THRESHOLD -> {
+                val threshold = getRequiredThreshold(event) ?: return
+                if (threshold < MINIMUM_THRESHOLD) {
+                    event.reply("The length threshold must be at least 50.").setEphemeral(true).queue()
+                    return
+                }
+                val settings = narouNovelAlertSettingsRepository.findById(guild.idLong).orElseGet {
+                    NarouNovelAlertSettings(guildId = guild.idLong)
+                }
+                settings.predictionLengthThreshold = threshold
+                initializeBaselines(settings)
+                narouNovelAlertSettingsRepository.save(settings)
+                event.reply("Narou prediction alerts now require at least $threshold characters of author profile growth.")
+                    .setEphemeral(true)
+                    .queue()
+            }
+
             SUBCOMMAND_DISABLE -> {
                 clearAlertConfiguration(guild.idLong)
                 event.reply("Narou novel alerts disabled.").setEphemeral(true).queue()
@@ -109,13 +127,13 @@ class NarouNovelConfigCommand(
                     SubcommandData(SUBCOMMAND_SET_CHANNEL, "Set the channel that receives Narou novel alerts")
                         .addOptions(textChannelOption("The channel used for Narou novel alerts")),
                     SubcommandData(SUBCOMMAND_SET_THRESHOLD, "Set the character growth threshold for alerts")
+                        .addOptions(thresholdOption("Minimum published novel growth required before an alert is sent")),
+                    SubcommandData(
+                        SUBCOMMAND_SET_PREDICTION_THRESHOLD,
+                        "Set the author profile growth threshold used for prediction alerts"
+                    )
                         .addOptions(
-                            OptionData(
-                                OptionType.INTEGER,
-                                OPTION_THRESHOLD,
-                                "Minimum character growth required before an alert is sent",
-                                true
-                            ).setMinValue(MINIMUM_THRESHOLD)
+                            thresholdOption("Minimum author profile growth required before a prediction alert is sent")
                         ),
                     SubcommandData(SUBCOMMAND_DISABLE, "Disable Narou novel alerts for this server")
                 )
@@ -151,6 +169,9 @@ class NarouNovelConfigCommand(
         if (settings.lastAlertedLength == null) {
             settings.lastAlertedLength = snapshot.length
         }
+        if (settings.lastAlertedAuthorProfileLength == null && snapshot.authorProfileLength > 0) {
+            settings.lastAlertedAuthorProfileLength = snapshot.authorProfileLength
+        }
         if (settings.lastAlertedGeneralAllNo == null) {
             settings.lastAlertedGeneralAllNo = snapshot.generalAllNo
         }
@@ -167,7 +188,11 @@ class NarouNovelConfigCommand(
             appendLine("Narou novel alert settings for ${guild.name}")
             appendLine()
             appendLine("- Alert channel: ${formatChannel(guild, settings?.channelId)}")
-            appendLine("- Character growth threshold: ${settings?.lengthThreshold ?: NarouNovelAlertSettings.DEFAULT_LENGTH_THRESHOLD}")
+            appendLine("- Published novel growth threshold: ${settings?.lengthThreshold ?: NarouNovelAlertSettings.DEFAULT_LENGTH_THRESHOLD}")
+            appendLine(
+                "- Author profile prediction threshold: " +
+                    "${settings?.predictionLengthThreshold ?: NarouNovelAlertSettings.DEFAULT_PREDICTION_LENGTH_THRESHOLD}"
+            )
         }
 
         event.reply(message).setEphemeral(true).queue()
@@ -184,5 +209,10 @@ class NarouNovelConfigCommand(
     private fun textChannelOption(description: String): OptionData {
         return OptionData(OptionType.CHANNEL, OPTION_CHANNEL, description, true)
             .setChannelTypes(ChannelType.TEXT)
+    }
+
+    private fun thresholdOption(description: String): OptionData {
+        return OptionData(OptionType.INTEGER, OPTION_THRESHOLD, description, true)
+            .setMinValue(MINIMUM_THRESHOLD)
     }
 }

@@ -7,6 +7,7 @@ import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelPendingAle
 import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelSnapshot
 import be.duncanc.discordmodbot.narou.novel.api.persistence.NarouNovelSnapshotRepository
 import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -57,6 +58,7 @@ class NarouNovelPollingServiceTest {
             narouNovelPendingAlertRepository,
             jda
         )
+        whenever(narouNovelApiClient.fetchAuthorProfile()).thenReturn(listOf(profilePayload(9_876_000)))
     }
 
     @Test
@@ -75,6 +77,7 @@ class NarouNovelPollingServiceTest {
         val snapshotCaptor = argumentCaptor<NarouNovelSnapshot>()
         verify(narouNovelSnapshotRepository).save(snapshotCaptor.capture())
         assertEquals(9_445_269L, snapshotCaptor.firstValue.length)
+        assertEquals(9_876_000L, snapshotCaptor.firstValue.authorProfileLength)
         assertEquals(778, snapshotCaptor.firstValue.generalAllNo)
     }
 
@@ -86,7 +89,9 @@ class NarouNovelPollingServiceTest {
             guildId = 1L,
             channelId = 11L,
             lengthThreshold = 1_000L,
+            predictionLengthThreshold = 1_000L,
             lastAlertedLength = 9_445_269L,
+            lastAlertedAuthorProfileLength = 9_876_000L,
             lastAlertedGeneralAllNo = 778
         )
         whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_445_500, generalAllNo = 779)))
@@ -96,10 +101,17 @@ class NarouNovelPollingServiceTest {
 
         service.pollNovel()
 
-        assertEquals(listOf("@everyone Narou update for n2267be: 1 new chapter was published. Total chapters: 779. Total characters: 9445500. https://ncode.syosetu.com/n2267be/"), service.sentMessages)
+        assertAlert(
+            service = service,
+            description = "1 new chapter was published.",
+            totalChapters = 779,
+            totalCharacters = 9_445_500L,
+            chapterLink = "https://ncode.syosetu.com/n2267be/779"
+        )
         val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
         verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
         assertEquals(9_445_269L, settingsCaptor.lastValue.lastAlertedLength)
+        assertEquals(9_876_000L, settingsCaptor.lastValue.lastAlertedAuthorProfileLength)
         assertEquals(779, settingsCaptor.lastValue.lastAlertedGeneralAllNo)
         assertEquals(emptyMap<Long, NarouNovelPendingAlert>(), pendingAlerts)
     }
@@ -112,7 +124,9 @@ class NarouNovelPollingServiceTest {
             guildId = 1L,
             channelId = 11L,
             lengthThreshold = 1_000L,
+            predictionLengthThreshold = 1_000L,
             lastAlertedLength = 9_445_269L,
+            lastAlertedAuthorProfileLength = 9_876_000L,
             lastAlertedGeneralAllNo = 778
         )
         whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 778)))
@@ -122,10 +136,17 @@ class NarouNovelPollingServiceTest {
 
         service.pollNovel()
 
-        assertEquals(listOf("@everyone Narou update for n2267be: the novel grew by 1231 characters. Total chapters: 778. Total characters: 9446500. https://ncode.syosetu.com/n2267be/"), service.sentMessages)
+        assertAlert(
+            service = service,
+            description = "the novel grew by 1231 characters.",
+            totalChapters = 778,
+            totalCharacters = 9_446_500L,
+            chapterLink = "https://ncode.syosetu.com/n2267be/778"
+        )
         val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
         verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
         assertEquals(9_446_500L, settingsCaptor.lastValue.lastAlertedLength)
+        assertEquals(9_876_000L, settingsCaptor.lastValue.lastAlertedAuthorProfileLength)
         assertEquals(778, settingsCaptor.lastValue.lastAlertedGeneralAllNo)
         assertEquals(emptyMap<Long, NarouNovelPendingAlert>(), pendingAlerts)
     }
@@ -138,7 +159,9 @@ class NarouNovelPollingServiceTest {
             guildId = 1L,
             channelId = 11L,
             lengthThreshold = 1_000L,
+            predictionLengthThreshold = 1_000L,
             lastAlertedLength = 9_445_269L,
+            lastAlertedAuthorProfileLength = 9_876_000L,
             lastAlertedGeneralAllNo = 778
         )
         whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 780)))
@@ -148,17 +171,114 @@ class NarouNovelPollingServiceTest {
 
         service.pollNovel()
 
-        assertEquals(
-            listOf(
-                "@everyone Narou update for n2267be: 2 new chapters were published and the novel grew by 1231 characters. Total chapters: 780. Total characters: 9446500. https://ncode.syosetu.com/n2267be/"
-            ),
-            service.sentMessages
+        assertAlert(
+            service = service,
+            description = "2 new chapters were published and the novel grew by 1231 characters.",
+            totalChapters = 780,
+            totalCharacters = 9_446_500L,
+            chapterLink = "https://ncode.syosetu.com/n2267be/780"
         )
         val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
         verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
         assertEquals(9_446_500L, settingsCaptor.lastValue.lastAlertedLength)
+        assertEquals(9_876_000L, settingsCaptor.lastValue.lastAlertedAuthorProfileLength)
         assertEquals(780, settingsCaptor.lastValue.lastAlertedGeneralAllNo)
         assertEquals(emptyMap<Long, NarouNovelPendingAlert>(), pendingAlerts)
+    }
+
+    @Test
+    fun `prediction alert triggers from author profile growth`() {
+        stubPendingAlertRepository()
+        val snapshot = snapshot(length = 9_445_500, generalAllNo = 779, authorProfileLength = 9_877_250)
+        val settings = NarouNovelAlertSettings(
+            guildId = 1L,
+            channelId = 11L,
+            lengthThreshold = 1_000L,
+            predictionLengthThreshold = 1_000L,
+            lastAlertedLength = 9_445_500L,
+            lastAlertedAuthorProfileLength = 9_876_000L,
+            lastAlertedGeneralAllNo = 779
+        )
+        whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_445_500, generalAllNo = 779)))
+        whenever(narouNovelApiClient.fetchAuthorProfile()).thenReturn(listOf(profilePayload(9_877_250)))
+        whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot(length = 9_445_500, generalAllNo = 779)))
+        whenever(narouNovelAlertSettingsRepository.findAll()).thenReturn(listOf(settings))
+        whenever(jda.getTextChannelById(11L)).thenReturn(textChannel)
+
+        service.pollNovel()
+
+        assertAlert(
+            service = service,
+            description = "Detected an increase in the author's profile character count. This may indicate that a new chapter is coming soon.",
+            totalChapters = 779,
+            totalCharacters = 9_445_500L,
+            chapterLink = "https://ncode.syosetu.com/n2267be/779"
+        )
+        val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
+        verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
+        assertEquals(9_445_500L, settingsCaptor.lastValue.lastAlertedLength)
+        assertEquals(9_877_250L, settingsCaptor.lastValue.lastAlertedAuthorProfileLength)
+        assertEquals(779, settingsCaptor.lastValue.lastAlertedGeneralAllNo)
+    }
+
+    @Test
+    fun `chapter alert still sends when author profile fetch fails`() {
+        stubPendingAlertRepository()
+        val snapshot = snapshot(length = 9_445_500, generalAllNo = 779, authorProfileLength = 9_876_000)
+        val settings = NarouNovelAlertSettings(
+            guildId = 1L,
+            channelId = 11L,
+            lengthThreshold = 1_000L,
+            predictionLengthThreshold = 1_000L,
+            lastAlertedLength = 9_445_269L,
+            lastAlertedAuthorProfileLength = 9_876_000L,
+            lastAlertedGeneralAllNo = 778
+        )
+        whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_445_500, generalAllNo = 779)))
+        whenever(narouNovelApiClient.fetchAuthorProfile()).thenThrow(IllegalStateException("profile down"))
+        whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
+        whenever(narouNovelAlertSettingsRepository.findAll()).thenReturn(listOf(settings))
+        whenever(jda.getTextChannelById(11L)).thenReturn(textChannel)
+
+        service.pollNovel()
+
+        assertAlert(
+            service = service,
+            description = "1 new chapter was published.",
+            totalChapters = 779,
+            totalCharacters = 9_445_500L,
+            chapterLink = "https://ncode.syosetu.com/n2267be/779"
+        )
+        val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
+        verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
+        assertEquals(9_445_269L, settingsCaptor.lastValue.lastAlertedLength)
+        assertEquals(9_876_000L, settingsCaptor.lastValue.lastAlertedAuthorProfileLength)
+        assertEquals(779, settingsCaptor.lastValue.lastAlertedGeneralAllNo)
+    }
+
+    @Test
+    fun `missing baselines stay unset for zero author profile snapshot when profile fetch fails`() {
+        val snapshot = snapshot(length = 9_445_500, generalAllNo = 779, authorProfileLength = 0)
+        val settings = NarouNovelAlertSettings(
+            guildId = 1L,
+            channelId = 11L,
+            lastAlertedLength = null,
+            lastAlertedAuthorProfileLength = null,
+            lastAlertedGeneralAllNo = null
+        )
+        whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_445_500, generalAllNo = 779)))
+        whenever(narouNovelApiClient.fetchAuthorProfile()).thenThrow(IllegalStateException("profile down"))
+        whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
+        whenever(narouNovelAlertSettingsRepository.findAll()).thenReturn(listOf(settings))
+
+        service.pollNovel()
+
+        verify(jda, never()).getTextChannelById(11L)
+        val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
+        verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
+        assertEquals(9_445_500L, settingsCaptor.lastValue.lastAlertedLength)
+        assertEquals(null, settingsCaptor.lastValue.lastAlertedAuthorProfileLength)
+        assertEquals(779, settingsCaptor.lastValue.lastAlertedGeneralAllNo)
     }
 
     @Test
@@ -177,7 +297,9 @@ class NarouNovelPollingServiceTest {
             guildId = 1L,
             channelId = 11L,
             lengthThreshold = 1_000L,
+            predictionLengthThreshold = 1_000L,
             lastAlertedLength = 9_445_269L,
+            lastAlertedAuthorProfileLength = 9_876_000L,
             lastAlertedGeneralAllNo = 778
         )
         whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 780)))
@@ -188,15 +310,17 @@ class NarouNovelPollingServiceTest {
         service.pollNovel()
         service.pollNovel()
 
-        assertEquals(
-            listOf(
-                "@everyone Narou update for n2267be: 2 new chapters were published and the novel grew by 1231 characters. Total chapters: 780. Total characters: 9446500. https://ncode.syosetu.com/n2267be/"
-            ),
-            service.sentMessages
+        assertAlert(
+            service = service,
+            description = "2 new chapters were published and the novel grew by 1231 characters.",
+            totalChapters = 780,
+            totalCharacters = 9_446_500L,
+            chapterLink = "https://ncode.syosetu.com/n2267be/780"
         )
-        assertEquals(NarouNovelPendingAlert(1L, 9_446_500L, 780), pendingAlerts[1L])
+        assertEquals(NarouNovelPendingAlert(1L, 9_446_500L, 9_876_000L, 780), pendingAlerts[1L])
         verify(narouNovelAlertSettingsRepository, never()).save(settings)
         assertEquals(9_445_269L, settings.lastAlertedLength)
+        assertEquals(9_876_000L, settings.lastAlertedAuthorProfileLength)
         assertEquals(778, settings.lastAlertedGeneralAllNo)
     }
 
@@ -207,17 +331,20 @@ class NarouNovelPollingServiceTest {
             guildId = 1L,
             channelId = 11L,
             lengthThreshold = 1_000L,
+            predictionLengthThreshold = 1_000L,
             lastAlertedLength = 9_445_269L,
+            lastAlertedAuthorProfileLength = 9_876_000L,
             lastAlertedGeneralAllNo = 778
         )
-        whenever(narouNovelPendingAlertRepository.findById(1L)).thenReturn(Optional.of(NarouNovelPendingAlert(1L, 9_446_500L, 780)))
+        whenever(narouNovelPendingAlertRepository.findById(1L)).thenReturn(Optional.of(NarouNovelPendingAlert(1L, 9_446_500L, 9_876_000L, 780)))
         whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 780)))
         whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
         whenever(narouNovelAlertSettingsRepository.findAll()).thenReturn(listOf(settings))
 
         service.pollNovel()
 
-        assertEquals(emptyList<String>(), service.sentMessages)
+        assertEquals(emptyList<String>(), service.sentMessageContents)
+        assertEquals(emptyList<MessageEmbed>(), service.sentEmbeds)
         verify(jda, never()).getTextChannelById(any<Long>())
         verify(narouNovelPendingAlertRepository).findById(1L)
     }
@@ -239,7 +366,9 @@ class NarouNovelPollingServiceTest {
             guildId = 1L,
             channelId = 11L,
             lengthThreshold = 1_000L,
+            predictionLengthThreshold = 1_000L,
             lastAlertedLength = 9_445_269L,
+            lastAlertedAuthorProfileLength = 9_876_000L,
             lastAlertedGeneralAllNo = 778
         )
         whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 780)))
@@ -250,7 +379,8 @@ class NarouNovelPollingServiceTest {
         service.pollNovel()
         service.pollNovel()
 
-        assertEquals(2, service.sentMessages.size)
+        assertEquals(2, service.sentMessageContents.size)
+        assertEquals(2, service.sentEmbeds.size)
         verify(narouNovelAlertSettingsRepository, never()).save(settings)
         assertEquals(emptyMap<Long, NarouNovelPendingAlert>(), pendingAlerts)
     }
@@ -270,7 +400,9 @@ class NarouNovelPollingServiceTest {
             guildId = 1L,
             channelId = 11L,
             lengthThreshold = 1_000L,
+            predictionLengthThreshold = 1_000L,
             lastAlertedLength = 9_445_269L,
+            lastAlertedAuthorProfileLength = 9_876_000L,
             lastAlertedGeneralAllNo = 778
         )
         whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 780)))
@@ -282,8 +414,9 @@ class NarouNovelPollingServiceTest {
         service.pollNovel()
         service.pollNovel()
 
-        assertEquals(1, service.sentMessages.size)
-        assertEquals(NarouNovelPendingAlert(1L, 9_446_500L, 780), pendingAlerts[1L])
+        assertEquals(1, service.sentMessageContents.size)
+        assertEquals(1, service.sentEmbeds.size)
+        assertEquals(NarouNovelPendingAlert(1L, 9_446_500L, 9_876_000L, 780), pendingAlerts[1L])
     }
 
     @Test
@@ -302,7 +435,9 @@ class NarouNovelPollingServiceTest {
             guildId = 1L,
             channelId = 11L,
             lengthThreshold = 1_000L,
+            predictionLengthThreshold = 1_000L,
             lastAlertedLength = 9_445_269L,
+            lastAlertedAuthorProfileLength = 9_876_000L,
             lastAlertedGeneralAllNo = 778
         )
         whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 780)))
@@ -319,7 +454,8 @@ class NarouNovelPollingServiceTest {
 
         assertEquals("boom", firstFailure.message)
         assertEquals("boom", secondFailure.message)
-        assertEquals(2, service.sentMessages.size)
+        assertEquals(2, service.sentMessageContents.size)
+        assertEquals(2, service.sentEmbeds.size)
         assertEquals(emptyMap<Long, NarouNovelPendingAlert>(), pendingAlerts)
     }
 
@@ -340,7 +476,9 @@ class NarouNovelPollingServiceTest {
             guildId = 1L,
             channelId = 11L,
             lengthThreshold = 1_000L,
+            predictionLengthThreshold = 1_000L,
             lastAlertedLength = 9_445_269L,
+            lastAlertedAuthorProfileLength = 9_876_000L,
             lastAlertedGeneralAllNo = 778
         )
         whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 780)))
@@ -351,7 +489,8 @@ class NarouNovelPollingServiceTest {
         service.pollNovel()
         service.pollNovel()
 
-        assertEquals(1, service.sentMessages.size)
+        assertEquals(1, service.sentMessageContents.size)
+        assertEquals(1, service.sentEmbeds.size)
         assertNull(settings.channelId)
         assertEquals(emptyMap<Long, NarouNovelPendingAlert>(), pendingAlerts)
     }
@@ -363,7 +502,9 @@ class NarouNovelPollingServiceTest {
             guildId = 1L,
             channelId = 11L,
             lengthThreshold = 1_000L,
+            predictionLengthThreshold = 1_000L,
             lastAlertedLength = 9_445_269L,
+            lastAlertedAuthorProfileLength = 9_876_000L,
             lastAlertedGeneralAllNo = 778
         )
         whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 780)))
@@ -374,7 +515,8 @@ class NarouNovelPollingServiceTest {
         service.pollNovel()
         service.pollNovel()
 
-        assertEquals(emptyList<String>(), service.sentMessages)
+        assertEquals(emptyList<String>(), service.sentMessageContents)
+        assertEquals(emptyList<MessageEmbed>(), service.sentEmbeds)
         assertNull(settings.channelId)
         assertEquals(emptyMap<Long, NarouNovelPendingAlert>(), pendingAlerts)
     }
@@ -382,7 +524,13 @@ class NarouNovelPollingServiceTest {
     @Test
     fun `missing baselines are initialized without alerting`() {
         val snapshot = snapshot(length = 9_445_500, generalAllNo = 779)
-        val settings = NarouNovelAlertSettings(guildId = 1L, channelId = 11L, lastAlertedLength = null, lastAlertedGeneralAllNo = null)
+        val settings = NarouNovelAlertSettings(
+            guildId = 1L,
+            channelId = 11L,
+            lastAlertedLength = null,
+            lastAlertedAuthorProfileLength = null,
+            lastAlertedGeneralAllNo = null
+        )
         whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_445_500, generalAllNo = 779)))
         whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
         whenever(narouNovelAlertSettingsRepository.findAll()).thenReturn(listOf(settings))
@@ -393,7 +541,22 @@ class NarouNovelPollingServiceTest {
         val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
         verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
         assertEquals(9_445_500L, settingsCaptor.lastValue.lastAlertedLength)
+        assertEquals(9_876_000L, settingsCaptor.lastValue.lastAlertedAuthorProfileLength)
         assertEquals(779, settingsCaptor.lastValue.lastAlertedGeneralAllNo)
+    }
+
+    @Test
+    fun `poll ignores incomplete author profile entries`() {
+        whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_445_269, generalAllNo = 778)))
+        whenever(narouNovelApiClient.fetchAuthorProfile()).thenReturn(listOf(NarouAuthorProfileApiResponseEntry(), profilePayload(9_876_000)))
+        whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.empty())
+        whenever(narouNovelAlertSettingsRepository.findAll()).thenReturn(emptyList())
+
+        service.pollNovel()
+
+        val snapshotCaptor = argumentCaptor<NarouNovelSnapshot>()
+        verify(narouNovelSnapshotRepository).save(snapshotCaptor.capture())
+        assertEquals(9_876_000L, snapshotCaptor.firstValue.authorProfileLength)
     }
 
     private fun payload(length: Long, generalAllNo: Int): NarouNovelApiResponseEntry {
@@ -407,12 +570,38 @@ class NarouNovelPollingServiceTest {
         )
     }
 
-    private fun snapshot(length: Long, generalAllNo: Int): NarouNovelSnapshot {
+    private fun profilePayload(novelLength: Long): NarouAuthorProfileApiResponseEntry {
+        return NarouAuthorProfileApiResponseEntry(novelLength = novelLength)
+    }
+
+    private fun assertAlert(
+        service: TestNarouNovelPollingService,
+        description: String,
+        totalChapters: Int,
+        totalCharacters: Long,
+        chapterLink: String,
+        index: Int = 0
+    ) {
+        assertEquals("@everyone", service.sentMessageContents[index])
+        val embed = service.sentEmbeds[index]
+        assertEquals("Narou update for n2267be", embed.title)
+        assertEquals(description, embed.description)
+        assertEquals(totalChapters.toString(), embed.fieldValue("Total chapters"))
+        assertEquals(totalCharacters.toString(), embed.fieldValue("Total characters"))
+        assertEquals(chapterLink, embed.fieldValue("Chapter link"))
+    }
+
+    private fun MessageEmbed.fieldValue(name: String): String? {
+        return fields.firstOrNull { it.name == name }?.value
+    }
+
+    private fun snapshot(length: Long, generalAllNo: Int, authorProfileLength: Long = 9_876_000): NarouNovelSnapshot {
         return NarouNovelSnapshot(
             ncode = NarouNovelPollingService.NOVEL_CODE,
             generalLastup = "2026-05-15 07:00:00",
             generalAllNo = generalAllNo,
             length = length,
+            authorProfileLength = authorProfileLength,
             time = 18_891,
             novelUpdatedAt = "2026-05-15 07:00:36",
             updatedAt = "2026-05-15 20:14:23"
@@ -453,7 +642,8 @@ class NarouNovelPollingServiceTest {
         narouNovelPendingAlertRepository,
         jda
     ) {
-        val sentMessages = mutableListOf<String>()
+        val sentMessageContents = mutableListOf<String>()
+        val sentEmbeds = mutableListOf<MessageEmbed>()
 
         override fun isTerminalChannelFailure(exception: Throwable): Boolean {
             return terminalFailurePredicate(exception)
@@ -461,11 +651,13 @@ class NarouNovelPollingServiceTest {
 
         override fun sendAlertMessage(
             channel: TextChannel,
-            message: String,
+            messageContent: String,
+            embed: MessageEmbed,
             onSuccess: () -> Unit,
             onFailure: (Throwable) -> Unit
         ) {
-            sentMessages += message
+            sentMessageContents += messageContent
+            sentEmbeds += embed
             onSend?.invoke()
             throwOnSend?.let { throw it }
             failWith?.let {

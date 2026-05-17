@@ -15,12 +15,17 @@ data class NarouNovelAlertSettings(
     var channelId: Long? = null,
     @Column(nullable = false)
     var lengthThreshold: Long = DEFAULT_LENGTH_THRESHOLD,
+    @Column(nullable = false)
+    var predictionLengthThreshold: Long = DEFAULT_PREDICTION_LENGTH_THRESHOLD,
     @Column(nullable = true)
     var lastAlertedLength: Long? = null,
+    @Column(nullable = true)
+    var lastAlertedAuthorProfileLength: Long? = null,
     @Column(nullable = true)
     var lastAlertedGeneralAllNo: Int? = null
 ) {
     companion object {
         const val DEFAULT_LENGTH_THRESHOLD = 1000L
+        const val DEFAULT_PREDICTION_LENGTH_THRESHOLD = 1000L
     }
 }
