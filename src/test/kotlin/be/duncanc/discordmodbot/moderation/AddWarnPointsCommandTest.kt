@@ -318,6 +318,43 @@ class AddWarnPointsCommandTest {
         kotlin.test.assertEquals(true, resultCaptor.firstValue.contains("Unable to add mute role to user."))
     }
 
+    @Test
+    fun `mute modal with failed unmute scheduling falls back to plain mute`() {
+        val dmCaptor = argumentCaptor<MessageEmbed>()
+        val logCaptor = argumentCaptor<EmbedBuilder>()
+        val resultCaptor = argumentCaptor<String>()
+
+        stubSuccessfulMuteModalFlow(unmuteDays = 366)
+        whenever(unmutePlanningService.planUnmute(guild, 99L, member, 366))
+            .thenThrow(IllegalArgumentException("Unmute cannot be scheduled beyond 365 days."))
+
+        command.onModalInteraction(modalEvent)
+
+        verify(unmutePlanningService).planUnmute(guild, 99L, member, 366)
+        verify(guildLogger).log(
+            logCaptor.capture(),
+            eq(targetUser),
+            eq(guild),
+            isNull<List<MessageEmbed>>(),
+            eq(GuildLogger.LogTypeAction.MODERATOR),
+            isNull()
+        )
+        verify(privateChannel).sendMessageEmbeds(dmCaptor.capture())
+        verify(hook).sendMessage(resultCaptor.capture())
+        kotlin.test.assertEquals(
+            "Mute",
+            dmCaptor.firstValue.fields.single { it.name == "Punishment" }.value
+        )
+        kotlin.test.assertEquals(
+            "Mute",
+            logCaptor.firstValue.build().fields.single { it.name == "Punishment" }.value
+        )
+        kotlin.test.assertEquals(
+            true,
+            resultCaptor.firstValue.contains("Unmute cannot be scheduled beyond 365 days.")
+        )
+    }
+
     private fun stubSlashCommand(action: Int) {
         whenever(slashEvent.name).thenReturn("addwarnpoints")
         whenever(slashEvent.member).thenReturn(member)

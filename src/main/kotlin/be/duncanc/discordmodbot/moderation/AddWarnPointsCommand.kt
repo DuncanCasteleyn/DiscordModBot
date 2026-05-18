@@ -37,6 +37,12 @@ class AddWarnPointsCommand(
     private val muteRoleCommandAndEventsListener: MuteRoleCommandAndEventsListener,
     private val unmutePlanningService: UnmutePlanningService
 ) : ListenerAdapter(), SlashCommand {
+    private data class UnmuteSchedulingResult(
+        val effectiveUnmuteDays: Int?,
+        val unmutePlanMessage: String? = null,
+        val moderatorNote: String? = null
+    )
+
     companion object {
         private const val COMMAND = "addwarnpoints"
         private const val DESCRIPTION = "Add warn points to a user, optionally muting or kicking them."
@@ -256,7 +262,7 @@ class AddWarnPointsCommand(
 
                 guild.addRoleToMember(targetMember, muteRole).reason(reason).queue(
                     {
-                        val unmutePlanMessage =
+                        val unmuteSchedulingResult =
                             scheduleUnmuteIfRequested(guild, targetMember, moderator, unmuteDays)
                         finishWarnPointsProcessing(
                             jda,
@@ -267,10 +273,11 @@ class AddWarnPointsCommand(
                             guildWarnPoint.id,
                             expireDate,
                             action.toByte(),
-                            unmuteDays,
+                            unmuteSchedulingResult.effectiveUnmuteDays,
                             totalPoints,
                             hook,
-                            unmutePlanMessage
+                            unmuteSchedulingResult.unmutePlanMessage,
+                            unmuteSchedulingResult.moderatorNote
                         )
                     },
                     {
@@ -359,18 +366,27 @@ class AddWarnPointsCommand(
         targetMember: Member,
         moderator: Member,
         unmuteDays: Int?
-    ): String? {
+    ): UnmuteSchedulingResult {
         if (unmuteDays == null) {
-            return null
+            return UnmuteSchedulingResult(effectiveUnmuteDays = null)
         }
 
         return try {
             val unmuteDateTime = unmutePlanningService.planUnmute(guild, targetMember.idLong, moderator, unmuteDays)
-            "Unmute planned for ${TimeFormat.DATE_SHORT_TIME_SHORT.atInstant(unmuteDateTime.toInstant())}."
+            UnmuteSchedulingResult(
+                effectiveUnmuteDays = unmuteDays,
+                unmutePlanMessage = "Unmute planned for ${TimeFormat.DATE_SHORT_TIME_SHORT.atInstant(unmuteDateTime.toInstant())}."
+            )
         } catch (e: IllegalArgumentException) {
-            e.message ?: "Unable to plan an unmute."
+            UnmuteSchedulingResult(
+                effectiveUnmuteDays = null,
+                moderatorNote = e.message ?: "Unable to plan an unmute."
+            )
         } catch (e: IllegalStateException) {
-            e.message ?: "Unable to plan an unmute."
+            UnmuteSchedulingResult(
+                effectiveUnmuteDays = null,
+                moderatorNote = e.message ?: "Unable to plan an unmute."
+            )
         }
     }
 
