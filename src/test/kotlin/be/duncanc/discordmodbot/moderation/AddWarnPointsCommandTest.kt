@@ -254,6 +254,70 @@ class AddWarnPointsCommandTest {
         )
     }
 
+    @Test
+    fun `mute modal without configured mute role still logs and attempts DM`() {
+        val dmCaptor = argumentCaptor<MessageEmbed>()
+        val logCaptor = argumentCaptor<EmbedBuilder>()
+        val resultCaptor = argumentCaptor<String>()
+
+        stubSuccessfulMuteModalFlow(unmuteDays = 3, muteRoleConfigured = false)
+
+        command.onModalInteraction(modalEvent)
+
+        verify(unmutePlanningService, never()).planUnmute(any(), any(), any(), any())
+        verify(guildLogger).log(
+            logCaptor.capture(),
+            eq(targetUser),
+            eq(guild),
+            isNull<List<MessageEmbed>>(),
+            eq(GuildLogger.LogTypeAction.MODERATOR),
+            isNull()
+        )
+        verify(privateChannel).sendMessageEmbeds(dmCaptor.capture())
+        verify(hook).sendMessage(resultCaptor.capture())
+        kotlin.test.assertEquals(
+            null,
+            dmCaptor.firstValue.fields.singleOrNull { it.name == "Punishment" }
+        )
+        kotlin.test.assertEquals(
+            null,
+            logCaptor.firstValue.build().fields.singleOrNull { it.name == "Punishment" }
+        )
+        kotlin.test.assertEquals(true, resultCaptor.firstValue.contains("Mute role is not configured."))
+    }
+
+    @Test
+    fun `mute modal when role assignment fails still logs and attempts DM`() {
+        val dmCaptor = argumentCaptor<MessageEmbed>()
+        val logCaptor = argumentCaptor<EmbedBuilder>()
+        val resultCaptor = argumentCaptor<String>()
+
+        stubSuccessfulMuteModalFlow(unmuteDays = 3, muteRoleAssignmentSucceeds = false)
+
+        command.onModalInteraction(modalEvent)
+
+        verify(unmutePlanningService, never()).planUnmute(any(), any(), any(), any())
+        verify(guildLogger).log(
+            logCaptor.capture(),
+            eq(targetUser),
+            eq(guild),
+            isNull<List<MessageEmbed>>(),
+            eq(GuildLogger.LogTypeAction.MODERATOR),
+            isNull()
+        )
+        verify(privateChannel).sendMessageEmbeds(dmCaptor.capture())
+        verify(hook).sendMessage(resultCaptor.capture())
+        kotlin.test.assertEquals(
+            null,
+            dmCaptor.firstValue.fields.singleOrNull { it.name == "Punishment" }
+        )
+        kotlin.test.assertEquals(
+            null,
+            logCaptor.firstValue.build().fields.singleOrNull { it.name == "Punishment" }
+        )
+        kotlin.test.assertEquals(true, resultCaptor.firstValue.contains("Unable to add mute role to user."))
+    }
+
     private fun stubSlashCommand(action: Int) {
         whenever(slashEvent.name).thenReturn("addwarnpoints")
         whenever(slashEvent.member).thenReturn(member)
@@ -280,7 +344,11 @@ class AddWarnPointsCommandTest {
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun stubSuccessfulMuteModalFlow(unmuteDays: Int?) {
+    private fun stubSuccessfulMuteModalFlow(
+        unmuteDays: Int?,
+        muteRoleConfigured: Boolean = true,
+        muteRoleAssignmentSucceeds: Boolean = true
+    ) {
         val settings = GuildWarnPointsSettings(
             guildId = 1L,
             maxPointsPerReason = 10,
@@ -322,7 +390,12 @@ class AddWarnPointsCommandTest {
         whenever(guildWarnPointsService.addWarnPoint(eq(99L), eq(1L), eq(2), eq(12L), eq("Spamming"), any()))
             .thenReturn(warnPoint)
         whenever(guildWarnPointsService.getActivePointsCount(1L, 99L)).thenReturn(1)
-        whenever(muteRoleCommandAndEventsListener.getMuteRole(guild)).thenReturn(muteRole)
+        if (muteRoleConfigured) {
+            whenever(muteRoleCommandAndEventsListener.getMuteRole(guild)).thenReturn(muteRole)
+        } else {
+            whenever(muteRoleCommandAndEventsListener.getMuteRole(guild))
+                .thenThrow(IllegalStateException("Mute role not configured"))
+        }
         whenever(guild.addRoleToMember(targetMember, muteRole)).thenReturn(addRoleAction)
         whenever(addRoleAction.reason("Spamming")).thenReturn(addRoleAction)
         doAnswer {
@@ -330,11 +403,19 @@ class AddWarnPointsCommandTest {
             consumer.accept(hook)
             null
         }.whenever(replyAction).queue(any<Consumer<InteractionHook>>())
-        doAnswer {
-            val success = it.arguments[0] as Consumer<Void?>
-            success.accept(null)
-            null
-        }.whenever(addRoleAction).queue(any<Consumer<Void?>>(), any<Consumer<Throwable>>())
+        if (muteRoleAssignmentSucceeds) {
+            doAnswer {
+                val success = it.arguments[0] as Consumer<Void?>
+                success.accept(null)
+                null
+            }.whenever(addRoleAction).queue(any<Consumer<Void?>>(), any<Consumer<Throwable>>())
+        } else {
+            doAnswer {
+                val failure = it.arguments[1] as Consumer<Throwable>
+                failure.accept(IllegalStateException("Missing permissions"))
+                null
+            }.whenever(addRoleAction).queue(any<Consumer<Void?>>(), any<Consumer<Throwable>>())
+        }
         whenever(targetUser.openPrivateChannel()).thenReturn(openPrivateChannelAction)
         doAnswer {
             val success = it.arguments[0] as Consumer<PrivateChannel>

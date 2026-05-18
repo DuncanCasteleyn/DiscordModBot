@@ -236,33 +236,60 @@ class AddWarnPointsCommand(
                 val muteRole = try {
                     muteRoleCommandAndEventsListener.getMuteRole(guild)
                 } catch (_: IllegalStateException) {
-                    hook.sendMessage("Warn points added, but mute role is not configured.").setEphemeral(true).queue()
-
-                    null
-                }
-                muteRole?.let { role ->
-                    guild.addRoleToMember(targetMember, role).reason(reason).queue(
-                        {
-                            val unmutePlanMessage =
-                                scheduleUnmuteIfRequested(guild, targetMember, moderator, unmuteDays)
-                            finishWarnPointsProcessing(
-                                jda,
-                                moderator,
-                                targetMember,
-                                reason,
-                                points,
-                                guildWarnPoint.id,
-                                expireDate,
-                                action.toByte(),
-                                unmuteDays,
-                                totalPoints,
-                                hook,
-                                unmutePlanMessage
-                            )
-                        },
-                        { hook.sendMessage("Unable to add mute role to user.").setEphemeral(true).queue() }
+                    finishWarnPointsProcessing(
+                        jda,
+                        moderator,
+                        targetMember,
+                        reason,
+                        points,
+                        guildWarnPoint.id,
+                        expireDate,
+                        0,
+                        null,
+                        totalPoints,
+                        hook,
+                        moderatorNote = "Mute role is not configured."
                     )
+
+                    return
                 }
+
+                guild.addRoleToMember(targetMember, muteRole).reason(reason).queue(
+                    {
+                        val unmutePlanMessage =
+                            scheduleUnmuteIfRequested(guild, targetMember, moderator, unmuteDays)
+                        finishWarnPointsProcessing(
+                            jda,
+                            moderator,
+                            targetMember,
+                            reason,
+                            points,
+                            guildWarnPoint.id,
+                            expireDate,
+                            action.toByte(),
+                            unmuteDays,
+                            totalPoints,
+                            hook,
+                            unmutePlanMessage
+                        )
+                    },
+                    {
+                        finishWarnPointsProcessing(
+                            jda,
+                            moderator,
+                            targetMember,
+                            reason,
+                            points,
+                            guildWarnPoint.id,
+                            expireDate,
+                            0,
+                            null,
+                            totalPoints,
+                            hook,
+                            moderatorNote = "Unable to add mute role to user."
+                        )
+                    }
+                )
                 return
             }
 
@@ -298,7 +325,8 @@ class AddWarnPointsCommand(
         unmuteDays: Int?,
         totalPoints: Int,
         hook: InteractionHook,
-        unmutePlanMessage: String? = null
+        unmutePlanMessage: String? = null,
+        moderatorNote: String? = null
     ) {
         logAddPoints(
             jda,
@@ -321,7 +349,8 @@ class AddWarnPointsCommand(
             hook,
             action,
             unmuteDays,
-            unmutePlanMessage
+            unmutePlanMessage,
+            moderatorNote
         )
     }
 
@@ -420,7 +449,8 @@ class AddWarnPointsCommand(
         hook: InteractionHook,
         action: Byte,
         unmuteDays: Int?,
-        unmutePlanMessage: String?
+        unmutePlanMessage: String?,
+        moderatorNote: String?
     ) {
         val noteMessage = if (amountOfWarnings <= 1) {
             "Please watch your behavior in our server."
@@ -450,23 +480,25 @@ class AddWarnPointsCommand(
         toInform.user.openPrivateChannel().queue(
             { privateChannelUserToWarn ->
                 privateChannelUserToWarn.sendMessageEmbeds(userWarning).queue(
-                    { onSuccessfulInformUser(hook, toInform, userWarning, unmutePlanMessage) }
-                ) { throwable -> onFailToInformUser(hook, toInform, throwable, unmutePlanMessage) }
+                    { onSuccessfulInformUser(hook, toInform, userWarning, unmutePlanMessage, moderatorNote) }
+                ) { throwable -> onFailToInformUser(hook, toInform, throwable, unmutePlanMessage, moderatorNote) }
             }
-        ) { throwable -> onFailToInformUser(hook, toInform, throwable, unmutePlanMessage) }
+        ) { throwable -> onFailToInformUser(hook, toInform, throwable, unmutePlanMessage, moderatorNote) }
     }
 
     private fun onSuccessfulInformUser(
         hook: InteractionHook,
         toInform: Member,
         informationMessage: MessageEmbed,
-        unmutePlanMessage: String?
+        unmutePlanMessage: String?,
+        moderatorNote: String?
     ) {
         hook.sendMessage(
             buildModeratorResultMessage(
                 "Added warn points to $toInform.",
                 "The following message was sent to the user:",
-                unmutePlanMessage
+                unmutePlanMessage,
+                moderatorNote
             )
         )
             .setEphemeral(true)
@@ -477,13 +509,15 @@ class AddWarnPointsCommand(
         hook: InteractionHook,
         toInform: Member,
         throwable: Throwable,
-        unmutePlanMessage: String?
+        unmutePlanMessage: String?,
+        moderatorNote: String?
     ) {
         hook.sendMessage(
             buildModeratorResultMessage(
                 "Added warn points to $toInform.",
                 "Was unable to send a DM to the user please inform the user manually.\nError: ${throwable.message}",
-                unmutePlanMessage
+                unmutePlanMessage,
+                moderatorNote
             )
         )
             .setEphemeral(true)
@@ -522,12 +556,21 @@ class AddWarnPointsCommand(
         }
     }
 
-    private fun buildModeratorResultMessage(summary: String, detail: String, unmutePlanMessage: String?): String {
+    private fun buildModeratorResultMessage(
+        summary: String,
+        detail: String,
+        unmutePlanMessage: String?,
+        moderatorNote: String?
+    ): String {
         return buildString {
             append(summary)
             if (unmutePlanMessage != null) {
                 append('\n')
                 append(unmutePlanMessage)
+            }
+            if (moderatorNote != null) {
+                append('\n')
+                append(moderatorNote)
             }
             append("\n\n")
             append(detail)
