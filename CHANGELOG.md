@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.10.1...v2.11.0) (2026-05-18)
+
+
+### Features
+
+* **moderation:** unify warn reason modal flow ([#643](https://github.com/DuncanCasteleyn/DiscordModBot/issues/643)) ([81e075b](https://github.com/DuncanCasteleyn/DiscordModBot/commit/81e075b3ea74261f06ffc0f7425c38a3b2de8387))
+
 ## [2.10.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.10.0...v2.10.1) (2026-05-17)
 
 
