@@ -25,8 +25,6 @@ class NarouNovelPollingService(
         val generalLastup: String,
         val generalAllNo: Int,
         val length: Long,
-        val authorProfileLength: Long,
-        val hasFreshAuthorProfileLength: Boolean,
         val time: Int,
         val novelUpdatedAt: String,
         val updatedAt: String
@@ -37,8 +35,6 @@ class NarouNovelPollingService(
         private const val NOVEL_URL = "https://ncode.syosetu.com/n2267be/"
         private const val DEFAULT_ALERT_MENTION = "@everyone"
         private const val EMBED_TITLE = "Narou update for $NOVEL_CODE"
-        private const val PREDICTION_ALERT_MESSAGE =
-            "Detected an increase in the author's profile character count. This may indicate that a new chapter is coming soon"
         private val LOG = LoggerFactory.getLogger(NarouNovelPollingService::class.java)
     }
 
@@ -47,7 +43,7 @@ class NarouNovelPollingService(
     fun pollNovel() {
         val snapshot = narouNovelSnapshotRepository.findById(NOVEL_CODE).orElse(null)
         val payload = try {
-            fetchPayload(snapshot)
+            fetchPayload()
         } catch (exception: Exception) {
             LOG.warn("Failed to poll Narou novel API", exception)
             return
@@ -60,29 +56,27 @@ class NarouNovelPollingService(
                     generalLastup = payload.generalLastup,
                     generalAllNo = payload.generalAllNo,
                     length = payload.length,
-                    authorProfileLength = payload.authorProfileLength,
                     time = payload.time,
                     novelUpdatedAt = payload.novelUpdatedAt,
                     updatedAt = payload.updatedAt
                 )
             )
-            initializeMissingBaselines(payload.length, payload.authorProfileLength, payload.hasFreshAuthorProfileLength, payload.generalAllNo)
+            initializeMissingBaselines(payload.length, payload.generalAllNo)
             return
         }
 
         snapshot.generalLastup = payload.generalLastup
         snapshot.generalAllNo = payload.generalAllNo
         snapshot.length = payload.length
-        snapshot.authorProfileLength = payload.authorProfileLength
         snapshot.time = payload.time
         snapshot.novelUpdatedAt = payload.novelUpdatedAt
         snapshot.updatedAt = payload.updatedAt
         narouNovelSnapshotRepository.save(snapshot)
 
-        processAlerts(snapshot, payload.hasFreshAuthorProfileLength)
+        processAlerts(snapshot)
     }
 
-    internal fun fetchPayload(existingSnapshot: NarouNovelSnapshot?): NarouNovelPollSnapshot {
+    internal fun fetchPayload(): NarouNovelPollSnapshot {
         val novelPayload = narouNovelApiClient.fetchNovel().firstOrNull {
             it.generalLastup != null &&
                     it.generalAllNo != null &&
@@ -92,78 +86,49 @@ class NarouNovelPollingService(
                     it.updatedAt != null
         } ?: throw IllegalStateException("Narou novel API response did not contain a novel payload")
 
-        val authorProfileLength = try {
-            narouNovelApiClient.fetchAuthorProfile().firstOrNull {
-                it.novelLength != null
-            }?.novelLength ?: throw IllegalStateException("Narou author profile API response did not contain a profile length payload")
-        } catch (exception: Exception) {
-            if (existingSnapshot == null) {
-                LOG.warn("Failed to poll Narou author profile API; prediction alerts will remain disabled until a profile length is fetched", exception)
-                null
-            } else {
-                LOG.warn("Failed to poll Narou author profile API; continuing with stored author profile length", exception)
-                existingSnapshot.authorProfileLength.takeIf { it > 0 }
-            }
-        }
-
         return NarouNovelPollSnapshot(
             generalLastup = novelPayload.generalLastup!!,
             generalAllNo = novelPayload.generalAllNo!!,
             length = novelPayload.length!!,
-            authorProfileLength = authorProfileLength ?: 0,
-            hasFreshAuthorProfileLength = authorProfileLength != null,
             time = novelPayload.time!!,
             novelUpdatedAt = novelPayload.novelUpdatedAt!!,
             updatedAt = novelPayload.updatedAt!!
         )
     }
 
-    private fun processAlerts(snapshot: NarouNovelSnapshot, hasFreshAuthorProfileLength: Boolean) {
+    private fun processAlerts(snapshot: NarouNovelSnapshot) {
         narouNovelAlertSettingsRepository.findAll().forEach { settings ->
-            val updatedSettings = initializeOrRebaseBaselines(settings, snapshot, hasFreshAuthorProfileLength)
+            val updatedSettings = initializeOrRebaseBaselines(settings, snapshot)
             if (updatedSettings) {
                 return@forEach
             }
 
             val lastAlertedLength = settings.lastAlertedLength ?: return@forEach
-            val lastAlertedAuthorProfileLength = settings.lastAlertedAuthorProfileLength ?: return@forEach
             val lastAlertedGeneralAllNo = settings.lastAlertedGeneralAllNo ?: return@forEach
             val lengthDelta = snapshot.length - lastAlertedLength
-            val predictionLengthDelta = if (hasFreshAuthorProfileLength) {
-                snapshot.authorProfileLength - lastAlertedAuthorProfileLength
-            } else {
-                0
-            }
             val chapterDelta = snapshot.generalAllNo - lastAlertedGeneralAllNo
             val lengthTriggered = lengthDelta >= settings.lengthThreshold
-            val predictionTriggered = hasFreshAuthorProfileLength && predictionLengthDelta >= settings.predictionLengthThreshold
             val chapterTriggered = chapterDelta > 0
-            if (!lengthTriggered && !predictionTriggered && !chapterTriggered) {
+            if (!lengthTriggered && !chapterTriggered) {
                 return@forEach
             }
 
             val pendingAlert = narouNovelPendingAlertRepository.findById(settings.guildId).orElse(null)
             if (pendingAlert != null) {
-                if (
-                    pendingAlert.snapshotGeneralAllNo == snapshot.generalAllNo &&
-                    pendingAlert.snapshotLength == snapshot.length &&
-                    pendingAlert.snapshotAuthorProfileLength == snapshot.authorProfileLength
-                ) {
+                if (pendingAlert.snapshotGeneralAllNo == snapshot.generalAllNo && pendingAlert.snapshotLength == snapshot.length) {
                     LOG.debug(
-                        "Skipping Narou novel alert for guild {} because snapshot {}:{}:{} was already sent or is still being finalized",
+                        "Skipping Narou novel alert for guild {} because snapshot {}:{} was already sent or is still being finalized",
                         settings.guildId,
                         pendingAlert.snapshotGeneralAllNo,
-                        pendingAlert.snapshotLength,
-                        pendingAlert.snapshotAuthorProfileLength
+                        pendingAlert.snapshotLength
                     )
                     return@forEach
                 }
                 LOG.debug(
-                    "Skipping Narou novel alert for guild {} because a pending alert lock exists for snapshot {}:{}:{}",
+                    "Skipping Narou novel alert for guild {} because a pending alert lock exists for snapshot {}:{}",
                     settings.guildId,
                     pendingAlert.snapshotGeneralAllNo,
-                    pendingAlert.snapshotLength,
-                    pendingAlert.snapshotAuthorProfileLength
+                    pendingAlert.snapshotLength
                 )
                 return@forEach
             }
@@ -182,8 +147,6 @@ class NarouNovelPollingService(
             val embed = buildAlertEmbed(
                 lengthTriggered,
                 lengthDelta,
-                predictionTriggered,
-                predictionLengthDelta,
                 chapterTriggered,
                 chapterDelta,
                 snapshot
@@ -193,7 +156,6 @@ class NarouNovelPollingService(
                 NarouNovelPendingAlert(
                     guildId = settings.guildId,
                     snapshotLength = snapshot.length,
-                    snapshotAuthorProfileLength = snapshot.authorProfileLength,
                     snapshotGeneralAllNo = snapshot.generalAllNo
                 )
             )
@@ -206,9 +168,6 @@ class NarouNovelPollingService(
                         try {
                             if (lengthTriggered) {
                                 settings.lastAlertedLength = snapshot.length
-                            }
-                            if (predictionTriggered || (chapterTriggered && hasFreshAuthorProfileLength)) {
-                                settings.lastAlertedAuthorProfileLength = snapshot.authorProfileLength
                             }
                             if (chapterTriggered) {
                                 settings.lastAlertedGeneralAllNo = snapshot.generalAllNo
@@ -316,18 +275,12 @@ class NarouNovelPollingService(
 
     private fun initializeMissingBaselines(
         length: Long,
-        authorProfileLength: Long,
-        hasFreshAuthorProfileLength: Boolean,
         generalAllNo: Int
     ) {
         narouNovelAlertSettingsRepository.findAll().forEach { settings ->
             var changed = false
             if (settings.lastAlertedLength == null) {
                 settings.lastAlertedLength = length
-                changed = true
-            }
-            if (settings.lastAlertedAuthorProfileLength == null && hasFreshAuthorProfileLength && authorProfileLength > 0) {
-                settings.lastAlertedAuthorProfileLength = authorProfileLength
                 changed = true
             }
             if (settings.lastAlertedGeneralAllNo == null) {
@@ -342,21 +295,11 @@ class NarouNovelPollingService(
 
     private fun initializeOrRebaseBaselines(
         settings: NarouNovelAlertSettings,
-        snapshot: NarouNovelSnapshot,
-        hasFreshAuthorProfileLength: Boolean
+        snapshot: NarouNovelSnapshot
     ): Boolean {
         var changed = false
         if (settings.lastAlertedLength == null || settings.lastAlertedLength!! > snapshot.length) {
             settings.lastAlertedLength = snapshot.length
-            changed = true
-        }
-        if (
-            hasFreshAuthorProfileLength && snapshot.authorProfileLength > 0 && (
-                settings.lastAlertedAuthorProfileLength == null ||
-                    settings.lastAlertedAuthorProfileLength!! > snapshot.authorProfileLength
-            )
-        ) {
-            settings.lastAlertedAuthorProfileLength = snapshot.authorProfileLength
             changed = true
         }
         if (settings.lastAlertedGeneralAllNo == null || settings.lastAlertedGeneralAllNo!! > snapshot.generalAllNo) {
@@ -399,8 +342,6 @@ class NarouNovelPollingService(
     private fun buildAlertEmbed(
         lengthTriggered: Boolean,
         lengthDelta: Long,
-        predictionTriggered: Boolean,
-        predictionLengthDelta: Long,
         chapterTriggered: Boolean,
         chapterDelta: Int,
         snapshot: NarouNovelSnapshot
@@ -416,9 +357,6 @@ class NarouNovelPollingService(
         if (lengthTriggered) {
             updates += "the novel grew by $lengthDelta characters"
         }
-        if (predictionTriggered) {
-            updates += PREDICTION_ALERT_MESSAGE
-        }
 
         val summary = truncate(updates.joinToString(" and ") + ".", MessageEmbed.DESCRIPTION_MAX_LENGTH)
         val chapterLink = truncate(NOVEL_URL + snapshot.generalAllNo, MessageEmbed.VALUE_MAX_LENGTH)
@@ -431,14 +369,6 @@ class NarouNovelPollingService(
             .addField("Total chapters", snapshot.generalAllNo.toString(), true)
             .addField("Total characters", snapshot.length.toString(), true)
             .addField("Chapter link", chapterLink, false)
-
-        if (predictionLengthDelta > 0) {
-            embedBuilder.addField(
-                "Author profile length",
-                "${snapshot.authorProfileLength} (+$predictionLengthDelta)",
-                false
-            )
-        }
 
         return embedBuilder
             .addField("Next chapter link", nextChapterLink, false)

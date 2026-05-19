@@ -93,7 +93,6 @@ class NarouNovelConfigCommandTest {
         assertEquals(true, replyCaptor.firstValue.contains("- Alert channel: Disabled"))
         assertEquals(true, replyCaptor.firstValue.contains("- Ping target: @everyone"))
         assertEquals(true, replyCaptor.firstValue.contains("- Published novel growth threshold: 1000"))
-        assertEquals(true, replyCaptor.firstValue.contains("- Author profile prediction threshold: 1000"))
     }
 
     @Test
@@ -136,18 +135,7 @@ class NarouNovelConfigCommandTest {
         whenever(textChannel.asMention).thenReturn("<#11>")
         whenever(narouNovelAlertSettingsRepository.findById(1L)).thenReturn(Optional.empty())
         whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(
-            Optional.of(
-                NarouNovelSnapshot(
-                    ncode = NarouNovelPollingService.NOVEL_CODE,
-                    generalLastup = "2026-05-15 07:00:00",
-                    generalAllNo = 778,
-                    length = 9_445_269,
-                    authorProfileLength = 9_876_000,
-                    time = 18_891,
-                    novelUpdatedAt = "2026-05-15 07:00:36",
-                    updatedAt = "2026-05-15 20:14:23"
-                )
-            )
+            Optional.of(snapshot(length = 9_445_269, generalAllNo = 778))
         )
         command.selectedChannel = textChannel
 
@@ -157,40 +145,6 @@ class NarouNovelConfigCommandTest {
         verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
         assertEquals(11L, settingsCaptor.firstValue.channelId)
         assertEquals(9_445_269L, settingsCaptor.firstValue.lastAlertedLength)
-        assertEquals(9_876_000L, settingsCaptor.firstValue.lastAlertedAuthorProfileLength)
-        assertEquals(778, settingsCaptor.firstValue.lastAlertedGeneralAllNo)
-        verify(slashEvent).reply("Narou novel alerts will be sent to <#11>.")
-    }
-
-    @Test
-    fun `set channel does not initialize author profile baseline from zero snapshot`() {
-        stubAuthorizedSlashCommand("set-channel")
-        whenever(textChannel.idLong).thenReturn(11L)
-        whenever(textChannel.asMention).thenReturn("<#11>")
-        whenever(narouNovelAlertSettingsRepository.findById(1L)).thenReturn(Optional.empty())
-        whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(
-            Optional.of(
-                NarouNovelSnapshot(
-                    ncode = NarouNovelPollingService.NOVEL_CODE,
-                    generalLastup = "2026-05-15 07:00:00",
-                    generalAllNo = 778,
-                    length = 9_445_269,
-                    authorProfileLength = 0,
-                    time = 18_891,
-                    novelUpdatedAt = "2026-05-15 07:00:36",
-                    updatedAt = "2026-05-15 20:14:23"
-                )
-            )
-        )
-        command.selectedChannel = textChannel
-
-        command.onSlashCommandInteraction(slashEvent)
-
-        val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
-        verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
-        assertEquals(11L, settingsCaptor.firstValue.channelId)
-        assertEquals(9_445_269L, settingsCaptor.firstValue.lastAlertedLength)
-        assertEquals(null, settingsCaptor.firstValue.lastAlertedAuthorProfileLength)
         assertEquals(778, settingsCaptor.firstValue.lastAlertedGeneralAllNo)
         verify(slashEvent).reply("Narou novel alerts will be sent to <#11>.")
     }
@@ -257,21 +211,6 @@ class NarouNovelConfigCommandTest {
     }
 
     @Test
-    fun `set prediction threshold stores configured value`() {
-        stubAuthorizedSlashCommand("set-prediction-threshold")
-        command.threshold = 750L
-        whenever(narouNovelAlertSettingsRepository.findById(1L)).thenReturn(Optional.empty())
-        whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.empty())
-
-        command.onSlashCommandInteraction(slashEvent)
-
-        val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
-        verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
-        assertEquals(750L, settingsCaptor.firstValue.predictionLengthThreshold)
-        verify(slashEvent).reply("Narou prediction alerts now require at least 750 characters of author profile growth.")
-    }
-
-    @Test
     fun `disable removes narou novel configuration`() {
         stubAuthorizedSlashCommand("disable")
 
@@ -300,7 +239,7 @@ class NarouNovelConfigCommandTest {
         assertEquals("narounovelapi", commandData.name)
         assertEquals(setOf(InteractionContextType.GUILD), commandData.contexts)
         assertEquals(
-            listOf("show", "set-channel", "set-ping-role", "set-threshold", "set-prediction-threshold", "disable"),
+            listOf("show", "set-channel", "set-ping-role", "set-threshold", "disable"),
             commandData.subcommands.map(SubcommandData::getName)
         )
     }
@@ -318,6 +257,18 @@ class NarouNovelConfigCommandTest {
         whenever(guild.idLong).thenReturn(1L)
         whenever(member.hasPermission(Permission.MANAGE_CHANNEL)).thenReturn(true)
         whenever(slashEvent.subcommandName).thenReturn(subcommandName)
+    }
+
+    private fun snapshot(length: Long, generalAllNo: Int): NarouNovelSnapshot {
+        return NarouNovelSnapshot(
+            ncode = NarouNovelPollingService.NOVEL_CODE,
+            generalLastup = "2026-05-15 07:00:00",
+            generalAllNo = generalAllNo,
+            length = length,
+            time = 18_891,
+            novelUpdatedAt = "2026-05-15 07:00:36",
+            updatedAt = "2026-05-15 20:14:23"
+        )
     }
 
     private class TestNarouNovelConfigCommand(
