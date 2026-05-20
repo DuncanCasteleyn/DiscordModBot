@@ -21,6 +21,7 @@ import net.dv8tion.jda.api.requests.restaction.AuditableRestAction
 import net.dv8tion.jda.api.requests.restaction.CacheRestAction
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction
 import net.dv8tion.jda.api.requests.restaction.WebhookMessageCreateAction
+import net.dv8tion.jda.api.requests.restaction.WebhookMessageEditAction
 import net.dv8tion.jda.api.requests.restaction.interactions.ModalCallbackAction
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction
 import org.junit.jupiter.api.BeforeEach
@@ -93,6 +94,9 @@ class AddWarnPointsCommandTest {
 
     @Mock
     private lateinit var followupAction: WebhookMessageCreateAction<Message>
+
+    @Mock
+    private lateinit var editAction: WebhookMessageEditAction<Message>
 
     @Mock
     private lateinit var userOption: OptionMapping
@@ -353,6 +357,38 @@ class AddWarnPointsCommandTest {
             true,
             resultCaptor.firstValue.contains("Unmute cannot be scheduled beyond 365 days.")
         )
+    }
+
+    @Test
+    fun `mute modal completes deferred reply when unexpected unmute planning fails`() {
+        val resultCaptor = argumentCaptor<String>()
+
+        stubSuccessfulMuteModalFlow(unmuteDays = 3)
+        whenever(hook.editOriginal(any<String>())).thenReturn(editAction)
+        whenever(unmutePlanningService.planUnmute(guild, 99L, member, 3))
+            .thenThrow(RuntimeException("Scheduler unavailable"))
+
+        command.onModalInteraction(modalEvent)
+
+        verify(unmutePlanningService).planUnmute(guild, 99L, member, 3)
+        verify(hook).editOriginal(resultCaptor.capture())
+        verify(hook, never()).sendMessage(any<String>())
+        kotlin.test.assertEquals("Error: Scheduler unavailable", resultCaptor.firstValue)
+    }
+
+    @Test
+    fun `mute modal completes deferred reply when role assignment failure handling throws`() {
+        val resultCaptor = argumentCaptor<String>()
+
+        stubSuccessfulMuteModalFlow(unmuteDays = 3, muteRoleAssignmentSucceeds = false)
+        whenever(hook.editOriginal(any<String>())).thenReturn(editAction)
+        whenever(jda.registeredListeners).thenThrow(RuntimeException("Logger unavailable"))
+
+        command.onModalInteraction(modalEvent)
+
+        verify(hook).editOriginal(resultCaptor.capture())
+        verify(hook, never()).sendMessage(any<String>())
+        kotlin.test.assertEquals("Error: Logger unavailable", resultCaptor.firstValue)
     }
 
     private fun stubSlashCommand(action: Int) {

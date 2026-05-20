@@ -262,39 +262,49 @@ class AddWarnPointsCommand(
 
                 guild.addRoleToMember(targetMember, muteRole).reason(reason).queue(
                     {
-                        val unmuteSchedulingResult =
-                            scheduleUnmuteIfRequested(guild, targetMember, moderator, unmuteDays)
-                        finishWarnPointsProcessing(
-                            jda,
-                            moderator,
-                            targetMember,
-                            reason,
-                            points,
-                            guildWarnPoint.id,
-                            expireDate,
-                            action.toByte(),
-                            unmuteSchedulingResult.effectiveUnmuteDays,
-                            totalPoints,
-                            hook,
-                            unmuteSchedulingResult.unmutePlanMessage,
-                            unmuteSchedulingResult.moderatorNote
-                        )
+                        try {
+                            val unmuteSchedulingResult =
+                                scheduleUnmuteIfRequested(guild, targetMember, moderator, unmuteDays)
+                            finishWarnPointsProcessing(
+                                jda,
+                                moderator,
+                                targetMember,
+                                reason,
+                                points,
+                                guildWarnPoint.id,
+                                expireDate,
+                                action.toByte(),
+                                unmuteSchedulingResult.effectiveUnmuteDays,
+                                totalPoints,
+                                hook,
+                                unmuteSchedulingResult.unmutePlanMessage,
+                                unmuteSchedulingResult.moderatorNote
+                            )
+                        } catch (t: Throwable) {
+                            LOG.error("Error processing warn points", t)
+                            hook.editOriginal("Error: ${t.message}").queue()
+                        }
                     },
                     {
-                        finishWarnPointsProcessing(
-                            jda,
-                            moderator,
-                            targetMember,
-                            reason,
-                            points,
-                            guildWarnPoint.id,
-                            expireDate,
-                            0,
-                            null,
-                            totalPoints,
-                            hook,
-                            moderatorNote = "Unable to add mute role to user."
-                        )
+                        try {
+                            finishWarnPointsProcessing(
+                                jda,
+                                moderator,
+                                targetMember,
+                                reason,
+                                points,
+                                guildWarnPoint.id,
+                                expireDate,
+                                0,
+                                null,
+                                totalPoints,
+                                hook,
+                                moderatorNote = "Unable to add mute role to user."
+                            )
+                        } catch (t: Throwable) {
+                            LOG.error("Error processing warn points", t)
+                            hook.editOriginal("Error: ${t.message}").queue()
+                        }
                     }
                 )
                 return
