@@ -364,15 +364,14 @@ class AddWarnPointsCommandTest {
         val resultCaptor = argumentCaptor<String>()
 
         stubSuccessfulMuteModalFlow(unmuteDays = 3)
-        whenever(hook.editOriginal(any<String>())).thenReturn(editAction)
+        whenever(hook.sendMessage(any<String>())).thenReturn(followupAction)
         whenever(unmutePlanningService.planUnmute(guild, 99L, member, 3))
             .thenThrow(RuntimeException("Scheduler unavailable"))
 
         command.onModalInteraction(modalEvent)
 
         verify(unmutePlanningService).planUnmute(guild, 99L, member, 3)
-        verify(hook).editOriginal(resultCaptor.capture())
-        verify(hook, never()).sendMessage(any<String>())
+        verify(hook).sendMessage(resultCaptor.capture())
         kotlin.test.assertEquals("Error: Scheduler unavailable", resultCaptor.firstValue)
     }
 
@@ -381,13 +380,12 @@ class AddWarnPointsCommandTest {
         val resultCaptor = argumentCaptor<String>()
 
         stubSuccessfulMuteModalFlow(unmuteDays = 3, muteRoleAssignmentSucceeds = false)
-        whenever(hook.editOriginal(any<String>())).thenReturn(editAction)
+        whenever(hook.sendMessage(any<String>())).thenReturn(followupAction)
         whenever(jda.registeredListeners).thenThrow(RuntimeException("Logger unavailable"))
 
         command.onModalInteraction(modalEvent)
 
-        verify(hook).editOriginal(resultCaptor.capture())
-        verify(hook, never()).sendMessage(any<String>())
+        verify(hook).sendMessage(resultCaptor.capture())
         kotlin.test.assertEquals("Error: Logger unavailable", resultCaptor.firstValue)
     }
 

@@ -16,6 +16,7 @@ import net.dv8tion.jda.api.interactions.InteractionHook
 import net.dv8tion.jda.api.interactions.commands.OptionMapping
 import net.dv8tion.jda.api.interactions.modals.ModalMapping
 import net.dv8tion.jda.api.requests.restaction.AuditableRestAction
+import net.dv8tion.jda.api.requests.restaction.WebhookMessageCreateAction
 import net.dv8tion.jda.api.requests.restaction.WebhookMessageEditAction
 import net.dv8tion.jda.api.requests.restaction.interactions.ModalCallbackAction
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction
@@ -90,6 +91,9 @@ class AddWarnPointsByIdCommandTest {
 
     @Mock
     private lateinit var editAction: WebhookMessageEditAction<net.dv8tion.jda.api.entities.Message>
+
+    @Mock
+    private lateinit var followupAction: WebhookMessageCreateAction<net.dv8tion.jda.api.entities.Message>
 
     @Mock
     private lateinit var userOption: OptionMapping
@@ -182,7 +186,7 @@ class AddWarnPointsByIdCommandTest {
         ).thenReturn(warnPoint)
         whenever(guildWarnPointsService.getActivePointsCount(1L, 99L)).thenReturn(1)
         whenever(modalEvent.deferReply(true)).thenReturn(replyAction)
-        whenever(interactionHook.editOriginal(any<String>())).thenReturn(editAction)
+        whenever(interactionHook.sendMessage(any<String>())).thenReturn(followupAction)
         doQueue(replyAction)
 
         command.onModalInteraction(modalEvent)
@@ -195,7 +199,7 @@ class AddWarnPointsByIdCommandTest {
             eq("Spamming"),
             any<OffsetDateTime>()
         )
-        verify(interactionHook).editOriginal(
+        verify(interactionHook).sendMessage(
             """Added warn points to <@99>.
 The user was not warned by DM, please do so manually when they rejoin."""
         )
@@ -264,7 +268,7 @@ The user was not warned by DM, please do so manually when they rejoin."""
             eq(GuildLogger.LogTypeAction.MODERATOR),
             isNull()
         )
-        verify(interactionHook).editOriginal(resultCaptor.capture())
+        verify(interactionHook).sendMessage(resultCaptor.capture())
         kotlin.test.assertEquals(
             "Mute",
             embedCaptor.firstValue.build().fields.single { it.name == "Punishment" }.value
@@ -297,7 +301,7 @@ The user was not warned by DM, please do so manually when they rejoin.""",
             eq(GuildLogger.LogTypeAction.MODERATOR),
             isNull()
         )
-        verify(interactionHook).editOriginal(resultCaptor.capture())
+        verify(interactionHook).sendMessage(resultCaptor.capture())
         kotlin.test.assertEquals(
             "3 days mute",
             embedCaptor.firstValue.build().fields.single { it.name == "Punishment" }.value
@@ -325,7 +329,7 @@ The user was not warned by DM, please do so manually when they rejoin.""",
             eq(GuildLogger.LogTypeAction.MODERATOR),
             isNull()
         )
-        verify(interactionHook).editOriginal(resultCaptor.capture())
+        verify(interactionHook).sendMessage(resultCaptor.capture())
         kotlin.test.assertEquals(
             "Mute",
             embedCaptor.firstValue.build().fields.single { it.name == "Punishment" }.value
@@ -354,7 +358,7 @@ The user was not warned by DM, please do so manually when they rejoin.""",
             eq(GuildLogger.LogTypeAction.MODERATOR),
             isNull()
         )
-        verify(interactionHook).editOriginal(resultCaptor.capture())
+        verify(interactionHook).sendMessage(resultCaptor.capture())
         kotlin.test.assertEquals(
             "3 days mute",
             embedCaptor.firstValue.build().fields.single { it.name == "Punishment" }.value
@@ -381,7 +385,7 @@ The user was not warned by DM, please do so manually when they rejoin.""",
             eq(GuildLogger.LogTypeAction.MODERATOR),
             isNull()
         )
-        verify(interactionHook).editOriginal(resultCaptor.capture())
+        verify(interactionHook).sendMessage(resultCaptor.capture())
         kotlin.test.assertEquals(
             null,
             embedCaptor.firstValue.build().fields.singleOrNull { it.name == "Punishment" }
@@ -401,7 +405,7 @@ The user was not warned by DM, please do so manually when they rejoin.""",
 
         verify(muteService).muteUserById(1L, 99L)
         verify(unmutePlanningService, never()).planUnmute(any(), any(), any(), any())
-        verify(interactionHook).editOriginal(resultCaptor.capture())
+        verify(interactionHook).sendMessage(resultCaptor.capture())
         verify(guildLogger, never()).log(any(), anyOrNull(), any(), anyOrNull(), any(), anyOrNull())
         kotlin.test.assertEquals("Error: Failed to persist mute state", resultCaptor.firstValue)
     }
@@ -418,7 +422,7 @@ The user was not warned by DM, please do so manually when they rejoin.""",
 
         verify(muteService).muteUserById(1L, 99L)
         verify(unmutePlanningService).planUnmute(guild, 99L, member, 3)
-        verify(interactionHook).editOriginal(resultCaptor.capture())
+        verify(interactionHook).sendMessage(resultCaptor.capture())
         verify(guildLogger, never()).log(any(), anyOrNull(), any(), anyOrNull(), any(), anyOrNull())
         kotlin.test.assertEquals("Error: Scheduler unavailable", resultCaptor.firstValue)
     }
@@ -501,7 +505,7 @@ The user was not warned by DM, please do so manually when they rejoin.""",
         ).thenReturn(warnPoint)
         whenever(guildWarnPointsService.getActivePointsCount(1L, 99L)).thenReturn(1)
         whenever(modalEvent.deferReply(true)).thenReturn(replyAction)
-        whenever(interactionHook.editOriginal(any<String>())).thenReturn(editAction)
+        whenever(interactionHook.sendMessage(any<String>())).thenReturn(followupAction)
         whenever(muteRoleCommandAndEventsListener.getMuteRole(guild)).thenReturn(muteRole)
         whenever(targetMember.asMention).thenReturn("<@99>")
         whenever(targetMember.user).thenReturn(targetUser)
