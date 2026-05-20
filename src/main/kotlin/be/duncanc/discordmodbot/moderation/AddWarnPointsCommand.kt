@@ -282,7 +282,14 @@ class AddWarnPointsCommand(
                             )
                         } catch (t: Throwable) {
                             LOG.error("Error processing warn points", t)
-                            hook.sendMessage("Error: ${t.message}").queue()
+                            hook.sendMessage(
+                                buildModeratorResultMessage(
+                                    "Added warn points to $targetMember and applied the mute role.",
+                                    "A follow-up step failed, so logging or notification may need manual checking.",
+                                    null,
+                                    null
+                                )
+                            ).setEphemeral(true).queue()
                         }
                     },
                     {
@@ -303,7 +310,14 @@ class AddWarnPointsCommand(
                             )
                         } catch (t: Throwable) {
                             LOG.error("Error processing warn points", t)
-                            hook.sendMessage("Error: ${t.message}").queue()
+                            hook.sendMessage(
+                                buildModeratorResultMessage(
+                                    "Added warn points to $targetMember.",
+                                    "A follow-up step failed, so logging or notification may need manual checking.",
+                                    null,
+                                    "Unable to add mute role to user."
+                                )
+                            ).setEphemeral(true).queue()
                         }
                     }
                 )

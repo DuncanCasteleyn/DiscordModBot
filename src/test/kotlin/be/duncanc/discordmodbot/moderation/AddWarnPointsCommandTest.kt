@@ -372,7 +372,14 @@ class AddWarnPointsCommandTest {
 
         verify(unmutePlanningService).planUnmute(guild, 99L, member, 3)
         verify(hook).sendMessage(resultCaptor.capture())
-        kotlin.test.assertEquals("Error: Scheduler unavailable", resultCaptor.firstValue)
+        kotlin.test.assertEquals(true, resultCaptor.firstValue.contains("Added warn points to $targetMember and applied the mute role."))
+        kotlin.test.assertEquals(
+            true,
+            resultCaptor.firstValue.contains(
+                "A follow-up step failed, so logging or notification may need manual checking."
+            )
+        )
+        kotlin.test.assertEquals(false, resultCaptor.firstValue.contains("Scheduler unavailable"))
     }
 
     @Test
@@ -386,7 +393,15 @@ class AddWarnPointsCommandTest {
         command.onModalInteraction(modalEvent)
 
         verify(hook).sendMessage(resultCaptor.capture())
-        kotlin.test.assertEquals("Error: Logger unavailable", resultCaptor.firstValue)
+        kotlin.test.assertEquals(true, resultCaptor.firstValue.contains("Added warn points to $targetMember."))
+        kotlin.test.assertEquals(true, resultCaptor.firstValue.contains("Unable to add mute role to user."))
+        kotlin.test.assertEquals(
+            true,
+            resultCaptor.firstValue.contains(
+                "A follow-up step failed, so logging or notification may need manual checking."
+            )
+        )
+        kotlin.test.assertEquals(false, resultCaptor.firstValue.contains("Logger unavailable"))
     }
 
     private fun stubSlashCommand(action: Int) {
