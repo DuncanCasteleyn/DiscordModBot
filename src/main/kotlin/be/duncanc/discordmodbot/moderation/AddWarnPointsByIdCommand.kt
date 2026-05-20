@@ -269,33 +269,87 @@ class AddWarnPointsByIdCommand(
         if (action == 1) {
             try {
                 val muteRole = muteRoleCommandAndEventsListener.getMuteRole(guild)
-                muteService.muteUserById(guild.idLong, targetUserId)
-                targetMember?.let {
-                    guild.addRoleToMember(it, muteRole).reason(reason).queue()
+
+                if (targetMember == null) {
+                    muteService.muteUserById(guild.idLong, targetUserId)
+
+                    val unmuteSchedulingResult = scheduleUnmuteIfRequested(guild, targetUserId, moderator, unmuteDays)
+                    logAddPoints(
+                        moderator,
+                        targetUserId,
+                        null,
+                        reason,
+                        points,
+                        guildWarnPoint.id,
+                        expireDate,
+                        action.toByte(),
+                        unmuteSchedulingResult.effectiveUnmuteDays,
+                        guild
+                    )
+                    hook.editOriginal(
+                        buildCompletionMessage(
+                            targetUserId,
+                            null,
+                            true,
+                            unmuteSchedulingResult.unmutePlanMessage,
+                            unmuteSchedulingResult.moderatorNote
+                        )
+                    ).queue()
+                    return
                 }
 
-                val unmuteSchedulingResult = scheduleUnmuteIfRequested(guild, targetUserId, moderator, unmuteDays)
-                logAddPoints(
-                    moderator,
-                    targetUserId,
-                    targetMember,
-                    reason,
-                    points,
-                    guildWarnPoint.id,
-                    expireDate,
-                    action.toByte(),
-                    unmuteSchedulingResult.effectiveUnmuteDays,
-                    guild
+                guild.addRoleToMember(targetMember, muteRole).reason(reason).queue(
+                    {
+                        muteService.muteUserById(guild.idLong, targetUserId)
+
+                        val unmuteSchedulingResult =
+                            scheduleUnmuteIfRequested(guild, targetUserId, moderator, unmuteDays)
+                        logAddPoints(
+                            moderator,
+                            targetUserId,
+                            targetMember,
+                            reason,
+                            points,
+                            guildWarnPoint.id,
+                            expireDate,
+                            action.toByte(),
+                            unmuteSchedulingResult.effectiveUnmuteDays,
+                            guild
+                        )
+                        hook.editOriginal(
+                            buildCompletionMessage(
+                                targetUserId,
+                                targetMember,
+                                true,
+                                unmuteSchedulingResult.unmutePlanMessage,
+                                unmuteSchedulingResult.moderatorNote
+                            )
+                        ).queue()
+                    },
+                    {
+                        logAddPoints(
+                            moderator,
+                            targetUserId,
+                            targetMember,
+                            reason,
+                            points,
+                            guildWarnPoint.id,
+                            expireDate,
+                            0,
+                            null,
+                            guild
+                        )
+                        hook.editOriginal(
+                            buildCompletionMessage(
+                                targetUserId,
+                                targetMember,
+                                false,
+                                null,
+                                "Unable to add mute role to user."
+                            )
+                        ).queue()
+                    }
                 )
-                hook.editOriginal(
-                    buildCompletionMessage(
-                        targetUserId,
-                        targetMember,
-                        true,
-                        unmuteSchedulingResult.unmutePlanMessage,
-                        unmuteSchedulingResult.moderatorNote
-                    )
-                ).queue()
                 return
             } catch (_: IllegalStateException) {
                 logAddPoints(

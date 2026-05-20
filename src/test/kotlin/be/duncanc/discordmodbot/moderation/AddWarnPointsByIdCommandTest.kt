@@ -333,6 +333,63 @@ The user was not warned by DM, please do so manually when they rejoin.""",
         kotlin.test.assertEquals(true, resultCaptor.firstValue.contains("A mute can't take longer than 1 year"))
     }
 
+    @Test
+    fun `mute modal for present member schedules unmute only after role assignment succeeds`() {
+        val embedCaptor = argumentCaptor<net.dv8tion.jda.api.EmbedBuilder>()
+        val resultCaptor = argumentCaptor<String>()
+        val plannedUnmute = OffsetDateTime.now().plusDays(3)
+
+        stubSuccessfulMuteModalFlow(unmuteDays = 3, targetMemberPresent = true)
+        whenever(unmutePlanningService.planUnmute(guild, 99L, member, 3)).thenReturn(plannedUnmute)
+
+        command.onModalInteraction(modalEvent)
+
+        verify(muteService).muteUserById(1L, 99L)
+        verify(unmutePlanningService).planUnmute(guild, 99L, member, 3)
+        verify(guildLogger).log(
+            embedCaptor.capture(),
+            eq(targetUser),
+            eq(guild),
+            isNull(),
+            eq(GuildLogger.LogTypeAction.MODERATOR),
+            isNull()
+        )
+        verify(interactionHook).editOriginal(resultCaptor.capture())
+        kotlin.test.assertEquals(
+            "3 days mute",
+            embedCaptor.firstValue.build().fields.single { it.name == "Punishment" }.value
+        )
+        kotlin.test.assertEquals(true, resultCaptor.firstValue.contains("Unmute planned for"))
+    }
+
+    @Test
+    fun `mute modal for present member does not persist mute or schedule unmute when role assignment fails`() {
+        val embedCaptor = argumentCaptor<net.dv8tion.jda.api.EmbedBuilder>()
+        val resultCaptor = argumentCaptor<String>()
+
+        stubSuccessfulMuteModalFlow(unmuteDays = 3, targetMemberPresent = true, muteRoleAssignmentSucceeds = false)
+
+        command.onModalInteraction(modalEvent)
+
+        verify(muteService, never()).muteUserById(any(), any())
+        verify(unmutePlanningService, never()).planUnmute(any(), any(), any(), any())
+        verify(guildLogger).log(
+            embedCaptor.capture(),
+            eq(targetUser),
+            eq(guild),
+            isNull(),
+            eq(GuildLogger.LogTypeAction.MODERATOR),
+            isNull()
+        )
+        verify(interactionHook).editOriginal(resultCaptor.capture())
+        kotlin.test.assertEquals(
+            null,
+            embedCaptor.firstValue.build().fields.singleOrNull { it.name == "Punishment" }
+        )
+        kotlin.test.assertEquals(true, resultCaptor.firstValue.contains("Unable to add mute role to user."))
+        kotlin.test.assertEquals(false, resultCaptor.firstValue.contains("Unmute planned for"))
+    }
+
     private fun stubSlashContext(
         targetMember: Member?,
         action: Int = 0
@@ -372,7 +429,12 @@ The user was not warned by DM, please do so manually when they rejoin.""",
         )
     }
 
-    private fun stubSuccessfulMuteModalFlow(unmuteDays: Int?) {
+    @Suppress("UNCHECKED_CAST")
+    private fun stubSuccessfulMuteModalFlow(
+        unmuteDays: Int?,
+        targetMemberPresent: Boolean = false,
+        muteRoleAssignmentSucceeds: Boolean = true
+    ) {
         val warnPoint = warnPoint()
         val settings = settings()
 
@@ -386,7 +448,8 @@ The user was not warned by DM, please do so manually when they rejoin.""",
         whenever(member.user).thenReturn(moderatorUser)
         whenever(moderatorUser.name).thenReturn("ModeratorUser")
         whenever(guild.idLong).thenReturn(1L)
-        whenever(guild.getMemberById(99L)).thenReturn(null)
+        whenever(guild.getMemberById(99L)).thenReturn(if (targetMemberPresent) targetMember else null)
+        whenever(member.canInteract(targetMember)).thenReturn(true)
         whenever(modalEvent.getValue("reason")).thenReturn(reasonValue)
         whenever(reasonValue.asString).thenReturn("Spamming")
         whenever(modalEvent.getValue("unmute_days")).thenReturn(unmuteDaysValue)
@@ -407,6 +470,23 @@ The user was not warned by DM, please do so manually when they rejoin.""",
         whenever(modalEvent.deferReply(true)).thenReturn(replyAction)
         whenever(interactionHook.editOriginal(any<String>())).thenReturn(editAction)
         whenever(muteRoleCommandAndEventsListener.getMuteRole(guild)).thenReturn(muteRole)
+        whenever(targetMember.asMention).thenReturn("<@99>")
+        whenever(targetMember.user).thenReturn(targetUser)
+        whenever(guild.addRoleToMember(targetMember, muteRole)).thenReturn(addRoleAction)
+        whenever(addRoleAction.reason("Spamming")).thenReturn(addRoleAction)
+        if (muteRoleAssignmentSucceeds) {
+            doAnswer {
+                val success = it.arguments[0] as Consumer<Void?>
+                success.accept(null)
+                null
+            }.whenever(addRoleAction).queue(any<Consumer<Void?>>(), any<Consumer<Throwable>>())
+        } else {
+            doAnswer {
+                val failure = it.arguments[1] as Consumer<Throwable>
+                failure.accept(IllegalStateException("Missing permissions"))
+                null
+            }.whenever(addRoleAction).queue(any<Consumer<Void?>>(), any<Consumer<Throwable>>())
+        }
         doQueue(replyAction)
     }
 
