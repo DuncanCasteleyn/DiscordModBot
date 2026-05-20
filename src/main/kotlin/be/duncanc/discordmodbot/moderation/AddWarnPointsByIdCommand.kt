@@ -300,31 +300,36 @@ class AddWarnPointsByIdCommand(
 
                 guild.addRoleToMember(targetMember, muteRole).reason(reason).queue(
                     {
-                        muteService.muteUserById(guild.idLong, targetUserId)
+                        try {
+                            muteService.muteUserById(guild.idLong, targetUserId)
 
-                        val unmuteSchedulingResult =
-                            scheduleUnmuteIfRequested(guild, targetUserId, moderator, unmuteDays)
-                        logAddPoints(
-                            moderator,
-                            targetUserId,
-                            targetMember,
-                            reason,
-                            points,
-                            guildWarnPoint.id,
-                            expireDate,
-                            action.toByte(),
-                            unmuteSchedulingResult.effectiveUnmuteDays,
-                            guild
-                        )
-                        hook.editOriginal(
-                            buildCompletionMessage(
+                            val unmuteSchedulingResult =
+                                scheduleUnmuteIfRequested(guild, targetUserId, moderator, unmuteDays)
+                            logAddPoints(
+                                moderator,
                                 targetUserId,
                                 targetMember,
-                                true,
-                                unmuteSchedulingResult.unmutePlanMessage,
-                                unmuteSchedulingResult.moderatorNote
+                                reason,
+                                points,
+                                guildWarnPoint.id,
+                                expireDate,
+                                action.toByte(),
+                                unmuteSchedulingResult.effectiveUnmuteDays,
+                                guild
                             )
-                        ).queue()
+                            hook.editOriginal(
+                                buildCompletionMessage(
+                                    targetUserId,
+                                    targetMember,
+                                    true,
+                                    unmuteSchedulingResult.unmutePlanMessage,
+                                    unmuteSchedulingResult.moderatorNote
+                                )
+                            ).queue()
+                        } catch (t: Throwable) {
+                            LOG.error("Error processing warn points", t)
+                            hook.editOriginal("Error: ${t.message}").queue()
+                        }
                     },
                     {
                         logAddPoints(

@@ -390,6 +390,39 @@ The user was not warned by DM, please do so manually when they rejoin.""",
         kotlin.test.assertEquals(false, resultCaptor.firstValue.contains("Unmute planned for"))
     }
 
+    @Test
+    fun `mute modal for present member completes deferred reply when mute persistence fails after role assignment`() {
+        val resultCaptor = argumentCaptor<String>()
+
+        stubSuccessfulMuteModalFlow(unmuteDays = 3, targetMemberPresent = true)
+        whenever(muteService.muteUserById(1L, 99L)).thenThrow(IllegalStateException("Failed to persist mute state"))
+
+        command.onModalInteraction(modalEvent)
+
+        verify(muteService).muteUserById(1L, 99L)
+        verify(unmutePlanningService, never()).planUnmute(any(), any(), any(), any())
+        verify(interactionHook).editOriginal(resultCaptor.capture())
+        verify(guildLogger, never()).log(any(), anyOrNull(), any(), anyOrNull(), any(), anyOrNull())
+        kotlin.test.assertEquals("Error: Failed to persist mute state", resultCaptor.firstValue)
+    }
+
+    @Test
+    fun `mute modal for present member completes deferred reply when unexpected unmute planning fails`() {
+        val resultCaptor = argumentCaptor<String>()
+
+        stubSuccessfulMuteModalFlow(unmuteDays = 3, targetMemberPresent = true)
+        whenever(unmutePlanningService.planUnmute(guild, 99L, member, 3))
+            .thenThrow(RuntimeException("Scheduler unavailable"))
+
+        command.onModalInteraction(modalEvent)
+
+        verify(muteService).muteUserById(1L, 99L)
+        verify(unmutePlanningService).planUnmute(guild, 99L, member, 3)
+        verify(interactionHook).editOriginal(resultCaptor.capture())
+        verify(guildLogger, never()).log(any(), anyOrNull(), any(), anyOrNull(), any(), anyOrNull())
+        kotlin.test.assertEquals("Error: Scheduler unavailable", resultCaptor.firstValue)
+    }
+
     private fun stubSlashContext(
         targetMember: Member?,
         action: Int = 0
