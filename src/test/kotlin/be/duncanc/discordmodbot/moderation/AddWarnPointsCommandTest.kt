@@ -21,6 +21,7 @@ import net.dv8tion.jda.api.requests.restaction.AuditableRestAction
 import net.dv8tion.jda.api.requests.restaction.CacheRestAction
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction
 import net.dv8tion.jda.api.requests.restaction.WebhookMessageCreateAction
+import net.dv8tion.jda.api.requests.restaction.WebhookMessageEditAction
 import net.dv8tion.jda.api.requests.restaction.interactions.ModalCallbackAction
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction
 import org.junit.jupiter.api.BeforeEach
@@ -93,6 +94,9 @@ class AddWarnPointsCommandTest {
 
     @Mock
     private lateinit var followupAction: WebhookMessageCreateAction<Message>
+
+    @Mock
+    private lateinit var editAction: WebhookMessageEditAction<Message>
 
     @Mock
     private lateinit var userOption: OptionMapping
@@ -353,6 +357,51 @@ class AddWarnPointsCommandTest {
             true,
             resultCaptor.firstValue.contains("Unmute cannot be scheduled beyond 365 days.")
         )
+    }
+
+    @Test
+    fun `mute modal completes deferred reply when unexpected unmute planning fails`() {
+        val resultCaptor = argumentCaptor<String>()
+
+        stubSuccessfulMuteModalFlow(unmuteDays = 3)
+        whenever(hook.sendMessage(any<String>())).thenReturn(followupAction)
+        whenever(unmutePlanningService.planUnmute(guild, 99L, member, 3))
+            .thenThrow(RuntimeException("Scheduler unavailable"))
+
+        command.onModalInteraction(modalEvent)
+
+        verify(unmutePlanningService).planUnmute(guild, 99L, member, 3)
+        verify(hook).sendMessage(resultCaptor.capture())
+        kotlin.test.assertEquals(true, resultCaptor.firstValue.contains("Added warn points to $targetMember and applied the mute role."))
+        kotlin.test.assertEquals(
+            true,
+            resultCaptor.firstValue.contains(
+                "A follow-up step failed, so logging or notification may need manual checking."
+            )
+        )
+        kotlin.test.assertEquals(false, resultCaptor.firstValue.contains("Scheduler unavailable"))
+    }
+
+    @Test
+    fun `mute modal completes deferred reply when role assignment failure handling throws`() {
+        val resultCaptor = argumentCaptor<String>()
+
+        stubSuccessfulMuteModalFlow(unmuteDays = 3, muteRoleAssignmentSucceeds = false)
+        whenever(hook.sendMessage(any<String>())).thenReturn(followupAction)
+        whenever(jda.registeredListeners).thenThrow(RuntimeException("Logger unavailable"))
+
+        command.onModalInteraction(modalEvent)
+
+        verify(hook).sendMessage(resultCaptor.capture())
+        kotlin.test.assertEquals(true, resultCaptor.firstValue.contains("Added warn points to $targetMember."))
+        kotlin.test.assertEquals(true, resultCaptor.firstValue.contains("Unable to add mute role to user."))
+        kotlin.test.assertEquals(
+            true,
+            resultCaptor.firstValue.contains(
+                "A follow-up step failed, so logging or notification may need manual checking."
+            )
+        )
+        kotlin.test.assertEquals(false, resultCaptor.firstValue.contains("Logger unavailable"))
     }
 
     private fun stubSlashCommand(action: Int) {
