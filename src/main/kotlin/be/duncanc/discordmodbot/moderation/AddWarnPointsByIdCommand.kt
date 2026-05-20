@@ -432,9 +432,6 @@ class AddWarnPointsByIdCommand(
                     .append("Reason: ").append(it.reason)
                     .append("\nExpires on: ")
                     .append(TimeFormat.DATE_SHORT_TIME_SHORT.atInstant(it.expireDate.toInstant()))
-                    .append('\n')
-                    .append("Note: The user was warned by id, ")
-                    .append("did not receive his warning by DM and might have left the server.")
             }
 
             val messages = SplitUtil.split(
