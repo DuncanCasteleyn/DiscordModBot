@@ -47,6 +47,9 @@ class AddWarnPointsByIdCommandTest {
     private lateinit var muteService: MuteService
 
     @Mock
+    private lateinit var unmutePlanningService: UnmutePlanningService
+
+    @Mock
     private lateinit var guildLogger: GuildLogger
 
     @Mock
@@ -104,6 +107,9 @@ class AddWarnPointsByIdCommandTest {
     private lateinit var reasonValue: ModalMapping
 
     @Mock
+    private lateinit var unmuteDaysValue: ModalMapping
+
+    @Mock
     private lateinit var muteRole: Role
 
     @Mock
@@ -118,6 +124,7 @@ class AddWarnPointsByIdCommandTest {
             guildWarnPointsSettingsRepository,
             muteRoleCommandAndEventsListener,
             muteService,
+            unmutePlanningService,
             guildLogger
         )
     }
@@ -130,6 +137,18 @@ class AddWarnPointsByIdCommandTest {
         command.onSlashCommandInteraction(slashEvent)
 
         verify(slashEvent).replyModal(argThat { id == "addwarnpointsbyid_reason:99:2:3:0" })
+    }
+
+    @Test
+    fun `mute slash command opens a combined modal`() {
+        stubSlashContext(targetMember = null, action = 1)
+        whenever(slashEvent.replyModal(any())).thenReturn(modalAction)
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        verify(slashEvent).replyModal(argThat {
+            id == "addwarnpointsbyid_reason:99:2:3:1" && components.size == 2
+        })
     }
 
     @Test
@@ -206,6 +225,114 @@ The user was not warned by DM, please do so manually when they rejoin."""
         verify(guildWarnPointsService, never()).addWarnPoint(any(), any(), any(), any(), any(), any())
     }
 
+    @Test
+    fun `mute modal rejects invalid unmute days`() {
+        whenever(modalEvent.modalId).thenReturn("addwarnpointsbyid_reason:99:2:3:1")
+        whenever(modalEvent.member).thenReturn(member)
+        whenever(modalEvent.guild).thenReturn(guild)
+        whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
+        whenever(guild.getMemberById(99L)).thenReturn(null)
+        whenever(modalEvent.getValue("reason")).thenReturn(reasonValue)
+        whenever(reasonValue.asString).thenReturn("Spamming")
+        whenever(modalEvent.getValue("unmute_days")).thenReturn(unmuteDaysValue)
+        whenever(unmuteDaysValue.asString).thenReturn("abc")
+        whenever(modalEvent.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+
+        command.onModalInteraction(modalEvent)
+
+        verify(modalEvent).reply("Please provide a valid number of days.")
+        verify(modalEvent, never()).deferReply(true)
+    }
+
+    @Test
+    fun `mute modal without unmute days keeps punishment as mute`() {
+        val embedCaptor = argumentCaptor<net.dv8tion.jda.api.EmbedBuilder>()
+        val resultCaptor = argumentCaptor<String>()
+
+        stubSuccessfulMuteModalFlow(unmuteDays = null)
+
+        command.onModalInteraction(modalEvent)
+
+        verify(unmutePlanningService, never()).planUnmute(any(), any(), any(), any())
+        verify(muteService).muteUserById(1L, 99L)
+        verify(guildLogger).log(
+            embedCaptor.capture(),
+            isNull(),
+            eq(guild),
+            isNull(),
+            eq(GuildLogger.LogTypeAction.MODERATOR),
+            isNull()
+        )
+        verify(interactionHook).editOriginal(resultCaptor.capture())
+        kotlin.test.assertEquals(
+            "Mute",
+            embedCaptor.firstValue.build().fields.single { it.name == "Punishment" }.value
+        )
+        kotlin.test.assertEquals(
+            """Added warn points to <@99>.
+The mute will be applied when they rejoin.
+The user was not warned by DM, please do so manually when they rejoin.""",
+            resultCaptor.firstValue
+        )
+    }
+
+    @Test
+    fun `mute modal with unmute days schedules unmute and uses duration punishment`() {
+        val embedCaptor = argumentCaptor<net.dv8tion.jda.api.EmbedBuilder>()
+        val resultCaptor = argumentCaptor<String>()
+        val plannedUnmute = OffsetDateTime.now().plusDays(3)
+
+        stubSuccessfulMuteModalFlow(unmuteDays = 3)
+        whenever(unmutePlanningService.planUnmute(guild, 99L, member, 3)).thenReturn(plannedUnmute)
+
+        command.onModalInteraction(modalEvent)
+
+        verify(unmutePlanningService).planUnmute(guild, 99L, member, 3)
+        verify(guildLogger).log(
+            embedCaptor.capture(),
+            isNull(),
+            eq(guild),
+            isNull(),
+            eq(GuildLogger.LogTypeAction.MODERATOR),
+            isNull()
+        )
+        verify(interactionHook).editOriginal(resultCaptor.capture())
+        kotlin.test.assertEquals(
+            "3 days mute",
+            embedCaptor.firstValue.build().fields.single { it.name == "Punishment" }.value
+        )
+        kotlin.test.assertEquals(true, resultCaptor.firstValue.contains("Unmute planned for"))
+    }
+
+    @Test
+    fun `mute modal with failed unmute scheduling falls back to plain mute`() {
+        val embedCaptor = argumentCaptor<net.dv8tion.jda.api.EmbedBuilder>()
+        val resultCaptor = argumentCaptor<String>()
+
+        stubSuccessfulMuteModalFlow(unmuteDays = 366)
+        whenever(unmutePlanningService.planUnmute(guild, 99L, member, 366))
+            .thenThrow(IllegalArgumentException("A mute can't take longer than 1 year"))
+
+        command.onModalInteraction(modalEvent)
+
+        verify(unmutePlanningService).planUnmute(guild, 99L, member, 366)
+        verify(guildLogger).log(
+            embedCaptor.capture(),
+            isNull(),
+            eq(guild),
+            isNull(),
+            eq(GuildLogger.LogTypeAction.MODERATOR),
+            isNull()
+        )
+        verify(interactionHook).editOriginal(resultCaptor.capture())
+        kotlin.test.assertEquals(
+            "Mute",
+            embedCaptor.firstValue.build().fields.single { it.name == "Punishment" }.value
+        )
+        kotlin.test.assertEquals(true, resultCaptor.firstValue.contains("A mute can't take longer than 1 year"))
+    }
+
     private fun stubSlashContext(
         targetMember: Member?,
         action: Int = 0
@@ -243,6 +370,44 @@ The user was not warned by DM, please do so manually when they rejoin."""
             reason = "Spamming",
             expireDate = OffsetDateTime.now().plusDays(2)
         )
+    }
+
+    private fun stubSuccessfulMuteModalFlow(unmuteDays: Int?) {
+        val warnPoint = warnPoint()
+        val settings = settings()
+
+        whenever(modalEvent.modalId).thenReturn("addwarnpointsbyid_reason:99:2:3:1")
+        whenever(modalEvent.member).thenReturn(member)
+        whenever(modalEvent.guild).thenReturn(guild)
+        whenever(modalEvent.jda).thenReturn(jda)
+        whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
+        whenever(member.idLong).thenReturn(12L)
+        whenever(member.nickname).thenReturn(null)
+        whenever(member.user).thenReturn(moderatorUser)
+        whenever(moderatorUser.name).thenReturn("ModeratorUser")
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(guild.getMemberById(99L)).thenReturn(null)
+        whenever(modalEvent.getValue("reason")).thenReturn(reasonValue)
+        whenever(reasonValue.asString).thenReturn("Spamming")
+        whenever(modalEvent.getValue("unmute_days")).thenReturn(unmuteDaysValue)
+        whenever(unmuteDaysValue.asString).thenReturn(unmuteDays?.toString().orEmpty())
+        whenever(guildWarnPointsSettingsRepository.findById(1L)).thenReturn(Optional.of(settings))
+        whenever(jda.getTextChannelById(1L)).thenReturn(textChannel)
+        whenever(
+            guildWarnPointsService.addWarnPoint(
+                eq(99L),
+                eq(1L),
+                eq(2),
+                eq(12L),
+                eq("Spamming"),
+                any<OffsetDateTime>()
+            )
+        ).thenReturn(warnPoint)
+        whenever(guildWarnPointsService.getActivePointsCount(1L, 99L)).thenReturn(1)
+        whenever(modalEvent.deferReply(true)).thenReturn(replyAction)
+        whenever(interactionHook.editOriginal(any<String>())).thenReturn(editAction)
+        whenever(muteRoleCommandAndEventsListener.getMuteRole(guild)).thenReturn(muteRole)
+        doQueue(replyAction)
     }
 
     @Suppress("UNCHECKED_CAST")
