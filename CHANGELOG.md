@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.11.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.11.0...v2.11.1) (2026-05-20)
+
+
+### Bug Fixes
+
+* **moderation:** add unmute planning to warn-by-id modal ([#648](https://github.com/DuncanCasteleyn/DiscordModBot/issues/648)) ([1f7b2b7](https://github.com/DuncanCasteleyn/DiscordModBot/commit/1f7b2b7bbe05c5ecd35a88f370fb45306eb5bcff))
+* **narouNovelApi:** remove author profile alerts ([#646](https://github.com/DuncanCasteleyn/DiscordModBot/issues/646)) ([c71e574](https://github.com/DuncanCasteleyn/DiscordModBot/commit/c71e574a6441164f9c0762208e8af5fadbcaa783))
+
 ## [2.11.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.10.1...v2.11.0) (2026-05-18)
 
 
