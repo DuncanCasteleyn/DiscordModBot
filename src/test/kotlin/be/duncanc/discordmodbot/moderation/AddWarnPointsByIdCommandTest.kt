@@ -396,6 +396,7 @@ The user was not warned by DM, please do so manually when they rejoin.""",
 
     @Test
     fun `mute modal for present member completes deferred reply when mute persistence fails after role assignment`() {
+        val embedCaptor = argumentCaptor<net.dv8tion.jda.api.EmbedBuilder>()
         val resultCaptor = argumentCaptor<String>()
 
         stubSuccessfulMuteModalFlow(unmuteDays = 3, targetMemberPresent = true)
@@ -405,13 +406,27 @@ The user was not warned by DM, please do so manually when they rejoin.""",
 
         verify(muteService).muteUserById(1L, 99L)
         verify(unmutePlanningService, never()).planUnmute(any(), any(), any(), any())
+        verify(guildLogger).log(
+            embedCaptor.capture(),
+            eq(targetUser),
+            eq(guild),
+            isNull(),
+            eq(GuildLogger.LogTypeAction.MODERATOR),
+            isNull()
+        )
         verify(interactionHook).sendMessage(resultCaptor.capture())
-        verify(guildLogger, never()).log(any(), anyOrNull(), any(), anyOrNull(), any(), anyOrNull())
-        kotlin.test.assertEquals("Error: Failed to persist mute state", resultCaptor.firstValue)
+        kotlin.test.assertEquals(
+            "Mute",
+            embedCaptor.firstValue.build().fields.single { it.name == "Punishment" }.value
+        )
+        kotlin.test.assertEquals(true, resultCaptor.firstValue.contains("Error: Failed to persist mute state"))
+        kotlin.test.assertEquals(true, resultCaptor.firstValue.contains("Please plan the unmute manually."))
+        kotlin.test.assertEquals(false, resultCaptor.firstValue.contains("Unmute planned for"))
     }
 
     @Test
     fun `mute modal for present member completes deferred reply when unexpected unmute planning fails`() {
+        val embedCaptor = argumentCaptor<net.dv8tion.jda.api.EmbedBuilder>()
         val resultCaptor = argumentCaptor<String>()
 
         stubSuccessfulMuteModalFlow(unmuteDays = 3, targetMemberPresent = true)
@@ -422,9 +437,22 @@ The user was not warned by DM, please do so manually when they rejoin.""",
 
         verify(muteService).muteUserById(1L, 99L)
         verify(unmutePlanningService).planUnmute(guild, 99L, member, 3)
+        verify(guildLogger).log(
+            embedCaptor.capture(),
+            eq(targetUser),
+            eq(guild),
+            isNull(),
+            eq(GuildLogger.LogTypeAction.MODERATOR),
+            isNull()
+        )
         verify(interactionHook).sendMessage(resultCaptor.capture())
-        verify(guildLogger, never()).log(any(), anyOrNull(), any(), anyOrNull(), any(), anyOrNull())
-        kotlin.test.assertEquals("Error: Scheduler unavailable", resultCaptor.firstValue)
+        kotlin.test.assertEquals(
+            "Mute",
+            embedCaptor.firstValue.build().fields.single { it.name == "Punishment" }.value
+        )
+        kotlin.test.assertEquals(true, resultCaptor.firstValue.contains("Error: Scheduler unavailable"))
+        kotlin.test.assertEquals(true, resultCaptor.firstValue.contains("Please plan the unmute manually."))
+        kotlin.test.assertEquals(false, resultCaptor.firstValue.contains("Unmute planned for"))
     }
 
     private fun stubSlashContext(

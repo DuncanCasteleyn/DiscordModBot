@@ -328,7 +328,21 @@ class AddWarnPointsByIdCommand(
                             ).queue()
                         } catch (t: Throwable) {
                             LOG.error("Error processing warn points", t)
-                            hook.sendMessage("Error: ${t.message}").queue()
+                            logAddPoints(
+                                moderator,
+                                targetUserId,
+                                targetMember,
+                                reason,
+                                points,
+                                guildWarnPoint.id,
+                                expireDate,
+                                action.toByte(),
+                                null,
+                                guild
+                            )
+                            hook.sendMessage(
+                                buildManualUnmutePlanningMessage(targetUserId, targetMember, t.message)
+                            ).queue()
                         }
                     },
                     {
@@ -502,6 +516,23 @@ class AddWarnPointsByIdCommand(
                     "\nThe user was present but not warned by DM, please do so manually."
                 }
             )
+        }
+    }
+
+    private fun buildManualUnmutePlanningMessage(
+        targetUserId: Long,
+        targetMember: Member,
+        errorMessage: String?
+    ): String {
+        val target = formatTarget(targetUserId, targetMember)
+        val message = errorMessage ?: "Unable to persist mute state."
+
+        return buildString {
+            append("Added warn points to $target and applied the mute role.")
+            append("\nError: $message")
+            append(" The mute role was added, but the unmute was not planned automatically.")
+            append(" Please plan the unmute manually.")
+            append("\nThe user was present but not warned by DM, please do so manually.")
         }
     }
 
