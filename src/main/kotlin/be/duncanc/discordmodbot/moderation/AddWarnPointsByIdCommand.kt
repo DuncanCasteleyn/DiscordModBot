@@ -212,7 +212,7 @@ class AddWarnPointsByIdCommand(
                 )
             } catch (t: Throwable) {
                 LOG.error("Error processing warn points", t)
-                hook.editOriginal("Error: ${t.message}").queue()
+                hook.sendMessage("Error: ${t.message}").queue()
             }
         }
     }
@@ -286,7 +286,7 @@ class AddWarnPointsByIdCommand(
                         unmuteSchedulingResult.effectiveUnmuteDays,
                         guild
                     )
-                    hook.editOriginal(
+                    hook.sendMessage(
                         buildCompletionMessage(
                             targetUserId,
                             null,
@@ -317,7 +317,7 @@ class AddWarnPointsByIdCommand(
                                 unmuteSchedulingResult.effectiveUnmuteDays,
                                 guild
                             )
-                            hook.editOriginal(
+                            hook.sendMessage(
                                 buildCompletionMessage(
                                     targetUserId,
                                     targetMember,
@@ -328,7 +328,7 @@ class AddWarnPointsByIdCommand(
                             ).queue()
                         } catch (t: Throwable) {
                             LOG.error("Error processing warn points", t)
-                            hook.editOriginal("Error: ${t.message}").queue()
+                            hook.sendMessage("Error: ${t.message}").queue()
                         }
                     },
                     {
@@ -344,7 +344,7 @@ class AddWarnPointsByIdCommand(
                             null,
                             guild
                         )
-                        hook.editOriginal(
+                        hook.sendMessage(
                             buildCompletionMessage(
                                 targetUserId,
                                 targetMember,
@@ -369,7 +369,7 @@ class AddWarnPointsByIdCommand(
                     null,
                     guild
                 )
-                hook.editOriginal(
+                hook.sendMessage(
                     "Added warn points to ${
                         formatTarget(
                             targetUserId,
@@ -394,7 +394,7 @@ class AddWarnPointsByIdCommand(
             null,
             guild
         )
-        hook.editOriginal(buildCompletionMessage(targetUserId, targetMember, false, null, null)).queue()
+        hook.sendMessage(buildCompletionMessage(targetUserId, targetMember, false, null, null)).queue()
     }
 
     private fun performChecks(

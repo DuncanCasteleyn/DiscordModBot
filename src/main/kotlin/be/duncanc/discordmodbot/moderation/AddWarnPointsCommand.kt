@@ -204,7 +204,7 @@ class AddWarnPointsCommand(
                 )
             } catch (t: Throwable) {
                 LOG.error("Error processing warn points", t)
-                hook.editOriginal("Error: ${t.message}").queue()
+                hook.sendMessage("Error: ${t.message}").queue()
             }
         }
     }
@@ -282,7 +282,7 @@ class AddWarnPointsCommand(
                             )
                         } catch (t: Throwable) {
                             LOG.error("Error processing warn points", t)
-                            hook.editOriginal("Error: ${t.message}").queue()
+                            hook.sendMessage("Error: ${t.message}").queue()
                         }
                     },
                     {
@@ -303,7 +303,7 @@ class AddWarnPointsCommand(
                             )
                         } catch (t: Throwable) {
                             LOG.error("Error processing warn points", t)
-                            hook.editOriginal("Error: ${t.message}").queue()
+                            hook.sendMessage("Error: ${t.message}").queue()
                         }
                     }
                 )
