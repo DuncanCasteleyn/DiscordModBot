@@ -8,5 +8,6 @@ data class NarouNovelPendingAlert(
     @Id
     val guildId: Long,
     val snapshotLength: Long,
-    val snapshotGeneralAllNo: Int
+    val snapshotGeneralAllNo: Int,
+    val snapshotNovelUpdatedAt: String
 )

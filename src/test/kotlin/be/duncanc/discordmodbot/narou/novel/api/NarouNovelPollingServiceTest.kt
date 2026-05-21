@@ -93,7 +93,8 @@ class NarouNovelPollingServiceTest {
             channelId = 11L,
             lengthThreshold = 1_000L,
             lastAlertedLength = 9_445_269L,
-            lastAlertedGeneralAllNo = 778
+            lastAlertedGeneralAllNo = 778,
+            lastAlertedNovelUpdatedAt = "2026-05-15 07:00:36"
         )
         whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_445_500, generalAllNo = 779)))
         whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
@@ -126,7 +127,8 @@ class NarouNovelPollingServiceTest {
             channelId = 11L,
             lengthThreshold = 1_000L,
             lastAlertedLength = 9_445_269L,
-            lastAlertedGeneralAllNo = 778
+            lastAlertedGeneralAllNo = 778,
+            lastAlertedNovelUpdatedAt = "2026-05-15 07:00:36"
         )
         whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 778)))
         whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
@@ -160,7 +162,8 @@ class NarouNovelPollingServiceTest {
             pingRoleId = 15L,
             lengthThreshold = 1_000L,
             lastAlertedLength = 9_445_269L,
-            lastAlertedGeneralAllNo = 778
+            lastAlertedGeneralAllNo = 778,
+            lastAlertedNovelUpdatedAt = "2026-05-15 07:00:36"
         )
         whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 778)))
         whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
@@ -192,7 +195,8 @@ class NarouNovelPollingServiceTest {
             pingRoleId = 15L,
             lengthThreshold = 1_000L,
             lastAlertedLength = 9_445_269L,
-            lastAlertedGeneralAllNo = 778
+            lastAlertedGeneralAllNo = 778,
+            lastAlertedNovelUpdatedAt = "2026-05-15 07:00:36"
         )
         whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 778)))
         whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
@@ -225,7 +229,8 @@ class NarouNovelPollingServiceTest {
             channelId = 11L,
             lengthThreshold = 1_000L,
             lastAlertedLength = 9_445_269L,
-            lastAlertedGeneralAllNo = 778
+            lastAlertedGeneralAllNo = 778,
+            lastAlertedNovelUpdatedAt = "2026-05-15 07:00:36"
         )
         whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 780)))
         whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
@@ -266,7 +271,8 @@ class NarouNovelPollingServiceTest {
             channelId = 11L,
             lengthThreshold = 1_000L,
             lastAlertedLength = 9_445_269L,
-            lastAlertedGeneralAllNo = 778
+            lastAlertedGeneralAllNo = 778,
+            lastAlertedNovelUpdatedAt = "2026-05-15 07:00:36"
         )
         whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 780)))
         whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
@@ -284,7 +290,7 @@ class NarouNovelPollingServiceTest {
             chapterLink = "https://ncode.syosetu.com/n2267be/780",
             nextChapterLink = "https://ncode.syosetu.com/n2267be/781"
         )
-        assertEquals(NarouNovelPendingAlert(1L, 9_446_500L, 780), pendingAlerts[1L])
+        assertEquals(NarouNovelPendingAlert(1L, 9_446_500L, 780, "2026-05-15 07:00:36"), pendingAlerts[1L])
         verify(narouNovelAlertSettingsRepository, never()).save(settings)
         assertEquals(9_445_269L, settings.lastAlertedLength)
         assertEquals(778, settings.lastAlertedGeneralAllNo)
@@ -298,9 +304,12 @@ class NarouNovelPollingServiceTest {
             channelId = 11L,
             lengthThreshold = 1_000L,
             lastAlertedLength = 9_445_269L,
-            lastAlertedGeneralAllNo = 778
+            lastAlertedGeneralAllNo = 778,
+            lastAlertedNovelUpdatedAt = "2026-05-15 07:00:36"
         )
-        whenever(narouNovelPendingAlertRepository.findById(1L)).thenReturn(Optional.of(NarouNovelPendingAlert(1L, 9_446_500L, 780)))
+        whenever(narouNovelPendingAlertRepository.findById(1L)).thenReturn(
+            Optional.of(NarouNovelPendingAlert(1L, 9_446_500L, 780, "2026-05-15 07:00:36"))
+        )
         whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 780)))
         whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
         whenever(narouNovelAlertSettingsRepository.findAll()).thenReturn(listOf(settings))
@@ -331,7 +340,8 @@ class NarouNovelPollingServiceTest {
             channelId = 11L,
             lengthThreshold = 1_000L,
             lastAlertedLength = 9_445_269L,
-            lastAlertedGeneralAllNo = 778
+            lastAlertedGeneralAllNo = 778,
+            lastAlertedNovelUpdatedAt = "2026-05-15 07:00:36"
         )
         whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 780)))
         whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
@@ -363,7 +373,8 @@ class NarouNovelPollingServiceTest {
             channelId = 11L,
             lengthThreshold = 1_000L,
             lastAlertedLength = 9_445_269L,
-            lastAlertedGeneralAllNo = 778
+            lastAlertedGeneralAllNo = 778,
+            lastAlertedNovelUpdatedAt = "2026-05-15 07:00:36"
         )
         whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 780)))
         whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
@@ -376,7 +387,7 @@ class NarouNovelPollingServiceTest {
 
         assertEquals(1, service.sentMessageContents.size)
         assertEquals(1, service.sentEmbeds.size)
-        assertEquals(NarouNovelPendingAlert(1L, 9_446_500L, 780), pendingAlerts[1L])
+        assertEquals(NarouNovelPendingAlert(1L, 9_446_500L, 780, "2026-05-15 07:00:36"), pendingAlerts[1L])
     }
 
     @Test
@@ -396,7 +407,8 @@ class NarouNovelPollingServiceTest {
             channelId = 11L,
             lengthThreshold = 1_000L,
             lastAlertedLength = 9_445_269L,
-            lastAlertedGeneralAllNo = 778
+            lastAlertedGeneralAllNo = 778,
+            lastAlertedNovelUpdatedAt = "2026-05-15 07:00:36"
         )
         whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 780)))
         whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
@@ -435,7 +447,8 @@ class NarouNovelPollingServiceTest {
             channelId = 11L,
             lengthThreshold = 1_000L,
             lastAlertedLength = 9_445_269L,
-            lastAlertedGeneralAllNo = 778
+            lastAlertedGeneralAllNo = 778,
+            lastAlertedNovelUpdatedAt = "2026-05-15 07:00:36"
         )
         whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 780)))
         whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
@@ -459,7 +472,8 @@ class NarouNovelPollingServiceTest {
             channelId = 11L,
             lengthThreshold = 1_000L,
             lastAlertedLength = 9_445_269L,
-            lastAlertedGeneralAllNo = 778
+            lastAlertedGeneralAllNo = 778,
+            lastAlertedNovelUpdatedAt = "2026-05-15 07:00:36"
         )
         whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_446_500, generalAllNo = 780)))
         whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
@@ -482,7 +496,8 @@ class NarouNovelPollingServiceTest {
             guildId = 1L,
             channelId = 11L,
             lastAlertedLength = null,
-            lastAlertedGeneralAllNo = null
+            lastAlertedGeneralAllNo = null,
+            lastAlertedNovelUpdatedAt = null
         )
         whenever(narouNovelApiClient.fetchNovel()).thenReturn(listOf(payload(length = 9_445_500, generalAllNo = 779)))
         whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
@@ -495,15 +510,57 @@ class NarouNovelPollingServiceTest {
         verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
         assertEquals(9_445_500L, settingsCaptor.lastValue.lastAlertedLength)
         assertEquals(779, settingsCaptor.lastValue.lastAlertedGeneralAllNo)
+        assertEquals("2026-05-15 07:00:36", settingsCaptor.lastValue.lastAlertedNovelUpdatedAt)
     }
 
-    private fun payload(length: Long, generalAllNo: Int): NarouNovelApiResponseEntry {
+    @Test
+    fun `novel updated alert triggers when only novelupdated at changes`() {
+        stubPendingAlertRepository()
+        val snapshot = snapshot(length = 9_445_269, generalAllNo = 778)
+        val settings = NarouNovelAlertSettings(
+            guildId = 1L,
+            channelId = 11L,
+            lengthThreshold = 1_000L,
+            lastAlertedLength = 9_445_269L,
+            lastAlertedGeneralAllNo = 778,
+            lastAlertedNovelUpdatedAt = "2026-05-15 07:00:36"
+        )
+        whenever(
+            narouNovelApiClient.fetchNovel()
+        ).thenReturn(listOf(payload(length = 9_445_269, generalAllNo = 778, novelUpdatedAt = "2026-05-15 07:05:36")))
+        whenever(narouNovelSnapshotRepository.findById(NarouNovelPollingService.NOVEL_CODE)).thenReturn(Optional.of(snapshot))
+        whenever(narouNovelAlertSettingsRepository.findAll()).thenReturn(listOf(settings))
+        whenever(jda.getTextChannelById(11L)).thenReturn(textChannel)
+
+        service.pollNovel()
+
+        assertAlert(
+            service = service,
+            description = "This might indicate a new chapter has been scheduled or is in the works.",
+            totalChapters = 778,
+            totalCharacters = 9_445_269L,
+            chapterLink = "https://ncode.syosetu.com/n2267be/778",
+            nextChapterLink = "https://ncode.syosetu.com/n2267be/779"
+        )
+        val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
+        verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
+        assertEquals(9_445_269L, settingsCaptor.lastValue.lastAlertedLength)
+        assertEquals(778, settingsCaptor.lastValue.lastAlertedGeneralAllNo)
+        assertEquals("2026-05-15 07:05:36", settingsCaptor.lastValue.lastAlertedNovelUpdatedAt)
+        assertEquals(emptyMap<Long, NarouNovelPendingAlert>(), pendingAlerts)
+    }
+
+    private fun payload(
+        length: Long,
+        generalAllNo: Int,
+        novelUpdatedAt: String = "2026-05-15 07:00:36"
+    ): NarouNovelApiResponseEntry {
         return NarouNovelApiResponseEntry(
             generalLastup = "2026-05-15 07:00:00",
             generalAllNo = generalAllNo,
             length = length,
             time = 18_891,
-            novelUpdatedAt = "2026-05-15 07:00:36",
+            novelUpdatedAt = novelUpdatedAt,
             updatedAt = "2026-05-15 20:14:23"
         )
     }

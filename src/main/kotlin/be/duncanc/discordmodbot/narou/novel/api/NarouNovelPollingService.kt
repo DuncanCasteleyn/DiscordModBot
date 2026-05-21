@@ -61,7 +61,7 @@ class NarouNovelPollingService(
                     updatedAt = payload.updatedAt
                 )
             )
-            initializeMissingBaselines(payload.length, payload.generalAllNo)
+            initializeMissingBaselines(payload.length, payload.generalAllNo, payload.novelUpdatedAt)
             return
         }
 
@@ -105,30 +105,38 @@ class NarouNovelPollingService(
 
             val lastAlertedLength = settings.lastAlertedLength ?: return@forEach
             val lastAlertedGeneralAllNo = settings.lastAlertedGeneralAllNo ?: return@forEach
+            val lastAlertedNovelUpdatedAt = settings.lastAlertedNovelUpdatedAt ?: return@forEach
             val lengthDelta = snapshot.length - lastAlertedLength
             val chapterDelta = snapshot.generalAllNo - lastAlertedGeneralAllNo
             val lengthTriggered = lengthDelta >= settings.lengthThreshold
             val chapterTriggered = chapterDelta > 0
-            if (!lengthTriggered && !chapterTriggered) {
+            val novelUpdatedTriggered = snapshot.novelUpdatedAt != lastAlertedNovelUpdatedAt
+            if (!lengthTriggered && !chapterTriggered && !novelUpdatedTriggered) {
                 return@forEach
             }
 
             val pendingAlert = narouNovelPendingAlertRepository.findById(settings.guildId).orElse(null)
             if (pendingAlert != null) {
-                if (pendingAlert.snapshotGeneralAllNo == snapshot.generalAllNo && pendingAlert.snapshotLength == snapshot.length) {
+                if (
+                    pendingAlert.snapshotGeneralAllNo == snapshot.generalAllNo &&
+                    pendingAlert.snapshotLength == snapshot.length &&
+                    pendingAlert.snapshotNovelUpdatedAt == snapshot.novelUpdatedAt
+                ) {
                     LOG.debug(
-                        "Skipping Narou novel alert for guild {} because snapshot {}:{} was already sent or is still being finalized",
+                        "Skipping Narou novel alert for guild {} because snapshot {}:{}:{} was already sent or is still being finalized",
                         settings.guildId,
                         pendingAlert.snapshotGeneralAllNo,
-                        pendingAlert.snapshotLength
+                        pendingAlert.snapshotLength,
+                        pendingAlert.snapshotNovelUpdatedAt
                     )
                     return@forEach
                 }
                 LOG.debug(
-                    "Skipping Narou novel alert for guild {} because a pending alert lock exists for snapshot {}:{}",
+                    "Skipping Narou novel alert for guild {} because a pending alert lock exists for snapshot {}:{}:{}",
                     settings.guildId,
                     pendingAlert.snapshotGeneralAllNo,
-                    pendingAlert.snapshotLength
+                    pendingAlert.snapshotLength,
+                    pendingAlert.snapshotNovelUpdatedAt
                 )
                 return@forEach
             }
@@ -149,6 +157,7 @@ class NarouNovelPollingService(
                 lengthDelta,
                 chapterTriggered,
                 chapterDelta,
+                novelUpdatedTriggered,
                 snapshot
             )
             val messageContent = resolveAlertMention(settings)
@@ -156,7 +165,8 @@ class NarouNovelPollingService(
                 NarouNovelPendingAlert(
                     guildId = settings.guildId,
                     snapshotLength = snapshot.length,
-                    snapshotGeneralAllNo = snapshot.generalAllNo
+                    snapshotGeneralAllNo = snapshot.generalAllNo,
+                    snapshotNovelUpdatedAt = snapshot.novelUpdatedAt
                 )
             )
             try {
@@ -171,6 +181,9 @@ class NarouNovelPollingService(
                             }
                             if (chapterTriggered) {
                                 settings.lastAlertedGeneralAllNo = snapshot.generalAllNo
+                            }
+                            if (novelUpdatedTriggered) {
+                                settings.lastAlertedNovelUpdatedAt = snapshot.novelUpdatedAt
                             }
                             narouNovelAlertSettingsRepository.save(settings)
                             narouNovelPendingAlertRepository.deleteById(settings.guildId)
@@ -275,7 +288,8 @@ class NarouNovelPollingService(
 
     private fun initializeMissingBaselines(
         length: Long,
-        generalAllNo: Int
+        generalAllNo: Int,
+        novelUpdatedAt: String
     ) {
         narouNovelAlertSettingsRepository.findAll().forEach { settings ->
             var changed = false
@@ -285,6 +299,10 @@ class NarouNovelPollingService(
             }
             if (settings.lastAlertedGeneralAllNo == null) {
                 settings.lastAlertedGeneralAllNo = generalAllNo
+                changed = true
+            }
+            if (settings.lastAlertedNovelUpdatedAt == null) {
+                settings.lastAlertedNovelUpdatedAt = novelUpdatedAt
                 changed = true
             }
             if (changed) {
@@ -304,6 +322,13 @@ class NarouNovelPollingService(
         }
         if (settings.lastAlertedGeneralAllNo == null || settings.lastAlertedGeneralAllNo!! > snapshot.generalAllNo) {
             settings.lastAlertedGeneralAllNo = snapshot.generalAllNo
+            changed = true
+        }
+        if (
+            settings.lastAlertedNovelUpdatedAt == null ||
+            settings.lastAlertedNovelUpdatedAt!! > snapshot.novelUpdatedAt
+        ) {
+            settings.lastAlertedNovelUpdatedAt = snapshot.novelUpdatedAt
             changed = true
         }
         if (changed) {
@@ -344,6 +369,7 @@ class NarouNovelPollingService(
         lengthDelta: Long,
         chapterTriggered: Boolean,
         chapterDelta: Int,
+        novelUpdatedTriggered: Boolean,
         snapshot: NarouNovelSnapshot
     ): MessageEmbed {
         val updates = mutableListOf<String>()
@@ -358,14 +384,20 @@ class NarouNovelPollingService(
             updates += "the novel grew by $lengthDelta characters"
         }
 
-        val summary = truncate(updates.joinToString(" and ") + ".", MessageEmbed.DESCRIPTION_MAX_LENGTH)
+        val summary = if (updates.isNotEmpty()) {
+            updates.joinToString(" and ") + "."
+        } else if (novelUpdatedTriggered) {
+            "This might indicate a new chapter has been scheduled or is in the works."
+        } else {
+            throw IllegalStateException("Narou novel alert requires at least one trigger")
+        }
         val chapterLink = truncate(NOVEL_URL + snapshot.generalAllNo, MessageEmbed.VALUE_MAX_LENGTH)
         val nextChapterLink = truncate(NOVEL_URL + (snapshot.generalAllNo + 1), MessageEmbed.VALUE_MAX_LENGTH)
 
         val embedBuilder = EmbedBuilder()
             .setColor(Color.ORANGE)
             .setTitle(truncate(EMBED_TITLE, MessageEmbed.TITLE_MAX_LENGTH))
-            .setDescription(summary)
+            .setDescription(truncate(summary, MessageEmbed.DESCRIPTION_MAX_LENGTH))
             .addField("Total chapters", snapshot.generalAllNo.toString(), true)
             .addField("Total characters", snapshot.length.toString(), true)
             .addField("Chapter link", chapterLink, false)

@@ -146,6 +146,7 @@ class NarouNovelConfigCommandTest {
         assertEquals(11L, settingsCaptor.firstValue.channelId)
         assertEquals(9_445_269L, settingsCaptor.firstValue.lastAlertedLength)
         assertEquals(778, settingsCaptor.firstValue.lastAlertedGeneralAllNo)
+        assertEquals("2026-05-15 07:00:36", settingsCaptor.firstValue.lastAlertedNovelUpdatedAt)
         verify(slashEvent).reply("Narou novel alerts will be sent to <#11>.")
     }
 

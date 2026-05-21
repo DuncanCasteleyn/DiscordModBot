@@ -20,7 +20,9 @@ data class NarouNovelAlertSettings(
     @Column(nullable = true)
     var lastAlertedLength: Long? = null,
     @Column(nullable = true)
-    var lastAlertedGeneralAllNo: Int? = null
+    var lastAlertedGeneralAllNo: Int? = null,
+    @Column(nullable = true)
+    var lastAlertedNovelUpdatedAt: String? = null
 ) {
     companion object {
         const val DEFAULT_LENGTH_THRESHOLD = 1000L
