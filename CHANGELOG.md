@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.11.2](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.11.1...v2.11.2) (2026-05-22)
+
+
+### Bug Fixes
+
+* **narouNovelApi:** alert on revision updates ([#653](https://github.com/DuncanCasteleyn/DiscordModBot/issues/653)) ([8e347a3](https://github.com/DuncanCasteleyn/DiscordModBot/commit/8e347a3952d9d87612b7e87d92ac907829b4aeae))
+* remove redundant note for points limit reached ([4dc56cd](https://github.com/DuncanCasteleyn/DiscordModBot/commit/4dc56cd96b0dfc43c7ecf52f86bb64712edadd60))
+
 ## [2.11.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.11.0...v2.11.1) (2026-05-20)
 
 
