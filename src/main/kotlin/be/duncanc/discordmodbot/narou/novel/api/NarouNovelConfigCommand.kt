@@ -172,6 +172,9 @@ class NarouNovelConfigCommand(
         if (settings.lastAlertedGeneralAllNo == null) {
             settings.lastAlertedGeneralAllNo = snapshot.generalAllNo
         }
+        if (settings.lastAlertedNovelUpdatedAt == null) {
+            settings.lastAlertedNovelUpdatedAt = snapshot.novelUpdatedAt
+        }
     }
 
     private fun clearAlertConfiguration(guildId: Long) {
