@@ -140,7 +140,11 @@ class AddWarnPointsByIdCommandTest {
 
         command.onSlashCommandInteraction(slashEvent)
 
-        verify(slashEvent).replyModal(argThat { id == "addwarnpointsbyid_reason:99:2:3:0" })
+        verify(slashEvent).replyModal(argThat {
+            id == "addwarnpointsbyid_reason:99:2:3:0" &&
+                components.size == 2 &&
+                components[0].asTextDisplay().content == "Warning: <@99> (ID: 99)"
+        })
     }
 
     @Test
@@ -151,7 +155,9 @@ class AddWarnPointsByIdCommandTest {
         command.onSlashCommandInteraction(slashEvent)
 
         verify(slashEvent).replyModal(argThat {
-            id == "addwarnpointsbyid_reason:99:2:3:1" && components.size == 2
+            id == "addwarnpointsbyid_reason:99:2:3:1" &&
+                components.size == 3 &&
+                components[0].asTextDisplay().content == "Warning: <@99> (ID: 99)"
         })
     }
 

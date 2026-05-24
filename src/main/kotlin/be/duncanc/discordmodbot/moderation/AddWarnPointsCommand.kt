@@ -8,6 +8,7 @@ import be.duncanc.discordmodbot.moderation.persistence.GuildWarnPointsSettingsRe
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.components.label.Label
+import net.dv8tion.jda.api.components.textdisplay.TextDisplay
 import net.dv8tion.jda.api.components.textinput.TextInput
 import net.dv8tion.jda.api.components.textinput.TextInputStyle
 import net.dv8tion.jda.api.entities.Member
@@ -566,6 +567,9 @@ class AddWarnPointsCommand(
 
     private fun createReasonModal(targetMember: Member, points: Int, days: Int, action: Int): Modal {
         val modalId = "$MODAL_ID:${targetMember.idLong}:$points:$days:$action"
+        val targetText = TextDisplay.of(
+            "Warning: ${targetMember.nicknameAndUsername} (<@${targetMember.idLong}>, ID: ${targetMember.idLong})"
+        )
         val textInput = TextInput.create(REASON_INPUT_ID, TextInputStyle.PARAGRAPH)
             .setPlaceholder("Enter the reason for this warning...")
             .setMinLength(1)
@@ -573,7 +577,7 @@ class AddWarnPointsCommand(
             .build()
 
         val modalBuilder = Modal.create(modalId, "Enter Reason")
-            .addComponents(Label.of("Reason", textInput))
+            .addComponents(targetText, Label.of("Reason", textInput))
 
         if (action == 1) {
             val unmuteDaysInput = TextInput.create(UNMUTE_DAYS_INPUT_ID, TextInputStyle.SHORT)

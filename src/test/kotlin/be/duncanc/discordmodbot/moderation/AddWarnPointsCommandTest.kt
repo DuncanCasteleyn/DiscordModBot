@@ -178,7 +178,9 @@ class AddWarnPointsCommandTest {
         command.onSlashCommandInteraction(slashEvent)
 
         verify(slashEvent).replyModal(argThat {
-            id == "addwarnpoints_reason:99:2:3:1" && components.size == 2
+            id == "addwarnpoints_reason:99:2:3:1" &&
+                components.size == 3 &&
+                components[0].asTextDisplay().content == "Warning: TargetUser (<@99>, ID: 99)"
         })
     }
 
@@ -191,7 +193,9 @@ class AddWarnPointsCommandTest {
         command.onSlashCommandInteraction(slashEvent)
 
         verify(slashEvent).replyModal(argThat {
-            id == "addwarnpoints_reason:99:2:3:2" && components.size == 1
+            id == "addwarnpoints_reason:99:2:3:2" &&
+                components.size == 2 &&
+                components[0].asTextDisplay().content == "Warning: TargetUser (<@99>, ID: 99)"
         })
     }
 
@@ -411,6 +415,9 @@ class AddWarnPointsCommandTest {
         whenever(slashEvent.getOption("user")).thenReturn(userOption)
         whenever(userOption.asMember).thenReturn(targetMember)
         whenever(targetMember.idLong).thenReturn(99L)
+        whenever(targetMember.user).thenReturn(targetUser)
+        whenever(targetMember.nickname).thenReturn(null)
+        whenever(targetUser.name).thenReturn("TargetUser")
         whenever(member.canInteract(targetMember)).thenReturn(true)
         whenever(slashEvent.getOption("points")).thenReturn(pointsOption)
         whenever(pointsOption.asInt).thenReturn(2)
