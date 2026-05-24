@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.3](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.11.2...v2.11.3) (2026-05-24)
+
+
+### Bug Fixes
+
+* **moderation:** collect reasons with modals & show target in modals ([#657](https://github.com/DuncanCasteleyn/DiscordModBot/issues/657)) ([884e1a9](https://github.com/DuncanCasteleyn/DiscordModBot/commit/884e1a9b21299b4829e8e8a84b9bf088acc7ce75))
+
 ## [2.11.2](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.11.1...v2.11.2) (2026-05-22)
 
 
