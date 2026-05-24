@@ -7,8 +7,13 @@ import be.duncanc.discordmodbot.moderation.persistence.GuildWarnPointsSettings
 import be.duncanc.discordmodbot.moderation.persistence.GuildWarnPointsSettingsRepository
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.components.label.Label
+import net.dv8tion.jda.api.components.textdisplay.TextDisplay
+import net.dv8tion.jda.api.components.textinput.TextInput
+import net.dv8tion.jda.api.components.textinput.TextInputStyle
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.MessageEmbed
+import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.InteractionHook
@@ -17,6 +22,7 @@ import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
+import net.dv8tion.jda.api.modals.Modal
 import org.springframework.stereotype.Component
 import java.awt.Color
 import java.util.*
@@ -29,7 +35,8 @@ class WarnCommand(
         private const val COMMAND = "warn"
         private const val DESCRIPTION = "Warns a user by sending them a DM and logging the warning to the log channel."
         private const val OPTION_USER = "user"
-        private const val OPTION_REASON = "reason"
+        private const val MODAL_ID = "warn_reason"
+        private const val REASON_INPUT_ID = "reason"
     }
 
     override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
@@ -66,8 +73,69 @@ class WarnCommand(
             return
         }
 
-        val reason = event.getOption(OPTION_REASON)?.asString ?: "No reason provided"
+        event.replyModal(createReasonModal(targetMember)).queue()
+    }
 
+    override fun onModalInteraction(event: ModalInteractionEvent) {
+        if (!event.modalId.startsWith("$MODAL_ID:")) return
+
+        val guild = event.guild
+        if (guild == null) {
+            event.reply("This command only works in a guild.").setEphemeral(true).queue()
+            return
+        }
+
+        val targetMemberId = event.modalId.removePrefix("$MODAL_ID:").toLongOrNull()
+        if (targetMemberId == null) {
+            event.reply("This form is no longer valid.").setEphemeral(true).queue()
+            return
+        }
+
+        val moderator = event.member
+        if (moderator == null) {
+            event.reply("This command only works in a guild.").setEphemeral(true).queue()
+            return
+        }
+
+        if (!moderator.hasPermission(Permission.MANAGE_ROLES)) {
+            event.reply("You need manage roles permission to use this command.").setEphemeral(true).queue()
+            return
+        }
+
+        val guildWarnPointsSettings = guildWarnPointsSettingsRepository.findById(guild.idLong)
+            .orElse(GuildWarnPointsSettings(guild.idLong, announceChannelId = -1))
+
+        if (guildWarnPointsSettings.overrideWarnCommand) {
+            event.reply("This command has been disabled. Use /addwarnpoints instead.").setEphemeral(true).queue()
+            return
+        }
+
+        val targetMember = guild.getMemberById(targetMemberId)
+        if (targetMember == null) {
+            event.reply("User not found.").setEphemeral(true).queue()
+            return
+        }
+
+        if (!moderator.canInteract(targetMember)) {
+            event.reply("You can't warn a user that you can't interact with.").setEphemeral(true).queue()
+            return
+        }
+
+        val reason = event.getValue(REASON_INPUT_ID)?.asString?.trim().orEmpty()
+        if (reason.isBlank()) {
+            event.reply("Please provide a reason.").setEphemeral(true).queue()
+            return
+        }
+
+        if (reason.length > 1024) {
+            event.reply("Reason must be 1024 characters or less.").setEphemeral(true).queue()
+            return
+        }
+
+        processWarn(event, targetMember, reason)
+    }
+
+    private fun processWarn(event: ModalInteractionEvent, targetMember: Member, reason: String) {
         event.deferReply(true).queue { hook ->
             val guild = event.guild!!
             val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
@@ -125,9 +193,23 @@ class WarnCommand(
             Commands.slash(COMMAND, DESCRIPTION)
                 .addOptions(
                     OptionData(OptionType.USER, OPTION_USER, "The user to warn").setRequired(true),
-                    OptionData(OptionType.STRING, OPTION_REASON, "The reason for the warning").setRequired(true)
                 )
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_ROLES))
         )
+    }
+
+    private fun createReasonModal(targetMember: Member): Modal {
+        val targetText = TextDisplay.of(
+            "Warning: ${targetMember.nicknameAndUsername} (<@${targetMember.idLong}>, ID: ${targetMember.idLong})"
+        )
+        val reasonInput = TextInput.create(REASON_INPUT_ID, TextInputStyle.PARAGRAPH)
+            .setPlaceholder("Enter the reason for this warning...")
+            .setMinLength(1)
+            .setMaxLength(1024)
+            .build()
+
+        return Modal.create("$MODAL_ID:${targetMember.idLong}", "Enter Reason")
+            .addComponents(targetText, Label.of("Reason", reasonInput))
+            .build()
     }
 }

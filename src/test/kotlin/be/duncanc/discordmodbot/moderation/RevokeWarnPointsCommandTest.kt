@@ -94,10 +94,14 @@ class RevokeWarnPointsCommandTest {
 
         assertEquals("revokewarnpoints", commandData.name)
         assertEquals(listOf("direct", "guided"), commandData.subcommands.map { it.name })
+        assertEquals(
+            listOf("user", "warn_point_id"),
+            commandData.subcommands.single { it.name == "direct" }.options.map { it.name }
+        )
     }
 
     @Test
-    fun `direct revoke removes the targeted warn point`() {
+    fun `direct revoke opens a reason modal`() {
         val warnPointId = UUID.fromString("11111111-1111-1111-1111-111111111111")
         val warnPoint = warnPoint(warnPointId)
 
@@ -107,19 +111,21 @@ class RevokeWarnPointsCommandTest {
         whenever(slashEvent.guild).thenReturn(guild)
         whenever(slashEvent.jda).thenReturn(jda)
         whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
+        whenever(member.idLong).thenReturn(12L)
         whenever(slashEvent.getOption("user")).thenReturn(optionLong(99L))
         whenever(slashEvent.getOption("warn_point_id")).thenReturn(stringOption(warnPointId.toString()))
-        whenever(slashEvent.getOption("reason")).thenReturn(stringOption("Spamming"))
         whenever(guild.idLong).thenReturn(1L)
-        whenever(jda.registeredListeners).thenReturn(emptyList())
         whenever(guildWarnPointsService.getWarningById(warnPointId)).thenReturn(warnPoint)
-        whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
-        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+        whenever(slashEvent.replyModal(any())).thenReturn(modalAction)
 
         command.onSlashCommandInteraction(slashEvent)
 
-        verify(guildWarnPointsService).revokePoint(warnPointId)
-        verify(slashEvent).reply("Revoked 2 warn point(s) from <@99>. Reason: Spamming")
+        verify(guildWarnPointsService, never()).revokePoint(any())
+        verify(slashEvent).replyModal(argThat {
+            id == "revokewarnpoints-reason:12:99:$warnPointId" &&
+                    components.size == 2 &&
+                    components[0].asTextDisplay().content == "Revoking warning from <@99>"
+        })
     }
 
     @Test
@@ -180,7 +186,6 @@ class RevokeWarnPointsCommandTest {
         whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
         whenever(slashEvent.getOption("user")).thenReturn(optionLong(99L))
         whenever(slashEvent.getOption("warn_point_id")).thenReturn(stringOption(warnPointId.toString()))
-        whenever(slashEvent.getOption("reason")).thenReturn(stringOption("Spamming"))
         whenever(guild.idLong).thenReturn(1L)
         whenever(guildWarnPointsService.getWarningById(warnPointId)).thenReturn(null)
         whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)

@@ -5,8 +5,13 @@ import be.duncanc.discordmodbot.discord.nicknameAndUsername
 import be.duncanc.discordmodbot.logging.GuildLogger
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.components.label.Label
+import net.dv8tion.jda.api.components.textdisplay.TextDisplay
+import net.dv8tion.jda.api.components.textinput.TextInput
+import net.dv8tion.jda.api.components.textinput.TextInputStyle
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions
@@ -14,6 +19,7 @@ import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
+import net.dv8tion.jda.api.modals.Modal
 import net.dv8tion.jda.api.requests.RestAction
 import org.springframework.stereotype.Component
 import java.awt.Color
@@ -26,7 +32,8 @@ class BanCommand : ListenerAdapter(), SlashCommand {
         private const val DESCRIPTION =
             "Will ban the mentioned user, clear all messages from the last 7 days and log it to the log channel."
         private const val OPTION_USER = "user"
-        private const val OPTION_REASON = "reason"
+        private const val MODAL_ID = "ban_reason"
+        private const val REASON_INPUT_ID = "reason"
     }
 
     override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
@@ -54,8 +61,55 @@ class BanCommand : ListenerAdapter(), SlashCommand {
             return
         }
 
-        val reason = event.getOption(OPTION_REASON)?.asString ?: "No reason provided"
+        event.replyModal(createReasonModal(targetMember)).queue()
+    }
 
+    override fun onModalInteraction(event: ModalInteractionEvent) {
+        if (!event.modalId.startsWith("$MODAL_ID:")) return
+
+        val targetMemberId = event.modalId.removePrefix("$MODAL_ID:").toLongOrNull()
+        if (targetMemberId == null) {
+            event.reply("This form is no longer valid.").setEphemeral(true).queue()
+            return
+        }
+
+        val member = event.member
+        if (member == null) {
+            event.reply("This command only works in a guild.").setEphemeral(true).queue()
+            return
+        }
+
+        if (!member.hasPermission(Permission.BAN_MEMBERS)) {
+            event.reply("You need ban members permission to use this command.").setEphemeral(true).queue()
+            return
+        }
+
+        val targetMember = event.guild?.getMemberById(targetMemberId)
+        if (targetMember == null) {
+            event.reply("User not found.").setEphemeral(true).queue()
+            return
+        }
+
+        if (!member.canInteract(targetMember)) {
+            event.reply("You can't ban a user that you can't interact with.").setEphemeral(true).queue()
+            return
+        }
+
+        val reason = event.getValue(REASON_INPUT_ID)?.asString?.trim().orEmpty()
+        if (reason.isBlank()) {
+            event.reply("Please provide a reason.").setEphemeral(true).queue()
+            return
+        }
+
+        if (reason.length > 1024) {
+            event.reply("Reason must be 1024 characters or less.").setEphemeral(true).queue()
+            return
+        }
+
+        processBan(event, member, targetMember, reason)
+    }
+
+    private fun processBan(event: ModalInteractionEvent, member: Member, targetMember: Member, reason: String) {
         event.deferReply(true).queue { hook ->
             val guild = event.guild!!
             val banRestAction = guild.ban(targetMember, 7, TimeUnit.DAYS)
@@ -90,7 +144,7 @@ class BanCommand : ListenerAdapter(), SlashCommand {
     }
 
     private fun logBan(
-        event: SlashCommandInteractionEvent,
+        event: ModalInteractionEvent,
         reason: String,
         toBan: Member
     ) {
@@ -110,7 +164,7 @@ class BanCommand : ListenerAdapter(), SlashCommand {
     }
 
     private fun onSuccessfulInformUser(
-        event: SlashCommandInteractionEvent,
+        event: ModalInteractionEvent,
         reason: String,
         hook: net.dv8tion.jda.api.interactions.InteractionHook,
         toBan: Member,
@@ -131,7 +185,7 @@ class BanCommand : ListenerAdapter(), SlashCommand {
     }
 
     private fun onFailToInformUser(
-        event: SlashCommandInteractionEvent,
+        event: ModalInteractionEvent,
         reason: String,
         hook: net.dv8tion.jda.api.interactions.InteractionHook,
         toBan: Member,
@@ -160,9 +214,23 @@ Error: ${throwable.message}"""
             Commands.slash(COMMAND, DESCRIPTION)
                 .addOptions(
                     OptionData(OptionType.USER, OPTION_USER, "The user to ban").setRequired(true),
-                    OptionData(OptionType.STRING, OPTION_REASON, "The reason for the ban").setRequired(true)
                 )
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.BAN_MEMBERS))
         )
+    }
+
+    private fun createReasonModal(targetMember: Member): Modal {
+        val targetText = TextDisplay.of(
+            "Banning: ${targetMember.nicknameAndUsername} (<@${targetMember.idLong}>, ID: ${targetMember.idLong})"
+        )
+        val reasonInput = TextInput.create(REASON_INPUT_ID, TextInputStyle.PARAGRAPH)
+            .setPlaceholder("Enter the reason for this ban...")
+            .setMinLength(1)
+            .setMaxLength(1024)
+            .build()
+
+        return Modal.create("$MODAL_ID:${targetMember.idLong}", "Enter Reason")
+            .addComponents(targetText, Label.of("Reason", reasonInput))
+            .build()
     }
 }
