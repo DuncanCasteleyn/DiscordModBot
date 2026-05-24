@@ -14,7 +14,7 @@ class ReasonModalCommandDataTest {
             BanCommand().getCommandsData().single(),
             BanUserByIdCommand().getCommandsData().single(),
             KickCommand().getCommandsData().single(),
-            MuteCommand(mock()).getCommandsData().single(),
+            MuteCommand(mock(), mock()).getCommandsData().single(),
             MuteByIdCommand(mock(), mock(), mock<GuildLogger>()).getCommandsData().single(),
             WarnCommand(mock<GuildWarnPointsSettingsRepository>()).getCommandsData().single()
         )

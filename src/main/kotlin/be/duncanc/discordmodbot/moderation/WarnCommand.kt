@@ -111,12 +111,7 @@ class WarnCommand(
         }
 
         val targetMember = guild.getMemberById(targetMemberId)
-        if (targetMember == null) {
-            event.reply("User not found.").setEphemeral(true).queue()
-            return
-        }
-
-        if (!moderator.canInteract(targetMember)) {
+        if (targetMember != null && !moderator.canInteract(targetMember)) {
             event.reply("You can't warn a user that you can't interact with.").setEphemeral(true).queue()
             return
         }
@@ -132,23 +127,20 @@ class WarnCommand(
             return
         }
 
-        processWarn(event, targetMember, reason)
+        processWarn(event, targetMember, targetMemberId, reason)
     }
 
-    private fun processWarn(event: ModalInteractionEvent, targetMember: Member, reason: String) {
+    private fun processWarn(event: ModalInteractionEvent, targetMember: Member?, targetUserId: Long, reason: String) {
         event.deferReply(true).queue { hook ->
             val guild = event.guild!!
-            val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
-            if (guildLogger != null) {
-                val logEmbed = EmbedBuilder()
-                    .setColor(Color.YELLOW)
-                    .setTitle("User warned")
-                    .addField("UUID", UUID.randomUUID().toString(), false)
-                    .addField("User", targetMember.nicknameAndUsername, true)
-                    .addField("Moderator", event.member!!.nicknameAndUsername, true)
-                    .addField("Reason", reason, false)
+            logWarn(event, guild, targetMember, targetUserId, reason)
 
-                guildLogger.log(logEmbed, targetMember.user, guild, null, GuildLogger.LogTypeAction.MODERATOR)
+            if (targetMember == null) {
+                hook.editOriginal(
+                    "Warning logged for <@$targetUserId>, but the user left the server before the warning could be delivered. " +
+                        "Warn them manually if they rejoin."
+                ).queue()
+                return@queue
             }
 
             val userWarning = EmbedBuilder()
@@ -165,6 +157,27 @@ class WarnCommand(
                     ) { throwable -> onFailToWarnUser(hook, targetMember, throwable) }
                 }
             ) { throwable -> onFailToWarnUser(hook, targetMember, throwable) }
+        }
+    }
+
+    private fun logWarn(
+        event: ModalInteractionEvent,
+        guild: net.dv8tion.jda.api.entities.Guild,
+        targetMember: Member?,
+        targetUserId: Long,
+        reason: String
+    ) {
+        val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
+        if (guildLogger != null) {
+            val logEmbed = EmbedBuilder()
+                .setColor(Color.YELLOW)
+                .setTitle("User warned")
+                .addField("UUID", UUID.randomUUID().toString(), false)
+                .addField("User", targetMember?.nicknameAndUsername ?: "<@$targetUserId> (left server)", true)
+                .addField("Moderator", event.member!!.nicknameAndUsername, true)
+                .addField("Reason", reason, false)
+
+            guildLogger.log(logEmbed, targetMember?.user, guild, null, GuildLogger.LogTypeAction.MODERATOR)
         }
     }
 

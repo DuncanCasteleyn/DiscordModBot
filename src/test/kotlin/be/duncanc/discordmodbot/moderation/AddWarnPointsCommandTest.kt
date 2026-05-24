@@ -60,6 +60,9 @@ class AddWarnPointsCommandTest {
     private lateinit var unmutePlanningService: UnmutePlanningService
 
     @Mock
+    private lateinit var muteService: MuteService
+
+    @Mock
     private lateinit var slashEvent: SlashCommandInteractionEvent
 
     @Mock
@@ -123,6 +126,9 @@ class AddWarnPointsCommandTest {
     private lateinit var openPrivateChannelAction: CacheRestAction<PrivateChannel>
 
     @Mock
+    private lateinit var retrieveUserAction: CacheRestAction<User>
+
+    @Mock
     private lateinit var privateChannel: PrivateChannel
 
     @Mock
@@ -142,6 +148,7 @@ class AddWarnPointsCommandTest {
             guildWarnPointsService,
             guildWarnPointsSettingsRepository,
             muteRoleCommandAndEventsListener,
+            muteService,
             unmutePlanningService
         )
     }
@@ -408,6 +415,23 @@ class AddWarnPointsCommandTest {
         kotlin.test.assertEquals(false, resultCaptor.firstValue.contains("Logger unavailable"))
     }
 
+    @Test
+    fun `mute modal for departed target records mute and tells moderator it applies on rejoin`() {
+        val resultCaptor = argumentCaptor<String>()
+
+        stubSuccessfulMuteModalFlow(unmuteDays = 3, targetStillPresent = false)
+        whenever(unmutePlanningService.planUnmute(guild, 99L, member, 3)).thenReturn(OffsetDateTime.now().plusDays(3))
+
+        command.onModalInteraction(modalEvent)
+
+        verify(muteService).muteUserById(1L, 99L)
+        verify(hook).sendMessage(resultCaptor.capture())
+        kotlin.test.assertEquals(
+            true,
+            resultCaptor.firstValue.contains("User left before the mute could be applied. The mute will be applied when they rejoin.")
+        )
+    }
+
     private fun stubSlashCommand(action: Int) {
         whenever(slashEvent.name).thenReturn("addwarnpoints")
         whenever(slashEvent.member).thenReturn(member)
@@ -432,7 +456,7 @@ class AddWarnPointsCommandTest {
         whenever(modalEvent.guild).thenReturn(guild)
         whenever(modalEvent.member).thenReturn(member)
         whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
-        whenever(guild.getMemberById("99")).thenReturn(targetMember)
+        whenever(guild.getMemberById(99L)).thenReturn(targetMember)
         whenever(member.canInteract(targetMember)).thenReturn(true)
     }
 
@@ -440,7 +464,8 @@ class AddWarnPointsCommandTest {
     private fun stubSuccessfulMuteModalFlow(
         unmuteDays: Int?,
         muteRoleConfigured: Boolean = true,
-        muteRoleAssignmentSucceeds: Boolean = true
+        muteRoleAssignmentSucceeds: Boolean = true,
+        targetStillPresent: Boolean = true
     ) {
         val settings = GuildWarnPointsSettings(
             guildId = 1L,
@@ -474,6 +499,8 @@ class AddWarnPointsCommandTest {
         whenever(targetUser.name).thenReturn("TargetUser")
         whenever(jda.registeredListeners).thenReturn(listOf(guildLogger))
         whenever(jda.getTextChannelById(1L)).thenReturn(mockTextChannel())
+        whenever(jda.retrieveUserById(99L)).thenReturn(retrieveUserAction)
+        whenever(retrieveUserAction.complete()).thenReturn(targetUser)
         whenever(guildWarnPointsSettingsRepository.findById(1L)).thenReturn(Optional.of(settings))
         whenever(modalEvent.getValue("reason")).thenReturn(reasonValue)
         whenever(reasonValue.asString).thenReturn("Spamming")
@@ -483,6 +510,7 @@ class AddWarnPointsCommandTest {
         whenever(guildWarnPointsService.addWarnPoint(eq(99L), eq(1L), eq(2), eq(12L), eq("Spamming"), any()))
             .thenReturn(warnPoint)
         whenever(guildWarnPointsService.getActivePointsCount(1L, 99L)).thenReturn(1)
+        whenever(guild.getMemberById(99L)).thenReturn(if (targetStillPresent) targetMember else null)
         if (muteRoleConfigured) {
             whenever(muteRoleCommandAndEventsListener.getMuteRole(guild)).thenReturn(muteRole)
         } else {
@@ -496,13 +524,13 @@ class AddWarnPointsCommandTest {
             consumer.accept(hook)
             null
         }.whenever(replyAction).queue(any<Consumer<InteractionHook>>())
-        if (muteRoleAssignmentSucceeds) {
+        if (targetStillPresent && muteRoleAssignmentSucceeds) {
             doAnswer {
                 val success = it.arguments[0] as Consumer<Void?>
                 success.accept(null)
                 null
             }.whenever(addRoleAction).queue(any<Consumer<Void?>>(), any<Consumer<Throwable>>())
-        } else {
+        } else if (targetStillPresent) {
             doAnswer {
                 val failure = it.arguments[1] as Consumer<Throwable>
                 failure.accept(IllegalStateException("Missing permissions"))

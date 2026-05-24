@@ -86,7 +86,7 @@ class KickCommand : ListenerAdapter(), SlashCommand {
 
         val targetMember = event.guild?.getMemberById(targetMemberId)
         if (targetMember == null) {
-            event.reply("User not found.").setEphemeral(true).queue()
+            event.reply("User left before the kick could be applied.").setEphemeral(true).queue()
             return
         }
 

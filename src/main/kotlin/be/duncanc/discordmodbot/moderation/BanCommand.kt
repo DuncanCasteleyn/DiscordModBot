@@ -11,6 +11,7 @@ import net.dv8tion.jda.api.components.textinput.TextInput
 import net.dv8tion.jda.api.components.textinput.TextInputStyle
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
@@ -85,12 +86,7 @@ class BanCommand : ListenerAdapter(), SlashCommand {
         }
 
         val targetMember = event.guild?.getMemberById(targetMemberId)
-        if (targetMember == null) {
-            event.reply("User not found.").setEphemeral(true).queue()
-            return
-        }
-
-        if (!member.canInteract(targetMember)) {
+        if (targetMember != null && !member.canInteract(targetMember)) {
             event.reply("You can't ban a user that you can't interact with.").setEphemeral(true).queue()
             return
         }
@@ -106,7 +102,12 @@ class BanCommand : ListenerAdapter(), SlashCommand {
             return
         }
 
-        processBan(event, member, targetMember, reason)
+        if (targetMember != null) {
+            processBan(event, member, targetMember, reason)
+            return
+        }
+
+        processBanById(event, member, targetMemberId, reason)
     }
 
     private fun processBan(event: ModalInteractionEvent, member: Member, targetMember: Member, reason: String) {
@@ -143,6 +144,58 @@ class BanCommand : ListenerAdapter(), SlashCommand {
         }
     }
 
+    private fun processBanById(event: ModalInteractionEvent, member: Member, targetUserId: Long, reason: String) {
+        event.deferReply(true).queue { hook ->
+            val guild = event.guild!!
+            val banRestAction = guild.ban(User.fromId(targetUserId), 7, TimeUnit.DAYS)
+
+            event.jda.retrieveUserById(targetUserId).queue(
+                { targetUser ->
+                    val userBanNotification = buildBanNotification(guild, member, reason)
+                    targetUser.openPrivateChannel().queue(
+                        { privateChannelUserToBan ->
+                            privateChannelUserToBan.sendMessageEmbeds(userBanNotification).queue(
+                                { message ->
+                                    onSuccessfulInformUser(event, reason, hook, targetUser, message, banRestAction)
+                                }
+                            ) { throwable ->
+                                onFailToInformUser(event, reason, hook, targetUser, throwable, banRestAction)
+                            }
+                        }
+                    ) { throwable -> onFailToInformUser(event, reason, hook, targetUser, throwable, banRestAction) }
+                },
+                {
+                    banRestAction.queue({
+                        logBan(event, reason, targetUserId)
+                        hook.editOriginal("Banned <@$targetUserId>.").queue()
+                    }) { throwable ->
+                        hook.editOriginal("Ban failed on <@$targetUserId>: ${throwable.message}").queue()
+                    }
+                }
+            )
+        }
+    }
+
+    private fun buildBanNotification(guild: net.dv8tion.jda.api.entities.Guild, member: Member, reason: String) =
+        EmbedBuilder()
+            .setColor(Color.red)
+            .setAuthor(member.nicknameAndUsername, null, member.user.effectiveAvatarUrl)
+            .setTitle(guild.name + ": You have been banned by " + member.nicknameAndUsername, null)
+            .setDescription(buildBanDescription(guild, reason))
+            .build()
+
+    private fun buildBanDescription(guild: net.dv8tion.jda.api.entities.Guild, reason: String): String {
+        val description = StringBuilder("Reason: $reason")
+        if (guild.idLong == 175856762677624832L) {
+            description.append("\n\n")
+                .append("If you'd like to appeal the ban, please use this form: https://goo.gl/forms/SpWg49gaQlMt4lSG3")
+        } else if (guild.idLong == 176028172729450497L) {
+            description.append("\n\n")
+                .append("If you'd like to appeal the ban, please use this form: https://forms.gle/ffbDj12KcSyTT7mUA")
+        }
+        return description.toString()
+    }
+
     private fun logBan(
         event: ModalInteractionEvent,
         reason: String,
@@ -163,6 +216,22 @@ class BanCommand : ListenerAdapter(), SlashCommand {
         }
     }
 
+    private fun logBan(event: ModalInteractionEvent, reason: String, targetUserId: Long, user: User? = null) {
+        val guild = event.guild!!
+        val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
+        if (guildLogger != null) {
+            val logEmbed = EmbedBuilder()
+                .setColor(Color.RED)
+                .setTitle("User banned")
+                .addField("UUID", java.util.UUID.randomUUID().toString(), false)
+                .addField("User", user?.name ?: "<@$targetUserId>", true)
+                .addField("Moderator", event.member!!.nicknameAndUsername, true)
+                .addField("Reason", reason, false)
+
+            guildLogger.log(logEmbed, user, guild, null, GuildLogger.LogTypeAction.MODERATOR)
+        }
+    }
+
     private fun onSuccessfulInformUser(
         event: ModalInteractionEvent,
         reason: String,
@@ -180,6 +249,27 @@ class BanCommand : ListenerAdapter(), SlashCommand {
             userBanWarning.delete().queue()
             hook.editOriginal(
                 "Ban failed on $toBan: ${throwable.message}\n\nThe following message was sent to the user but was automatically deleted:"
+            ).setEmbeds(userBanWarning.embeds).queue()
+        }
+    }
+
+    private fun onSuccessfulInformUser(
+        event: ModalInteractionEvent,
+        reason: String,
+        hook: net.dv8tion.jda.api.interactions.InteractionHook,
+        toBan: User,
+        userBanWarning: Message,
+        banRestAction: RestAction<Void>
+    ) {
+        banRestAction.queue({
+            logBan(event, reason, toBan.idLong, toBan)
+            hook.editOriginal(
+                "Banned <@${toBan.idLong}>.\n\nThe following message was sent to the user:"
+            ).setEmbeds(userBanWarning.embeds).queue()
+        }) { throwable ->
+            userBanWarning.delete().queue()
+            hook.editOriginal(
+                "Ban failed on <@${toBan.idLong}>: ${throwable.message}\n\nThe following message was sent to the user but was automatically deleted:"
             ).setEmbeds(userBanWarning.embeds).queue()
         }
     }
@@ -205,6 +295,31 @@ Error: ${throwable.message}"""
         }) { banThrowable ->
             hook.editOriginal(
                 "Ban failed on $toBan: ${banThrowable.message}\n\nWas unable to send a DM to the user.\nError: ${throwable.message}"
+            ).queue()
+        }
+    }
+
+    private fun onFailToInformUser(
+        event: ModalInteractionEvent,
+        reason: String,
+        hook: net.dv8tion.jda.api.interactions.InteractionHook,
+        toBan: User,
+        throwable: Throwable,
+        banRestAction: RestAction<Void>
+    ) {
+        banRestAction.queue({
+            logBan(event, reason, toBan.idLong, toBan)
+
+            val msg =
+                """Banned <@${toBan.idLong}>.
+
+Was unable to send a DM to the user please inform the user manually, if possible.
+Error: ${throwable.message}"""
+
+            hook.editOriginal(msg).queue()
+        }) { banThrowable ->
+            hook.editOriginal(
+                "Ban failed on <@${toBan.idLong}>: ${banThrowable.message}\n\nWas unable to send a DM to the user.\nError: ${throwable.message}"
             ).queue()
         }
     }

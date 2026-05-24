@@ -36,6 +36,7 @@ class AddWarnPointsCommand(
     private val guildWarnPointsService: GuildWarnPointsService,
     private val guildWarnPointsSettingsRepository: GuildWarnPointsSettingsRepository,
     private val muteRoleCommandAndEventsListener: MuteRoleCommandAndEventsListener,
+    private val muteService: MuteService,
     private val unmutePlanningService: UnmutePlanningService
 ) : ListenerAdapter(), SlashCommand {
     private data class UnmuteSchedulingResult(
@@ -123,10 +124,11 @@ class AddWarnPointsCommand(
             return
         }
 
-        val targetMember = event.guild?.getMemberById(parts[1]) ?: run {
-            event.reply("User not found.").setEphemeral(true).queue()
+        val targetUserId = parts[1].toLongOrNull() ?: run {
+            event.reply("This form is no longer valid.").setEphemeral(true).queue()
             return
         }
+        val targetMember = event.guild?.getMemberById(targetUserId)
 
         val moderator = event.member
         if (moderator == null) {
@@ -139,7 +141,7 @@ class AddWarnPointsCommand(
             return
         }
 
-        if (moderator.canInteract(targetMember) != true) {
+        if (targetMember != null && moderator.canInteract(targetMember) != true) {
             event.reply("You can't interact with this member.").setEphemeral(true).queue()
             return
         }
@@ -194,6 +196,7 @@ class AddWarnPointsCommand(
                     moderator.guild,
                     event.jda,
                     moderator,
+                    targetUserId,
                     targetMember,
                     points,
                     days,
@@ -214,7 +217,8 @@ class AddWarnPointsCommand(
         guild: net.dv8tion.jda.api.entities.Guild,
         jda: net.dv8tion.jda.api.JDA,
         moderator: Member,
-        targetMember: Member,
+        targetUserId: Long,
+        targetMember: Member?,
         points: Int,
         days: Int,
         action: Int,
@@ -224,9 +228,10 @@ class AddWarnPointsCommand(
         hook: InteractionHook
     ) {
         val expireDate = OffsetDateTime.now().plusDays(days.toLong())
+        val targetUser = targetMember?.user ?: jda.retrieveUserById(targetUserId).complete()
 
         val guildWarnPoint = guildWarnPointsService.addWarnPoint(
-            targetMember.idLong,
+            targetUserId,
             guild.idLong,
             points,
             moderator.idLong,
@@ -234,9 +239,9 @@ class AddWarnPointsCommand(
             expireDate
         )
 
-        val totalPoints = guildWarnPointsService.getActivePointsCount(guild.idLong, targetMember.idLong)
+        val totalPoints = guildWarnPointsService.getActivePointsCount(guild.idLong, targetUserId)
 
-        performChecks(guildPointsSettings, targetMember.user, guild)
+        performChecks(guildPointsSettings, targetUser, guild)
 
         when (action) {
             1 -> {
@@ -246,7 +251,9 @@ class AddWarnPointsCommand(
                     finishWarnPointsProcessing(
                         jda,
                         moderator,
+                        targetUserId,
                         targetMember,
+                        targetUser,
                         reason,
                         points,
                         guildWarnPoint.id,
@@ -261,15 +268,42 @@ class AddWarnPointsCommand(
                     return
                 }
 
+                if (targetMember == null) {
+                    muteService.muteUserById(guild.idLong, targetUserId)
+
+                    val unmuteSchedulingResult = scheduleUnmuteIfRequested(guild, targetUserId, moderator, unmuteDays)
+                    finishWarnPointsProcessing(
+                        jda,
+                        moderator,
+                        targetUserId,
+                        null,
+                        targetUser,
+                        reason,
+                        points,
+                        guildWarnPoint.id,
+                        expireDate,
+                        action.toByte(),
+                        unmuteSchedulingResult.effectiveUnmuteDays,
+                        totalPoints,
+                        hook,
+                        unmuteSchedulingResult.unmutePlanMessage,
+                        "User left before the mute could be applied. The mute will be applied when they rejoin."
+                    )
+                    return
+                }
+
                 guild.addRoleToMember(targetMember, muteRole).reason(reason).queue(
                     {
+                        muteService.muteUserById(guild.idLong, targetUserId)
                         try {
                             val unmuteSchedulingResult =
-                                scheduleUnmuteIfRequested(guild, targetMember, moderator, unmuteDays)
+                                scheduleUnmuteIfRequested(guild, targetUserId, moderator, unmuteDays)
                             finishWarnPointsProcessing(
                                 jda,
                                 moderator,
+                                targetUserId,
                                 targetMember,
+                                targetUser,
                                 reason,
                                 points,
                                 guildWarnPoint.id,
@@ -298,7 +332,9 @@ class AddWarnPointsCommand(
                             finishWarnPointsProcessing(
                                 jda,
                                 moderator,
+                                targetUserId,
                                 targetMember,
+                                targetUser,
                                 reason,
                                 points,
                                 guildWarnPoint.id,
@@ -326,6 +362,25 @@ class AddWarnPointsCommand(
             }
 
             2 -> {
+                if (targetMember == null) {
+                    finishWarnPointsProcessing(
+                        jda,
+                        moderator,
+                        targetUserId,
+                        null,
+                        targetUser,
+                        reason,
+                        points,
+                        guildWarnPoint.id,
+                        expireDate,
+                        0,
+                        null,
+                        totalPoints,
+                        hook,
+                        moderatorNote = "User left before the kick could be applied."
+                    )
+                    return
+                }
                 guild.kick(targetMember).reason(reason).queue()
             }
         }
@@ -333,7 +388,9 @@ class AddWarnPointsCommand(
         finishWarnPointsProcessing(
             jda,
             moderator,
+            targetUserId,
             targetMember,
+            targetUser,
             reason,
             points,
             guildWarnPoint.id,
@@ -348,7 +405,9 @@ class AddWarnPointsCommand(
     private fun finishWarnPointsProcessing(
         jda: net.dv8tion.jda.api.JDA,
         moderator: Member,
-        targetMember: Member,
+        targetUserId: Long,
+        targetMember: Member?,
+        targetUser: User,
         reason: String,
         points: Int,
         warnPointId: java.util.UUID,
@@ -363,19 +422,21 @@ class AddWarnPointsCommand(
         logAddPoints(
             jda,
             moderator,
-            targetMember.user,
+            targetUser,
             reason,
             points,
             warnPointId,
             expireDate,
             action,
             unmuteDays,
-            targetMember.guild
+            moderator.guild
         )
 
         informUserAndModerator(
             moderator,
+            targetUserId,
             targetMember,
+            targetUser,
             reason,
             totalPoints,
             hook,
@@ -388,7 +449,7 @@ class AddWarnPointsCommand(
 
     private fun scheduleUnmuteIfRequested(
         guild: net.dv8tion.jda.api.entities.Guild,
-        targetMember: Member,
+        targetUserId: Long,
         moderator: Member,
         unmuteDays: Int?
     ): UnmuteSchedulingResult {
@@ -397,7 +458,7 @@ class AddWarnPointsCommand(
         }
 
         return try {
-            val unmuteDateTime = unmutePlanningService.planUnmute(guild, targetMember.idLong, moderator, unmuteDays)
+            val unmuteDateTime = unmutePlanningService.planUnmute(guild, targetUserId, moderator, unmuteDays)
             UnmuteSchedulingResult(
                 effectiveUnmuteDays = unmuteDays,
                 unmutePlanMessage = "Unmute planned for ${TimeFormat.DATE_SHORT_TIME_SHORT.atInstant(unmuteDateTime.toInstant())}."
@@ -468,7 +529,7 @@ class AddWarnPointsCommand(
                 .setColor(Color.YELLOW)
                 .setTitle("Warn points added to user")
                 .addField("UUID", id.toString(), false)
-                .addField("User", guild.getMember(toInform)?.nicknameAndUsername ?: toInform.name, true)
+                .addField("User", guild.getMember(toInform)?.nicknameAndUsername ?: "<@${toInform.idLong}>", true)
                 .addField("Moderator", moderator.nicknameAndUsername, true)
                 .addField("Amount", amount.toString(), false)
                 .addField("Reason", reason, false)
@@ -484,7 +545,9 @@ class AddWarnPointsCommand(
 
     private fun informUserAndModerator(
         moderator: Member,
-        toInform: Member,
+        targetUserId: Long,
+        toInform: Member?,
+        targetUser: User,
         reason: String,
         amountOfWarnings: Int,
         hook: InteractionHook,
@@ -518,25 +581,37 @@ class AddWarnPointsCommand(
             }
             .build()
 
-        toInform.user.openPrivateChannel().queue(
+        targetUser.openPrivateChannel().queue(
             { privateChannelUserToWarn ->
                 privateChannelUserToWarn.sendMessageEmbeds(userWarning).queue(
-                    { onSuccessfulInformUser(hook, toInform, userWarning, unmutePlanMessage, moderatorNote) }
-                ) { throwable -> onFailToInformUser(hook, toInform, throwable, unmutePlanMessage, moderatorNote) }
+                    {
+                        onSuccessfulInformUser(
+                            hook,
+                            targetUserId,
+                            toInform,
+                            userWarning,
+                            unmutePlanMessage,
+                            moderatorNote
+                        )
+                    }
+                ) {
+                    throwable -> onFailToInformUser(hook, targetUserId, toInform, throwable, unmutePlanMessage, moderatorNote)
+                }
             }
-        ) { throwable -> onFailToInformUser(hook, toInform, throwable, unmutePlanMessage, moderatorNote) }
+        ) { throwable -> onFailToInformUser(hook, targetUserId, toInform, throwable, unmutePlanMessage, moderatorNote) }
     }
 
     private fun onSuccessfulInformUser(
         hook: InteractionHook,
-        toInform: Member,
+        targetUserId: Long,
+        toInform: Member?,
         informationMessage: MessageEmbed,
         unmutePlanMessage: String?,
         moderatorNote: String?
     ) {
         hook.sendMessage(
             buildModeratorResultMessage(
-                "Added warn points to $toInform.",
+                "Added warn points to ${toInform ?: "<@$targetUserId>"}.",
                 "The following message was sent to the user:",
                 unmutePlanMessage,
                 moderatorNote
@@ -548,14 +623,15 @@ class AddWarnPointsCommand(
 
     private fun onFailToInformUser(
         hook: InteractionHook,
-        toInform: Member,
+        targetUserId: Long,
+        toInform: Member?,
         throwable: Throwable,
         unmutePlanMessage: String?,
         moderatorNote: String?
     ) {
         hook.sendMessage(
             buildModeratorResultMessage(
-                "Added warn points to $toInform.",
+                "Added warn points to ${toInform ?: "<@$targetUserId>"}.",
                 "Was unable to send a DM to the user please inform the user manually.\nError: ${throwable.message}",
                 unmutePlanMessage,
                 moderatorNote

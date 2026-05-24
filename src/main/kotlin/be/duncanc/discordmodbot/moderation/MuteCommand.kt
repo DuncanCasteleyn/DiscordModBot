@@ -28,7 +28,8 @@ import java.util.*
 
 @Component
 class MuteCommand(
-    private val muteRoleCommandAndEventsListener: MuteRoleCommandAndEventsListener
+    private val muteRoleCommandAndEventsListener: MuteRoleCommandAndEventsListener,
+    private val muteService: MuteService
 ) : ListenerAdapter(), SlashCommand {
     companion object {
         private const val COMMAND = "mute"
@@ -88,12 +89,7 @@ class MuteCommand(
         }
 
         val targetMember = event.guild?.getMemberById(targetMemberId)
-        if (targetMember == null) {
-            event.reply("User not found.").setEphemeral(true).queue()
-            return
-        }
-
-        if (!member.canInteract(targetMember)) {
+        if (targetMember != null && !member.canInteract(targetMember)) {
             event.reply("You can't mute a user that you can't interact with.").setEphemeral(true).queue()
             return
         }
@@ -109,10 +105,16 @@ class MuteCommand(
             return
         }
 
-        processMute(event, member, targetMember, reason)
+        processMute(event, member, targetMemberId, targetMember, reason)
     }
 
-    private fun processMute(event: ModalInteractionEvent, member: Member, targetMember: Member, reason: String) {
+    private fun processMute(
+        event: ModalInteractionEvent,
+        member: Member,
+        targetUserId: Long,
+        targetMember: Member?,
+        reason: String
+    ) {
         event.deferReply(true).queue { hook ->
             val guild = event.guild!!
             val muteRole = try {
@@ -122,7 +124,30 @@ class MuteCommand(
                 return@queue
             }
 
+            if (targetMember == null) {
+                muteService.muteUserById(guild.idLong, targetUserId)
+
+                val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
+                if (guildLogger != null) {
+                    val logEmbed = EmbedBuilder()
+                        .setColor(Color.YELLOW)
+                        .setTitle("User muted")
+                        .addField("UUID", UUID.randomUUID().toString(), false)
+                        .addField("User", "<@$targetUserId> (left server)", true)
+                        .addField("Moderator", event.member!!.nicknameAndUsername, true)
+                        .addField("Reason", reason, false)
+
+                    guildLogger.log(logEmbed, null, guild, null, GuildLogger.LogTypeAction.MODERATOR)
+                }
+
+                hook.editOriginal(
+                    "User <@$targetUserId> left before the mute could be applied. The mute was recorded and will be applied when they rejoin."
+                ).queue()
+                return@queue
+            }
+
             guild.addRoleToMember(targetMember, muteRole).queue({
+                muteService.muteUserById(guild.idLong, targetUserId)
                 val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
                 if (guildLogger != null) {
                     val logEmbed = EmbedBuilder()
