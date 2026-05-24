@@ -11,6 +11,7 @@ import net.dv8tion.jda.api.components.actionrow.ActionRow
 import net.dv8tion.jda.api.components.buttons.Button
 import net.dv8tion.jda.api.components.label.Label
 import net.dv8tion.jda.api.components.selections.StringSelectMenu
+import net.dv8tion.jda.api.components.textdisplay.TextDisplay
 import net.dv8tion.jda.api.components.textinput.TextInput
 import net.dv8tion.jda.api.components.textinput.TextInputStyle
 import net.dv8tion.jda.api.entities.Guild
@@ -37,7 +38,6 @@ private const val SUBCOMMAND_DIRECT = "direct"
 private const val SUBCOMMAND_GUIDED = "guided"
 private const val OPTION_USER = "user"
 private const val OPTION_WARN_POINT_ID = "warn_point_id"
-private const val OPTION_REASON = "reason"
 private const val SELECT_MENU_PREFIX = "revokewarnpoints-select"
 private const val PAGE_BUTTON_PREFIX = "revokewarnpoints-page"
 private const val MODAL_PREFIX = "revokewarnpoints-reason"
@@ -200,36 +200,13 @@ class RevokeWarnPointsCommand(
             return
         }
 
-        val reason = event.getOption(OPTION_REASON)?.asString?.trim()
-        if (reason.isNullOrBlank()) {
-            event.reply("You need to provide a reason.").setEphemeral(true).queue()
-            return
-        }
-
-        if (reason.length > 1024) {
-            event.reply("Reason must be 1024 characters or less.").setEphemeral(true).queue()
-            return
-        }
-
         val targetWarning = guildWarnPointsService.getWarningById(warnPointId)
         if (targetWarning == null || targetWarning.guildId != guild.idLong || targetWarning.userId != targetUserId) {
             event.reply("No warn point found with ID `$warnPointIdStr` for this user.").setEphemeral(true).queue()
             return
         }
 
-        guildWarnPointsService.revokePoint(warnPointId)
-        logRevoke(
-            event.jda,
-            guild,
-            targetWarning.id,
-            targetWarning.points,
-            reason,
-            moderator
-        )
-
-        event.reply("Revoked ${targetWarning.points} warn point(s) from <@$targetUserId>. Reason: $reason")
-            .setEphemeral(true)
-            .queue()
+        event.replyModal(createReasonModal(moderator.idLong, targetUserId, warnPointId)).queue()
     }
 
     private fun handleGuidedRevoke(event: SlashCommandInteractionEvent, moderator: Member) {
@@ -347,6 +324,7 @@ class RevokeWarnPointsCommand(
     }
 
     private fun createReasonModal(moderatorId: Long, targetUserId: Long, warnPointId: UUID): Modal {
+        val targetText = TextDisplay.of("Revoking warning from <@$targetUserId>")
         val textInput = TextInput.create(MODAL_REASON_INPUT, TextInputStyle.PARAGRAPH)
             .setPlaceholder("Enter the reason for revoking this warning...")
             .setMinLength(1)
@@ -354,7 +332,7 @@ class RevokeWarnPointsCommand(
             .build()
 
         return Modal.create("$MODAL_PREFIX:$moderatorId:$targetUserId:$warnPointId", "Enter Reason")
-            .addComponents(Label.of("Reason", textInput))
+            .addComponents(targetText, Label.of("Reason", textInput))
             .build()
     }
 
@@ -422,8 +400,7 @@ class RevokeWarnPointsCommand(
                                 OPTION_WARN_POINT_ID,
                                 "The warn point ID to revoke",
                                 true
-                            ),
-                            OptionData(OptionType.STRING, OPTION_REASON, "Reason for revoking points", true)
+                            )
                         ),
                     SubcommandData(SUBCOMMAND_GUIDED, "Select a warn point and then provide a reason")
                         .addOptions(
