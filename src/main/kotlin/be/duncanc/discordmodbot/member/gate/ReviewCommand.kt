@@ -2,6 +2,7 @@ package be.duncanc.discordmodbot.member.gate
 
 import be.duncanc.discordmodbot.discord.SlashCommand
 import be.duncanc.discordmodbot.member.gate.persistence.MemberGateQuestion
+import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.components.actionrow.ActionRow
 import net.dv8tion.jda.api.components.buttons.Button
@@ -60,7 +61,7 @@ class ReviewCommand(
             return
         }
 
-        val pendingQuestion = resolveCurrentQuestion(guild.idLong, session)
+        val pendingQuestion = resolveCurrentQuestion(guild, event.jda, session)
         if (pendingQuestion == null) {
             reviewSessionRegistry.forget(guild.idLong, event.user.idLong)
             event.reply("Nobody is currently waiting for approval.").setEphemeral(true).queue()
@@ -149,7 +150,7 @@ class ReviewCommand(
             }
         }
 
-        val pendingQuestion = resolveCurrentQuestion(guild.idLong, session)
+        val pendingQuestion = resolveCurrentQuestion(guild, event.jda, session)
         if (pendingQuestion == null) {
             reviewSessionRegistry.forget(guild.idLong, event.user.idLong)
             event.editMessage(buildCompletionMessage(feedback)).setComponents(emptyList()).queue()
@@ -178,12 +179,16 @@ class ReviewCommand(
         return ReviewButtonAction(segments[0], expectedUserId, expectedQueuedAt)
     }
 
-    private fun resolveCurrentQuestion(guildId: Long, session: ReviewSession): MemberGateQuestion? {
+    private fun resolveCurrentQuestion(guild: Guild, jda: JDA, session: ReviewSession): MemberGateQuestion? {
         while (true) {
             val currentUserId = session.getCurrentUserId() ?: return null
-            val question = reviewManager.getPendingQuestion(guildId, currentUserId)
-            if (question != null) {
+            val question = reviewManager.getPendingQuestion(guild.idLong, currentUserId)
+            if (question != null && guild.getMemberById(currentUserId) != null) {
                 return question
+            }
+
+            if (question != null) {
+                reviewManager.clearPendingQuestion(guild.idLong, jda, currentUserId)
             }
 
             session.advancePastResolvedCurrent()

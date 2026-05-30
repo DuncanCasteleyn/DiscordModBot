@@ -69,6 +69,14 @@ class ReviewCommandTest {
         )
     }
 
+    private fun stubApplicantPresent(userId: Long, mention: String) {
+        val applicantMember = mock<Member>()
+        val applicantUser = mock<User>()
+        whenever(guild.getMemberById(userId)).thenReturn(applicantMember)
+        whenever(applicantMember.user).thenReturn(applicantUser)
+        whenever(applicantUser.asMention).thenReturn(mention)
+    }
+
     private fun stubCommonIdentity() {
         whenever(guild.idLong).thenReturn(1L)
         whenever(user.idLong).thenReturn(99L)
@@ -81,6 +89,7 @@ class ReviewCommandTest {
         whenever(slashEvent.guild).thenReturn(guild)
         whenever(slashEvent.member).thenReturn(member)
         whenever(slashEvent.user).thenReturn(user)
+        whenever(slashEvent.jda).thenReturn(jda)
         whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
         whenever(replyAction.addComponents(any<ActionRow>())).thenReturn(replyAction)
         whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
@@ -141,6 +150,8 @@ class ReviewCommandTest {
         whenever(reviewManager.getPendingQuestion(1L, 20L)).thenReturn(
             pendingQuestion(guildId = 1L, userId = 20L, question = "Q2", answer = "A2", queuedAt = 20L)
         )
+        stubApplicantPresent(10L, "<@10>")
+        stubApplicantPresent(20L, "<@20>")
         whenever(reviewManager.approve(eq(guild), eq(jda), eq(10L))).thenReturn("Approved <@10>.")
 
         command.onSlashCommandInteraction(slashEvent)
@@ -167,6 +178,7 @@ class ReviewCommandTest {
         whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(
             pendingQuestion(guildId = 1L, userId = 10L, question = "Q1", answer = "A1", queuedAt = 10L)
         )
+        stubApplicantPresent(10L, "<@10>")
         whenever(reviewManager.approve(eq(guild), eq(jda), eq(10L))).thenReturn("Approved <@10>.")
 
         command.onSlashCommandInteraction(slashEvent)
@@ -236,5 +248,61 @@ class ReviewCommandTest {
 
         verify(buttonEvent).reply("This review message is out of date. Run `/review` again.")
         verify(reviewManager, never()).approve(any(), any(), any())
+    }
+
+    @Test
+    fun `starting review skips applicants that already left`() {
+        stubSlashReviewStart()
+
+        val session = ReviewSession(listOf(10L, 20L))
+        whenever(reviewManager.createSession(1L)).thenReturn(session)
+        whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(
+            pendingQuestion(guildId = 1L, userId = 10L, question = "Q1", answer = "A1", queuedAt = 10L)
+        )
+        whenever(reviewManager.getPendingQuestion(1L, 20L)).thenReturn(
+            pendingQuestion(guildId = 1L, userId = 20L, question = "Q2", answer = "A2", queuedAt = 20L)
+        )
+        whenever(guild.getMemberById(10L)).thenReturn(null)
+        stubApplicantPresent(20L, "<@20>")
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        val messageCaptor = argumentCaptor<String>()
+        verify(slashEvent).reply(messageCaptor.capture())
+        assertTrue(messageCaptor.firstValue.contains("Applicant: <@20> (`20`)"))
+        verify(reviewManager).clearPendingQuestion(1L, jda, 10L)
+        verify(reviewSessionRegistry).remember(eq(1L), eq(99L), any())
+    }
+
+    @Test
+    fun `continuing review skips applicants that left after the current review`() {
+        stubSlashReviewStart()
+        stubApproveButtonInteraction()
+        stubButtonEditWithActionRow()
+
+        val session = ReviewSession(listOf(10L, 20L, 30L))
+        whenever(reviewManager.createSession(1L)).thenReturn(session)
+        whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(session)
+        whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(
+            pendingQuestion(guildId = 1L, userId = 10L, question = "Q1", answer = "A1", queuedAt = 10L)
+        )
+        whenever(reviewManager.getPendingQuestion(1L, 20L)).thenReturn(
+            pendingQuestion(guildId = 1L, userId = 20L, question = "Q2", answer = "A2", queuedAt = 20L)
+        )
+        whenever(reviewManager.getPendingQuestion(1L, 30L)).thenReturn(
+            pendingQuestion(guildId = 1L, userId = 30L, question = "Q3", answer = "A3", queuedAt = 30L)
+        )
+        stubApplicantPresent(10L, "<@10>")
+        whenever(guild.getMemberById(20L)).thenReturn(null)
+        stubApplicantPresent(30L, "<@30>")
+        whenever(reviewManager.approve(eq(guild), eq(jda), eq(10L))).thenReturn("Approved <@10>.")
+
+        command.onSlashCommandInteraction(slashEvent)
+        command.onButtonInteraction(buttonEvent)
+
+        val messageCaptor = argumentCaptor<String>()
+        verify(buttonEvent).editMessage(messageCaptor.capture())
+        assertTrue(messageCaptor.firstValue.contains("Applicant: <@30> (`30`)"))
+        verify(reviewManager).clearPendingQuestion(1L, jda, 20L)
     }
 }
