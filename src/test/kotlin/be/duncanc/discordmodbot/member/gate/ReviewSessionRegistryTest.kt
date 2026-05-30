@@ -30,7 +30,10 @@ class ReviewSessionRegistryTest {
     fun `remember stores session state in redis repository`() {
         val session = ReviewSession(
             pendingUserIds = listOf(20L, 10L),
-            oldestPendingUserId = 10L
+            oldestPendingUserId = 10L,
+            approvedCount = 1,
+            rejectedCount = 2,
+            manualActionCount = 3
         )
 
         reviewSessionRegistry.remember(1L, 99L, session)
@@ -41,6 +44,9 @@ class ReviewSessionRegistryTest {
         assertEquals("1:99", state.id)
         assertEquals(10L, state.oldestPendingUserId)
         assertEquals(listOf(20L, 10L), state.pendingUserIds)
+        assertEquals(1, state.approvedCount)
+        assertEquals(2, state.rejectedCount)
+        assertEquals(3, state.manualActionCount)
     }
 
     @Test
@@ -52,7 +58,10 @@ class ReviewSessionRegistryTest {
                     guildId = 1L,
                     reviewerId = 99L,
                     oldestPendingUserId = 10L,
-                    pendingUserIds = listOf(20L, 10L)
+                    pendingUserIds = listOf(20L, 10L),
+                    approvedCount = 1,
+                    rejectedCount = 2,
+                    manualActionCount = 3
                 )
             )
         )
@@ -62,6 +71,9 @@ class ReviewSessionRegistryTest {
         assertEquals(20L, session?.getCurrentUserId())
         assertEquals(false, session?.isCurrentOldest())
         assertEquals(listOf(20L, 10L), session?.toPendingUserIds())
+        assertEquals(1, session?.approvedCount)
+        assertEquals(2, session?.rejectedCount)
+        assertEquals(3, session?.manualActionCount)
     }
 
     @Test
@@ -79,5 +91,47 @@ class ReviewSessionRegistryTest {
         whenever(reviewSessionStateRepository.findById("1:99")).thenReturn(Optional.empty())
 
         assertNull(reviewSessionRegistry.get(1L, 99L))
+    }
+
+    @Test
+    fun `forget other sessions returns and deletes sessions from other reviewers in guild`() {
+        whenever(reviewSessionStateRepository.findAll()).thenReturn(
+            listOf(
+                ReviewSessionState(
+                    id = "1:42",
+                    guildId = 1L,
+                    reviewerId = 42L,
+                    oldestPendingUserId = 10L,
+                    pendingUserIds = listOf(10L),
+                    approvedCount = 1,
+                    rejectedCount = 2,
+                    manualActionCount = 3
+                ),
+                ReviewSessionState(
+                    id = "1:99",
+                    guildId = 1L,
+                    reviewerId = 99L,
+                    oldestPendingUserId = 20L,
+                    pendingUserIds = listOf(20L)
+                ),
+                ReviewSessionState(
+                    id = "2:43",
+                    guildId = 2L,
+                    reviewerId = 43L,
+                    oldestPendingUserId = 30L,
+                    pendingUserIds = listOf(30L)
+                )
+            )
+        )
+
+        val sessions = reviewSessionRegistry.forgetOtherSessions(1L, 99L)
+
+        assertEquals(1, sessions.size)
+        assertEquals(42L, sessions.first().reviewerId)
+        assertEquals(10L, sessions.first().session.getCurrentUserId())
+        assertEquals(1, sessions.first().session.approvedCount)
+        assertEquals(2, sessions.first().session.rejectedCount)
+        assertEquals(3, sessions.first().session.manualActionCount)
+        verify(reviewSessionStateRepository).deleteById("1:42")
     }
 }

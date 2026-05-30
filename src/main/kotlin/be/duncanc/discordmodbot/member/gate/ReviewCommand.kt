@@ -1,12 +1,17 @@
 package be.duncanc.discordmodbot.member.gate
 
 import be.duncanc.discordmodbot.discord.SlashCommand
+import be.duncanc.discordmodbot.discord.nicknameAndUsername
+import be.duncanc.discordmodbot.logging.GuildLogger
 import be.duncanc.discordmodbot.member.gate.persistence.MemberGateQuestion
+import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.components.actionrow.ActionRow
 import net.dv8tion.jda.api.components.buttons.Button
 import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
@@ -16,11 +21,14 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import net.dv8tion.jda.api.utils.MarkdownUtil
 import org.springframework.stereotype.Component
+import java.awt.Color
+import java.util.UUID
 
 @Component
 class ReviewCommand(
     private val reviewManager: ReviewManager,
-    private val reviewSessionRegistry: ReviewSessionRegistry
+    private val reviewSessionRegistry: ReviewSessionRegistry,
+    private val guildLogger: GuildLogger
 ) : ListenerAdapter(), SlashCommand {
     companion object {
         private const val COMMAND = "review"
@@ -68,7 +76,10 @@ class ReviewCommand(
             return
         }
 
+        reviewSessionRegistry.forgetOtherSessions(guild.idLong, event.user.idLong)
+            .forEach { logReviewInterrupted(guild, it) }
         reviewSessionRegistry.remember(guild.idLong, event.user.idLong, session)
+        logReviewStarted(guild, event.member!!, session)
 
         event.reply(buildReviewMessage(guild, session, pendingQuestion))
             .setEphemeral(true)
@@ -126,18 +137,21 @@ class ReviewCommand(
         val feedback = when (buttonAction.action) {
             APPROVE_ACTION -> {
                 val result = reviewManager.approve(guild, event.jda, currentUserId)
+                session.recordApproval()
                 session.advanceAfterReview()
                 result
             }
 
             REJECT_ACTION -> {
                 val result = reviewManager.reject(guild, event.jda, currentUserId)
+                session.recordRejection()
                 session.advanceAfterReview()
                 result
             }
 
             MANUAL_ACTION -> {
                 val result = reviewManager.reject(guild, event.jda, currentUserId, manualAction = true)
+                session.recordManualAction()
                 session.advanceAfterReview()
                 result
             }
@@ -152,6 +166,7 @@ class ReviewCommand(
 
         val pendingQuestion = resolveCurrentQuestion(guild, event.jda, session)
         if (pendingQuestion == null) {
+            logReviewCompleted(guild, event.member!!, session)
             reviewSessionRegistry.forget(guild.idLong, event.user.idLong)
             event.editMessage(buildCompletionMessage(feedback)).setComponents(emptyList()).queue()
             return
@@ -219,6 +234,51 @@ class ReviewCommand(
 
     private fun buildCompletionMessage(feedback: String): String {
         return "$feedback\n\nThere are no more pending applicants in the queue."
+    }
+
+    private fun logReviewStarted(guild: Guild, moderator: Member, session: ReviewSession) {
+        val logEmbed = EmbedBuilder()
+            .setColor(Color.YELLOW)
+            .setTitle("Member gate review started")
+            .addField("UUID", UUID.randomUUID().toString(), false)
+            .addField("Moderator", moderator.nicknameAndUsername, true)
+            .addField("Pending applicants", session.toPendingUserIds().size.toString(), true)
+
+        guildLogger.log(logEmbed, moderator.user, guild, null, GuildLogger.LogTypeAction.MODERATOR)
+    }
+
+    private fun logReviewCompleted(guild: Guild, moderator: Member, session: ReviewSession) {
+        logReviewSummary(guild, moderator.user, moderator.nicknameAndUsername, "Member gate review completed", session)
+    }
+
+    private fun logReviewInterrupted(guild: Guild, storedSession: ReviewSessionRegistry.StoredReviewSession) {
+        val reviewer = guild.getMemberById(storedSession.reviewerId)
+        logReviewSummary(
+            guild = guild,
+            moderatorUser = reviewer?.user,
+            moderatorName = reviewer?.nicknameAndUsername ?: "<@${storedSession.reviewerId}>",
+            title = "Member gate review interrupted",
+            session = storedSession.session
+        )
+    }
+
+    private fun logReviewSummary(
+        guild: Guild,
+        moderatorUser: User?,
+        moderatorName: String,
+        title: String,
+        session: ReviewSession
+    ) {
+        val logEmbed = EmbedBuilder()
+            .setColor(Color.YELLOW)
+            .setTitle(title)
+            .addField("UUID", UUID.randomUUID().toString(), false)
+            .addField("Moderator", moderatorName, true)
+            .addField("Approved", session.approvedCount.toString(), true)
+            .addField("Rejected", session.rejectedCount.toString(), true)
+            .addField("Manual action", session.manualActionCount.toString(), true)
+
+        guildLogger.log(logEmbed, moderatorUser, guild, null, GuildLogger.LogTypeAction.MODERATOR)
     }
 
     private fun buildButtons(question: MemberGateQuestion) = listOf(

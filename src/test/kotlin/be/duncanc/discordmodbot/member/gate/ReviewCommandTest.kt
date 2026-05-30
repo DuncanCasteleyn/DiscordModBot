@@ -1,11 +1,14 @@
 package be.duncanc.discordmodbot.member.gate
 
+import be.duncanc.discordmodbot.logging.GuildLogger
 import be.duncanc.discordmodbot.member.gate.persistence.MemberGateQuestion
+import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.components.actionrow.ActionRow
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
@@ -26,6 +29,9 @@ class ReviewCommandTest {
 
     @Mock
     private lateinit var reviewSessionRegistry: ReviewSessionRegistry
+
+    @Mock
+    private lateinit var guildLogger: GuildLogger
 
     @Mock
     private lateinit var slashEvent: SlashCommandInteractionEvent
@@ -55,7 +61,7 @@ class ReviewCommandTest {
 
     @BeforeEach
     fun setUp() {
-        command = ReviewCommand(reviewManager, reviewSessionRegistry)
+        command = ReviewCommand(reviewManager, reviewSessionRegistry, guildLogger)
     }
 
     private fun pendingQuestion(guildId: Long, userId: Long, question: String, answer: String, queuedAt: Long): MemberGateQuestion {
@@ -83,13 +89,21 @@ class ReviewCommandTest {
         whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
     }
 
+    private fun stubModeratorName() {
+        whenever(user.name).thenReturn("Moderator")
+        whenever(member.user).thenReturn(user)
+        whenever(member.nickname).thenReturn(null)
+    }
+
     private fun stubSlashReviewStart() {
         stubCommonIdentity()
+        stubModeratorName()
         whenever(slashEvent.name).thenReturn("review")
         whenever(slashEvent.guild).thenReturn(guild)
         whenever(slashEvent.member).thenReturn(member)
         whenever(slashEvent.user).thenReturn(user)
         whenever(slashEvent.jda).thenReturn(jda)
+        whenever(reviewSessionRegistry.forgetOtherSessions(1L, 99L)).thenReturn(emptyList())
         whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
         whenever(replyAction.addComponents(any<ActionRow>())).thenReturn(replyAction)
         whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
@@ -191,6 +205,51 @@ class ReviewCommandTest {
         assertTrue(completionMessage.contains("Approved <@10>."))
         assertTrue(completionMessage.contains("There are no more pending applicants in the queue."))
         verify(reviewSessionRegistry).forget(1L, 99L)
+        verifyReviewLog("Member gate review completed", "Approved", "1")
+    }
+
+    @Test
+    fun `starting review logs moderator and pending applicant count`() {
+        stubSlashReviewStart()
+
+        val session = ReviewSession(listOf(10L, 20L))
+        whenever(reviewManager.createSession(1L)).thenReturn(session)
+        whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(
+            pendingQuestion(guildId = 1L, userId = 10L, question = "Q1", answer = "A1", queuedAt = 10L)
+        )
+        stubApplicantPresent(10L, "<@10>")
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        verifyReviewLog("Member gate review started", "Pending applicants", "2")
+    }
+
+    @Test
+    fun `starting review logs and removes another moderator's unfinished session`() {
+        stubSlashReviewStart()
+
+        val interruptedSession = ReviewSession(
+            pendingUserIds = listOf(50L),
+            approvedCount = 2,
+            rejectedCount = 1,
+            manualActionCount = 3
+        )
+        whenever(reviewSessionRegistry.forgetOtherSessions(1L, 99L)).thenReturn(
+            listOf(ReviewSessionRegistry.StoredReviewSession(42L, interruptedSession))
+        )
+        val session = ReviewSession(listOf(10L))
+        whenever(reviewManager.createSession(1L)).thenReturn(session)
+        whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(
+            pendingQuestion(guildId = 1L, userId = 10L, question = "Q1", answer = "A1", queuedAt = 10L)
+        )
+        whenever(guild.getMemberById(42L)).thenReturn(null)
+        stubApplicantPresent(10L, "<@10>")
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        verifyReviewLog("Member gate review interrupted", "Approved", "2")
+        verifyReviewLog("Member gate review interrupted", "Rejected", "1")
+        verifyReviewLog("Member gate review interrupted", "Manual action", "3")
     }
 
     @Test
@@ -304,5 +363,22 @@ class ReviewCommandTest {
         verify(buttonEvent).editMessage(messageCaptor.capture())
         assertTrue(messageCaptor.firstValue.contains("Applicant: <@30> (`30`)"))
         verify(reviewManager).clearPendingQuestion(1L, jda, 20L)
+    }
+
+    private fun verifyReviewLog(title: String, fieldName: String, fieldValue: String) {
+        val embedCaptor = argumentCaptor<EmbedBuilder>()
+        verify(guildLogger, atLeastOnce()).log(
+            embedCaptor.capture(),
+            anyOrNull(),
+            any<Guild>(),
+            anyOrNull<List<MessageEmbed>>(),
+            any<GuildLogger.LogTypeAction>(),
+            anyOrNull<ByteArray>()
+        )
+        val matchingEmbed = embedCaptor.allValues
+            .map { it.build() }
+            .firstOrNull { embed -> embed.title == title && embed.fields.any { it.name == fieldName && it.value == fieldValue } }
+
+        assertTrue(matchingEmbed != null, "Expected $title log with $fieldName=$fieldValue")
     }
 }
