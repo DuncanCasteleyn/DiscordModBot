@@ -127,7 +127,13 @@ class ReviewCommand(
         }
 
         val currentQuestion = reviewManager.getPendingQuestion(guild.idLong, currentUserId)
-        if (currentQuestion == null || currentQuestion.queuedAt != buttonAction.expectedQueuedAt) {
+        if (currentQuestion == null) {
+            session.advancePastResolvedCurrent()
+            continueAfterRemovedCurrent(event, guild, session)
+            return
+        }
+
+        if (currentQuestion.queuedAt != buttonAction.expectedQueuedAt) {
             event.reply("This review message is out of date. Run `/review` again.")
                 .setEphemeral(true)
                 .queue()
@@ -174,6 +180,22 @@ class ReviewCommand(
 
         reviewSessionRegistry.remember(guild.idLong, event.user.idLong, session)
 
+        event.editMessage(buildReviewMessage(guild, session, pendingQuestion, feedback))
+            .setComponents(ActionRow.of(buildButtons(pendingQuestion)))
+            .queue()
+    }
+
+    private fun continueAfterRemovedCurrent(event: ButtonInteractionEvent, guild: Guild, session: ReviewSession) {
+        val feedback = "The applicant left; no further action is needed."
+        val pendingQuestion = resolveCurrentQuestion(guild, event.jda, session)
+        if (pendingQuestion == null) {
+            logReviewCompleted(guild, event.member!!, session)
+            reviewSessionRegistry.forget(guild.idLong, event.user.idLong)
+            event.editMessage(buildCompletionMessage(feedback)).setComponents(emptyList()).queue()
+            return
+        }
+
+        reviewSessionRegistry.remember(guild.idLong, event.user.idLong, session)
         event.editMessage(buildReviewMessage(guild, session, pendingQuestion, feedback))
             .setComponents(ActionRow.of(buildButtons(pendingQuestion)))
             .queue()

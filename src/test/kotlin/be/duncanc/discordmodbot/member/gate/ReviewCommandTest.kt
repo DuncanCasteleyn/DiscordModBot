@@ -310,6 +310,52 @@ class ReviewCommandTest {
     }
 
     @Test
+    fun `button advances when current applicant left before review action`() {
+        stubApproveButtonInteraction()
+        stubButtonEditWithActionRow()
+
+        val session = ReviewSession(listOf(10L, 20L))
+        whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(session)
+        whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(null)
+        whenever(reviewManager.getPendingQuestion(1L, 20L)).thenReturn(
+            pendingQuestion(guildId = 1L, userId = 20L, question = "Q2", answer = "A2", queuedAt = 20L)
+        )
+        stubApplicantPresent(20L, "<@20>")
+
+        command.onButtonInteraction(buttonEvent)
+
+        val messageCaptor = argumentCaptor<String>()
+        verify(buttonEvent).editMessage(messageCaptor.capture())
+        val editedMessage = messageCaptor.firstValue
+        assertTrue(editedMessage.contains("The applicant left; no further action is needed."))
+        assertTrue(editedMessage.contains("Applicant: <@20> (`20`)"))
+        verify(reviewSessionRegistry).remember(eq(1L), eq(99L), any())
+        verify(reviewManager, never()).approve(any(), any(), any())
+    }
+
+    @Test
+    fun `button completes review when final current applicant already left`() {
+        stubApproveButtonInteraction()
+        stubModeratorName()
+        stubButtonEditWithList()
+
+        val session = ReviewSession(listOf(10L), approvedCount = 2, rejectedCount = 1, manualActionCount = 1)
+        whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(session)
+        whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(null)
+
+        command.onButtonInteraction(buttonEvent)
+
+        val messageCaptor = argumentCaptor<String>()
+        verify(buttonEvent).editMessage(messageCaptor.capture())
+        val editedMessage = messageCaptor.firstValue
+        assertTrue(editedMessage.contains("The applicant left; no further action is needed."))
+        assertTrue(editedMessage.contains("There are no more pending applicants in the queue."))
+        verify(reviewSessionRegistry).forget(1L, 99L)
+        verifyReviewLog("Member gate review completed", "Approved", "2")
+        verify(reviewManager, never()).approve(any(), any(), any())
+    }
+
+    @Test
     fun `starting review skips applicants that already left`() {
         stubSlashReviewStart()
 
