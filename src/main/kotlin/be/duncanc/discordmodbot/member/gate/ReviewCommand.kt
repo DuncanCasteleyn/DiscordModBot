@@ -259,7 +259,7 @@ class ReviewCommand(
 
     private fun logReviewStarted(guild: Guild, moderator: Member, session: ReviewSession) {
         val logEmbed = EmbedBuilder()
-            .setColor(Color.YELLOW)
+            .setColor(Color.GREEN)
             .setTitle("Member gate review started")
             .addField("Moderator", moderator.nicknameAndUsername, false)
             .addField("Pending applicants", session.toPendingUserIds().size.toString(), true)
@@ -290,7 +290,7 @@ class ReviewCommand(
         session: ReviewSession
     ) {
         val logEmbed = EmbedBuilder()
-            .setColor(Color.YELLOW)
+            .setColor(Color.GREEN)
             .setTitle(title)
             .addField("Moderator", moderatorName, false)
             .addField("Approved", session.approvedCount.toString(), true)
