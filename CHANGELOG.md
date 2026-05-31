@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.4](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.11.3...v2.11.4) (2026-05-31)
+
+
+### Bug Fixes
+
+* **member-gate:** improve review queue handling and logging ([#664](https://github.com/DuncanCasteleyn/DiscordModBot/issues/664)) ([91f4315](https://github.com/DuncanCasteleyn/DiscordModBot/commit/91f4315180ef14f73fa3cf4d75541174466e4fd4))
+
 ## [2.11.3](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.11.2...v2.11.3) (2026-05-24)
 
 
