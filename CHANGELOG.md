@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.11.5](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.11.4...v2.11.5) (2026-05-31)
+
+
+### Bug Fixes
+
+* **member-gate:** adjust review log fields ([75a5c8b](https://github.com/DuncanCasteleyn/DiscordModBot/commit/75a5c8b0c0f3bd6fd3a3559f6ed66e649493bc39))
+* **member-gate:** use green review log embeds ([7b6a44e](https://github.com/DuncanCasteleyn/DiscordModBot/commit/7b6a44e9e3224288cba0d812ec880c3d6df3043a))
+* **voting:** collect vote prompt via modal ([#668](https://github.com/DuncanCasteleyn/DiscordModBot/issues/668)) ([7536d2b](https://github.com/DuncanCasteleyn/DiscordModBot/commit/7536d2bde5c22b0948397cd546a0cf89f85e8f65))
+
 ## [2.11.4](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.11.3...v2.11.4) (2026-05-31)
 
 
