@@ -3,8 +3,17 @@ package be.duncanc.discordmodbot.member.gate
 class ReviewSession(
     pendingUserIds: List<Long>,
     val oldestPendingUserId: Long = pendingUserIds.firstOrNull()
-        ?: throw IllegalArgumentException("A review session requires at least one pending user.")
+        ?: throw IllegalArgumentException("A review session requires at least one pending user."),
+    var approvedCount: Int = 0,
+    var rejectedCount: Int = 0,
+    var manualActionCount: Int = 0
 ) {
+    init {
+        if (pendingUserIds.isEmpty()) {
+            throw IllegalArgumentException("A review session requires at least one pending user.")
+        }
+    }
+
     private val queuedUserIds = ArrayDeque(pendingUserIds)
 
     private var currentUserId: Long? = queuedUserIds.removeFirstOrNull()
@@ -14,6 +23,18 @@ class ReviewSession(
     fun isCurrentOldest(): Boolean = currentUserId == oldestPendingUserId
 
     fun toPendingUserIds(): List<Long> = listOfNotNull(currentUserId) + queuedUserIds.toList()
+
+    fun recordApproval() {
+        approvedCount++
+    }
+
+    fun recordRejection() {
+        rejectedCount++
+    }
+
+    fun recordManualAction() {
+        manualActionCount++
+    }
 
     fun advanceAfterReview(): Long? {
         currentUserId = queuedUserIds.removeFirstOrNull()

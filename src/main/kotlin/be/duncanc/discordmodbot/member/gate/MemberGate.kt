@@ -170,7 +170,7 @@ class MemberGate(
             return
         }
         val userId = event.user.idLong
-        reviewManager.clearInformPrompt(event.guild.idLong, event.jda, userId)
+        reviewManager.clearPendingQuestion(event.guild.idLong, event.jda, userId)
         cleanMessagesFromUser(gateChannel, event.user)
     }
 }

@@ -8,6 +8,11 @@ import org.springframework.stereotype.Component
 class ReviewSessionRegistry(
     private val reviewSessionStateRepository: ReviewSessionStateRepository
 ) {
+    data class StoredReviewSession(
+        val reviewerId: Long,
+        val session: ReviewSession
+    )
+
     fun remember(guildId: Long, reviewerId: Long, session: ReviewSession) {
         val pendingUserIds = session.toPendingUserIds()
         if (pendingUserIds.isEmpty()) {
@@ -21,7 +26,10 @@ class ReviewSessionRegistry(
                 guildId = guildId,
                 reviewerId = reviewerId,
                 oldestPendingUserId = session.oldestPendingUserId,
-                pendingUserIds = pendingUserIds
+                pendingUserIds = pendingUserIds,
+                approvedCount = session.approvedCount,
+                rejectedCount = session.rejectedCount,
+                manualActionCount = session.manualActionCount
             )
         )
     }
@@ -41,12 +49,33 @@ class ReviewSessionRegistry(
         reviewSessionStateRepository.deleteById(createId(guildId, reviewerId))
     }
 
+    fun forgetOtherSessions(guildId: Long, reviewerId: Long): List<StoredReviewSession> {
+        return reviewSessionStateRepository.findAll()
+            .filterNotNull()
+            .filter { it.guildId == guildId && it.reviewerId != reviewerId }
+            .mapNotNull { state ->
+                reviewSessionStateRepository.deleteById(state.id)
+                state.toStoredSession()
+            }
+    }
+
     private fun createId(guildId: Long, reviewerId: Long): String = "$guildId:$reviewerId"
+
+    private fun ReviewSessionState.toStoredSession(): StoredReviewSession? {
+        if (pendingUserIds.isEmpty()) {
+            return null
+        }
+
+        return StoredReviewSession(reviewerId, toSession())
+    }
 
     private fun ReviewSessionState.toSession(): ReviewSession {
         return ReviewSession(
             pendingUserIds = pendingUserIds,
-            oldestPendingUserId = oldestPendingUserId
+            oldestPendingUserId = oldestPendingUserId,
+            approvedCount = approvedCount,
+            rejectedCount = rejectedCount,
+            manualActionCount = manualActionCount
         )
     }
 }
