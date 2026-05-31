@@ -22,7 +22,6 @@ import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import net.dv8tion.jda.api.utils.MarkdownUtil
 import org.springframework.stereotype.Component
 import java.awt.Color
-import java.util.UUID
 
 @Component
 class ReviewCommand(
@@ -262,8 +261,7 @@ class ReviewCommand(
         val logEmbed = EmbedBuilder()
             .setColor(Color.YELLOW)
             .setTitle("Member gate review started")
-            .addField("UUID", UUID.randomUUID().toString(), false)
-            .addField("Moderator", moderator.nicknameAndUsername, true)
+            .addField("Moderator", moderator.nicknameAndUsername, false)
             .addField("Pending applicants", session.toPendingUserIds().size.toString(), true)
 
         guildLogger.log(logEmbed, moderator.user, guild, null, GuildLogger.LogTypeAction.MODERATOR)
@@ -294,8 +292,7 @@ class ReviewCommand(
         val logEmbed = EmbedBuilder()
             .setColor(Color.YELLOW)
             .setTitle(title)
-            .addField("UUID", UUID.randomUUID().toString(), false)
-            .addField("Moderator", moderatorName, true)
+            .addField("Moderator", moderatorName, false)
             .addField("Approved", session.approvedCount.toString(), true)
             .addField("Rejected", session.rejectedCount.toString(), true)
             .addField("Manual action", session.manualActionCount.toString(), true)

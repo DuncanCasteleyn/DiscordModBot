@@ -426,5 +426,11 @@ class ReviewCommandTest {
             .firstOrNull { embed -> embed.title == title && embed.fields.any { it.name == fieldName && it.value == fieldValue } }
 
         assertTrue(matchingEmbed != null, "Expected $title log with $fieldName=$fieldValue")
+        val embed = requireNotNull(matchingEmbed)
+        assertTrue(embed.fields.none { it.name == "UUID" }, "Expected $title log without UUID field")
+        assertTrue(
+            embed.fields.any { it.name == "Moderator" && !it.isInline },
+            "Expected $title log with non-inline Moderator field"
+        )
     }
 }
