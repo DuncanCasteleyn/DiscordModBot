@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.11.6](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.11.5...v2.11.6) (2026-06-06)
+
+
+### Bug Fixes
+
+* **deps:** update jdaversion to v6.4.2 ([#674](https://github.com/DuncanCasteleyn/DiscordModBot/issues/674)) ([3efebaa](https://github.com/DuncanCasteleyn/DiscordModBot/commit/3efebaaf9394c65b82d7ad09ea198ec133682989))
+* **deps:** update kotlin monorepo to v2.4.0 ([#672](https://github.com/DuncanCasteleyn/DiscordModBot/issues/672)) ([17b05cf](https://github.com/DuncanCasteleyn/DiscordModBot/commit/17b05cfed0254518b6d6f7c1fc57108c02832fdf))
+* **deps:** update kotlinversion to v2.4.0 ([#673](https://github.com/DuncanCasteleyn/DiscordModBot/issues/673)) ([374636c](https://github.com/DuncanCasteleyn/DiscordModBot/commit/374636cc9712053c4a2ae9431ead7efb55d631b8))
+* improve join command modal experience ([#678](https://github.com/DuncanCasteleyn/DiscordModBot/issues/678)) ([f5e559e](https://github.com/DuncanCasteleyn/DiscordModBot/commit/f5e559efe8f7f4af6e7e6a9163a3f62df981ca83))
+* **member-gate:** continue active review sessions ([#676](https://github.com/DuncanCasteleyn/DiscordModBot/issues/676)) ([f735416](https://github.com/DuncanCasteleyn/DiscordModBot/commit/f7354165ebbb00c93175ab97ab3b2d5172c1a94f))
+* **moderation:** show active warning count in warn modals ([#677](https://github.com/DuncanCasteleyn/DiscordModBot/issues/677)) ([858a701](https://github.com/DuncanCasteleyn/DiscordModBot/commit/858a70107c1dbea5b3f71d3dd7f45d34f16eb02c))
+
 ## [2.11.5](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.11.4...v2.11.5) (2026-05-31)
 
 
