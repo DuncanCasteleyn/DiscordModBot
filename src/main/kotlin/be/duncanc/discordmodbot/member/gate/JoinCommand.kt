@@ -3,8 +3,8 @@ package be.duncanc.discordmodbot.member.gate
 import be.duncanc.discordmodbot.discord.SlashCommand
 import be.duncanc.discordmodbot.logging.GuildLogger
 import net.dv8tion.jda.api.components.label.Label
-import net.dv8tion.jda.api.components.selections.SelectOption
 import net.dv8tion.jda.api.components.selections.StringSelectMenu
+import net.dv8tion.jda.api.components.textdisplay.TextDisplay
 import net.dv8tion.jda.api.components.textinput.TextInput
 import net.dv8tion.jda.api.components.textinput.TextInputStyle
 import net.dv8tion.jda.api.entities.Member
@@ -20,7 +20,6 @@ import org.springframework.stereotype.Component
 import java.security.SecureRandom
 
 
-private const val QUESTION_ID = "question"
 private const val COMMAND = "join"
 private const val DESCRIPTION = "Complete the entry process to gain access to the server."
 private const val MODAL_ID = "join-modal"
@@ -106,11 +105,7 @@ class JoinCommand(
         val guildId = member.guild.idLong
 
         val answer = event.getValue(TEXT_ANSWER_ID)?.asString ?: ""
-        val question =
-            event.getValue(QUESTION_ID)?.asStringList?.getOrNull(0) ?: memberGateService.getModalQuestion(
-                guildId,
-                member.idLong
-            )
+        val question = memberGateService.getModalQuestion(guildId, member.idLong)
 
         if (question == null) {
             event.reply("You took too long to answer the question. Please try again.").setEphemeral(true).queue()
@@ -152,13 +147,7 @@ class JoinCommand(
             .addOption("No", "kick-me", "Disagree and get removed from the server", Emoji.fromUnicode("❌"))
             .build()
 
-        val questionOption = SelectOption.of(question, question)
-
-        val questionMenu = StringSelectMenu.create(QUESTION_ID)
-            .setPlaceholder("If you don't see a question, click on this menu and select the question to continue")
-            .addOptions(questionOption)
-            .setDefaultOptions(questionOption)
-            .build()
+        val questionText = TextDisplay.of("**Question**\n\n$question")
 
         val textInput = TextInput.create(TEXT_ANSWER_ID, TextInputStyle.PARAGRAPH)
             .setPlaceholder("Enter your answer within 10 minutes...")
@@ -173,7 +162,7 @@ class JoinCommand(
                     "You can close this modal and execute /join again to get the same question (within 10 minutes)",
                     rulesMenu
                 ),
-                Label.of("Question", question, questionMenu),
+                questionText,
                 Label.of("Please answer the question above", textInput)
             )
             .build()
