@@ -136,28 +136,32 @@ class AddWarnPointsByIdCommandTest {
     @Test
     fun `opens a reason modal`() {
         stubSlashContext(targetMember = null)
+        whenever(guildWarnPointsService.getActivePointsCount(1L, 99L)).thenReturn(2)
         whenever(slashEvent.replyModal(any())).thenReturn(modalAction)
 
         command.onSlashCommandInteraction(slashEvent)
 
         verify(slashEvent).replyModal(argThat {
             id == "addwarnpointsbyid_reason:99:2:3:0" &&
-                components.size == 2 &&
-                components[0].asTextDisplay().content == "Warning: <@99> (ID: 99)"
+                components.size == 3 &&
+                components[0].asTextDisplay().content == "Warning: <@99> (ID: 99)" &&
+                components[1].asTextDisplay().content == "Active warnings: 2"
         })
     }
 
     @Test
     fun `mute slash command opens a combined modal`() {
         stubSlashContext(targetMember = null, action = 1)
+        whenever(guildWarnPointsService.getActivePointsCount(1L, 99L)).thenReturn(4)
         whenever(slashEvent.replyModal(any())).thenReturn(modalAction)
 
         command.onSlashCommandInteraction(slashEvent)
 
         verify(slashEvent).replyModal(argThat {
             id == "addwarnpointsbyid_reason:99:2:3:1" &&
-                components.size == 3 &&
-                components[0].asTextDisplay().content == "Warning: <@99> (ID: 99)"
+                components.size == 4 &&
+                components[0].asTextDisplay().content == "Warning: <@99> (ID: 99)" &&
+                components[1].asTextDisplay().content == "Active warnings: 4"
         })
     }
 
@@ -467,7 +471,9 @@ The user was not warned by DM, please do so manually when they rejoin.""",
     ) {
         whenever(slashEvent.name).thenReturn("addwarnpointsbyid")
         whenever(slashEvent.member).thenReturn(member)
+        whenever(member.guild).thenReturn(guild)
         whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
+        whenever(guild.idLong).thenReturn(1L)
         whenever(slashEvent.getOption("user")).thenReturn(userOption)
         whenever(slashEvent.getOption("points")).thenReturn(pointsOption)
         whenever(slashEvent.getOption("days")).thenReturn(daysOption)

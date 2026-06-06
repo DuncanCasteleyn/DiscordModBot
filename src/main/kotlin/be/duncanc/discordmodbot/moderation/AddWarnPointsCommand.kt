@@ -107,7 +107,7 @@ class AddWarnPointsCommand(
             return
         }
 
-        event.replyModal(createReasonModal(targetMember, points, days, action)).queue()
+        event.replyModal(createReasonModal(moderator.guild.idLong, targetMember, points, days, action)).queue()
     }
 
     override fun onModalInteraction(event: ModalInteractionEvent) {
@@ -641,10 +641,13 @@ class AddWarnPointsCommand(
             .queue()
     }
 
-    private fun createReasonModal(targetMember: Member, points: Int, days: Int, action: Int): Modal {
+    private fun createReasonModal(guildId: Long, targetMember: Member, points: Int, days: Int, action: Int): Modal {
         val modalId = "$MODAL_ID:${targetMember.idLong}:$points:$days:$action"
         val targetText = TextDisplay.of(
             "Warning: ${targetMember.nicknameAndUsername} (<@${targetMember.idLong}>, ID: ${targetMember.idLong})"
+        )
+        val activeWarningsText = TextDisplay.of(
+            "Active warnings: ${guildWarnPointsService.getActivePointsCount(guildId, targetMember.idLong)}"
         )
         val textInput = TextInput.create(REASON_INPUT_ID, TextInputStyle.PARAGRAPH)
             .setPlaceholder("Enter the reason for this warning...")
@@ -653,7 +656,7 @@ class AddWarnPointsCommand(
             .build()
 
         val modalBuilder = Modal.create(modalId, "Enter Reason")
-            .addComponents(targetText, Label.of("Reason", textInput))
+            .addComponents(targetText, activeWarningsText, Label.of("Reason", textInput))
 
         if (action == 1) {
             val unmuteDaysInput = TextInput.create(UNMUTE_DAYS_INPUT_ID, TextInputStyle.SHORT)
