@@ -180,20 +180,23 @@ class AddWarnPointsCommandTest {
     @Test
     fun `mute slash command opens a combined modal`() {
         stubSlashCommand(action = 1)
+        whenever(guildWarnPointsService.getActivePointsCount(1L, 99L)).thenReturn(3)
         whenever(slashEvent.replyModal(any())).thenReturn(modalAction)
 
         command.onSlashCommandInteraction(slashEvent)
 
         verify(slashEvent).replyModal(argThat {
             id == "addwarnpoints_reason:99:2:3:1" &&
-                components.size == 3 &&
-                components[0].asTextDisplay().content == "Warning: TargetUser (<@99>, ID: 99)"
+                components.size == 4 &&
+                components[0].asTextDisplay().content == "Warning: TargetUser (<@99>, ID: 99)" &&
+                components[1].asTextDisplay().content == "Active warnings: 3"
         })
     }
 
     @Test
     fun `kick slash command opens a reason only modal`() {
         stubSlashCommand(action = 2)
+        whenever(guildWarnPointsService.getActivePointsCount(1L, 99L)).thenReturn(1)
         whenever(member.hasPermission(Permission.KICK_MEMBERS)).thenReturn(true)
         whenever(slashEvent.replyModal(any())).thenReturn(modalAction)
 
@@ -201,8 +204,9 @@ class AddWarnPointsCommandTest {
 
         verify(slashEvent).replyModal(argThat {
             id == "addwarnpoints_reason:99:2:3:2" &&
-                components.size == 2 &&
-                components[0].asTextDisplay().content == "Warning: TargetUser (<@99>, ID: 99)"
+                components.size == 3 &&
+                components[0].asTextDisplay().content == "Warning: TargetUser (<@99>, ID: 99)" &&
+                components[1].asTextDisplay().content == "Active warnings: 1"
         })
     }
 
@@ -435,12 +439,15 @@ class AddWarnPointsCommandTest {
     private fun stubSlashCommand(action: Int) {
         whenever(slashEvent.name).thenReturn("addwarnpoints")
         whenever(slashEvent.member).thenReturn(member)
+        whenever(member.guild).thenReturn(guild)
         whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
+        whenever(guild.idLong).thenReturn(1L)
         whenever(slashEvent.getOption("user")).thenReturn(userOption)
         whenever(userOption.asMember).thenReturn(targetMember)
         whenever(targetMember.idLong).thenReturn(99L)
         whenever(targetMember.user).thenReturn(targetUser)
         whenever(targetMember.nickname).thenReturn(null)
+        whenever(targetMember.guild).thenReturn(guild)
         whenever(targetUser.name).thenReturn("TargetUser")
         whenever(member.canInteract(targetMember)).thenReturn(true)
         whenever(slashEvent.getOption("points")).thenReturn(pointsOption)
