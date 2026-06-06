@@ -62,6 +62,11 @@ class ReviewCommand(
             return
         }
 
+        val storedSession = reviewSessionRegistry.get(guild.idLong, event.user.idLong)
+        if (storedSession != null && continueStoredSession(event, guild, storedSession)) {
+            return
+        }
+
         val session = reviewManager.createSession(guild.idLong)
         if (session == null) {
             event.reply("Nobody is currently waiting for approval.").setEphemeral(true).queue()
@@ -84,6 +89,21 @@ class ReviewCommand(
             .setEphemeral(true)
             .addComponents(ActionRow.of(buildButtons(pendingQuestion)))
             .queue()
+    }
+
+    private fun continueStoredSession(event: SlashCommandInteractionEvent, guild: Guild, session: ReviewSession): Boolean {
+        val pendingQuestion = resolveCurrentQuestion(guild, event.jda, session)
+        if (pendingQuestion == null) {
+            reviewSessionRegistry.forget(guild.idLong, event.user.idLong)
+            return false
+        }
+
+        reviewSessionRegistry.remember(guild.idLong, event.user.idLong, session)
+        event.reply(buildReviewMessage(guild, session, pendingQuestion))
+            .setEphemeral(true)
+            .addComponents(ActionRow.of(buildButtons(pendingQuestion)))
+            .queue()
+        return true
     }
 
     override fun onButtonInteraction(event: ButtonInteractionEvent) {

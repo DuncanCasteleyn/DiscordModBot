@@ -96,14 +96,18 @@ class ReviewCommandTest {
     }
 
     private fun stubSlashReviewStart() {
+        stubSlashReviewCommand()
+        whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(null)
+        whenever(reviewSessionRegistry.forgetOtherSessions(1L, 99L)).thenReturn(emptyList())
+    }
+
+    private fun stubSlashReviewCommand() {
         stubCommonIdentity()
-        stubModeratorName()
         whenever(slashEvent.name).thenReturn("review")
         whenever(slashEvent.guild).thenReturn(guild)
         whenever(slashEvent.member).thenReturn(member)
         whenever(slashEvent.user).thenReturn(user)
         whenever(slashEvent.jda).thenReturn(jda)
-        whenever(reviewSessionRegistry.forgetOtherSessions(1L, 99L)).thenReturn(emptyList())
         whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
         whenever(replyAction.addComponents(any<ActionRow>())).thenReturn(replyAction)
         whenever(slashEvent.reply(any<String>())).thenReturn(replyAction)
@@ -157,7 +161,8 @@ class ReviewCommandTest {
 
         val session = ReviewSession(listOf(10L, 20L))
         whenever(reviewManager.createSession(1L)).thenReturn(session)
-        whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(session)
+        whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(null, session)
+        stubModeratorName()
         whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(
             pendingQuestion(guildId = 1L, userId = 10L, question = "Q1", answer = "A1", queuedAt = 10L)
         )
@@ -188,7 +193,8 @@ class ReviewCommandTest {
 
         val session = ReviewSession(listOf(10L))
         whenever(reviewManager.createSession(1L)).thenReturn(session)
-        whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(session)
+        whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(null, session)
+        stubModeratorName()
         whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(
             pendingQuestion(guildId = 1L, userId = 10L, question = "Q1", answer = "A1", queuedAt = 10L)
         )
@@ -211,6 +217,7 @@ class ReviewCommandTest {
     @Test
     fun `starting review logs moderator and pending applicant count`() {
         stubSlashReviewStart()
+        stubModeratorName()
 
         val session = ReviewSession(listOf(10L, 20L))
         whenever(reviewManager.createSession(1L)).thenReturn(session)
@@ -225,8 +232,69 @@ class ReviewCommandTest {
     }
 
     @Test
+    fun `starting review again continues existing moderator session`() {
+        stubSlashReviewCommand()
+
+        val storedSession = ReviewSession(
+            pendingUserIds = listOf(20L),
+            oldestPendingUserId = 10L,
+            approvedCount = 1
+        )
+        whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(storedSession)
+        whenever(reviewManager.getPendingQuestion(1L, 20L)).thenReturn(
+            pendingQuestion(guildId = 1L, userId = 20L, question = "Q2", answer = "A2", queuedAt = 20L)
+        )
+        stubApplicantPresent(20L, "<@20>")
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        val messageCaptor = argumentCaptor<String>()
+        verify(slashEvent).reply(messageCaptor.capture())
+        assertTrue(messageCaptor.firstValue.contains("Applicant: <@20> (`20`)"))
+        assertTrue(messageCaptor.firstValue.contains("Continuing with the next pending applicant."))
+        verify(reviewManager, never()).createSession(any())
+        verify(reviewSessionRegistry, never()).forgetOtherSessions(any(), any())
+        verify(reviewSessionRegistry).remember(eq(1L), eq(99L), same(storedSession))
+        verify(guildLogger, never()).log(
+            any<EmbedBuilder>(),
+            anyOrNull(),
+            any<Guild>(),
+            anyOrNull<List<MessageEmbed>>(),
+            any<GuildLogger.LogTypeAction>(),
+            anyOrNull<ByteArray>()
+        )
+    }
+
+    @Test
+    fun `starting review with stale stored session starts a new session for newer applicants`() {
+        stubSlashReviewCommand()
+        stubModeratorName()
+
+        val storedSession = ReviewSession(listOf(20L))
+        val newSession = ReviewSession(listOf(30L))
+        whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(storedSession)
+        whenever(reviewSessionRegistry.forgetOtherSessions(1L, 99L)).thenReturn(emptyList())
+        whenever(reviewManager.createSession(1L)).thenReturn(newSession)
+        whenever(reviewManager.getPendingQuestion(1L, 20L)).thenReturn(null)
+        whenever(reviewManager.getPendingQuestion(1L, 30L)).thenReturn(
+            pendingQuestion(guildId = 1L, userId = 30L, question = "Q3", answer = "A3", queuedAt = 30L)
+        )
+        stubApplicantPresent(30L, "<@30>")
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        val messageCaptor = argumentCaptor<String>()
+        verify(slashEvent).reply(messageCaptor.capture())
+        assertTrue(messageCaptor.firstValue.contains("Applicant: <@30> (`30`)"))
+        verify(reviewSessionRegistry).forget(1L, 99L)
+        verify(reviewManager).createSession(1L)
+        verify(reviewSessionRegistry).remember(eq(1L), eq(99L), same(newSession))
+    }
+
+    @Test
     fun `starting review logs and removes another moderator's unfinished session`() {
         stubSlashReviewStart()
+        stubModeratorName()
 
         val interruptedSession = ReviewSession(
             pendingUserIds = listOf(50L),
@@ -361,6 +429,7 @@ class ReviewCommandTest {
 
         val session = ReviewSession(listOf(10L, 20L))
         whenever(reviewManager.createSession(1L)).thenReturn(session)
+        stubModeratorName()
         whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(
             pendingQuestion(guildId = 1L, userId = 10L, question = "Q1", answer = "A1", queuedAt = 10L)
         )
@@ -383,11 +452,12 @@ class ReviewCommandTest {
     fun `continuing review skips applicants that left after the current review`() {
         stubSlashReviewStart()
         stubApproveButtonInteraction()
+        stubModeratorName()
         stubButtonEditWithActionRow()
 
         val session = ReviewSession(listOf(10L, 20L, 30L))
         whenever(reviewManager.createSession(1L)).thenReturn(session)
-        whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(session)
+        whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(null, session)
         whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(
             pendingQuestion(guildId = 1L, userId = 10L, question = "Q1", answer = "A1", queuedAt = 10L)
         )
