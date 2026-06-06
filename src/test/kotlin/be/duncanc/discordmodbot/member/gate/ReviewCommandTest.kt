@@ -266,6 +266,32 @@ class ReviewCommandTest {
     }
 
     @Test
+    fun `starting review with stale stored session starts a new session for newer applicants`() {
+        stubSlashReviewCommand()
+        stubModeratorName()
+
+        val storedSession = ReviewSession(listOf(20L))
+        val newSession = ReviewSession(listOf(30L))
+        whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(storedSession)
+        whenever(reviewSessionRegistry.forgetOtherSessions(1L, 99L)).thenReturn(emptyList())
+        whenever(reviewManager.createSession(1L)).thenReturn(newSession)
+        whenever(reviewManager.getPendingQuestion(1L, 20L)).thenReturn(null)
+        whenever(reviewManager.getPendingQuestion(1L, 30L)).thenReturn(
+            pendingQuestion(guildId = 1L, userId = 30L, question = "Q3", answer = "A3", queuedAt = 30L)
+        )
+        stubApplicantPresent(30L, "<@30>")
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        val messageCaptor = argumentCaptor<String>()
+        verify(slashEvent).reply(messageCaptor.capture())
+        assertTrue(messageCaptor.firstValue.contains("Applicant: <@30> (`30`)"))
+        verify(reviewSessionRegistry).forget(1L, 99L)
+        verify(reviewManager).createSession(1L)
+        verify(reviewSessionRegistry).remember(eq(1L), eq(99L), same(newSession))
+    }
+
+    @Test
     fun `starting review logs and removes another moderator's unfinished session`() {
         stubSlashReviewStart()
         stubModeratorName()
