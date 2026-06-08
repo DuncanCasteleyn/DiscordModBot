@@ -1,5 +1,7 @@
 package be.duncanc.discordmodbot.moderation
 
+import be.duncanc.discordmodbot.logging.GuildLogger
+import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
@@ -11,6 +13,7 @@ import net.dv8tion.jda.api.requests.restaction.WebhookMessageEditAction
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction
 import net.dv8tion.jda.api.requests.restaction.pagination.MessagePaginationAction
 import net.dv8tion.jda.api.utils.Procedure
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -65,6 +68,18 @@ class PurgeChannelCommandTest {
 
     @Mock
     private lateinit var author: User
+
+    @Mock
+    private lateinit var moderatorUser: User
+
+    @Mock
+    private lateinit var mentions: Mentions
+
+    @Mock
+    private lateinit var jda: JDA
+
+    @Mock
+    private lateinit var guildLogger: GuildLogger
 
     @Mock
     private lateinit var amountOption: OptionMapping
@@ -172,6 +187,7 @@ class PurgeChannelCommandTest {
         }.whenever(replyAction).queue(any<Consumer<InteractionHook>>())
         whenever(interactionHook.editOriginal(any<String>())).thenReturn(editAction)
         whenever(textChannel.iterableHistory.cache(false)).thenReturn(messagePaginationAction)
+        whenever(textChannel.name).thenReturn("general")
         doAnswer {
             val procedure = it.arguments[0] as Procedure<Message>
             procedure.execute(message)
@@ -179,14 +195,34 @@ class PurgeChannelCommandTest {
             CompletableFuture.completedFuture(null)
         }.whenever(messagePaginationAction).forEachAsync(any())
         whenever(message.author).thenReturn(author)
+        whenever(message.contentDisplay).thenReturn("message to remove")
+        whenever(message.attachments).thenReturn(emptyList())
+        whenever(message.mentions).thenReturn(mentions)
         whenever(message.timeCreated).thenReturn(OffsetDateTime.now().minusDays(1))
         whenever(oldMessage.timeCreated).thenReturn(OffsetDateTime.now().minusWeeks(3))
         whenever(author.idLong).thenReturn(99L)
+        whenever(mentions.customEmojis).thenReturn(emptyList())
+        whenever(member.nickname).thenReturn(null)
+        whenever(member.user).thenReturn(moderatorUser)
+        whenever(moderatorUser.name).thenReturn("ModeratorUser")
+        whenever(slashEvent.user).thenReturn(moderatorUser)
+        whenever(slashEvent.jda).thenReturn(jda)
+        whenever(jda.registeredListeners).thenReturn(listOf(guildLogger))
 
         command.onSlashCommandInteraction(slashEvent)
 
+        val transcriptCaptor = argumentCaptor<ByteArray>()
         verify(textChannel).purgeMessages(listOf(message))
         verify(interactionHook).editOriginal("Attempting to delete 1 message(s) from <@99>.")
+        verify(guildLogger).log(
+            any(),
+            eq(moderatorUser),
+            eq(guild),
+            isNull(),
+            eq(GuildLogger.LogTypeAction.MODERATOR),
+            transcriptCaptor.capture()
+        )
+        assertTrue(String(transcriptCaptor.firstValue).contains("message to remove"))
     }
 
     private fun stubGuildContext(subcommandName: String) {
