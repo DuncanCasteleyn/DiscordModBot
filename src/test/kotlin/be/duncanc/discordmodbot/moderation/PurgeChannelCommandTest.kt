@@ -20,12 +20,15 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Answers
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.quality.Strictness
 import org.mockito.kotlin.*
 import java.time.OffsetDateTime
 import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
 
 @ExtendWith(MockitoExtension::class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class PurgeChannelCommandTest {
     @Mock
     private lateinit var slashEvent: SlashCommandInteractionEvent
@@ -61,10 +64,22 @@ class PurgeChannelCommandTest {
     private lateinit var targetOption: OptionMapping
 
     @Mock
+    private lateinit var fromOption: OptionMapping
+
+    @Mock
+    private lateinit var toOption: OptionMapping
+
+    @Mock
     private lateinit var message: Message
 
     @Mock
     private lateinit var oldMessage: Message
+
+    @Mock
+    private lateinit var otherMessage: Message
+
+    @Mock
+    private lateinit var veryOldMessage: Message
 
     @Mock
     private lateinit var author: User
@@ -225,6 +240,102 @@ class PurgeChannelCommandTest {
         assertTrue(String(transcriptCaptor.firstValue).contains("message to remove"))
     }
 
+    @Test
+    fun `all mode respects from and to message ids`() {
+        stubGuildContext(subcommandName = "all")
+        stubMemberPermission()
+        stubBotPermissions()
+        whenever(slashEvent.getOption("amount")).thenReturn(amountOption)
+        whenever(amountOption.asInt).thenReturn(10)
+        whenever(slashEvent.getOption("from")).thenReturn(fromOption)
+        whenever(fromOption.asString).thenReturn("300")
+        whenever(slashEvent.getOption("to")).thenReturn(toOption)
+        whenever(toOption.asString).thenReturn("200")
+        whenever(slashEvent.deferReply(true)).thenReturn(replyAction)
+        doAnswer {
+            val consumer = it.arguments[0] as Consumer<InteractionHook>
+            consumer.accept(interactionHook)
+            null
+        }.whenever(replyAction).queue(any<Consumer<InteractionHook>>())
+        whenever(interactionHook.editOriginal(any<String>())).thenReturn(editAction)
+        whenever(textChannel.name).thenReturn("general")
+        stubHistory(message, otherMessage, oldMessage, veryOldMessage)
+        stubMessage(message, author, 300L, "message to remove")
+        stubMessage(otherMessage, author, 250L, "message to keep")
+        stubMessage(oldMessage, author, 200L, "message in range")
+        stubMessage(veryOldMessage, author, 150L, "message too old for range")
+        whenever(member.nickname).thenReturn(null)
+        whenever(member.user).thenReturn(moderatorUser)
+        whenever(moderatorUser.name).thenReturn("ModeratorUser")
+        whenever(slashEvent.user).thenReturn(moderatorUser)
+        whenever(slashEvent.jda).thenReturn(jda)
+        whenever(jda.registeredListeners).thenReturn(listOf(guildLogger))
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        verify(textChannel).purgeMessages(listOf(message, otherMessage, oldMessage))
+        verify(interactionHook).editOriginal("Attempting to delete 3 message(s).")
+    }
+
+    @Test
+    fun `filtered mode respects from and to message ids`() {
+        stubGuildContext(subcommandName = "filtered")
+        stubMemberPermission()
+        stubBotPermissions()
+        whenever(slashEvent.getOption("amount")).thenReturn(amountOption)
+        whenever(amountOption.asInt).thenReturn(10)
+        whenever(slashEvent.getOption("target")).thenReturn(targetOption)
+        whenever(targetOption.asLong).thenReturn(99L)
+        whenever(slashEvent.getOption("from")).thenReturn(fromOption)
+        whenever(fromOption.asString).thenReturn("300")
+        whenever(slashEvent.getOption("to")).thenReturn(toOption)
+        whenever(toOption.asString).thenReturn("200")
+        whenever(slashEvent.deferReply(true)).thenReturn(replyAction)
+        doAnswer {
+            val consumer = it.arguments[0] as Consumer<InteractionHook>
+            consumer.accept(interactionHook)
+            null
+        }.whenever(replyAction).queue(any<Consumer<InteractionHook>>())
+        whenever(interactionHook.editOriginal(any<String>())).thenReturn(editAction)
+        whenever(textChannel.name).thenReturn("general")
+        stubHistory(message, otherMessage, oldMessage, veryOldMessage)
+        stubMessage(message, author, 300L, "message to remove")
+        stubMessage(otherMessage, moderatorUser, 250L, "message from someone else")
+        stubMessage(oldMessage, author, 200L, "message in range")
+        stubMessage(veryOldMessage, author, 150L, "message too old for range")
+        whenever(author.idLong).thenReturn(99L)
+        whenever(moderatorUser.idLong).thenReturn(77L)
+        whenever(member.nickname).thenReturn(null)
+        whenever(member.user).thenReturn(moderatorUser)
+        whenever(moderatorUser.name).thenReturn("ModeratorUser")
+        whenever(slashEvent.user).thenReturn(moderatorUser)
+        whenever(slashEvent.jda).thenReturn(jda)
+        whenever(jda.registeredListeners).thenReturn(listOf(guildLogger))
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        verify(textChannel).purgeMessages(listOf(message, oldMessage))
+        verify(interactionHook).editOriginal("Attempting to delete 2 message(s) from <@99>.")
+    }
+
+    @Test
+    fun `from must be newer than to`() {
+        stubGuildContext(subcommandName = "all")
+        stubImmediateReply()
+        stubMemberPermission()
+        stubBotPermissions()
+        whenever(slashEvent.getOption("amount")).thenReturn(amountOption)
+        whenever(amountOption.asInt).thenReturn(10)
+        whenever(slashEvent.getOption("from")).thenReturn(fromOption)
+        whenever(fromOption.asString).thenReturn("100")
+        whenever(slashEvent.getOption("to")).thenReturn(toOption)
+        whenever(toOption.asString).thenReturn("200")
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        verify(slashEvent).reply("The from message must be newer than or the same as the to message.")
+    }
+
     private fun stubGuildContext(subcommandName: String) {
         whenever(slashEvent.name).thenReturn("purgechannel")
         whenever(slashEvent.member).thenReturn(member)
@@ -255,5 +366,24 @@ class PurgeChannelCommandTest {
         whenever(guild.selfMember).thenReturn(selfMember)
         whenever(selfMember.hasPermission(textChannel, Permission.MESSAGE_MANAGE, Permission.MESSAGE_HISTORY))
             .thenReturn(true)
+    }
+
+    private fun stubHistory(vararg messages: Message) {
+        whenever(textChannel.iterableHistory.cache(false)).thenReturn(messagePaginationAction)
+        doAnswer {
+            val procedure = it.arguments[0] as Procedure<Message>
+            messages.forEach { message -> procedure.execute(message) }
+            CompletableFuture.completedFuture(null)
+        }.whenever(messagePaginationAction).forEachAsync(any())
+    }
+
+    private fun stubMessage(message: Message, author: User, idLong: Long, content: String) {
+        whenever(message.idLong).thenReturn(idLong)
+        whenever(message.author).thenReturn(author)
+        whenever(message.contentDisplay).thenReturn(content)
+        whenever(message.attachments).thenReturn(emptyList())
+        whenever(message.mentions).thenReturn(mentions)
+        whenever(message.timeCreated).thenReturn(OffsetDateTime.now().minusDays(1))
+        whenever(mentions.customEmojis).thenReturn(emptyList())
     }
 }

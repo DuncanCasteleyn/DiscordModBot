@@ -29,6 +29,8 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
         private const val SUBCOMMAND_FILTERED = "filtered"
         private const val OPTION_AMOUNT = "amount"
         private const val OPTION_TARGET = "target"
+        private const val OPTION_FROM = "from"
+        private const val OPTION_TO = "to"
         internal const val MAX_PURGE_AMOUNT = 100
     }
 
@@ -75,8 +77,16 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
             return
         }
 
+        val messageRange = getValidatedMessageRange(event) ?: return
+
         event.deferReply(true).queue { hook ->
-            collectMessages(channel, amount, targetUserId).whenComplete { messages, throwable ->
+            collectMessages(
+                channel = channel,
+                amount = amount,
+                targetUserId = targetUserId,
+                fromMessageId = messageRange.first,
+                toMessageId = messageRange.second
+            ).whenComplete { messages, throwable ->
                 if (throwable != null) {
                     hook.editOriginal("Failed to purge messages: ${throwable.message ?: "unknown error"}").queue()
                     return@whenComplete
@@ -98,9 +108,15 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
 
     private fun handleAllSubcommand(event: SlashCommandInteractionEvent, guild: Guild, channel: TextChannel) {
         val amount = getValidatedAmount(event) ?: return
+        val messageRange = getValidatedMessageRange(event) ?: return
 
         event.deferReply(true).queue { hook ->
-            collectMessages(channel, amount).whenComplete { messages, throwable ->
+            collectMessages(
+                channel = channel,
+                amount = amount,
+                fromMessageId = messageRange.first,
+                toMessageId = messageRange.second
+            ).whenComplete { messages, throwable ->
                 if (throwable != null) {
                     hook.editOriginal("Failed to purge messages: ${throwable.message ?: "unknown error"}").queue()
                     return@whenComplete
@@ -129,17 +145,65 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
         return amount
     }
 
+    private fun getValidatedMessageRange(event: SlashCommandInteractionEvent): Pair<Long?, Long?>? {
+        val fromMessageId = getValidatedMessageId(event, OPTION_FROM)
+        val toMessageId = getValidatedMessageId(event, OPTION_TO)
+
+        if (fromMessageId != null && toMessageId != null && fromMessageId < toMessageId) {
+            event.reply("The from message must be newer than or the same as the to message.")
+                .setEphemeral(true)
+                .queue()
+            return null
+        }
+
+        return fromMessageId to toMessageId
+    }
+
+    private fun getValidatedMessageId(event: SlashCommandInteractionEvent, optionName: String): Long? {
+        val option = event.getOption(optionName) ?: return null
+        val rawValue = option.asString.trim()
+        if (rawValue.isBlank()) {
+            event.reply("Please provide a valid message ID for $optionName.").setEphemeral(true).queue()
+            return null
+        }
+
+        val messageId = rawValue.toLongOrNull()
+        if (messageId == null) {
+            event.reply("Please provide a valid message ID for $optionName.").setEphemeral(true).queue()
+            return null
+        }
+
+        return messageId
+    }
+
     private fun collectMessages(
         channel: TextChannel,
         amount: Int,
-        targetUserId: Long? = null
+        targetUserId: Long? = null,
+        fromMessageId: Long? = null,
+        toMessageId: Long? = null
     ): CompletableFuture<ArrayList<Message>> {
         val messages = ArrayList<Message>()
         val oldestPurgeableMessageDate = OffsetDateTime.now().minusWeeks(2)
+        var collecting = fromMessageId == null
 
         return channel.iterableHistory.cache(false)
             .forEachAsync { message ->
+                val messageId = message.idLong
+
                 if (message.timeCreated.isBefore(oldestPurgeableMessageDate)) {
+                    return@forEachAsync false
+                }
+
+                if (!collecting) {
+                    if (fromMessageId != null && messageId > fromMessageId) {
+                        return@forEachAsync true
+                    }
+
+                    collecting = true
+                }
+
+                if (toMessageId != null && messageId < toMessageId) {
                     return@forEachAsync false
                 }
 
@@ -220,6 +284,18 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
                             OPTION_AMOUNT,
                             "Number of messages to delete (1-$MAX_PURGE_AMOUNT)",
                             true
+                        )
+                        .addOption(
+                            OptionType.STRING,
+                            OPTION_FROM,
+                            "Newest message ID to start deleting from",
+                            false
+                        )
+                        .addOption(
+                            OptionType.STRING,
+                            OPTION_TO,
+                            "Oldest message ID to stop deleting at",
+                            false
                         ),
                     SubcommandData(
                         SUBCOMMAND_FILTERED,
@@ -236,6 +312,18 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
                             OPTION_TARGET,
                             "User to delete messages from",
                             true
+                        )
+                        .addOption(
+                            OptionType.STRING,
+                            OPTION_FROM,
+                            "Newest message ID to start deleting from",
+                            false
+                        )
+                        .addOption(
+                            OptionType.STRING,
+                            OPTION_TO,
+                            "Oldest message ID to stop deleting at",
+                            false
                         )
                 )
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MESSAGE_MANAGE))
