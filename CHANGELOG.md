@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.12.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.11.6...v2.12.0) (2026-06-08)
+
+
+### Features
+
+* **moderation:** log purgechannel transcripts ([#680](https://github.com/DuncanCasteleyn/DiscordModBot/issues/680)) ([ffb20da](https://github.com/DuncanCasteleyn/DiscordModBot/commit/ffb20da57d3166e5e0c17505754e73553d181126))
+
+
+### Bug Fixes
+
+* **moderation:** add optional purge message range ([#682](https://github.com/DuncanCasteleyn/DiscordModBot/issues/682)) ([13899a0](https://github.com/DuncanCasteleyn/DiscordModBot/commit/13899a0008573ba9f2d3714a0e57b361a7857c64))
+
 ## [2.11.6](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.11.5...v2.11.6) (2026-06-06)
 
 
