@@ -85,9 +85,10 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
                 try {
                     val messagesToDelete = messages ?: ArrayList()
                     val deletingCount = messagesToDelete.size
+                    val transcript = buildPurgeTranscript(channel, messagesToDelete)
                     channel.purgeMessages(messagesToDelete)
                     hook.editOriginal("Attempting to delete $deletingCount message(s) from <@$targetUserId>.").queue()
-                    logPurge(event, guild, channel, targetUserId)
+                    logPurge(event, guild, channel, targetUserId, deletingCount, transcript)
                 } catch (e: Exception) {
                     hook.editOriginal("Failed to purge messages: ${e.message ?: "unknown error"}").queue()
                 }
@@ -108,9 +109,10 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
                 try {
                     val messagesToDelete = messages ?: ArrayList()
                     val deletingCount = messagesToDelete.size
+                    val transcript = buildPurgeTranscript(channel, messagesToDelete)
                     channel.purgeMessages(messagesToDelete)
                     hook.editOriginal("Attempting to delete $deletingCount message(s).").queue()
-                    logPurge(event, guild, channel, null)
+                    logPurge(event, guild, channel, null, deletingCount, transcript)
                 } catch (e: Exception) {
                     hook.editOriginal("Failed to purge messages: ${e.message ?: "unknown error"}").queue()
                 }
@@ -157,20 +159,55 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
         event: SlashCommandInteractionEvent,
         guild: Guild,
         channel: TextChannel,
-        targetUserId: Long?
+        targetUserId: Long?,
+        deletingCount: Int,
+        transcript: ByteArray
     ) {
-        val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as? GuildLogger ?: return
+        val guildLogger = runCatching {
+            event.jda.registeredListeners.firstOrNull { it is GuildLogger } as? GuildLogger
+        }.getOrNull() ?: return
         val logEmbed = EmbedBuilder()
             .setColor(Color.YELLOW)
             .setTitle(if (targetUserId == null) "Channel purge" else "Filtered channel purge")
             .addField("Moderator", event.member!!.nicknameAndUsername, true)
             .addField("Channel", channel.name, true)
+            .addField("Amount of deleted messages", deletingCount.toString(), true)
 
         if (targetUserId != null) {
             logEmbed.addField("Filter", "<@$targetUserId>", true)
         }
 
-        guildLogger.log(logEmbed, event.user, guild, null, GuildLogger.LogTypeAction.MODERATOR)
+        guildLogger.log(logEmbed, event.user, guild, null, GuildLogger.LogTypeAction.MODERATOR, transcript)
+    }
+
+    private fun buildPurgeTranscript(channel: TextChannel, messages: List<Message>): ByteArray {
+        val logWriter = StringBuilder(channel.toString()).append("\n")
+
+        messages.forEach { message ->
+            logWriter.append(message.author.toString()).append(":\n")
+                .append(message.contentDisplay).append("\n\n")
+
+            if (message.attachments.isNotEmpty()) {
+                logWriter.append("Attachment(s):\n")
+                message.attachments.forEach { attachment ->
+                    logWriter.append("[").append(attachment.fileName)
+                        .append("](").append(attachment.url).append(")\n")
+                }
+                logWriter.append("\n")
+            }
+
+            if (message.mentions.customEmojis.isNotEmpty()) {
+                logWriter.append("Emote(s):\n")
+                message.mentions.customEmojis.forEach { emote ->
+                    logWriter.append("[").append(emote.name)
+                        .append("](").append(emote.imageUrl).append(")\n")
+                }
+                logWriter.append("\n")
+            }
+        }
+
+        logWriter.append("Logged on ").append(OffsetDateTime.now().toString())
+        return logWriter.toString().toByteArray()
     }
 
     override fun getCommandsData(): List<SlashCommandData> {
