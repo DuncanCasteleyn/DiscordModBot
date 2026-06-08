@@ -319,6 +319,40 @@ class PurgeChannelCommandTest {
     }
 
     @Test
+    fun `invalid from message id returns error and aborts purge`() {
+        stubGuildContext(subcommandName = "all")
+        stubImmediateReply()
+        stubMemberPermission()
+        stubBotPermissions()
+        whenever(slashEvent.getOption("amount")).thenReturn(amountOption)
+        whenever(amountOption.asInt).thenReturn(10)
+        whenever(slashEvent.getOption("from")).thenReturn(fromOption)
+        whenever(fromOption.asString).thenReturn("not-a-message-id")
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        verify(slashEvent).reply("Please provide a valid message ID for from.")
+        verify(slashEvent, never()).deferReply(any<Boolean>())
+    }
+
+    @Test
+    fun `invalid to message id returns error and aborts purge`() {
+        stubGuildContext(subcommandName = "all")
+        stubImmediateReply()
+        stubMemberPermission()
+        stubBotPermissions()
+        whenever(slashEvent.getOption("amount")).thenReturn(amountOption)
+        whenever(amountOption.asInt).thenReturn(10)
+        whenever(slashEvent.getOption("to")).thenReturn(toOption)
+        whenever(toOption.asString).thenReturn("not-a-message-id")
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        verify(slashEvent).reply("Please provide a valid message ID for to.")
+        verify(slashEvent, never()).deferReply(any<Boolean>())
+    }
+
+    @Test
     fun `from must be newer than to`() {
         stubGuildContext(subcommandName = "all")
         stubImmediateReply()

@@ -32,6 +32,13 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
         private const val OPTION_FROM = "from"
         private const val OPTION_TO = "to"
         internal const val MAX_PURGE_AMOUNT = 100
+
+        private sealed interface MessageIdOption {
+            data object Omitted : MessageIdOption
+            data object Invalid : MessageIdOption
+
+            data class Present(val messageId: Long) : MessageIdOption
+        }
     }
 
     override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
@@ -148,32 +155,38 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
     private fun getValidatedMessageRange(event: SlashCommandInteractionEvent): Pair<Long?, Long?>? {
         val fromMessageId = getValidatedMessageId(event, OPTION_FROM)
         val toMessageId = getValidatedMessageId(event, OPTION_TO)
+        if (fromMessageId == MessageIdOption.Invalid || toMessageId == MessageIdOption.Invalid) {
+            return null
+        }
 
-        if (fromMessageId != null && toMessageId != null && fromMessageId < toMessageId) {
+        val fromId = (fromMessageId as? MessageIdOption.Present)?.messageId
+        val toId = (toMessageId as? MessageIdOption.Present)?.messageId
+
+        if (fromId != null && toId != null && fromId < toId) {
             event.reply("The from message must be newer than or the same as the to message.")
                 .setEphemeral(true)
                 .queue()
             return null
         }
 
-        return fromMessageId to toMessageId
+        return fromId to toId
     }
 
-    private fun getValidatedMessageId(event: SlashCommandInteractionEvent, optionName: String): Long? {
-        val option = event.getOption(optionName) ?: return null
+    private fun getValidatedMessageId(event: SlashCommandInteractionEvent, optionName: String): MessageIdOption {
+        val option = event.getOption(optionName) ?: return MessageIdOption.Omitted
         val rawValue = option.asString.trim()
         if (rawValue.isBlank()) {
             event.reply("Please provide a valid message ID for $optionName.").setEphemeral(true).queue()
-            return null
+            return MessageIdOption.Invalid
         }
 
         val messageId = rawValue.toLongOrNull()
         if (messageId == null) {
             event.reply("Please provide a valid message ID for $optionName.").setEphemeral(true).queue()
-            return null
+            return MessageIdOption.Invalid
         }
 
-        return messageId
+        return MessageIdOption.Present(messageId)
     }
 
     private fun collectMessages(
