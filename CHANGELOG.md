@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.12.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.12.0...v2.12.1) (2026-06-11)
+
+
+### Bug Fixes
+
+* **deps:** update spring boot to v4.0.7 ([#685](https://github.com/DuncanCasteleyn/DiscordModBot/issues/685)) ([6c69441](https://github.com/DuncanCasteleyn/DiscordModBot/commit/6c6944191c517ea94bb75a405db0da3f95f1aec1))
+* **deps:** update spring boot to v4.1.0 ([#686](https://github.com/DuncanCasteleyn/DiscordModBot/issues/686)) ([435638c](https://github.com/DuncanCasteleyn/DiscordModBot/commit/435638ceabe435a9d7d5496ec99ec0a419e23e67))
+* **deps:** update springmodulithversion to v2.0.7 ([#689](https://github.com/DuncanCasteleyn/DiscordModBot/issues/689)) ([c7ac490](https://github.com/DuncanCasteleyn/DiscordModBot/commit/c7ac49081bb335d235420a68ce147418b742d30d))
+* remove GUILD_PRESENCES intent ([d473ea9](https://github.com/DuncanCasteleyn/DiscordModBot/commit/d473ea9ef54da3cd839448ec2853aca860983dbb))
+
+
+### Documentation
+
+* privacy policy ([7aa5fd3](https://github.com/DuncanCasteleyn/DiscordModBot/commit/7aa5fd317f6a0714e4b30dd062cb65f0be47afa8))
+
 ## [2.12.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.11.6...v2.12.0) (2026-06-08)
 
 
