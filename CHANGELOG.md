@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.12.2](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.12.1...v2.12.2) (2026-06-12)
+
+
+### Bug Fixes
+
+* **deps:** update springmodulithversion to v2.1.0 ([#691](https://github.com/DuncanCasteleyn/DiscordModBot/issues/691)) ([b3c11c2](https://github.com/DuncanCasteleyn/DiscordModBot/commit/b3c11c2cd1a996fb9b4e32d5a1a8bb0984dd2ce4))
+* stop purge scan at to boundary ([#693](https://github.com/DuncanCasteleyn/DiscordModBot/issues/693)) ([482ea65](https://github.com/DuncanCasteleyn/DiscordModBot/commit/482ea656ae859175254b05ec3cc25b437e3809ce))
+
 ## [2.12.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.12.0...v2.12.1) (2026-06-11)
 
 
