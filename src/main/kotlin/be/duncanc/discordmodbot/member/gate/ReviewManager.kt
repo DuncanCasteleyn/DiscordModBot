@@ -22,7 +22,7 @@ class ReviewManager(
         val pendingUserIds = storedQuestions
             .asSequence()
             .filterNotNull()
-            .filter { it.guildId == guildId && it.userId > 0L }
+            .filter { it.guildId == guildId && it.userId.toULong() > 0uL }
             .sortedBy { it.queuedAt }
             .map { it.userId }
             .toList()

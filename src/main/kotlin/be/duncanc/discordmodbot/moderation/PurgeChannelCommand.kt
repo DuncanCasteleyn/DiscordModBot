@@ -37,7 +37,7 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
             data object Omitted : MessageIdOption
             data object Invalid : MessageIdOption
 
-            data class Present(val messageId: Long) : MessageIdOption
+            data class Present(val messageId: ULong) : MessageIdOption
         }
     }
 
@@ -152,7 +152,7 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
         return amount
     }
 
-    private fun getValidatedMessageRange(event: SlashCommandInteractionEvent): Pair<Long?, Long?>? {
+    private fun getValidatedMessageRange(event: SlashCommandInteractionEvent): Pair<ULong?, ULong?>? {
         val fromMessageId = getValidatedMessageId(event, OPTION_FROM)
         val toMessageId = getValidatedMessageId(event, OPTION_TO)
         if (fromMessageId == MessageIdOption.Invalid || toMessageId == MessageIdOption.Invalid) {
@@ -180,7 +180,7 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
             return MessageIdOption.Invalid
         }
 
-        val messageId = rawValue.toLongOrNull()
+        val messageId = rawValue.toULongOrNull()
         if (messageId == null) {
             event.reply("Please provide a valid message ID for $optionName.").setEphemeral(true).queue()
             return MessageIdOption.Invalid
@@ -193,8 +193,8 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
         channel: TextChannel,
         amount: Int,
         targetUserId: Long? = null,
-        fromMessageId: Long? = null,
-        toMessageId: Long? = null
+        fromMessageId: ULong? = null,
+        toMessageId: ULong? = null
     ): CompletableFuture<ArrayList<Message>> {
         val messages = ArrayList<Message>()
         val oldestPurgeableMessageDate = OffsetDateTime.now().minusWeeks(2)
@@ -202,7 +202,7 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
 
         return channel.iterableHistory.cache(false)
             .forEachAsync { message ->
-                val messageId = message.idLong
+                val messageId = message.idLong.toULong()
 
                 if (message.timeCreated.isBefore(oldestPurgeableMessageDate)) {
                     return@forEachAsync false
@@ -225,6 +225,10 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
                     if (messages.size >= amount) {
                         return@forEachAsync false
                     }
+                }
+
+                if (toMessageId != null && messageId == toMessageId) {
+                    return@forEachAsync false
                 }
 
                 true
