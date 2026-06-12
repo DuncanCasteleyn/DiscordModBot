@@ -82,6 +82,9 @@ class PurgeChannelCommandTest {
     private lateinit var veryOldMessage: Message
 
     @Mock
+    private lateinit var pastBoundaryMessage: Message
+
+    @Mock
     private lateinit var author: User
 
     @Mock
@@ -319,6 +322,47 @@ class PurgeChannelCommandTest {
     }
 
     @Test
+    fun `filtered mode stops scanning after the to message`() {
+        stubGuildContext(subcommandName = "filtered")
+        stubMemberPermission()
+        stubBotPermissions()
+        whenever(slashEvent.getOption("amount")).thenReturn(amountOption)
+        whenever(amountOption.asInt).thenReturn(10)
+        whenever(slashEvent.getOption("target")).thenReturn(targetOption)
+        whenever(targetOption.asLong).thenReturn(99L)
+        whenever(slashEvent.getOption("from")).thenReturn(fromOption)
+        whenever(fromOption.asString).thenReturn("300")
+        whenever(slashEvent.getOption("to")).thenReturn(toOption)
+        whenever(toOption.asString).thenReturn("200")
+        whenever(slashEvent.deferReply(true)).thenReturn(replyAction)
+        doAnswer {
+            val consumer = it.arguments[0] as Consumer<InteractionHook>
+            consumer.accept(interactionHook)
+            null
+        }.whenever(replyAction).queue(any<Consumer<InteractionHook>>())
+        whenever(interactionHook.editOriginal(any<String>())).thenReturn(editAction)
+        whenever(textChannel.name).thenReturn("general")
+        stubHistory(message, otherMessage, oldMessage, pastBoundaryMessage)
+        stubMessage(message, author, 300L, "message to remove")
+        stubMessage(otherMessage, moderatorUser, 250L, "message from someone else")
+        stubMessage(oldMessage, author, 200L, "message in range")
+        whenever(author.idLong).thenReturn(99L)
+        whenever(moderatorUser.idLong).thenReturn(77L)
+        whenever(member.nickname).thenReturn(null)
+        whenever(member.user).thenReturn(moderatorUser)
+        whenever(moderatorUser.name).thenReturn("ModeratorUser")
+        whenever(slashEvent.user).thenReturn(moderatorUser)
+        whenever(slashEvent.jda).thenReturn(jda)
+        whenever(jda.registeredListeners).thenReturn(listOf(guildLogger))
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        verify(textChannel).purgeMessages(listOf(message, oldMessage))
+        verify(interactionHook).editOriginal("Attempting to delete 2 message(s) from <@99>.")
+        verify(interactionHook, never()).editOriginal(argThat<String> { startsWith("Failed to purge messages:") })
+    }
+
+    @Test
     fun `invalid from message id returns error and aborts purge`() {
         stubGuildContext(subcommandName = "all")
         stubImmediateReply()
@@ -406,7 +450,11 @@ class PurgeChannelCommandTest {
         whenever(textChannel.iterableHistory.cache(false)).thenReturn(messagePaginationAction)
         doAnswer {
             val procedure = it.arguments[0] as Procedure<Message>
-            messages.forEach { message -> procedure.execute(message) }
+            messages.forEach { message ->
+                if (!procedure.execute(message)) {
+                    return@doAnswer CompletableFuture.completedFuture(null)
+                }
+            }
             CompletableFuture.completedFuture(null)
         }.whenever(messagePaginationAction).forEachAsync(any())
     }

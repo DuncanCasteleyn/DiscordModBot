@@ -227,6 +227,10 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
                     }
                 }
 
+                if (toMessageId != null && messageId == toMessageId) {
+                    return@forEachAsync false
+                }
+
                 true
             }
             .thenApply { messages }
