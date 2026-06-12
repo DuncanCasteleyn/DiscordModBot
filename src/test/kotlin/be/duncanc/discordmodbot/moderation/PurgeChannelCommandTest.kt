@@ -397,6 +397,47 @@ class PurgeChannelCommandTest {
     }
 
     @Test
+    fun `all mode handles unsigned snowflake overflow correctly`() {
+        stubGuildContext(subcommandName = "all")
+        stubMemberPermission()
+        stubBotPermissions()
+        whenever(slashEvent.getOption("amount")).thenReturn(amountOption)
+        whenever(amountOption.asInt).thenReturn(10)
+        whenever(slashEvent.getOption("from")).thenReturn(fromOption)
+        whenever(fromOption.asString).thenReturn("18446744073709551615")
+        whenever(slashEvent.getOption("to")).thenReturn(toOption)
+        whenever(toOption.asString).thenReturn("100")
+        whenever(slashEvent.deferReply(true)).thenReturn(replyAction)
+        doAnswer {
+            val consumer = it.arguments[0] as Consumer<InteractionHook>
+            consumer.accept(interactionHook)
+            null
+        }.whenever(replyAction).queue(any<Consumer<InteractionHook>>())
+        whenever(interactionHook.editOriginal(any<String>())).thenReturn(editAction)
+        whenever(textChannel.name).thenReturn("general")
+        val overflowMessage = message
+        val middleMessage = oldMessage
+        val toMessage = veryOldMessage
+        val pastMessage = pastBoundaryMessage
+        stubHistory(overflowMessage, middleMessage, toMessage, pastMessage)
+        stubMessage(overflowMessage, author, -1L, "overflow message")
+        stubMessage(middleMessage, author, 150L, "middle message")
+        stubMessage(toMessage, author, 100L, "to message")
+        stubMessage(pastMessage, author, 50L, "past message")
+        whenever(member.nickname).thenReturn(null)
+        whenever(member.user).thenReturn(moderatorUser)
+        whenever(moderatorUser.name).thenReturn("ModeratorUser")
+        whenever(slashEvent.user).thenReturn(moderatorUser)
+        whenever(slashEvent.jda).thenReturn(jda)
+        whenever(jda.registeredListeners).thenReturn(listOf(guildLogger))
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        verify(textChannel).purgeMessages(listOf(overflowMessage, middleMessage, toMessage))
+        verify(interactionHook).editOriginal("Attempting to delete 3 message(s).")
+    }
+
+    @Test
     fun `from must be newer than to`() {
         stubGuildContext(subcommandName = "all")
         stubImmediateReply()
