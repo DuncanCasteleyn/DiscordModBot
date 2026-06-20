@@ -32,6 +32,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
     implementation("org.springframework.boot:spring-boot-starter-flyway")
     implementation("org.springframework.boot:spring-boot-starter-restclient")
+    implementation("org.springframework.security:spring-security-crypto")
     implementation("org.flywaydb:flyway-mysql")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("net.dv8tion:JDA:$jdaVersion") {
