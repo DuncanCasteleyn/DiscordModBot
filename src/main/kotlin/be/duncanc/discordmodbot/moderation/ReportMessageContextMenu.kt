@@ -15,7 +15,8 @@ import java.awt.Color
 
 @Component
 class ReportMessageContextMenu(
-    private val guildLogger: GuildLogger
+    private val guildLogger: GuildLogger,
+    private val muteService: MuteService
 ) : ListenerAdapter(), DiscordCommand {
     companion object {
         private const val NON_URGENT_COMMAND = "Report Message"
@@ -34,6 +35,11 @@ class ReportMessageContextMenu(
         val reporter = event.member
         if (guild == null || reporter == null) {
             event.reply("This command only works in a guild.").setEphemeral(true).queue()
+            return
+        }
+
+        if (reporter.isTimedOut || muteService.isUserMuted(guild.idLong, reporter.idLong)) {
+            event.reply("You cannot report messages while timed out or muted.").setEphemeral(true).queue()
             return
         }
 

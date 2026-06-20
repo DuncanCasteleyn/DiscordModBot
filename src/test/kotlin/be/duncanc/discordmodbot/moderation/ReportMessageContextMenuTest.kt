@@ -32,6 +32,9 @@ class ReportMessageContextMenuTest {
     private lateinit var guildLogger: GuildLogger
 
     @Mock
+    private lateinit var muteService: MuteService
+
+    @Mock
     private lateinit var event: MessageContextInteractionEvent
 
     @Mock
@@ -65,7 +68,7 @@ class ReportMessageContextMenuTest {
 
     @BeforeEach
     fun setUp() {
-        command = ReportMessageContextMenu(guildLogger)
+        command = ReportMessageContextMenu(guildLogger, muteService)
     }
 
     @Test
@@ -134,6 +137,42 @@ class ReportMessageContextMenuTest {
     }
 
     @Test
+    fun `timed out member cannot report messages`() {
+        stubBlockedReporterContext("Report Message", timedOut = true)
+
+        command.onMessageContextInteraction(event)
+
+        verify(event).reply("You cannot report messages while timed out or muted.")
+        verify(guildLogger, never()).log(
+            any<EmbedBuilder>(),
+            any<User>(),
+            any<Guild>(),
+            isNull<List<MessageEmbed>>(),
+            any<GuildLogger.LogTypeAction>(),
+            isNull(),
+            any<String>()
+        )
+    }
+
+    @Test
+    fun `muted member cannot report messages`() {
+        stubBlockedReporterContext("Urgent Report Message", muted = true)
+
+        command.onMessageContextInteraction(event)
+
+        verify(event).reply("You cannot report messages while timed out or muted.")
+        verify(guildLogger, never()).log(
+            any<EmbedBuilder>(),
+            any<User>(),
+            any<Guild>(),
+            isNull<List<MessageEmbed>>(),
+            any<GuildLogger.LogTypeAction>(),
+            isNull(),
+            any<String>()
+        )
+    }
+
+    @Test
     fun `command data includes urgent and non-urgent message context menus`() {
         val commands = command.getCommandsData()
 
@@ -142,16 +181,44 @@ class ReportMessageContextMenuTest {
         assertEquals(listOf("Report Message", "Urgent Report Message"), commands.map { it.name })
     }
 
-    private fun stubReport(commandName: String) {
+    private fun stubReport(commandName: String, timedOut: Boolean = false, muted: Boolean = false) {
+        stubReporterContext(commandName, timedOut, muted)
+        stubTargetMessage()
+    }
+
+    private fun stubBlockedReporterContext(commandName: String, timedOut: Boolean = false, muted: Boolean = false) {
         whenever(event.name).thenReturn(commandName)
         whenever(event.guild).thenReturn(guild)
         whenever(event.member).thenReturn(reporter)
-        whenever(event.target).thenReturn(targetMessage)
         whenever(event.reply(any<String>())).thenReturn(replyAction)
         whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+        whenever(reporter.isTimedOut).thenReturn(timedOut)
+        if (!timedOut) {
+            whenever(guild.idLong).thenReturn(1L)
+            whenever(reporter.idLong).thenReturn(99L)
+            whenever(muteService.isUserMuted(1L, 99L)).thenReturn(muted)
+        }
+    }
+
+    private fun stubReporterContext(commandName: String, timedOut: Boolean = false, muted: Boolean = false) {
+        whenever(event.name).thenReturn(commandName)
+        whenever(event.guild).thenReturn(guild)
+        whenever(event.member).thenReturn(reporter)
+        whenever(event.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(reporter.idLong).thenReturn(99L)
+        whenever(reporter.isTimedOut).thenReturn(timedOut)
+        if (!timedOut) {
+            whenever(muteService.isUserMuted(1L, 99L)).thenReturn(muted)
+        }
         whenever(reporter.user).thenReturn(reporterUser)
         whenever(reporter.nickname).thenReturn("Duncan")
         whenever(reporterUser.name).thenReturn("reporter-user")
+    }
+
+    private fun stubTargetMessage() {
+        whenever(event.target).thenReturn(targetMessage)
         whenever(targetMessage.author).thenReturn(targetUser)
         whenever(targetMessage.member).thenReturn(targetMember)
         whenever(targetMember.nickname).thenReturn(null)
