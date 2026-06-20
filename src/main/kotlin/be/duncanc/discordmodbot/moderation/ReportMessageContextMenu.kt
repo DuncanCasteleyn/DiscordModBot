@@ -16,7 +16,8 @@ import java.awt.Color
 @Component
 class ReportMessageContextMenu(
     private val guildLogger: GuildLogger,
-    private val muteService: MuteService
+    private val muteService: MuteService,
+    private val reportSettingsService: ReportSettingsService
 ) : ListenerAdapter(), DiscordCommand {
     companion object {
         private const val NON_URGENT_COMMAND = "Report Message"
@@ -43,9 +44,14 @@ class ReportMessageContextMenu(
             return
         }
 
+        if (reportSettingsService.isUserBlocked(guild.idLong, reporter.idLong)) {
+            event.reply("You are not allowed to report messages in this server.").setEphemeral(true).queue()
+            return
+        }
+
         val target = event.target
-        val ping = if (urgent) "@everyone" else "@here"
-        guildLogger.log(
+        val ping = if (urgent) reportSettingsService.getUrgentMention(guild) else "@here"
+        guildLogger.logWithContent(
             logEmbed = createReportEmbed(target, reporter.nicknameAndUsername, urgent),
             associatedUser = target.author,
             guild = guild,

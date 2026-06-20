@@ -35,6 +35,9 @@ class ReportMessageContextMenuTest {
     private lateinit var muteService: MuteService
 
     @Mock
+    private lateinit var reportSettingsService: ReportSettingsService
+
+    @Mock
     private lateinit var event: MessageContextInteractionEvent
 
     @Mock
@@ -68,7 +71,7 @@ class ReportMessageContextMenuTest {
 
     @BeforeEach
     fun setUp() {
-        command = ReportMessageContextMenu(guildLogger, muteService)
+        command = ReportMessageContextMenu(guildLogger, muteService, reportSettingsService)
     }
 
     @Test
@@ -77,13 +80,12 @@ class ReportMessageContextMenuTest {
 
         command.onMessageContextInteraction(event)
 
-        verify(guildLogger, never()).log(
+        verify(guildLogger, never()).logWithContent(
             any<EmbedBuilder>(),
             any<User>(),
             any<Guild>(),
             isNull<List<MessageEmbed>>(),
             any<GuildLogger.LogTypeAction>(),
-            isNull(),
             any<String>()
         )
         verify(event, never()).reply(any<String>())
@@ -96,13 +98,12 @@ class ReportMessageContextMenuTest {
         command.onMessageContextInteraction(event)
 
         val embedCaptor = argumentCaptor<EmbedBuilder>()
-        verify(guildLogger).log(
+        verify(guildLogger).logWithContent(
             embedCaptor.capture(),
             eq(targetUser),
             eq(guild),
             isNull<List<MessageEmbed>>(),
             eq(GuildLogger.LogTypeAction.MODERATOR),
-            isNull(),
             eq("@here")
         )
         val embed = embedCaptor.firstValue.build()
@@ -119,20 +120,38 @@ class ReportMessageContextMenuTest {
     @Test
     fun `urgent report logs to moderation channel with everyone ping`() {
         stubReport("Urgent Report Message")
+        whenever(reportSettingsService.getUrgentMention(guild)).thenReturn("@everyone")
 
         command.onMessageContextInteraction(event)
 
         val embedCaptor = argumentCaptor<EmbedBuilder>()
-        verify(guildLogger).log(
+        verify(guildLogger).logWithContent(
             embedCaptor.capture(),
             eq(targetUser),
             eq(guild),
             isNull<List<MessageEmbed>>(),
             eq(GuildLogger.LogTypeAction.MODERATOR),
-            isNull(),
             eq("@everyone")
         )
         assertEquals("Urgent message report", embedCaptor.firstValue.build().title)
+        verify(event).reply("Your report has been sent to the moderation team.")
+    }
+
+    @Test
+    fun `urgent report logs to moderation channel with configured role ping`() {
+        stubReport("Urgent Report Message")
+        whenever(reportSettingsService.getUrgentMention(guild)).thenReturn("<@&5>")
+
+        command.onMessageContextInteraction(event)
+
+        verify(guildLogger).logWithContent(
+            any<EmbedBuilder>(),
+            eq(targetUser),
+            eq(guild),
+            isNull<List<MessageEmbed>>(),
+            eq(GuildLogger.LogTypeAction.MODERATOR),
+            eq("<@&5>")
+        )
         verify(event).reply("Your report has been sent to the moderation team.")
     }
 
@@ -143,13 +162,12 @@ class ReportMessageContextMenuTest {
         command.onMessageContextInteraction(event)
 
         verify(event).reply("You cannot report messages while timed out or muted.")
-        verify(guildLogger, never()).log(
+        verify(guildLogger, never()).logWithContent(
             any<EmbedBuilder>(),
             any<User>(),
             any<Guild>(),
             isNull<List<MessageEmbed>>(),
             any<GuildLogger.LogTypeAction>(),
-            isNull(),
             any<String>()
         )
     }
@@ -161,13 +179,29 @@ class ReportMessageContextMenuTest {
         command.onMessageContextInteraction(event)
 
         verify(event).reply("You cannot report messages while timed out or muted.")
-        verify(guildLogger, never()).log(
+        verify(guildLogger, never()).logWithContent(
             any<EmbedBuilder>(),
             any<User>(),
             any<Guild>(),
             isNull<List<MessageEmbed>>(),
             any<GuildLogger.LogTypeAction>(),
-            isNull(),
+            any<String>()
+        )
+    }
+
+    @Test
+    fun `blocked member cannot report messages`() {
+        stubBlockedReporterContext("Report Message", blocked = true)
+
+        command.onMessageContextInteraction(event)
+
+        verify(event).reply("You are not allowed to report messages in this server.")
+        verify(guildLogger, never()).logWithContent(
+            any<EmbedBuilder>(),
+            any<User>(),
+            any<Guild>(),
+            isNull<List<MessageEmbed>>(),
+            any<GuildLogger.LogTypeAction>(),
             any<String>()
         )
     }
@@ -186,7 +220,12 @@ class ReportMessageContextMenuTest {
         stubTargetMessage()
     }
 
-    private fun stubBlockedReporterContext(commandName: String, timedOut: Boolean = false, muted: Boolean = false) {
+    private fun stubBlockedReporterContext(
+        commandName: String,
+        timedOut: Boolean = false,
+        muted: Boolean = false,
+        blocked: Boolean = false
+    ) {
         whenever(event.name).thenReturn(commandName)
         whenever(event.guild).thenReturn(guild)
         whenever(event.member).thenReturn(reporter)
@@ -197,6 +236,9 @@ class ReportMessageContextMenuTest {
             whenever(guild.idLong).thenReturn(1L)
             whenever(reporter.idLong).thenReturn(99L)
             whenever(muteService.isUserMuted(1L, 99L)).thenReturn(muted)
+            if (!muted) {
+                whenever(reportSettingsService.isUserBlocked(1L, 99L)).thenReturn(blocked)
+            }
         }
     }
 
@@ -211,6 +253,9 @@ class ReportMessageContextMenuTest {
         whenever(reporter.isTimedOut).thenReturn(timedOut)
         if (!timedOut) {
             whenever(muteService.isUserMuted(1L, 99L)).thenReturn(muted)
+            if (!muted) {
+                whenever(reportSettingsService.isUserBlocked(1L, 99L)).thenReturn(false)
+            }
         }
         whenever(reporter.user).thenReturn(reporterUser)
         whenever(reporter.nickname).thenReturn("Duncan")

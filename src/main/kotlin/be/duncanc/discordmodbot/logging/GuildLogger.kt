@@ -625,6 +625,28 @@ class GuildLogger
         guild: Guild,
         embeds: List<MessageEmbed>? = null,
         actionType: LogTypeAction,
+        bytes: ByteArray? = null
+    ) {
+        logInternal(logEmbed, associatedUser, guild, embeds, actionType, bytes, null)
+    }
+
+    fun logWithContent(
+        logEmbed: EmbedBuilder,
+        associatedUser: User? = null,
+        guild: Guild,
+        embeds: List<MessageEmbed>? = null,
+        actionType: LogTypeAction,
+        content: String
+    ) {
+        logInternal(logEmbed, associatedUser, guild, embeds, actionType, null, content)
+    }
+
+    private fun logInternal(
+        logEmbed: EmbedBuilder,
+        associatedUser: User? = null,
+        guild: Guild,
+        embeds: List<MessageEmbed>? = null,
+        actionType: LogTypeAction,
         bytes: ByteArray? = null,
         content: String? = null
     ) {
@@ -648,7 +670,9 @@ class GuildLogger
                     .setEmbeds(logEmbed.build())
                 if (content != null) {
                     message.addContent(content)
-                        .setAllowedMentions(setOf(Message.MentionType.EVERYONE, Message.MentionType.HERE))
+                        .setAllowedMentions(
+                            setOf(Message.MentionType.EVERYONE, Message.MentionType.HERE, Message.MentionType.ROLE)
+                        )
                 }
                 targetChannel.sendMessage(message.build()).queue()
             } else {
