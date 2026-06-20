@@ -22,7 +22,8 @@ class MessageHistory
 @Autowired
 constructor(
     private val discordMessageRepository: DiscordMessageRepository,
-    private val attachmentProxyCreator: AttachmentProxyCreator
+    private val attachmentProxyCreator: AttachmentProxyCreator,
+    private val messageContentEncryptor: MessageContentEncryptor
 ) {
     /**
      * Used to add a message to the list
@@ -43,7 +44,7 @@ constructor(
             message.guild.idLong,
             message.channel.idLong,
             message.author.idLong,
-            message.contentDisplay,
+            messageContentEncryptor.encrypt(message.contentDisplay),
             linkEmotes(message.mentions.customEmojis)
         )
         discordMessageRepository.save(discordMessage)
@@ -70,7 +71,7 @@ constructor(
                 message.guild.idLong,
                 message.channel.idLong,
                 message.author.idLong,
-                message.contentDisplay,
+                messageContentEncryptor.encrypt(message.contentDisplay),
                 existingMessage?.emotes
             )
             discordMessageRepository.save(discordMessage)
@@ -89,7 +90,7 @@ constructor(
         if (discordMessage != null && delete) {
             discordMessageRepository.deleteById(messageId)
         }
-        return discordMessage
+        return discordMessage?.copy(content = messageContentEncryptor.decrypt(discordMessage.content))
     }
 
     internal fun getAttachmentsString(id: Long): String? {
