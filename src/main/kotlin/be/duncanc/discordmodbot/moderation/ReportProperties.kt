@@ -5,5 +5,6 @@ import java.time.Duration
 
 @ConfigurationProperties("discord-mod-bot.reporting")
 data class ReportProperties(
-    val reportRateLimit: Duration = Duration.ofMinutes(5)
+    val reportRateLimit: Duration = Duration.ofMinutes(5),
+    val reportedMessageRetention: Duration = Duration.ofHours(1)
 )
