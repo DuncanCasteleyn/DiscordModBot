@@ -5,6 +5,8 @@ import be.duncanc.discordmodbot.moderation.persistence.ReportSettingsRepository
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Role
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
@@ -94,5 +96,54 @@ class ReportSettingsServiceTest {
         service.clearUrgentRole(1L)
 
         verify(reportSettingsRepository, never()).save(any<ReportSettings>())
+    }
+
+    @Test
+    fun `isReportingEnabled returns false when no settings exist`() {
+        val service = ReportSettingsService(reportSettingsRepository)
+        whenever(reportSettingsRepository.findById(1L)).thenReturn(Optional.empty())
+
+        val enabled = service.isReportingEnabled(1L)
+
+        assertFalse(enabled)
+    }
+
+    @Test
+    fun `isReportingEnabled returns stored value`() {
+        val service = ReportSettingsService(reportSettingsRepository)
+        whenever(reportSettingsRepository.findById(1L))
+            .thenReturn(Optional.of(ReportSettings(1L, enabled = true)))
+
+        val enabled = service.isReportingEnabled(1L)
+
+        assertTrue(enabled)
+    }
+
+    @Test
+    fun `toggleReporting creates settings when absent and enables reporting`() {
+        val service = ReportSettingsService(reportSettingsRepository)
+        whenever(reportSettingsRepository.findById(1L)).thenReturn(Optional.empty())
+
+        val enabled = service.toggleReporting(1L)
+
+        val settingsCaptor = argumentCaptor<ReportSettings>()
+        verify(reportSettingsRepository).save(settingsCaptor.capture())
+        assertTrue(enabled)
+        assertTrue(settingsCaptor.firstValue.enabled)
+        assertEquals(1L, settingsCaptor.firstValue.guildId)
+    }
+
+    @Test
+    fun `toggleReporting flips existing enabled state`() {
+        val service = ReportSettingsService(reportSettingsRepository)
+        whenever(reportSettingsRepository.findById(1L))
+            .thenReturn(Optional.of(ReportSettings(1L, enabled = true)))
+
+        val enabled = service.toggleReporting(1L)
+
+        val settingsCaptor = argumentCaptor<ReportSettings>()
+        verify(reportSettingsRepository).save(settingsCaptor.capture())
+        assertFalse(enabled)
+        assertFalse(settingsCaptor.firstValue.enabled)
     }
 }

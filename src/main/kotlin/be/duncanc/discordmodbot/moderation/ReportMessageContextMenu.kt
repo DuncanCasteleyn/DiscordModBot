@@ -58,6 +58,11 @@ class ReportMessageContextMenu(
             return
         }
 
+        if (!reportSettingsService.isReportingEnabled(guild.idLong)) {
+            event.reply("Message reporting is not enabled on this server.").setEphemeral(true).queue()
+            return
+        }
+
         if (reporter.isTimedOut || muteService.isUserMuted(guild.idLong, reporter.idLong)) {
             event.reply("You cannot report messages while timed out or muted.").setEphemeral(true).queue()
             return
@@ -114,6 +119,11 @@ class ReportMessageContextMenu(
         val reporter = event.member
         if (guild == null || reporter == null || guild.idLong != action.guildId) {
             event.reply("This report confirmation is no longer valid.").setEphemeral(true).queue()
+            return
+        }
+
+        if (!reportSettingsService.isReportingEnabled(guild.idLong)) {
+            event.editMessage("Message reporting is not enabled on this server.").setComponents(emptyList()).queue()
             return
         }
 

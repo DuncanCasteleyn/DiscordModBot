@@ -132,11 +132,11 @@ class ReportSettingsCommandTest {
     }
 
     @Test
-    fun `show displays urgent role and blocked users`() {
+    fun `show displays reporting status, urgent role and blocked users`() {
         stubAuthorizedCommand("show")
         whenever(guild.name).thenReturn("Test Guild")
         whenever(reportSettingsService.getSettings(1L)).thenReturn(
-            ReportSettings(1L, urgentRoleId = 5L, blockedUserIds = mutableSetOf(99L))
+            ReportSettings(1L, urgentRoleId = 5L, enabled = true, blockedUserIds = mutableSetOf(99L))
         )
         whenever(guild.getRoleById(5L)).thenReturn(role)
         whenever(role.asMention).thenReturn("<@&5>")
@@ -146,8 +146,29 @@ class ReportSettingsCommandTest {
         val replyCaptor = argumentCaptor<String>()
         verify(event).reply(replyCaptor.capture())
         assertTrue(replyCaptor.firstValue.contains("Report settings for Test Guild"))
+        assertTrue(replyCaptor.firstValue.contains("- Reporting: enabled"))
         assertTrue(replyCaptor.firstValue.contains("- Urgent mention: <@&5>"))
         assertTrue(replyCaptor.firstValue.contains("- Blocked users: <@99>"))
+    }
+
+    @Test
+    fun `toggle enables reporting`() {
+        stubAuthorizedCommand("toggle")
+        whenever(reportSettingsService.toggleReporting(1L)).thenReturn(true)
+
+        command.onSlashCommandInteraction(event)
+
+        verify(event).reply("Message reporting is now enabled.")
+    }
+
+    @Test
+    fun `toggle disables reporting`() {
+        stubAuthorizedCommand("toggle")
+        whenever(reportSettingsService.toggleReporting(1L)).thenReturn(false)
+
+        command.onSlashCommandInteraction(event)
+
+        verify(event).reply("Message reporting is now disabled.")
     }
 
     @Test
@@ -157,7 +178,7 @@ class ReportSettingsCommandTest {
         assertEquals("reportsettings", commandData.name)
         assertEquals(setOf(InteractionContextType.GUILD), commandData.contexts)
         assertEquals(
-            listOf("show", "block-user", "allow-user", "set-urgent-role", "clear-urgent-role"),
+            listOf("show", "block-user", "allow-user", "set-urgent-role", "clear-urgent-role", "toggle"),
             commandData.subcommands.map(SubcommandData::getName)
         )
     }

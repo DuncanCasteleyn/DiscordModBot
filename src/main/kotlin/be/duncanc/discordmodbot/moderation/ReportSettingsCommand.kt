@@ -26,6 +26,7 @@ class ReportSettingsCommand(
         private const val SUBCOMMAND_ALLOW_USER = "allow-user"
         private const val SUBCOMMAND_SET_URGENT_ROLE = "set-urgent-role"
         private const val SUBCOMMAND_CLEAR_URGENT_ROLE = "clear-urgent-role"
+        private const val SUBCOMMAND_TOGGLE = "toggle"
         private const val OPTION_USER = "user"
         private const val OPTION_ROLE = "role"
         private const val BLOCKED_USER_DISPLAY_LIMIT = 20
@@ -58,6 +59,12 @@ class ReportSettingsCommand(
                     .queue()
             }
 
+            SUBCOMMAND_TOGGLE -> {
+                val enabled = reportSettingsService.toggleReporting(guild.idLong)
+                val status = if (enabled) "enabled" else "disabled"
+                event.reply("Message reporting is now $status.").setEphemeral(true).queue()
+            }
+
             else -> event.reply("Please choose a valid /reportsettings subcommand.").setEphemeral(true).queue()
         }
     }
@@ -75,7 +82,8 @@ class ReportSettingsCommand(
                         .addOption(OptionType.USER, OPTION_USER, "The user to allow", true),
                     SubcommandData(SUBCOMMAND_SET_URGENT_ROLE, "Set the role mentioned by urgent reports")
                         .addOption(OptionType.ROLE, OPTION_ROLE, "The role to mention", true),
-                    SubcommandData(SUBCOMMAND_CLEAR_URGENT_ROLE, "Clear the urgent report role")
+                    SubcommandData(SUBCOMMAND_CLEAR_URGENT_ROLE, "Clear the urgent report role"),
+                    SubcommandData(SUBCOMMAND_TOGGLE, "Enable or disable message reporting")
                 )
         )
     }
@@ -118,6 +126,7 @@ class ReportSettingsCommand(
         val message = buildString {
             appendLine("Report settings for ${guild.name}")
             appendLine()
+            appendLine("- Reporting: ${if (settings.enabled) "enabled" else "disabled"}")
             appendLine("- Urgent mention: ${formatUrgentRole(guild, settings.urgentRoleId)}")
             appendLine("- Blocked users: ${formatBlockedUsers(settings)}")
         }

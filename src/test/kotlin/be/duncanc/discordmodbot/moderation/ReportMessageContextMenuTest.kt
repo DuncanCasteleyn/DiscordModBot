@@ -399,6 +399,8 @@ class ReportMessageContextMenuTest {
         whenever(event.member).thenReturn(reporter)
         whenever(event.reply(any<String>())).thenReturn(replyAction)
         whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(reportSettingsService.isReportingEnabled(1L)).thenReturn(true)
         whenever(event.target).thenReturn(targetMessage)
         whenever(targetMessage.author).thenReturn(targetUser)
         whenever(targetUser.idLong).thenReturn(99L)
@@ -407,6 +409,42 @@ class ReportMessageContextMenuTest {
         command.onMessageContextInteraction(event)
 
         verify(event).reply("You cannot report your own messages.")
+    }
+
+    @Test
+    fun `reporting disabled member cannot report messages`() {
+        stubReportingDisabledContext("Report Message")
+
+        command.onMessageContextInteraction(event)
+
+        verify(event).reply("Message reporting is not enabled on this server.")
+        verify(reportRateLimitService, never()).tryConsume(any(), any())
+        verify(guildLogger, never()).logWithContent(
+            any<EmbedBuilder>(),
+            any<User>(),
+            any<Guild>(),
+            isNull<List<MessageEmbed>>(),
+            any<GuildLogger.LogTypeAction>(),
+            any<String>()
+        )
+    }
+
+    @Test
+    fun `urgent confirmation rejects when reporting is disabled`() {
+        stubUrgentConfirmationDisabled()
+
+        command.onButtonInteraction(buttonEvent)
+
+        verify(buttonEvent).editMessage("Message reporting is not enabled on this server.")
+        verify(guildLogger, never()).logWithContent(
+            any<EmbedBuilder>(),
+            any<User>(),
+            any<Guild>(),
+            isNull<List<MessageEmbed>>(),
+            any<GuildLogger.LogTypeAction>(),
+            any<String>()
+        )
+        verify(reportedMessageService, never()).markUrgent(any(), any(), any())
     }
 
     @Test
@@ -428,16 +466,18 @@ class ReportMessageContextMenuTest {
         commandName: String,
         timedOut: Boolean = false,
         muted: Boolean = false,
-        blocked: Boolean = false
+        blocked: Boolean = false,
+        enabled: Boolean = true
     ) {
         whenever(event.name).thenReturn(commandName)
         whenever(event.guild).thenReturn(guild)
         whenever(event.member).thenReturn(reporter)
         whenever(event.reply(any<String>())).thenReturn(replyAction)
         whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(reportSettingsService.isReportingEnabled(1L)).thenReturn(enabled)
         whenever(reporter.isTimedOut).thenReturn(timedOut)
         if (!timedOut) {
-            whenever(guild.idLong).thenReturn(1L)
             whenever(reporter.idLong).thenReturn(99L)
             whenever(muteService.isUserMuted(1L, 99L)).thenReturn(muted)
             if (!muted) {
@@ -456,6 +496,7 @@ class ReportMessageContextMenuTest {
         whenever(reporter.idLong).thenReturn(99L)
         whenever(reporter.isTimedOut).thenReturn(false)
         whenever(muteService.isUserMuted(1L, 99L)).thenReturn(false)
+        whenever(reportSettingsService.isReportingEnabled(1L)).thenReturn(true)
         whenever(reportSettingsService.isUserBlocked(1L, 99L)).thenReturn(false)
         stubTargetMessageIds()
         whenever(reportedMessageService.getState(1L, 123L, 456L)).thenReturn(null)
@@ -475,6 +516,7 @@ class ReportMessageContextMenuTest {
         if (!timedOut) {
             whenever(muteService.isUserMuted(1L, 99L)).thenReturn(muted)
             if (!muted) {
+                whenever(reportSettingsService.isReportingEnabled(1L)).thenReturn(true)
                 whenever(reportSettingsService.isUserBlocked(1L, 99L)).thenReturn(false)
                 whenever(reportRateLimitService.tryConsume(1L, 99L)).thenReturn(true)
             }
@@ -494,6 +536,7 @@ class ReportMessageContextMenuTest {
         whenever(reporter.idLong).thenReturn(99L)
         whenever(reporter.isTimedOut).thenReturn(false)
         whenever(muteService.isUserMuted(1L, 99L)).thenReturn(false)
+        whenever(reportSettingsService.isReportingEnabled(1L)).thenReturn(true)
         whenever(reportSettingsService.isUserBlocked(1L, 99L)).thenReturn(false)
         stubTargetMessageIds()
     }
@@ -543,6 +586,7 @@ class ReportMessageContextMenuTest {
         whenever(reporter.idLong).thenReturn(99L)
         whenever(reporter.isTimedOut).thenReturn(false)
         whenever(muteService.isUserMuted(1L, 99L)).thenReturn(false)
+        whenever(reportSettingsService.isReportingEnabled(1L)).thenReturn(true)
         whenever(reportSettingsService.isUserBlocked(1L, 99L)).thenReturn(false)
         if (includeRetrievedMessageDetails) {
             whenever(reporter.user).thenReturn(reporterUser)
@@ -551,6 +595,28 @@ class ReportMessageContextMenuTest {
             whenever(targetMessage.guildChannel).thenReturn(channel)
             stubTargetMessageDetails()
         }
+    }
+
+    private fun stubReportingDisabledContext(commandName: String) {
+        whenever(event.name).thenReturn(commandName)
+        whenever(event.guild).thenReturn(guild)
+        whenever(event.member).thenReturn(reporter)
+        whenever(event.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(reportSettingsService.isReportingEnabled(1L)).thenReturn(false)
+    }
+
+    private fun stubUrgentConfirmationDisabled() {
+        whenever(buttonEvent.componentId).thenReturn("report:urgent:1:123:456:99")
+        whenever(buttonEvent.user).thenReturn(reporterUser)
+        whenever(reporterUser.idLong).thenReturn(99L)
+        whenever(buttonEvent.guild).thenReturn(guild)
+        whenever(buttonEvent.member).thenReturn(reporter)
+        whenever(buttonEvent.editMessage(any<String>())).thenReturn(editAction)
+        whenever(editAction.setComponents(any<List<ActionRow>>())).thenReturn(editAction)
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(reportSettingsService.isReportingEnabled(1L)).thenReturn(false)
     }
 
     private fun doRetrieveMessageSuccess() {

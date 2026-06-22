@@ -15,6 +15,10 @@ class ReportSettingsService(
         return reportSettingsRepository.findById(guildId).orElse(ReportSettings(guildId))
     }
 
+    fun isReportingEnabled(guildId: Long): Boolean {
+        return getSettings(guildId).enabled
+    }
+
     fun isUserBlocked(guildId: Long, userId: Long): Boolean {
         return getSettings(guildId).blockedUserIds.contains(userId)
     }
@@ -50,6 +54,14 @@ class ReportSettingsService(
         val settings = reportSettingsRepository.findById(guildId).orElse(null) ?: return
         settings.urgentRoleId = null
         reportSettingsRepository.save(settings)
+    }
+
+    @Transactional
+    fun toggleReporting(guildId: Long): Boolean {
+        val settings = getSettings(guildId)
+        settings.enabled = !settings.enabled
+        reportSettingsRepository.save(settings)
+        return settings.enabled
     }
 
     companion object {
