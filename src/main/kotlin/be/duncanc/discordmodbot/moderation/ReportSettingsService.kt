@@ -33,7 +33,7 @@ class ReportSettingsService(
 
     @Transactional
     fun allowUser(guildId: Long, userId: Long) {
-        val settings = getSettings(guildId)
+        val settings = reportSettingsRepository.findById(guildId).orElse(null) ?: return
         settings.blockedUserIds.remove(userId)
         reportSettingsRepository.save(settings)
     }
@@ -47,7 +47,7 @@ class ReportSettingsService(
 
     @Transactional
     fun clearUrgentRole(guildId: Long) {
-        val settings = getSettings(guildId)
+        val settings = reportSettingsRepository.findById(guildId).orElse(null) ?: return
         settings.urgentRoleId = null
         reportSettingsRepository.save(settings)
     }

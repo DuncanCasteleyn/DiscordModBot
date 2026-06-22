@@ -393,6 +393,23 @@ class ReportMessageContextMenuTest {
     }
 
     @Test
+    fun `member cannot report their own messages`() {
+        whenever(event.name).thenReturn("Report Message")
+        whenever(event.guild).thenReturn(guild)
+        whenever(event.member).thenReturn(reporter)
+        whenever(event.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+        whenever(event.target).thenReturn(targetMessage)
+        whenever(targetMessage.author).thenReturn(targetUser)
+        whenever(targetUser.idLong).thenReturn(99L)
+        whenever(reporter.idLong).thenReturn(99L)
+
+        command.onMessageContextInteraction(event)
+
+        verify(event).reply("You cannot report your own messages.")
+    }
+
+    @Test
     fun `command data includes urgent and non-urgent message context menus`() {
         val commands = command.getCommandsData()
 
@@ -483,9 +500,11 @@ class ReportMessageContextMenuTest {
 
     private fun stubTargetMessageIds() {
         whenever(event.target).thenReturn(targetMessage)
+        whenever(targetMessage.author).thenReturn(targetUser)
         whenever(targetMessage.guildChannel).thenReturn(channel)
         whenever(channel.idLong).thenReturn(123L)
         whenever(targetMessage.idLong).thenReturn(456L)
+        whenever(targetUser.idLong).thenReturn(2L)
     }
 
     private fun stubTargetMessage() {

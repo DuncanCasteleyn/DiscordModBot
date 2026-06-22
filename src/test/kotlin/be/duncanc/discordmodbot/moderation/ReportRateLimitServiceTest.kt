@@ -82,6 +82,20 @@ class ReportRateLimitServiceTest {
     }
 
     @Test
+    fun `description formats mixed hours and minutes`() {
+        val service = service(Duration.ofMinutes(90))
+
+        assertEquals("1 hour 30 minutes", service.rateLimitDescription())
+    }
+
+    @Test
+    fun `description formats mixed days hours minutes and seconds`() {
+        val service = service(Duration.ofSeconds(90061))
+
+        assertEquals("1 day 1 hour 1 minute 1 second", service.rateLimitDescription())
+    }
+
+    @Test
     fun `key uses guild and user id`() {
         val service = service(Duration.ofMinutes(5))
 

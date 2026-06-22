@@ -20,18 +20,19 @@ class ReportRateLimitService(
 
     fun rateLimitDescription(): String {
         val rateLimit = reportProperties.reportRateLimit
-        if (rateLimit.toHoursPart() > 0 || rateLimit.toDaysPart() > 0) {
-            val hours = rateLimit.toHours()
-            return "$hours ${if (hours == 1L) "hour" else "hours"}"
+        val days = rateLimit.toDaysPart().toInt()
+        val hours = rateLimit.toHoursPart()
+        val minutes = rateLimit.toMinutesPart()
+        val seconds = rateLimit.toSecondsPart()
+
+        val parts = buildList {
+            if (days > 0) add("$days ${if (days == 1) "day" else "days"}")
+            if (hours > 0) add("$hours ${if (hours == 1) "hour" else "hours"}")
+            if (minutes > 0) add("$minutes ${if (minutes == 1) "minute" else "minutes"}")
+            if (seconds > 0) add("$seconds ${if (seconds == 1) "second" else "seconds"}")
         }
 
-        if (rateLimit.toMinutesPart() > 0) {
-            val minutes = rateLimit.toMinutes()
-            return "$minutes ${if (minutes == 1L) "minute" else "minutes"}"
-        }
-
-        val seconds = rateLimit.seconds.coerceAtLeast(1)
-        return "$seconds ${if (seconds == 1L) "second" else "seconds"}"
+        return parts.joinToString(" ").ifEmpty { "0 seconds" }
     }
 
     internal fun createKey(guildId: Long, userId: Long): String {

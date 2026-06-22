@@ -38,7 +38,4 @@ class ReportedMessageService(
 
         redisTemplate.opsForValue().set(createKey(guildId, channelId, messageId), state.name, retention)
     }
-
-    private val java.time.Duration.isPositive: Boolean
-        get() = !isZero && !isNegative
 }

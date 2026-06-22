@@ -9,7 +9,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.util.Optional
@@ -72,5 +74,25 @@ class ReportSettingsServiceTest {
         verify(reportSettingsRepository).save(settingsCaptor.capture())
         assertEquals(1L, settingsCaptor.firstValue.guildId)
         assertEquals(setOf(99L), settingsCaptor.firstValue.blockedUserIds)
+    }
+
+    @Test
+    fun `allowing a user without existing settings does not create a row`() {
+        val service = ReportSettingsService(reportSettingsRepository)
+        whenever(reportSettingsRepository.findById(1L)).thenReturn(Optional.empty())
+
+        service.allowUser(1L, 99L)
+
+        verify(reportSettingsRepository, never()).save(any<ReportSettings>())
+    }
+
+    @Test
+    fun `clearing urgent role without existing settings does not create a row`() {
+        val service = ReportSettingsService(reportSettingsRepository)
+        whenever(reportSettingsRepository.findById(1L)).thenReturn(Optional.empty())
+
+        service.clearUrgentRole(1L)
+
+        verify(reportSettingsRepository, never()).save(any<ReportSettings>())
     }
 }

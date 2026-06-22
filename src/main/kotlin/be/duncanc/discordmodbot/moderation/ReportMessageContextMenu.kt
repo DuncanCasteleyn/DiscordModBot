@@ -6,9 +6,9 @@ import be.duncanc.discordmodbot.logging.GuildLogger
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.components.actionrow.ActionRow
 import net.dv8tion.jda.api.components.buttons.Button
-import net.dv8tion.jda.api.entities.Message
-import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
@@ -69,6 +69,11 @@ class ReportMessageContextMenu(
         }
 
         val target = event.target
+        if (reporter.idLong == target.author.idLong) {
+            event.reply("You cannot report your own messages.").setEphemeral(true).queue()
+            return
+        }
+
         val existingState = reportedMessageService.getState(guild.idLong, target.guildChannel.idLong, target.idLong)
         if (existingState == ReportedMessageState.URGENT || existingState == ReportedMessageState.NON_URGENT && !urgent) {
             event.reply(ALREADY_REPORTED_MESSAGE).setEphemeral(true).queue()
