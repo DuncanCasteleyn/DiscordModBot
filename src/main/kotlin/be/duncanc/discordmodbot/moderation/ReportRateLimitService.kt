@@ -38,9 +38,6 @@ class ReportRateLimitService(
         return "report:rate-limit:$guildId:$userId"
     }
 
-    private val java.time.Duration.isPositive: Boolean
-        get() = !isZero && !isNegative
-
     companion object {
         private const val RATE_LIMIT_VALUE = "1"
     }
