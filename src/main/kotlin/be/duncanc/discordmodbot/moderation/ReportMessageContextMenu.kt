@@ -145,18 +145,20 @@ class ReportMessageContextMenu(
             return
         }
 
-        channel.retrieveMessageById(action.messageId).queue(
-            { message ->
-                logReport(guild, reporter, message, urgent = true)
-                reportedMessageService.markUrgent(guild.idLong, action.channelId, action.messageId)
-                event.editMessage("Your urgent report has been sent to the moderation team.")
-                    .setComponents(emptyList())
-                    .queue()
-            },
-            {
-                event.editMessage("I could not find that message anymore.").setComponents(emptyList()).queue()
-            }
-        )
+        event.deferEdit().queue { hook ->
+            channel.retrieveMessageById(action.messageId).queue(
+                { message ->
+                    logReport(guild, reporter, message, urgent = true)
+                    reportedMessageService.markUrgent(guild.idLong, action.channelId, action.messageId)
+                    hook.editOriginal("Your urgent report has been sent to the moderation team.")
+                        .setComponents(emptyList())
+                        .queue()
+                },
+                {
+                    hook.editOriginal("I could not find that message anymore.").setComponents(emptyList()).queue()
+                }
+            )
+        }
     }
 
     override fun getCommandsData(): List<CommandData> {

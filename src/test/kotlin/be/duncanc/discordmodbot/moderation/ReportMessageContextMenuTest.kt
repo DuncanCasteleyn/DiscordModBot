@@ -13,8 +13,10 @@ import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.entities.channel.unions.GuildMessageChannelUnion
 import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
+import net.dv8tion.jda.api.interactions.InteractionHook
 import net.dv8tion.jda.api.interactions.commands.Command
 import net.dv8tion.jda.api.requests.RestAction
+import net.dv8tion.jda.api.requests.restaction.WebhookMessageEditAction
 import net.dv8tion.jda.api.requests.restaction.interactions.MessageEditCallbackAction
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -86,6 +88,15 @@ class ReportMessageContextMenuTest {
 
     @Mock
     private lateinit var editAction: MessageEditCallbackAction
+
+    @Mock
+    private lateinit var deferredEditAction: MessageEditCallbackAction
+
+    @Mock
+    private lateinit var interactionHook: InteractionHook
+
+    @Mock
+    private lateinit var hookEditAction: WebhookMessageEditAction<Message>
 
     @Mock
     private lateinit var jda: JDA
@@ -279,8 +290,35 @@ class ReportMessageContextMenuTest {
             eq("@everyone")
         )
         verify(reportedMessageService).markUrgent(1L, 123L, 456L)
-        verify(buttonEvent).editMessage("Your urgent report has been sent to the moderation team.")
-        verify(editAction).setComponents(emptyList<ActionRow>())
+        verify(buttonEvent).deferEdit()
+        verify(interactionHook).editOriginal("Your urgent report has been sent to the moderation team.")
+        verify(hookEditAction).setComponents(emptyList<ActionRow>())
+    }
+
+    @Test
+    fun `urgent confirmation updates deferred response when message retrieval fails`() {
+        stubUrgentConfirmation(includeRetrievedMessageDetails = false)
+        whenever(reportedMessageService.getState(1L, 123L, 456L)).thenReturn(ReportedMessageState.NON_URGENT)
+        whenever(reportRateLimitService.tryConsume(1L, 99L)).thenReturn(true)
+        whenever(buttonEvent.jda).thenReturn(jda)
+        whenever(jda.getChannelById(MessageChannel::class.java, 123L)).thenReturn(messageChannel)
+        whenever(messageChannel.retrieveMessageById(456L)).thenReturn(retrieveMessageAction)
+        doRetrieveMessageFailure()
+
+        command.onButtonInteraction(buttonEvent)
+
+        verify(buttonEvent).deferEdit()
+        verify(interactionHook).editOriginal("I could not find that message anymore.")
+        verify(hookEditAction).setComponents(emptyList<ActionRow>())
+        verify(guildLogger, never()).logWithContent(
+            any<EmbedBuilder>(),
+            any<User>(),
+            any<Guild>(),
+            isNull<List<MessageEmbed>>(),
+            any<GuildLogger.LogTypeAction>(),
+            any<String>()
+        )
+        verify(reportedMessageService, never()).markUrgent(any(), any(), any())
     }
 
     @Test
@@ -468,30 +506,46 @@ class ReportMessageContextMenuTest {
         whenever(attachment.url).thenReturn("https://example.invalid/image.png")
     }
 
-    private fun stubUrgentConfirmation() {
+    private fun stubUrgentConfirmation(includeRetrievedMessageDetails: Boolean = true) {
         whenever(buttonEvent.componentId).thenReturn("report:urgent:1:123:456:99")
         whenever(buttonEvent.user).thenReturn(reporterUser)
         whenever(reporterUser.idLong).thenReturn(99L)
         whenever(buttonEvent.guild).thenReturn(guild)
         whenever(buttonEvent.member).thenReturn(reporter)
-        whenever(buttonEvent.editMessage(any<String>())).thenReturn(editAction)
-        whenever(editAction.setComponents(any<List<ActionRow>>())).thenReturn(editAction)
+        whenever(buttonEvent.deferEdit()).thenReturn(deferredEditAction)
+        whenever(interactionHook.editOriginal(any<String>())).thenReturn(hookEditAction)
+        whenever(hookEditAction.setComponents(any<List<ActionRow>>())).thenReturn(hookEditAction)
+        doAnswer {
+            val success = it.arguments[0] as Consumer<InteractionHook>
+            success.accept(interactionHook)
+            null
+        }.whenever(deferredEditAction).queue(any<Consumer<InteractionHook>>())
         whenever(guild.idLong).thenReturn(1L)
         whenever(reporter.idLong).thenReturn(99L)
-        whenever(reporter.user).thenReturn(reporterUser)
-        whenever(reporter.nickname).thenReturn("Duncan")
-        whenever(reporterUser.name).thenReturn("reporter-user")
         whenever(reporter.isTimedOut).thenReturn(false)
         whenever(muteService.isUserMuted(1L, 99L)).thenReturn(false)
         whenever(reportSettingsService.isUserBlocked(1L, 99L)).thenReturn(false)
-        whenever(targetMessage.guildChannel).thenReturn(channel)
-        stubTargetMessageDetails()
+        if (includeRetrievedMessageDetails) {
+            whenever(reporter.user).thenReturn(reporterUser)
+            whenever(reporter.nickname).thenReturn("Duncan")
+            whenever(reporterUser.name).thenReturn("reporter-user")
+            whenever(targetMessage.guildChannel).thenReturn(channel)
+            stubTargetMessageDetails()
+        }
     }
 
     private fun doRetrieveMessageSuccess() {
         doAnswer {
             val success = it.arguments[0] as Consumer<Message>
             success.accept(targetMessage)
+            null
+        }.whenever(retrieveMessageAction).queue(any<Consumer<Message>>(), any<Consumer<Throwable>>())
+    }
+
+    private fun doRetrieveMessageFailure() {
+        doAnswer {
+            val failure = it.arguments[1] as Consumer<Throwable>
+            failure.accept(RuntimeException("message not found"))
             null
         }.whenever(retrieveMessageAction).queue(any<Consumer<Message>>(), any<Consumer<Throwable>>())
     }
