@@ -38,6 +38,9 @@ class ReportMessageContextMenuTest {
     private lateinit var reportSettingsService: ReportSettingsService
 
     @Mock
+    private lateinit var reportRateLimitService: ReportRateLimitService
+
+    @Mock
     private lateinit var event: MessageContextInteractionEvent
 
     @Mock
@@ -71,7 +74,7 @@ class ReportMessageContextMenuTest {
 
     @BeforeEach
     fun setUp() {
-        command = ReportMessageContextMenu(guildLogger, muteService, reportSettingsService)
+        command = ReportMessageContextMenu(guildLogger, muteService, reportSettingsService, reportRateLimitService)
     }
 
     @Test
@@ -156,12 +159,30 @@ class ReportMessageContextMenuTest {
     }
 
     @Test
+    fun `rate limited member cannot report messages`() {
+        stubRateLimitedReporterContext("Report Message")
+
+        command.onMessageContextInteraction(event)
+
+        verify(event).reply("You can only report one message every 5 minutes.")
+        verify(guildLogger, never()).logWithContent(
+            any<EmbedBuilder>(),
+            any<User>(),
+            any<Guild>(),
+            isNull<List<MessageEmbed>>(),
+            any<GuildLogger.LogTypeAction>(),
+            any<String>()
+        )
+    }
+
+    @Test
     fun `timed out member cannot report messages`() {
         stubBlockedReporterContext("Report Message", timedOut = true)
 
         command.onMessageContextInteraction(event)
 
         verify(event).reply("You cannot report messages while timed out or muted.")
+        verify(reportRateLimitService, never()).tryConsume(any(), any())
         verify(guildLogger, never()).logWithContent(
             any<EmbedBuilder>(),
             any<User>(),
@@ -179,6 +200,7 @@ class ReportMessageContextMenuTest {
         command.onMessageContextInteraction(event)
 
         verify(event).reply("You cannot report messages while timed out or muted.")
+        verify(reportRateLimitService, never()).tryConsume(any(), any())
         verify(guildLogger, never()).logWithContent(
             any<EmbedBuilder>(),
             any<User>(),
@@ -196,6 +218,7 @@ class ReportMessageContextMenuTest {
         command.onMessageContextInteraction(event)
 
         verify(event).reply("You are not allowed to report messages in this server.")
+        verify(reportRateLimitService, never()).tryConsume(any(), any())
         verify(guildLogger, never()).logWithContent(
             any<EmbedBuilder>(),
             any<User>(),
@@ -242,6 +265,21 @@ class ReportMessageContextMenuTest {
         }
     }
 
+    private fun stubRateLimitedReporterContext(commandName: String) {
+        whenever(event.name).thenReturn(commandName)
+        whenever(event.guild).thenReturn(guild)
+        whenever(event.member).thenReturn(reporter)
+        whenever(event.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(reporter.idLong).thenReturn(99L)
+        whenever(reporter.isTimedOut).thenReturn(false)
+        whenever(muteService.isUserMuted(1L, 99L)).thenReturn(false)
+        whenever(reportSettingsService.isUserBlocked(1L, 99L)).thenReturn(false)
+        whenever(reportRateLimitService.tryConsume(1L, 99L)).thenReturn(false)
+        whenever(reportRateLimitService.rateLimitDescription()).thenReturn("5 minutes")
+    }
+
     private fun stubReporterContext(commandName: String, timedOut: Boolean = false, muted: Boolean = false) {
         whenever(event.name).thenReturn(commandName)
         whenever(event.guild).thenReturn(guild)
@@ -255,6 +293,7 @@ class ReportMessageContextMenuTest {
             whenever(muteService.isUserMuted(1L, 99L)).thenReturn(muted)
             if (!muted) {
                 whenever(reportSettingsService.isUserBlocked(1L, 99L)).thenReturn(false)
+                whenever(reportRateLimitService.tryConsume(1L, 99L)).thenReturn(true)
             }
         }
         whenever(reporter.user).thenReturn(reporterUser)

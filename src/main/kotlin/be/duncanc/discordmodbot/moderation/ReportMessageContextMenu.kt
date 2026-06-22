@@ -17,7 +17,8 @@ import java.awt.Color
 class ReportMessageContextMenu(
     private val guildLogger: GuildLogger,
     private val muteService: MuteService,
-    private val reportSettingsService: ReportSettingsService
+    private val reportSettingsService: ReportSettingsService,
+    private val reportRateLimitService: ReportRateLimitService
 ) : ListenerAdapter(), DiscordCommand {
     companion object {
         private const val NON_URGENT_COMMAND = "Report Message"
@@ -46,6 +47,13 @@ class ReportMessageContextMenu(
 
         if (reportSettingsService.isUserBlocked(guild.idLong, reporter.idLong)) {
             event.reply("You are not allowed to report messages in this server.").setEphemeral(true).queue()
+            return
+        }
+
+        if (!reportRateLimitService.tryConsume(guild.idLong, reporter.idLong)) {
+            event.reply("You can only report one message every ${reportRateLimitService.rateLimitDescription()}.")
+                .setEphemeral(true)
+                .queue()
             return
         }
 
