@@ -641,6 +641,11 @@ class GuildLogger
         logInternal(logEmbed, associatedUser, guild, embeds, actionType, null, content)
     }
 
+    fun hasModeratorLogChannel(guild: Guild): Boolean {
+        val channelId = loggingSettingsRepository.findById(guild.idLong).orElse(null)?.modLogChannel ?: return false
+        return guild.getTextChannelById(channelId) != null
+    }
+
     private fun logInternal(
         logEmbed: EmbedBuilder,
         associatedUser: User? = null,

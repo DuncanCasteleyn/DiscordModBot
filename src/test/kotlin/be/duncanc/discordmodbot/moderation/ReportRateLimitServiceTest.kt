@@ -103,6 +103,36 @@ class ReportRateLimitServiceTest {
         assertEquals("report:rate-limit:2:99", service.createKey(2L, 99L))
     }
 
+    @Test
+    fun `hasActiveToken returns true when key exists`() {
+        val service = service(Duration.ofMinutes(5))
+        whenever(redisTemplate.hasKey("report:rate-limit:1:99")).thenReturn(true)
+
+        val active = service.hasActiveToken(1L, 99L)
+
+        assertTrue(active)
+    }
+
+    @Test
+    fun `hasActiveToken returns false when key does not exist`() {
+        val service = service(Duration.ofMinutes(5))
+        whenever(redisTemplate.hasKey("report:rate-limit:1:99")).thenReturn(false)
+
+        val active = service.hasActiveToken(1L, 99L)
+
+        assertFalse(active)
+    }
+
+    @Test
+    fun `hasActiveToken returns false when rate limiting is disabled`() {
+        val service = service(Duration.ZERO)
+
+        val active = service.hasActiveToken(1L, 99L)
+
+        assertFalse(active)
+        verify(redisTemplate, never()).hasKey(any<String>())
+    }
+
     private fun service(rateLimit: Duration): ReportRateLimitService {
         return ReportRateLimitService(redisTemplate, ReportProperties(reportRateLimit = rateLimit))
     }

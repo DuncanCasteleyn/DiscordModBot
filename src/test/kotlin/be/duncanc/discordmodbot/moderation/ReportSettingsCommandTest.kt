@@ -138,8 +138,7 @@ class ReportSettingsCommandTest {
         whenever(reportSettingsService.getSettings(1L)).thenReturn(
             ReportSettings(1L, urgentRoleId = 5L, enabled = true, blockedUserIds = mutableSetOf(99L))
         )
-        whenever(guild.getRoleById(5L)).thenReturn(role)
-        whenever(role.asMention).thenReturn("<@&5>")
+        whenever(reportSettingsService.getUrgentMention(guild)).thenReturn("<@&5>")
 
         command.onSlashCommandInteraction(event)
 

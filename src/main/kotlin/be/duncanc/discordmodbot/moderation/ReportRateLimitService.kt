@@ -18,6 +18,14 @@ class ReportRateLimitService(
             .setIfAbsent(createKey(guildId, userId), RATE_LIMIT_VALUE, rateLimit) == true
     }
 
+    fun hasActiveToken(guildId: Long, userId: Long): Boolean {
+        if (!reportProperties.reportRateLimit.isPositive) {
+            return false
+        }
+
+        return redisTemplate.hasKey(createKey(guildId, userId)) == true
+    }
+
     fun rateLimitDescription(): String {
         val rateLimit = reportProperties.reportRateLimit
         val days = rateLimit.toDaysPart().toInt()

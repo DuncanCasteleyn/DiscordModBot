@@ -127,19 +127,11 @@ class ReportSettingsCommand(
             appendLine("Report settings for ${guild.name}")
             appendLine()
             appendLine("- Reporting: ${if (settings.enabled) "enabled" else "disabled"}")
-            appendLine("- Urgent mention: ${formatUrgentRole(guild, settings.urgentRoleId)}")
+            appendLine("- Urgent mention: ${reportSettingsService.getUrgentMention(guild)}")
             appendLine("- Blocked users: ${formatBlockedUsers(settings)}")
         }
 
         event.reply(message).setEphemeral(true).queue()
-    }
-
-    private fun formatUrgentRole(guild: Guild, roleId: Long?): String {
-        if (roleId == null) {
-            return "@everyone"
-        }
-
-        return guild.getRoleById(roleId)?.asMention ?: "Role not found (ID: $roleId); using @everyone"
     }
 
     private fun formatBlockedUsers(settings: ReportSettings): String {

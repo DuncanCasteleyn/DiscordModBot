@@ -34,6 +34,9 @@ class ReportMessageContextMenu(
         private const val BUTTON_CONFIRM_PREFIX = "report:urgent:"
         private const val BUTTON_CANCEL_PREFIX = "report:cancel:"
         private const val ALREADY_REPORTED_MESSAGE = "This issue was already reported."
+        private const val HERE_MENTION = "@here"
+        private const val NO_MOD_LOG_CHANNEL_MESSAGE =
+            "Message reporting is not configured on this server. A moderator log channel is required."
     }
 
     private data class UrgentConfirmationAction(
@@ -80,7 +83,10 @@ class ReportMessageContextMenu(
         }
 
         val existingState = reportedMessageService.getState(guild.idLong, target.guildChannel.idLong, target.idLong)
-        if (existingState == ReportedMessageState.URGENT || existingState == ReportedMessageState.NON_URGENT && !urgent) {
+        if (
+            existingState == ReportedMessageState.URGENT ||
+            (existingState == ReportedMessageState.NON_URGENT && !urgent)
+        ) {
             event.reply(ALREADY_REPORTED_MESSAGE).setEphemeral(true).queue()
             return
         }
@@ -90,6 +96,11 @@ class ReportMessageContextMenu(
                 .setEphemeral(true)
                 .addComponents(ActionRow.of(buildUrgentConfirmationButtons(guild.idLong, target, reporter.idLong)))
                 .queue()
+            return
+        }
+
+        if (!guildLogger.hasModeratorLogChannel(guild)) {
+            event.reply(NO_MOD_LOG_CHANNEL_MESSAGE).setEphemeral(true).queue()
             return
         }
 
@@ -128,12 +139,16 @@ class ReportMessageContextMenu(
         }
 
         if (reporter.isTimedOut || muteService.isUserMuted(guild.idLong, reporter.idLong)) {
-            event.reply("You cannot report messages while timed out or muted.").setEphemeral(true).queue()
+            event.editMessage("You cannot report messages while timed out or muted.")
+                .setComponents(emptyList())
+                .queue()
             return
         }
 
         if (reportSettingsService.isUserBlocked(guild.idLong, reporter.idLong)) {
-            event.reply("You are not allowed to report messages in this server.").setEphemeral(true).queue()
+            event.editMessage("You are not allowed to report messages in this server.")
+                .setComponents(emptyList())
+                .queue()
             return
         }
 
@@ -150,7 +165,12 @@ class ReportMessageContextMenu(
             return
         }
 
-        if (!tryConsumeRateLimit(event, guild, reporter)) {
+        if (!guildLogger.hasModeratorLogChannel(guild)) {
+            event.editMessage(NO_MOD_LOG_CHANNEL_MESSAGE).setComponents(emptyList()).queue()
+            return
+        }
+
+        if (!tryConsumeRateLimitForConfirmation(event, guild, reporter)) {
             return
         }
 
@@ -186,9 +206,9 @@ class ReportMessageContextMenu(
     }
 
     private fun logReport(guild: Guild, reporter: Member, target: Message, urgent: Boolean) {
-        val ping = if (urgent) reportSettingsService.getUrgentMention(guild) else "@here"
+        val ping = if (urgent) reportSettingsService.getUrgentMention(guild) else HERE_MENTION
         guildLogger.logWithContent(
-            logEmbed = createReportEmbed(target, reporter.nicknameAndUsername, urgent),
+            logEmbed = createReportEmbed(target, reporter, urgent),
             associatedUser = target.author,
             guild = guild,
             actionType = GuildLogger.LogTypeAction.MODERATOR,
@@ -216,6 +236,14 @@ class ReportMessageContextMenu(
             .setEphemeral(true)
             .queue()
         return false
+    }
+
+    private fun tryConsumeRateLimitForConfirmation(event: ButtonInteractionEvent, guild: Guild, reporter: Member): Boolean {
+        if (reportRateLimitService.hasActiveToken(guild.idLong, reporter.idLong)) {
+            return true
+        }
+
+        return tryConsumeRateLimit(event, guild, reporter)
     }
 
     private fun buildUrgentConfirmationButtons(guildId: Long, target: Message, reporterId: Long): List<Button> {
@@ -247,12 +275,12 @@ class ReportMessageContextMenu(
         )
     }
 
-    private fun createReportEmbed(target: Message, reporterName: String, urgent: Boolean): EmbedBuilder {
+    private fun createReportEmbed(target: Message, reporter: Member, urgent: Boolean): EmbedBuilder {
         val authorName = target.member?.nicknameAndUsername ?: target.author.name
         val embed = EmbedBuilder()
             .setColor(if (urgent) Color.RED else Color.YELLOW)
             .setTitle(if (urgent) "Urgent message report" else "Message report")
-            .addField("Reporter", reporterName, true)
+            .addField("Reporter", "${reporter.nicknameAndUsername} (${reporter.id})", true)
             .addField("Reported user", authorName, true)
             .addField("Channel", target.guildChannel.asMention, true)
             .addField("Message URL", "[Link](${target.jumpUrl})", false)
