@@ -6,11 +6,13 @@ import be.duncanc.discordmodbot.logging.persistence.LoggingSettings
 import be.duncanc.discordmodbot.logging.persistence.LoggingSettingsRepository
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.audit.ActionType
 import net.dv8tion.jda.api.audit.AuditLogEntry
 import net.dv8tion.jda.api.audit.AuditLogOption
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
@@ -626,6 +628,40 @@ class GuildLogger
         actionType: LogTypeAction,
         bytes: ByteArray? = null
     ) {
+        logInternal(logEmbed, associatedUser, guild, embeds, actionType, bytes, null)
+    }
+
+    fun logWithContent(
+        logEmbed: EmbedBuilder,
+        associatedUser: User? = null,
+        guild: Guild,
+        embeds: List<MessageEmbed>? = null,
+        actionType: LogTypeAction,
+        content: String
+    ) {
+        logInternal(logEmbed, associatedUser, guild, embeds, actionType, null, content)
+    }
+
+    fun canSendModeratorLog(guild: Guild): Boolean {
+        val channelId = loggingSettingsRepository.findById(guild.idLong).orElse(null)?.modLogChannel ?: return false
+        val channel = guild.getTextChannelById(channelId) ?: return false
+        return guild.selfMember.hasPermission(
+            channel,
+            Permission.VIEW_CHANNEL,
+            Permission.MESSAGE_SEND,
+            Permission.MESSAGE_EMBED_LINKS
+        )
+    }
+
+    private fun logInternal(
+        logEmbed: EmbedBuilder,
+        associatedUser: User? = null,
+        guild: Guild,
+        embeds: List<MessageEmbed>? = null,
+        actionType: LogTypeAction,
+        bytes: ByteArray? = null,
+        content: String? = null
+    ) {
         val logSettings = loggingSettingsRepository.findById(guild.idLong).orElse(null)
             ?: return
 
@@ -642,7 +678,15 @@ class GuildLogger
                 logEmbed.setFooter(associatedUser.id, associatedUser.effectiveAvatarUrl)
             }
             if (bytes == null) {
-                targetChannel.sendMessageEmbeds(logEmbed.build()).queue()
+                val message = MessageCreateBuilder()
+                    .setEmbeds(logEmbed.build())
+                if (content != null) {
+                    message.addContent(content)
+                        .setAllowedMentions(
+                            setOf(Message.MentionType.EVERYONE, Message.MentionType.HERE, Message.MentionType.ROLE)
+                        )
+                }
+                targetChannel.sendMessage(message.build()).queue()
             } else {
                 targetChannel.sendFiles(FileUpload.fromData(bytes, "chat.log")).queue {
                     it.editMessage(MessageEditData.fromEmbeds(logEmbed.build())).queue()
