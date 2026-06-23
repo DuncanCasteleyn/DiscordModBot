@@ -12,12 +12,12 @@ plugins {
     kotlin("kapt")
 }
 
-val jdaVersion: String by project
-val commonsCollections4Version: String by project
-val orgJSONVersion: String by project
-val mockitoKotlinVersion: String by project
-val jetbrainsAnnotationsVersion: String by project
-val springModulithVersion: String by project
+val jdaVersion = project.property("jdaVersion") as String
+val commonsCollections4Version = project.property("commonsCollections4Version") as String
+val orgJSONVersion = project.property("orgJSONVersion") as String
+val mockitoKotlinVersion = project.property("mockitoKotlinVersion") as String
+val jetbrainsAnnotationsVersion = project.property("jetbrainsAnnotationsVersion") as String
+val springModulithVersion = project.property("springModulithVersion") as String
 
 val mockitoAgent = configurations.create("mockitoAgent")
 dependencies {
@@ -52,7 +52,6 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
     testImplementation("org.springframework.boot:spring-boot-starter-data-redis-test")
     testImplementation("org.springframework.boot:spring-boot-starter-flyway-test")
-    testImplementation("org.springframework.boot:spring-boot-starter-data-redis-test")
     testImplementation("org.springframework.boot:spring-boot-starter-restclient-test")
     testImplementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion")
     testImplementation("org.springframework.modulith:spring-modulith-starter-test")
