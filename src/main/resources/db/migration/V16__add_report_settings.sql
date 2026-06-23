@@ -2,6 +2,7 @@ create table `report_settings`
 (
     `guild_id`       bigint not null,
     `urgent_role_id` bigint null,
+    `enabled`        boolean not null default false,
     primary key (`guild_id`)
 );
 
