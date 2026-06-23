@@ -92,6 +92,12 @@ class ReportMessageContextMenu(
         }
 
         if (existingState == ReportedMessageState.NON_URGENT) {
+            if (reportRateLimitService.hasActiveToken(guild.idLong, reporter.idLong)) {
+                event.reply("You can only report one message every ${reportRateLimitService.rateLimitDescription()}.")
+                    .setEphemeral(true)
+                    .queue()
+                return
+            }
             event.reply("This message was already reported as non-urgent. Confirm if you want to report it as urgent.")
                 .setEphemeral(true)
                 .addComponents(ActionRow.of(buildUrgentConfirmationButtons(guild.idLong, target, reporter.idLong)))
@@ -170,7 +176,7 @@ class ReportMessageContextMenu(
             return
         }
 
-        if (!tryConsumeRateLimitForConfirmation(event, guild, reporter)) {
+        if (!tryConsumeRateLimit(event, guild, reporter)) {
             return
         }
 
@@ -236,14 +242,6 @@ class ReportMessageContextMenu(
             .setEphemeral(true)
             .queue()
         return false
-    }
-
-    private fun tryConsumeRateLimitForConfirmation(event: ButtonInteractionEvent, guild: Guild, reporter: Member): Boolean {
-        if (reportRateLimitService.hasActiveToken(guild.idLong, reporter.idLong)) {
-            return true
-        }
-
-        return tryConsumeRateLimit(event, guild, reporter)
     }
 
     private fun buildUrgentConfirmationButtons(guildId: Long, target: Message, reporterId: Long): List<Button> {
