@@ -162,6 +162,7 @@ class ReportMessageContextMenuTest {
         assertTrue(embed.fields.any { it.name == "Attachment(s)" && it.value == "https://example.invalid/image.png" })
         verify(reportedMessageService).markReported(1L, 123L, 456L, urgent = false)
         verify(event).reply("Your report has been sent to the moderation team.")
+        verify(replyAction).queue()
     }
 
     @Test
@@ -183,6 +184,7 @@ class ReportMessageContextMenuTest {
         verify(reportedMessageService).markReported(1L, 123L, 456L, urgent = true)
         assertEquals("Urgent message report", embedCaptor.firstValue.build().title)
         verify(event).reply("Your report has been sent to the moderation team.")
+        verify(replyAction).queue()
     }
 
     @Test
@@ -202,6 +204,7 @@ class ReportMessageContextMenuTest {
         )
         verify(reportedMessageService).markReported(1L, 123L, 456L, urgent = true)
         verify(event).reply("Your report has been sent to the moderation team.")
+        verify(replyAction).queue()
     }
 
     @Test
@@ -228,12 +231,14 @@ class ReportMessageContextMenuTest {
         stubReporterAndTargetIds("Urgent Report Message")
         whenever(reportedMessageService.getState(1L, 123L, 456L)).thenReturn(ReportedMessageState.NON_URGENT)
         whenever(reportRateLimitService.hasActiveToken(1L, 99L)).thenReturn(false)
+        whenever(guildLogger.canSendModeratorLog(guild)).thenReturn(true)
         whenever(replyAction.addComponents(any<ActionRow>())).thenReturn(replyAction)
 
         command.onMessageContextInteraction(event)
 
         verify(event).reply("This message was already reported as non-urgent. Confirm if you want to report it as urgent.")
         verify(replyAction).addComponents(any<ActionRow>())
+        verify(replyAction).queue()
         verify(reportRateLimitService, never()).tryConsume(any(), any())
     }
 
@@ -255,12 +260,12 @@ class ReportMessageContextMenuTest {
     fun `urgent confirmation is rejected while rate limited`() {
         stubUrgentConfirmationRateLimited()
         whenever(reportedMessageService.getState(1L, 123L, 456L)).thenReturn(ReportedMessageState.NON_URGENT)
-        whenever(reportRateLimitService.tryConsume(1L, 99L)).thenReturn(false)
-        whenever(reportRateLimitService.rateLimitDescription()).thenReturn("5 minutes")
 
         command.onButtonInteraction(buttonEvent)
 
-        verify(buttonEvent).reply("You can only report one message every 5 minutes.")
+        verify(buttonEvent).editMessage("You can only report one message every 5 minutes.")
+        verify(editAction).setComponents(emptyList<ActionRow>())
+        verify(editAction).queue()
         verify(guildLogger, never()).logWithContent(
             any<EmbedBuilder>(),
             any<User>(),
@@ -327,15 +332,16 @@ class ReportMessageContextMenuTest {
         )
         verify(reportedMessageService).markUrgent(1L, 123L, 456L)
         verify(buttonEvent).deferEdit()
+        verify(deferredEditAction).queue(any<Consumer<InteractionHook>>())
         verify(interactionHook).editOriginal("Your urgent report has been sent to the moderation team.")
         verify(hookEditAction).setComponents(emptyList<ActionRow>())
+        verify(hookEditAction).queue()
     }
 
     @Test
     fun `urgent confirmation updates deferred response when message retrieval fails`() {
         stubUrgentConfirmation(includeRetrievedMessageDetails = false)
         whenever(reportedMessageService.getState(1L, 123L, 456L)).thenReturn(ReportedMessageState.NON_URGENT)
-        whenever(reportRateLimitService.tryConsume(1L, 99L)).thenReturn(true)
         whenever(buttonEvent.jda).thenReturn(jda)
         whenever(jda.getChannelById(MessageChannel::class.java, 123L)).thenReturn(messageChannel)
         whenever(messageChannel.retrieveMessageById(456L)).thenReturn(retrieveMessageAction)
@@ -344,8 +350,11 @@ class ReportMessageContextMenuTest {
         command.onButtonInteraction(buttonEvent)
 
         verify(buttonEvent).deferEdit()
+        verify(deferredEditAction).queue(any<Consumer<InteractionHook>>())
         verify(interactionHook).editOriginal("I could not find that message anymore.")
         verify(hookEditAction).setComponents(emptyList<ActionRow>())
+        verify(hookEditAction).queue()
+        verify(reportRateLimitService, never()).tryConsume(any(), any())
         verify(guildLogger, never()).logWithContent(
             any<EmbedBuilder>(),
             any<User>(),
@@ -364,6 +373,7 @@ class ReportMessageContextMenuTest {
         command.onMessageContextInteraction(event)
 
         verify(event).reply("You can only report one message every 5 minutes.")
+        verify(replyAction).queue()
         verify(guildLogger, never()).logWithContent(
             any<EmbedBuilder>(),
             any<User>(),
@@ -472,6 +482,8 @@ class ReportMessageContextMenuTest {
         command.onButtonInteraction(buttonEvent)
 
         verify(buttonEvent).editMessage("Message reporting is not enabled on this server.")
+        verify(editAction).setComponents(emptyList<ActionRow>())
+        verify(editAction).queue()
         verify(guildLogger, never()).logWithContent(
             any<EmbedBuilder>(),
             any<User>(),
@@ -495,6 +507,7 @@ class ReportMessageContextMenuTest {
 
         verify(buttonEvent).editMessage("Urgent report cancelled.")
         verify(editAction).setComponents(emptyList<ActionRow>())
+        verify(editAction).queue()
     }
 
     @Test
@@ -529,6 +542,7 @@ class ReportMessageContextMenuTest {
         verify(event).reply(
             "Message reporting is not configured on this server. The bot needs a moderator log channel with permission to send messages and embeds."
         )
+        verify(replyAction).queue()
         verify(guildLogger, never()).logWithContent(
             any<EmbedBuilder>(),
             any<User>(),
@@ -592,10 +606,9 @@ class ReportMessageContextMenuTest {
         whenever(muteService.isUserMuted(1L, 99L)).thenReturn(false)
         whenever(reportSettingsService.isReportingEnabled(1L)).thenReturn(true)
         whenever(reportSettingsService.isUserBlocked(1L, 99L)).thenReturn(false)
-        whenever(guildLogger.canSendModeratorLog(guild)).thenReturn(true)
         stubTargetMessageIds()
         whenever(reportedMessageService.getState(1L, 123L, 456L)).thenReturn(null)
-        whenever(reportRateLimitService.tryConsume(1L, 99L)).thenReturn(false)
+        whenever(reportRateLimitService.hasActiveToken(1L, 99L)).thenReturn(true)
         whenever(reportRateLimitService.rateLimitDescription()).thenReturn("5 minutes")
     }
 
@@ -700,15 +713,16 @@ class ReportMessageContextMenuTest {
         whenever(reporterUser.idLong).thenReturn(99L)
         whenever(buttonEvent.guild).thenReturn(guild)
         whenever(buttonEvent.member).thenReturn(reporter)
-        whenever(buttonEvent.reply(any<String>())).thenReturn(replyAction)
-        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+        whenever(buttonEvent.editMessage(any<String>())).thenReturn(editAction)
+        whenever(editAction.setComponents(any<List<ActionRow>>())).thenReturn(editAction)
         whenever(guild.idLong).thenReturn(1L)
         whenever(reporter.idLong).thenReturn(99L)
         whenever(reporter.isTimedOut).thenReturn(false)
         whenever(muteService.isUserMuted(1L, 99L)).thenReturn(false)
         whenever(reportSettingsService.isReportingEnabled(1L)).thenReturn(true)
         whenever(reportSettingsService.isUserBlocked(1L, 99L)).thenReturn(false)
-        whenever(guildLogger.canSendModeratorLog(guild)).thenReturn(true)
+        whenever(reportRateLimitService.hasActiveToken(1L, 99L)).thenReturn(true)
+        whenever(reportRateLimitService.rateLimitDescription()).thenReturn("5 minutes")
     }
 
     private fun stubReportWithNullMember(commandName: String) {

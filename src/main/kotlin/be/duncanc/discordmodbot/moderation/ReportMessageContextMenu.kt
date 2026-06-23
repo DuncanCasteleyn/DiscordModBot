@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
+import net.dv8tion.jda.api.interactions.InteractionHook
 import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
@@ -98,9 +99,20 @@ class ReportMessageContextMenu(
                     .queue()
                 return
             }
+            if (!guildLogger.canSendModeratorLog(guild)) {
+                event.reply(NO_MOD_LOG_CHANNEL_MESSAGE).setEphemeral(true).queue()
+                return
+            }
             event.reply("This message was already reported as non-urgent. Confirm if you want to report it as urgent.")
                 .setEphemeral(true)
                 .addComponents(ActionRow.of(buildUrgentConfirmationButtons(guild.idLong, target, reporter.idLong)))
+                .queue()
+            return
+        }
+
+        if (reportRateLimitService.hasActiveToken(guild.idLong, reporter.idLong)) {
+            event.reply("You can only report one message every ${reportRateLimitService.rateLimitDescription()}.")
+                .setEphemeral(true)
                 .queue()
             return
         }
@@ -110,11 +122,12 @@ class ReportMessageContextMenu(
             return
         }
 
+        logReport(guild, reporter, target, urgent)
+
         if (!tryConsumeRateLimit(event, guild, reporter)) {
             return
         }
 
-        logReport(guild, reporter, target, urgent)
         reportedMessageService.markReported(guild.idLong, target.guildChannel.idLong, target.idLong, urgent)
         event.reply("Your report has been sent to the moderation team.").setEphemeral(true).queue()
     }
@@ -171,12 +184,15 @@ class ReportMessageContextMenu(
             return
         }
 
-        if (!guildLogger.canSendModeratorLog(guild)) {
-            event.editMessage(NO_MOD_LOG_CHANNEL_MESSAGE).setComponents(emptyList()).queue()
+        if (reportRateLimitService.hasActiveToken(guild.idLong, reporter.idLong)) {
+            event.editMessage("You can only report one message every ${reportRateLimitService.rateLimitDescription()}.")
+                .setComponents(emptyList())
+                .queue()
             return
         }
 
-        if (!tryConsumeRateLimit(event, guild, reporter)) {
+        if (!guildLogger.canSendModeratorLog(guild)) {
+            event.editMessage(NO_MOD_LOG_CHANNEL_MESSAGE).setComponents(emptyList()).queue()
             return
         }
 
@@ -190,6 +206,9 @@ class ReportMessageContextMenu(
             channel.retrieveMessageById(action.messageId).queue(
                 { message ->
                     logReport(guild, reporter, message, urgent = true)
+                    if (!tryConsumeRateLimit(hook, guild, reporter)) {
+                        return@queue
+                    }
                     reportedMessageService.markUrgent(guild.idLong, action.channelId, action.messageId)
                     hook.editOriginal("Your urgent report has been sent to the moderation team.")
                         .setComponents(emptyList())
@@ -240,6 +259,17 @@ class ReportMessageContextMenu(
 
         event.reply("You can only report one message every ${reportRateLimitService.rateLimitDescription()}.")
             .setEphemeral(true)
+            .queue()
+        return false
+    }
+
+    private fun tryConsumeRateLimit(hook: InteractionHook, guild: Guild, reporter: Member): Boolean {
+        if (reportRateLimitService.tryConsume(guild.idLong, reporter.idLong)) {
+            return true
+        }
+
+        hook.editOriginal("You can only report one message every ${reportRateLimitService.rateLimitDescription()}.")
+            .setComponents(emptyList())
             .queue()
         return false
     }
