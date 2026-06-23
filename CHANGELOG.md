@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.13.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.12.2...v2.13.0) (2026-06-23)
+
+
+### Features
+
+* add message reporting ([#702](https://github.com/DuncanCasteleyn/DiscordModBot/issues/702)) ([d9fd162](https://github.com/DuncanCasteleyn/DiscordModBot/commit/d9fd1627f2568ece9cc88e2b4113d5f2f0a61024))
+* encrypt stored discord messages ([#700](https://github.com/DuncanCasteleyn/DiscordModBot/issues/700)) ([b632abd](https://github.com/DuncanCasteleyn/DiscordModBot/commit/b632abd1e905d26289cfdf63886038ec057960db))
+
 ## [2.12.2](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.12.1...v2.12.2) (2026-06-12)
 
 
