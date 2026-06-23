@@ -1,31 +1,19 @@
 package be.duncanc.discordmodbot.logging
 
-import be.duncanc.discordmodbot.logging.persistence.DiscordMessage
+import be.duncanc.discordmodbot.logging.persistence.LoggingSettings
 import be.duncanc.discordmodbot.logging.persistence.LoggingSettingsRepository
-import net.dv8tion.jda.api.JDA
-import net.dv8tion.jda.api.audit.ActionType
-import net.dv8tion.jda.api.audit.AuditLogEntry
-import net.dv8tion.jda.api.audit.AuditLogOption
+import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
-import net.dv8tion.jda.api.entities.SelfUser
-import net.dv8tion.jda.api.entities.User
-import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
-import net.dv8tion.jda.api.events.message.MessageDeleteEvent
-import net.dv8tion.jda.api.requests.restaction.CacheRestAction
-import net.dv8tion.jda.api.requests.restaction.pagination.AuditLogPaginationAction
-import net.dv8tion.jda.api.requests.restaction.pagination.PaginationAction
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.BeforeEach
+import net.dv8tion.jda.api.entities.SelfMember
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.inOrder
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.Optional
 
 @ExtendWith(MockitoExtension::class)
 class GuildLoggerTest {
@@ -39,81 +27,99 @@ class GuildLoggerTest {
     private lateinit var messageDeleteAuditStateRegistry: MessageDeleteAuditStateRegistry
 
     @Mock
-    private lateinit var event: MessageDeleteEvent
-
-    @Mock
     private lateinit var guild: Guild
 
     @Mock
-    private lateinit var channel: MessageChannelUnion
+    private lateinit var textChannel: TextChannel
 
     @Mock
-    private lateinit var jda: JDA
+    private lateinit var selfMember: SelfMember
 
-    @Mock
-    private lateinit var selfUser: SelfUser
+    @Test
+    fun `canSendModeratorLog returns false when no logging settings exist`() {
+        val guildLogger = guildLogger()
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(loggingSettingsRepository.findById(1L)).thenReturn(Optional.empty())
 
-    @Mock
-    private lateinit var moderator: User
+        val canSend = guildLogger.canSendModeratorLog(guild)
 
-    @Mock
-    private lateinit var auditLogEntry: AuditLogEntry
-
-    @Mock
-    private lateinit var auditLogPaginationAction: AuditLogPaginationAction
-
-    @Mock
-    private lateinit var auditLogIterator: PaginationAction.PaginationIterator<AuditLogEntry>
-
-    @Mock
-    private lateinit var userLookup: CacheRestAction<User>
-
-    private lateinit var guildLogger: GuildLogger
-
-    @BeforeEach
-    fun setUp() {
-        guildLogger = GuildLogger(messageHistory, loggingSettingsRepository, messageDeleteAuditStateRegistry)
+        assertFalse(canSend)
     }
 
     @Test
-    fun `log deleted message resolves audit state before starting user lookup`() {
-        val deletedMessage = DiscordMessage(
-            messageId = 100L,
-            guildId = 1L,
-            channelId = 10L,
-            userId = 20L,
-            content = "deleted content"
-        )
-
-        whenever(event.guild).thenReturn(guild)
-        whenever(event.channel).thenReturn(channel)
-        whenever(event.jda).thenReturn(jda)
-        whenever(channel.idLong).thenReturn(10L)
+    fun `canSendModeratorLog returns false when moderator log channel is not configured`() {
+        val guildLogger = guildLogger()
         whenever(guild.idLong).thenReturn(1L)
-        whenever(guild.retrieveAuditLogs()).thenReturn(auditLogPaginationAction)
-        whenever(auditLogPaginationAction.cache(false)).thenReturn(auditLogPaginationAction)
-        whenever(auditLogPaginationAction.limit(5)).thenReturn(auditLogPaginationAction)
-        whenever(auditLogPaginationAction.iterator()).thenReturn(auditLogIterator)
-        whenever(auditLogIterator.hasNext()).thenReturn(true, false)
-        whenever(auditLogIterator.next()).thenReturn(auditLogEntry)
-        whenever(auditLogEntry.idLong).thenReturn(42L)
-        whenever(auditLogEntry.type).thenReturn(ActionType.MESSAGE_DELETE)
-        whenever(auditLogEntry.targetIdLong).thenReturn(20L)
-        whenever(auditLogEntry.user).thenReturn(moderator)
-        whenever(auditLogEntry.getOption<String>(AuditLogOption.CHANNEL)).thenReturn("10")
-        whenever(auditLogEntry.getOption<String>(AuditLogOption.COUNT)).thenReturn("1")
-        whenever(messageDeleteAuditStateRegistry.get(1L, 10L, 20L)).thenReturn(null)
-        whenever(jda.selfUser).thenReturn(selfUser)
-        whenever(jda.retrieveUserById(20L)).thenReturn(userLookup)
+        whenever(loggingSettingsRepository.findById(1L))
+            .thenReturn(Optional.of(LoggingSettings(1L, modLogChannel = null)))
 
-        guildLogger.logDeletedMessage(event, deletedMessage, attachmentString = null)
+        val canSend = guildLogger.canSendModeratorLog(guild)
 
-        val stateCaptor = argumentCaptor<MessageDeleteAuditState>()
-        val inOrder = inOrder(messageDeleteAuditStateRegistry, jda)
-        inOrder.verify(messageDeleteAuditStateRegistry).get(1L, 10L, 20L)
-        inOrder.verify(messageDeleteAuditStateRegistry).remember(eq(1L), eq(10L), eq(20L), stateCaptor.capture())
-        inOrder.verify(jda).retrieveUserById(20L)
-        verify(userLookup).queue(any())
-        assertEquals(MessageDeleteAuditState(consumedCounts = mapOf(42L to 1)), stateCaptor.firstValue)
+        assertFalse(canSend)
+    }
+
+    @Test
+    fun `canSendModeratorLog returns false when configured channel does not exist`() {
+        val guildLogger = guildLogger()
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(loggingSettingsRepository.findById(1L))
+            .thenReturn(Optional.of(LoggingSettings(1L, modLogChannel = 123L)))
+        whenever(guild.getTextChannelById(123L)).thenReturn(null)
+
+        val canSend = guildLogger.canSendModeratorLog(guild)
+
+        assertFalse(canSend)
+    }
+
+    @Test
+    fun `canSendModeratorLog returns false when bot lacks required permissions`() {
+        val guildLogger = guildLogger()
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(loggingSettingsRepository.findById(1L))
+            .thenReturn(Optional.of(LoggingSettings(1L, modLogChannel = 123L)))
+        whenever(guild.getTextChannelById(123L)).thenReturn(textChannel)
+        whenever(guild.selfMember).thenReturn(selfMember)
+        whenever(
+            selfMember.hasPermission(
+                textChannel,
+                Permission.VIEW_CHANNEL,
+                Permission.MESSAGE_SEND,
+                Permission.MESSAGE_EMBED_LINKS
+            )
+        ).thenReturn(false)
+
+        val canSend = guildLogger.canSendModeratorLog(guild)
+
+        assertFalse(canSend)
+    }
+
+    @Test
+    fun `canSendModeratorLog returns true when channel exists and bot has permissions`() {
+        val guildLogger = guildLogger()
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(loggingSettingsRepository.findById(1L))
+            .thenReturn(Optional.of(LoggingSettings(1L, modLogChannel = 123L)))
+        whenever(guild.getTextChannelById(123L)).thenReturn(textChannel)
+        whenever(guild.selfMember).thenReturn(selfMember)
+        whenever(
+            selfMember.hasPermission(
+                textChannel,
+                Permission.VIEW_CHANNEL,
+                Permission.MESSAGE_SEND,
+                Permission.MESSAGE_EMBED_LINKS
+            )
+        ).thenReturn(true)
+
+        val canSend = guildLogger.canSendModeratorLog(guild)
+
+        assertTrue(canSend)
+    }
+
+    private fun guildLogger(): GuildLogger {
+        return GuildLogger(
+            messageHistory,
+            loggingSettingsRepository,
+            messageDeleteAuditStateRegistry
+        )
     }
 }

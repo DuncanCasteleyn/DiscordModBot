@@ -6,6 +6,7 @@ import be.duncanc.discordmodbot.logging.persistence.LoggingSettings
 import be.duncanc.discordmodbot.logging.persistence.LoggingSettingsRepository
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.audit.ActionType
 import net.dv8tion.jda.api.audit.AuditLogEntry
 import net.dv8tion.jda.api.audit.AuditLogOption
@@ -641,9 +642,15 @@ class GuildLogger
         logInternal(logEmbed, associatedUser, guild, embeds, actionType, null, content)
     }
 
-    fun hasModeratorLogChannel(guild: Guild): Boolean {
+    fun canSendModeratorLog(guild: Guild): Boolean {
         val channelId = loggingSettingsRepository.findById(guild.idLong).orElse(null)?.modLogChannel ?: return false
-        return guild.getTextChannelById(channelId) != null
+        val channel = guild.getTextChannelById(channelId) ?: return false
+        return guild.selfMember.hasPermission(
+            channel,
+            Permission.VIEW_CHANNEL,
+            Permission.MESSAGE_SEND,
+            Permission.MESSAGE_EMBED_LINKS
+        )
     }
 
     private fun logInternal(

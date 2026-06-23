@@ -36,7 +36,7 @@ class ReportMessageContextMenu(
         private const val ALREADY_REPORTED_MESSAGE = "This issue was already reported."
         private const val HERE_MENTION = "@here"
         private const val NO_MOD_LOG_CHANNEL_MESSAGE =
-            "Message reporting is not configured on this server. A moderator log channel is required."
+            "Message reporting is not configured on this server. The bot needs a moderator log channel with permission to send messages and embeds."
     }
 
     private data class UrgentConfirmationAction(
@@ -105,7 +105,7 @@ class ReportMessageContextMenu(
             return
         }
 
-        if (!guildLogger.hasModeratorLogChannel(guild)) {
+        if (!guildLogger.canSendModeratorLog(guild)) {
             event.reply(NO_MOD_LOG_CHANNEL_MESSAGE).setEphemeral(true).queue()
             return
         }
@@ -171,7 +171,7 @@ class ReportMessageContextMenu(
             return
         }
 
-        if (!guildLogger.hasModeratorLogChannel(guild)) {
+        if (!guildLogger.canSendModeratorLog(guild)) {
             event.editMessage(NO_MOD_LOG_CHANNEL_MESSAGE).setComponents(emptyList()).queue()
             return
         }

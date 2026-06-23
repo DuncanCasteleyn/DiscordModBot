@@ -522,12 +522,12 @@ class ReportMessageContextMenuTest {
     @Test
     fun `report is rejected when no moderator log channel is configured`() {
         stubReporterAndTargetIdsForModLogCheck("Report Message")
-        whenever(guildLogger.hasModeratorLogChannel(guild)).thenReturn(false)
+        whenever(guildLogger.canSendModeratorLog(guild)).thenReturn(false)
 
         command.onMessageContextInteraction(event)
 
         verify(event).reply(
-            "Message reporting is not configured on this server. A moderator log channel is required."
+            "Message reporting is not configured on this server. The bot needs a moderator log channel with permission to send messages and embeds."
         )
         verify(guildLogger, never()).logWithContent(
             any<EmbedBuilder>(),
@@ -552,7 +552,7 @@ class ReportMessageContextMenuTest {
     private fun stubReport(commandName: String, timedOut: Boolean = false, muted: Boolean = false) {
         stubReporterContext(commandName, timedOut, muted)
         stubTargetMessage()
-        whenever(guildLogger.hasModeratorLogChannel(guild)).thenReturn(true)
+        whenever(guildLogger.canSendModeratorLog(guild)).thenReturn(true)
         whenever(reportedMessageService.getState(1L, 123L, 456L)).thenReturn(null)
     }
 
@@ -592,7 +592,7 @@ class ReportMessageContextMenuTest {
         whenever(muteService.isUserMuted(1L, 99L)).thenReturn(false)
         whenever(reportSettingsService.isReportingEnabled(1L)).thenReturn(true)
         whenever(reportSettingsService.isUserBlocked(1L, 99L)).thenReturn(false)
-        whenever(guildLogger.hasModeratorLogChannel(guild)).thenReturn(true)
+        whenever(guildLogger.canSendModeratorLog(guild)).thenReturn(true)
         stubTargetMessageIds()
         whenever(reportedMessageService.getState(1L, 123L, 456L)).thenReturn(null)
         whenever(reportRateLimitService.tryConsume(1L, 99L)).thenReturn(false)
@@ -684,7 +684,7 @@ class ReportMessageContextMenuTest {
         whenever(muteService.isUserMuted(1L, 99L)).thenReturn(false)
         whenever(reportSettingsService.isReportingEnabled(1L)).thenReturn(true)
         whenever(reportSettingsService.isUserBlocked(1L, 99L)).thenReturn(false)
-        whenever(guildLogger.hasModeratorLogChannel(guild)).thenReturn(true)
+        whenever(guildLogger.canSendModeratorLog(guild)).thenReturn(true)
         if (includeRetrievedMessageDetails) {
             whenever(reporter.user).thenReturn(reporterUser)
             whenever(reporter.nickname).thenReturn("Duncan")
@@ -708,7 +708,7 @@ class ReportMessageContextMenuTest {
         whenever(muteService.isUserMuted(1L, 99L)).thenReturn(false)
         whenever(reportSettingsService.isReportingEnabled(1L)).thenReturn(true)
         whenever(reportSettingsService.isUserBlocked(1L, 99L)).thenReturn(false)
-        whenever(guildLogger.hasModeratorLogChannel(guild)).thenReturn(true)
+        whenever(guildLogger.canSendModeratorLog(guild)).thenReturn(true)
     }
 
     private fun stubReportWithNullMember(commandName: String) {
@@ -726,7 +726,7 @@ class ReportMessageContextMenuTest {
         whenever(targetMessage.contentRaw).thenReturn("This should be reviewed")
         whenever(targetMessage.attachments).thenReturn(listOf(attachment))
         whenever(attachment.url).thenReturn("https://example.invalid/image.png")
-        whenever(guildLogger.hasModeratorLogChannel(guild)).thenReturn(true)
+        whenever(guildLogger.canSendModeratorLog(guild)).thenReturn(true)
         whenever(reportedMessageService.getState(1L, 123L, 456L)).thenReturn(null)
     }
 
