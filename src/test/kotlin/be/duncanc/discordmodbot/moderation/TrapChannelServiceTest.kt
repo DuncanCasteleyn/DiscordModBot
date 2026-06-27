@@ -108,6 +108,7 @@ class TrapChannelServiceTest {
         val embed = embedCaptor.firstValue
         kotlin.test.assertEquals(Color.RED, embed.color)
         kotlin.test.assertEquals("Spambot trap triggered", embed.title)
+        kotlin.test.assertEquals("spammer#0001", embed.author!!.name)
         kotlin.test.assertTrue(embed.description!!.contains("automatically banned"))
         kotlin.test.assertEquals("5", embed.footer!!.text)
         kotlin.test.assertNotNull(embed.timestamp)
@@ -187,7 +188,9 @@ class TrapChannelServiceTest {
         whenever(member.idLong).thenReturn(5L)
         whenever(member.user).thenReturn(user)
         whenever(member.nickname).thenReturn("spammer")
+        whenever(user.id).thenReturn("5")
         whenever(user.name).thenReturn("spammer#0001")
+        whenever(user.effectiveAvatarUrl).thenReturn("https://cdn.discordapp.com/avatars/5/avatar.png")
         whenever(event.channel).thenReturn(channelUnion)
         whenever(channelUnion.idLong).thenReturn(99L)
         whenever(channelUnion.asMention).thenReturn("<#99>")

@@ -197,13 +197,15 @@ class TrapChannelService(
     }
 
     private fun postTrapWarning(channel: MessageChannelUnion, member: Member) {
+        val user = member.user
+
         val embed = EmbedBuilder()
             .setColor(Color.RED)
-            .setAuthor(member.nicknameAndUsername, null, member.user.effectiveAvatarUrl)
+            .setAuthor(user.name, null, user.effectiveAvatarUrl)
             .setTitle("Spambot trap triggered")
             .setDescription("This user was automatically banned for posting in the trap channel. Do not post here.")
             .setTimestamp(Instant.now())
-            .setFooter(member.id, member.user.effectiveAvatarUrl)
+            .setFooter(user.id, user.effectiveAvatarUrl)
             .build()
 
         channel.sendMessageEmbeds(embed).queue()
