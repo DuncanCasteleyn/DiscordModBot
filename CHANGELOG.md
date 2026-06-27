@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.14.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.13.0...v2.14.0) (2026-06-27)
+
+
+### Features
+
+* **moderation:** send trap channel warning as embed ([#710](https://github.com/DuncanCasteleyn/DiscordModBot/issues/710)) ([dea21ac](https://github.com/DuncanCasteleyn/DiscordModBot/commit/dea21acbeb937f5aef8a80243df380da664ec590))
+
+
+### Documentation
+
+* **agents:** refresh AGENTS.md and fix workflow filename typo ([feb235b](https://github.com/DuncanCasteleyn/DiscordModBot/commit/feb235b268f857d5bbf93f3019691dbbfd9659d1))
+
 ## [2.13.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.12.2...v2.13.0) (2026-06-23)
 
 
