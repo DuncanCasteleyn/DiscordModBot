@@ -23,6 +23,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.awt.Color
+import java.time.Instant
 import java.time.OffsetDateTime
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
@@ -39,11 +40,9 @@ class TrapChannelService(
     companion object {
         private val LOG = LoggerFactory.getLogger(TrapChannelService::class.java)
 
-        private const val TRAP_BAN_REASON = "Triggered the configured spam trap channel"
+        private const val TRAP_BAN_REASON = "Triggered the spam trap channel"
         private const val TRAP_UNBAN_REASON = "Automatic trap channel unban"
         private const val AUTO_UNBAN_DELAY_HOURS = 1L
-        private const val TRAP_WARNING_MESSAGE =
-            "%s was automatically banned for posting in this channel. This channel is a spambot trap. Do not post here."
     }
 
     private val pendingTrapActions = ConcurrentHashMap.newKeySet<String>()
@@ -109,7 +108,7 @@ class TrapChannelService(
                     trapChannelUnbanRepository.save(TrapChannelUnban(guild.idLong, member.idLong, scheduledUnbanAt))
                     pendingTrapActions.remove(actionKey)
                     logTrapBan(guild, member, event.channel.asMention, scheduledUnbanAt)
-                    postTrapWarning(event.channel, member.idLong)
+                    postTrapWarning(event.channel, member)
                 },
                 { throwable ->
                     LOG.warn("Failed to trap {} in guild {}", member.id, guild.id, throwable)
@@ -192,7 +191,18 @@ class TrapChannelService(
         guildLogger.log(logEmbed, guild = guild, actionType = GuildLogger.LogTypeAction.MODERATOR)
     }
 
-    private fun postTrapWarning(channel: MessageChannelUnion, userId: Long) {
-        channel.sendMessage(TRAP_WARNING_MESSAGE.format("<@$userId>")).queue()
+    private fun postTrapWarning(channel: MessageChannelUnion, member: Member) {
+        val embed = EmbedBuilder()
+            .setColor(Color.RED)
+            .setAuthor(member.nicknameAndUsername, null, member.user.effectiveAvatarUrl)
+            .setTitle("Spambot trap triggered")
+            .setDescription("This user was automatically banned for posting in the trap channel. Do not post here.")
+            .addField("User", member.nicknameAndUsername, true)
+            .addField("Reason", TRAP_BAN_REASON, false)
+            .setTimestamp(Instant.now())
+            .setFooter(member.id, member.user.effectiveAvatarUrl)
+            .build()
+
+        channel.sendMessageEmbeds(embed).queue()
     }
 }

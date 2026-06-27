@@ -18,6 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.*
+import java.awt.Color
 import java.time.OffsetDateTime
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -81,22 +82,27 @@ class TrapChannelServiceTest {
         stubTrapEvent()
         whenever(guild.ban(member, 10, TimeUnit.MINUTES)).thenReturn(banAction)
         whenever(banAction.reason(any())).thenReturn(banAction)
-        whenever(channelUnion.sendMessage(any<String>())).thenReturn(messageCreateAction)
+        whenever(channelUnion.sendMessageEmbeds(any<MessageEmbed>())).thenReturn(messageCreateAction)
         doSuccess(banAction)
 
         service.handleTrapMessage(event)
 
         verify(guild).ban(member, 10, TimeUnit.MINUTES)
-        verify(banAction).reason("Triggered the configured spam trap channel")
+        verify(banAction).reason("Triggered the spam trap channel")
 
         val unbanCaptor = argumentCaptor<TrapChannelUnban>()
         verify(trapChannelUnbanRepository).save(unbanCaptor.capture())
         kotlin.test.assertEquals(1L, unbanCaptor.firstValue.guildId)
         kotlin.test.assertEquals(5L, unbanCaptor.firstValue.userId)
 
-        verify(channelUnion).sendMessage(
-            "<@5> was automatically banned for posting in this channel. This channel is a spambot trap. Do not post here."
-        )
+        val embedCaptor = argumentCaptor<MessageEmbed>()
+        verify(channelUnion).sendMessageEmbeds(embedCaptor.capture())
+        val embed = embedCaptor.firstValue
+        kotlin.test.assertEquals(Color.RED, embed.color)
+        kotlin.test.assertEquals("Spambot trap triggered", embed.title)
+        kotlin.test.assertTrue(embed.description!!.contains("automatically banned"))
+        kotlin.test.assertEquals("5", embed.footer!!.text)
+        kotlin.test.assertNotNull(embed.timestamp)
         verify(messageCreateAction).queue()
 
         verify(guildLogger).log(
