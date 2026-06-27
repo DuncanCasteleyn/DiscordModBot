@@ -82,7 +82,7 @@ repositories {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(JavaVersion.VERSION_21.majorVersion))
+        languageVersion.set(JavaLanguageVersion.of(JavaVersion.VERSION_25.majorVersion))
     }
 }
 
@@ -95,10 +95,9 @@ tasks {
     withType<KotlinCompile> {
         compilerOptions {
             freeCompilerArgs.add("-Xjsr305=strict")
-            freeCompilerArgs.add("-Xannotation-default-target=param-property")
             freeCompilerArgs.add("-progressive")
 
-            jvmTarget = JvmTarget.JVM_21
+            jvmTarget = JvmTarget.JVM_25
         }
     }
     withType<Wrapper> {
