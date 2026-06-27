@@ -19,6 +19,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.*
 import java.awt.Color
+import java.time.Duration
 import java.time.OffsetDateTime
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -57,6 +58,9 @@ class TrapChannelServiceTest {
     private lateinit var channelUnion: MessageChannelUnion
 
     @Mock
+    private lateinit var timeoutAction: AuditableRestAction<Void>
+
+    @Mock
     private lateinit var banAction: AuditableRestAction<Void>
 
     @Mock
@@ -80,14 +84,18 @@ class TrapChannelServiceTest {
     @Test
     fun `message in configured trap channel bans user and schedules unban`() {
         stubTrapEvent()
-        whenever(guild.ban(member, 10, TimeUnit.MINUTES)).thenReturn(banAction)
+        whenever(member.timeoutFor(Duration.ofHours(1))).thenReturn(timeoutAction)
+        whenever(timeoutAction.reason(any())).thenReturn(timeoutAction)
+        whenever(member.ban(10, TimeUnit.MINUTES)).thenReturn(banAction)
         whenever(banAction.reason(any())).thenReturn(banAction)
         whenever(channelUnion.sendMessageEmbeds(any<MessageEmbed>())).thenReturn(messageCreateAction)
         doSuccess(banAction)
 
         service.handleTrapMessage(event)
 
-        verify(guild).ban(member, 10, TimeUnit.MINUTES)
+        verify(member).timeoutFor(Duration.ofHours(1))
+        verify(timeoutAction).reason("Triggered the spam trap channel")
+        verify(member).ban(10, TimeUnit.MINUTES)
         verify(banAction).reason("Triggered the spam trap channel")
 
         val unbanCaptor = argumentCaptor<TrapChannelUnban>()
