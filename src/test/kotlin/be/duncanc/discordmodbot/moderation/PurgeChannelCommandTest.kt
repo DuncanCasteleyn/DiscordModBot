@@ -198,16 +198,14 @@ class PurgeChannelCommandTest {
         whenever(slashEvent.getOption("target")).thenReturn(targetOption)
         whenever(targetOption.asLong).thenReturn(99L)
         whenever(slashEvent.deferReply(true)).thenReturn(replyAction)
-        doAnswer {
-            val consumer = it.arguments[0] as Consumer<InteractionHook>
+        doAnswer { (consumer: Consumer<InteractionHook>) ->
             consumer.accept(interactionHook)
             null
-        }.whenever(replyAction).queue(any<Consumer<InteractionHook>>())
+        }.whenever(replyAction).queue(any())
         whenever(interactionHook.editOriginal(any<String>())).thenReturn(editAction)
         whenever(textChannel.iterableHistory.cache(false)).thenReturn(messagePaginationAction)
         whenever(textChannel.name).thenReturn("general")
-        doAnswer {
-            val procedure = it.arguments[0] as Procedure<Message>
+        doAnswer { (procedure: Procedure<Message>) ->
             procedure.execute(message)
             procedure.execute(oldMessage)
             CompletableFuture.completedFuture(null)
@@ -255,11 +253,10 @@ class PurgeChannelCommandTest {
         whenever(slashEvent.getOption("to")).thenReturn(toOption)
         whenever(toOption.asString).thenReturn("200")
         whenever(slashEvent.deferReply(true)).thenReturn(replyAction)
-        doAnswer {
-            val consumer = it.arguments[0] as Consumer<InteractionHook>
+        doAnswer { (consumer: Consumer<InteractionHook>) ->
             consumer.accept(interactionHook)
             null
-        }.whenever(replyAction).queue(any<Consumer<InteractionHook>>())
+        }.whenever(replyAction).queue(any())
         whenever(interactionHook.editOriginal(any<String>())).thenReturn(editAction)
         whenever(textChannel.name).thenReturn("general")
         stubHistory(message, otherMessage, oldMessage, veryOldMessage)
@@ -294,11 +291,10 @@ class PurgeChannelCommandTest {
         whenever(slashEvent.getOption("to")).thenReturn(toOption)
         whenever(toOption.asString).thenReturn("200")
         whenever(slashEvent.deferReply(true)).thenReturn(replyAction)
-        doAnswer {
-            val consumer = it.arguments[0] as Consumer<InteractionHook>
+        doAnswer { (consumer: Consumer<InteractionHook>) ->
             consumer.accept(interactionHook)
             null
-        }.whenever(replyAction).queue(any<Consumer<InteractionHook>>())
+        }.whenever(replyAction).queue(any())
         whenever(interactionHook.editOriginal(any<String>())).thenReturn(editAction)
         whenever(textChannel.name).thenReturn("general")
         stubHistory(message, otherMessage, oldMessage, veryOldMessage)
@@ -335,11 +331,10 @@ class PurgeChannelCommandTest {
         whenever(slashEvent.getOption("to")).thenReturn(toOption)
         whenever(toOption.asString).thenReturn("200")
         whenever(slashEvent.deferReply(true)).thenReturn(replyAction)
-        doAnswer {
-            val consumer = it.arguments[0] as Consumer<InteractionHook>
+        doAnswer { (consumer: Consumer<InteractionHook>) ->
             consumer.accept(interactionHook)
             null
-        }.whenever(replyAction).queue(any<Consumer<InteractionHook>>())
+        }.whenever(replyAction).queue(any())
         whenever(interactionHook.editOriginal(any<String>())).thenReturn(editAction)
         whenever(textChannel.name).thenReturn("general")
         stubHistory(message, otherMessage, oldMessage, pastBoundaryMessage)
@@ -408,11 +403,10 @@ class PurgeChannelCommandTest {
         whenever(slashEvent.getOption("to")).thenReturn(toOption)
         whenever(toOption.asString).thenReturn("100")
         whenever(slashEvent.deferReply(true)).thenReturn(replyAction)
-        doAnswer {
-            val consumer = it.arguments[0] as Consumer<InteractionHook>
+        doAnswer { (consumer: Consumer<InteractionHook>) ->
             consumer.accept(interactionHook)
             null
-        }.whenever(replyAction).queue(any<Consumer<InteractionHook>>())
+        }.whenever(replyAction).queue(any())
         whenever(interactionHook.editOriginal(any<String>())).thenReturn(editAction)
         whenever(textChannel.name).thenReturn("general")
         val overflowMessage = message
@@ -489,8 +483,7 @@ class PurgeChannelCommandTest {
 
     private fun stubHistory(vararg messages: Message) {
         whenever(textChannel.iterableHistory.cache(false)).thenReturn(messagePaginationAction)
-        doAnswer {
-            val procedure = it.arguments[0] as Procedure<Message>
+        doAnswer { (procedure: Procedure<Message>) ->
             messages.forEach { message ->
                 if (!procedure.execute(message)) {
                     return@doAnswer CompletableFuture.completedFuture(null)

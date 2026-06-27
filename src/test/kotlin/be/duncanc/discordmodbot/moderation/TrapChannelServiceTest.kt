@@ -198,10 +198,8 @@ class TrapChannelServiceTest {
     }
 
     private fun doSuccess(action: RestAction<Void>) {
-        doAnswer {
-            @Suppress("UNCHECKED_CAST")
-            val success = it.getArgument<Consumer<Void?>>(0)
-            success.accept(null)
+        doAnswer { invocation ->
+            invocation.component1<Consumer<Void?>>().accept(null)
             null
         }.whenever(action).queue(any(), any())
     }

@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.interactions.InteractionHook
 import net.dv8tion.jda.api.interactions.modals.ModalMapping
 import net.dv8tion.jda.api.requests.restaction.WebhookMessageEditAction
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction
@@ -107,11 +108,10 @@ class WarnCommandTest {
         whenever(jda.registeredListeners).thenReturn(listOf(guildLogger))
         whenever(modalEvent.deferReply(true)).thenReturn(replyAction)
         whenever(hook.editOriginal(any<String>())).thenReturn(editAction)
-        doAnswer {
-            val consumer = it.arguments[0] as Consumer<net.dv8tion.jda.api.interactions.InteractionHook>
+        doAnswer { (consumer: Consumer<InteractionHook>) ->
             consumer.accept(hook)
             null
-        }.whenever(replyAction).queue(any<Consumer<net.dv8tion.jda.api.interactions.InteractionHook>>())
+        }.whenever(replyAction).queue(any())
 
         command.onModalInteraction(modalEvent)
 

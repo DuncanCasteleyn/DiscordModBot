@@ -686,11 +686,10 @@ class ReportMessageContextMenuTest {
         whenever(buttonEvent.deferEdit()).thenReturn(deferredEditAction)
         whenever(interactionHook.editOriginal(any<String>())).thenReturn(hookEditAction)
         whenever(hookEditAction.setComponents(any<List<ActionRow>>())).thenReturn(hookEditAction)
-        doAnswer {
-            val success = it.arguments[0] as Consumer<InteractionHook>
+        doAnswer { (success: Consumer<InteractionHook>) ->
             success.accept(interactionHook)
             null
-        }.whenever(deferredEditAction).queue(any<Consumer<InteractionHook>>())
+        }.whenever(deferredEditAction).queue(any())
         whenever(guild.idLong).thenReturn(1L)
         whenever(reporter.idLong).thenReturn(99L)
         whenever(reporter.isTimedOut).thenReturn(false)
@@ -788,18 +787,16 @@ class ReportMessageContextMenuTest {
     }
 
     private fun doRetrieveMessageSuccess() {
-        doAnswer {
-            val success = it.arguments[0] as Consumer<Message>
-            success.accept(targetMessage)
+        doAnswer { invocation ->
+            invocation.component1<Consumer<Message>>().accept(targetMessage)
             null
-        }.whenever(retrieveMessageAction).queue(any<Consumer<Message>>(), any<Consumer<Throwable>>())
+        }.whenever(retrieveMessageAction).queue(any(), any())
     }
 
     private fun doRetrieveMessageFailure() {
-        doAnswer {
-            val failure = it.arguments[1] as Consumer<Throwable>
-            failure.accept(RuntimeException("message not found"))
+        doAnswer { invocation ->
+            invocation.component2<Consumer<Throwable>>().accept(RuntimeException("message not found"))
             null
-        }.whenever(retrieveMessageAction).queue(any<Consumer<Message>>(), any<Consumer<Throwable>>())
+        }.whenever(retrieveMessageAction).queue(any(), any())
     }
 }

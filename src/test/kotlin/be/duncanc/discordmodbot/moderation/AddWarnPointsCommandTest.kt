@@ -467,7 +467,6 @@ class AddWarnPointsCommandTest {
         whenever(member.canInteract(targetMember)).thenReturn(true)
     }
 
-    @Suppress("UNCHECKED_CAST")
     private fun stubSuccessfulMuteModalFlow(
         unmuteDays: Int?,
         muteRoleConfigured: Boolean = true,
@@ -526,36 +525,31 @@ class AddWarnPointsCommandTest {
         }
         whenever(guild.addRoleToMember(targetMember, muteRole)).thenReturn(addRoleAction)
         whenever(addRoleAction.reason("Spamming")).thenReturn(addRoleAction)
-        doAnswer {
-            val consumer = it.arguments[0] as Consumer<InteractionHook>
+        doAnswer { (consumer: Consumer<InteractionHook>) ->
             consumer.accept(hook)
             null
-        }.whenever(replyAction).queue(any<Consumer<InteractionHook>>())
+        }.whenever(replyAction).queue(any())
         if (targetStillPresent && muteRoleAssignmentSucceeds) {
-            doAnswer {
-                val success = it.arguments[0] as Consumer<Void?>
-                success.accept(null)
+            doAnswer { invocation ->
+                invocation.component1<Consumer<Void?>>().accept(null)
                 null
-            }.whenever(addRoleAction).queue(any<Consumer<Void?>>(), any<Consumer<Throwable>>())
+            }.whenever(addRoleAction).queue(any(), any())
         } else if (targetStillPresent) {
-            doAnswer {
-                val failure = it.arguments[1] as Consumer<Throwable>
-                failure.accept(IllegalStateException("Missing permissions"))
+            doAnswer { invocation ->
+                invocation.component2<Consumer<Throwable>>().accept(IllegalStateException("Missing permissions"))
                 null
-            }.whenever(addRoleAction).queue(any<Consumer<Void?>>(), any<Consumer<Throwable>>())
+            }.whenever(addRoleAction).queue(any(), any())
         }
         whenever(targetUser.openPrivateChannel()).thenReturn(openPrivateChannelAction)
-        doAnswer {
-            val success = it.arguments[0] as Consumer<PrivateChannel>
-            success.accept(privateChannel)
+        doAnswer { invocation ->
+            invocation.component1<Consumer<PrivateChannel>>().accept(privateChannel)
             null
-        }.whenever(openPrivateChannelAction).queue(any<Consumer<PrivateChannel>>(), any<Consumer<Throwable>>())
+        }.whenever(openPrivateChannelAction).queue(any(), any())
         whenever(privateChannel.sendMessageEmbeds(any<MessageEmbed>())).thenReturn(messageCreateAction)
-        doAnswer {
-            val failure = it.arguments[1] as Consumer<Throwable>
-            failure.accept(IllegalStateException("DMs disabled"))
+        doAnswer { invocation ->
+            invocation.component2<Consumer<Throwable>>().accept(IllegalStateException("DMs disabled"))
             null
-        }.whenever(messageCreateAction).queue(any<Consumer<Message>>(), any<Consumer<Throwable>>())
+        }.whenever(messageCreateAction).queue(any(), any())
         whenever(hook.sendMessage(any<String>())).thenReturn(followupAction)
         whenever(followupAction.setEphemeral(true)).thenReturn(followupAction)
     }

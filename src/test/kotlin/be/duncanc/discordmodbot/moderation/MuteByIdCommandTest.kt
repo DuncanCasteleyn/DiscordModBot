@@ -73,7 +73,6 @@ class MuteByIdCommandTest {
     private lateinit var command: MuteByIdCommand
 
     @BeforeEach
-    @Suppress("UNCHECKED_CAST")
     fun setUp() {
         command = MuteByIdCommand(muteRoleCommandAndEventsListenerService, muteService, guildLogger)
     }
@@ -110,11 +109,10 @@ class MuteByIdCommandTest {
         whenever(modalEvent.getValue("reason")).thenReturn(reasonValue)
         whenever(reasonValue.asString).thenReturn("Spamming")
         whenever(modalEvent.deferReply(true)).thenReturn(replyAction)
-        doAnswer {
-            val consumer = it.arguments[0] as Consumer<InteractionHook>
+        doAnswer { (consumer: Consumer<InteractionHook>) ->
             consumer.accept(interactionHook)
             null
-        }.whenever(replyAction).queue(any<Consumer<InteractionHook>>())
+        }.whenever(replyAction).queue(any())
         whenever(interactionHook.editOriginal(any<String>())).thenReturn(editAction)
         whenever(muteRoleCommandAndEventsListenerService.getMuteRole(guild)).thenReturn(muteRoleEntity)
 

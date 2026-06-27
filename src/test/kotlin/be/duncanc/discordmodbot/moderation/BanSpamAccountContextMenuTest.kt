@@ -192,18 +192,16 @@ class BanSpamAccountContextMenuTest {
         stubUserContextMenuStart()
         whenever(targetMember.user).thenReturn(targetUser)
         whenever(targetUser.openPrivateChannel()).thenReturn(openPrivateChannelAction)
-        doAnswer {
-            val failure = it.arguments[1] as Consumer<Throwable>
-            failure.accept(IllegalStateException("DMs disabled"))
+        doAnswer { invocation ->
+            invocation.component2<Consumer<Throwable>>().accept(IllegalStateException("DMs disabled"))
             null
-        }.whenever(openPrivateChannelAction).queue(any<Consumer<PrivateChannel>>(), any<Consumer<Throwable>>())
+        }.whenever(openPrivateChannelAction).queue(any(), any())
         whenever(guild.ban(targetMember, 1, TimeUnit.DAYS)).thenReturn(banRestAction)
         whenever(banRestAction.reason("Compromised/Spam account")).thenReturn(banRestAction)
-        doAnswer {
-            val success = it.arguments[0] as Consumer<Void?>
-            success.accept(null)
+        doAnswer { invocation ->
+            invocation.component1<Consumer<Void?>>().accept(null)
             null
-        }.whenever(banRestAction).queue(any<Consumer<Void?>>(), any<Consumer<Throwable>>())
+        }.whenever(banRestAction).queue(any(), any())
         whenever(hook.editOriginal(any<String>())).thenReturn(editAction)
 
         command.onUserContextInteraction(event)
@@ -280,24 +278,21 @@ Error: DMs disabled"""
         stubUserContextMenuStart()
         whenever(targetMember.user).thenReturn(targetUser)
         whenever(targetUser.openPrivateChannel()).thenReturn(openPrivateChannelAction)
-        doAnswer {
-            val success = it.arguments[0] as Consumer<PrivateChannel>
-            success.accept(privateChannel)
+        doAnswer { invocation ->
+            invocation.component1<Consumer<PrivateChannel>>().accept(privateChannel)
             null
-        }.whenever(openPrivateChannelAction).queue(any<Consumer<PrivateChannel>>(), any<Consumer<Throwable>>())
+        }.whenever(openPrivateChannelAction).queue(any(), any())
         whenever(privateChannel.sendMessageEmbeds(any<MessageEmbed>())).thenReturn(messageCreateAction)
-        doAnswer {
-            val success = it.arguments[0] as Consumer<Message>
-            success.accept(dmMessage)
+        doAnswer { invocation ->
+            invocation.component1<Consumer<Message>>().accept(dmMessage)
             null
-        }.whenever(messageCreateAction).queue(any<Consumer<Message>>(), any<Consumer<Throwable>>())
+        }.whenever(messageCreateAction).queue(any(), any())
         whenever(guild.ban(targetMember, 1, TimeUnit.DAYS)).thenReturn(banRestAction)
         whenever(banRestAction.reason("Compromised/Spam account")).thenReturn(banRestAction)
-        doAnswer {
-            val success = it.arguments[0] as Consumer<Void?>
-            success.accept(null)
+        doAnswer { invocation ->
+            invocation.component1<Consumer<Void?>>().accept(null)
             null
-        }.whenever(banRestAction).queue(any<Consumer<Void?>>(), any<Consumer<Throwable>>())
+        }.whenever(banRestAction).queue(any(), any())
         whenever(dmMessage.embeds).thenReturn(embeds)
         whenever(hook.editOriginal(any<String>())).thenReturn(editAction)
         whenever(editAction.setEmbeds(any<Collection<MessageEmbed>>())).thenReturn(editAction)
@@ -307,24 +302,21 @@ Error: DMs disabled"""
         stubMessageContextMenuStart()
         whenever(targetMember.user).thenReturn(targetUser)
         whenever(targetUser.openPrivateChannel()).thenReturn(openPrivateChannelAction)
-        doAnswer {
-            val success = it.arguments[0] as Consumer<PrivateChannel>
-            success.accept(privateChannel)
+        doAnswer { invocation ->
+            invocation.component1<Consumer<PrivateChannel>>().accept(privateChannel)
             null
-        }.whenever(openPrivateChannelAction).queue(any<Consumer<PrivateChannel>>(), any<Consumer<Throwable>>())
+        }.whenever(openPrivateChannelAction).queue(any(), any())
         whenever(privateChannel.sendMessageEmbeds(any<MessageEmbed>())).thenReturn(messageCreateAction)
-        doAnswer {
-            val success = it.arguments[0] as Consumer<Message>
-            success.accept(dmMessage)
+        doAnswer { invocation ->
+            invocation.component1<Consumer<Message>>().accept(dmMessage)
             null
-        }.whenever(messageCreateAction).queue(any<Consumer<Message>>(), any<Consumer<Throwable>>())
+        }.whenever(messageCreateAction).queue(any(), any())
         whenever(guild.ban(targetMember, 1, TimeUnit.DAYS)).thenReturn(banRestAction)
         whenever(banRestAction.reason("Compromised/Spam account")).thenReturn(banRestAction)
-        doAnswer {
-            val success = it.arguments[0] as Consumer<Void?>
-            success.accept(null)
+        doAnswer { invocation ->
+            invocation.component1<Consumer<Void?>>().accept(null)
             null
-        }.whenever(banRestAction).queue(any<Consumer<Void?>>(), any<Consumer<Throwable>>())
+        }.whenever(banRestAction).queue(any(), any())
         whenever(dmMessage.embeds).thenReturn(embeds)
         whenever(hook.editOriginal(any<String>())).thenReturn(editAction)
         whenever(editAction.setEmbeds(any<Collection<MessageEmbed>>())).thenReturn(editAction)
@@ -349,11 +341,10 @@ Error: DMs disabled"""
         whenever(guild.name).thenReturn("Test Guild")
         whenever(guild.idLong).thenReturn(1L)
         whenever(event.deferReply(true)).thenReturn(replyAction)
-        doAnswer {
-            val success = it.arguments[0] as Consumer<InteractionHook>
+        doAnswer { (success: Consumer<InteractionHook>) ->
             success.accept(hook)
             null
-        }.whenever(replyAction).queue(any<Consumer<InteractionHook>>())
+        }.whenever(replyAction).queue(any())
     }
 
     private fun stubMessageContextMenuStart() {
@@ -376,10 +367,9 @@ Error: DMs disabled"""
         whenever(guild.name).thenReturn("Test Guild")
         whenever(guild.idLong).thenReturn(1L)
         whenever(messageEvent.deferReply(true)).thenReturn(replyAction)
-        doAnswer {
-            val success = it.arguments[0] as Consumer<InteractionHook>
+        doAnswer { (success: Consumer<InteractionHook>) ->
             success.accept(hook)
             null
-        }.whenever(replyAction).queue(any<Consumer<InteractionHook>>())
+        }.whenever(replyAction).queue(any())
     }
 }

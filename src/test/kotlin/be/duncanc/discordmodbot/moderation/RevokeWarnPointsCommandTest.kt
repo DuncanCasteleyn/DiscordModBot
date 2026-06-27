@@ -36,6 +36,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.lang.reflect.Constructor
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -352,15 +353,14 @@ class RevokeWarnPointsCommandTest {
             mock<User>()
         )
 
-        val constructor = OptionMapping::class.java.getConstructor(
+        val constructor: Constructor<OptionMapping> = OptionMapping::class.java.getConstructor(
             DataObject::class.java,
             Class.forName("gnu.trove.map.TLongObjectMap"),
             JDA::class.java,
             Guild::class.java
         )
 
-        @Suppress("UNCHECKED_CAST")
-        return constructor.newInstance(data, resolved, null, null) as OptionMapping
+        return constructor.newInstance(data, resolved, null, null)
     }
 
     private fun stringOption(value: String): OptionMapping {
@@ -373,14 +373,13 @@ class RevokeWarnPointsCommandTest {
             .put("name", "value")
             .put("value", value)
 
-        val constructor = OptionMapping::class.java.getConstructor(
+        val constructor: Constructor<OptionMapping> = OptionMapping::class.java.getConstructor(
             DataObject::class.java,
             Class.forName("gnu.trove.map.TLongObjectMap"),
             JDA::class.java,
             Guild::class.java
         )
 
-        @Suppress("UNCHECKED_CAST")
-        return constructor.newInstance(data, null, null, null) as OptionMapping
+        return constructor.newInstance(data, null, null, null)
     }
 }

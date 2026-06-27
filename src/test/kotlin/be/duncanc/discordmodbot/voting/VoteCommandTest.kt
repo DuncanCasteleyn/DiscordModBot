@@ -209,23 +209,20 @@ class VoteCommandTest {
     }
 
     @Test
-    @Suppress("UNCHECKED_CAST")
     fun `create vote message uses public deferred reply`() {
         val realCommand = VoteCommand(votingEmotesRepository)
         val message = mock<Message>()
 
         whenever(slashEvent.deferReply(false)).thenReturn(replyAction)
         whenever(interactionHook.editOriginal("Vote content")).thenReturn(editAction)
-        doAnswer {
-            val success = it.arguments[0] as Consumer<InteractionHook>
-            success.accept(interactionHook)
+        doAnswer { invocation ->
+            invocation.component1<Consumer<InteractionHook>>().accept(interactionHook)
             null
-        }.whenever(replyAction).queue(any<Consumer<InteractionHook>>(), any())
-        doAnswer {
-            val success = it.arguments[0] as Consumer<Message>
-            success.accept(message)
+        }.whenever(replyAction).queue(any(), any())
+        doAnswer { invocation ->
+            invocation.component1<Consumer<Message>>().accept(message)
             null
-        }.whenever(editAction).queue(any<Consumer<Message>>(), any())
+        }.whenever(editAction).queue(any(), any())
 
         var capturedMessage: Message? = null
 

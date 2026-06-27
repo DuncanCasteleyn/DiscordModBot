@@ -75,7 +75,6 @@ class RolesTest {
     private lateinit var command: TestRolesCommand
 
     @BeforeEach
-    @Suppress("UNCHECKED_CAST")
     fun setUp() {
         command = TestRolesCommand(iAmRolesService)
     }
@@ -214,7 +213,6 @@ class RolesTest {
     }
 
     @Test
-    @Suppress("UNCHECKED_CAST")
     fun `select interaction defers reply before assigning roles`() {
         val category = IAmRolesCategory(1L, 5L, "Games", 0, mutableSetOf(11L))
         stubSelectContext("assign", category, listOf("11"))
@@ -226,11 +224,10 @@ class RolesTest {
         whenever(selfMember.canInteract(availableRole)).thenReturn(true)
         whenever(guild.getRoleById(11L)).thenReturn(availableRole)
         whenever(guild.modifyMemberRoles(member, listOf(availableRole), null)).thenReturn(roleUpdateAction)
-        doAnswer {
-            val consumer = it.arguments[0] as Consumer<Void?>
-            consumer.accept(null)
+        doAnswer { invocation ->
+            invocation.component1<Consumer<Void?>>().accept(null)
             null
-        }.whenever(roleUpdateAction).queue(any<Consumer<Void?>>(), any<Consumer<Throwable>>())
+        }.whenever(roleUpdateAction).queue(any(), any())
 
         command.onStringSelectInteraction(selectEvent)
 
@@ -255,7 +252,6 @@ class RolesTest {
     }
 
     @Test
-    @Suppress("UNCHECKED_CAST")
     fun `select interaction reports async role update failures`() {
         val category = IAmRolesCategory(1L, 5L, "Games", 0, mutableSetOf(11L))
         stubSelectContext("assign", category, listOf("11"))
@@ -267,11 +263,10 @@ class RolesTest {
         whenever(selfMember.canInteract(availableRole)).thenReturn(true)
         whenever(guild.getRoleById(11L)).thenReturn(availableRole)
         whenever(guild.modifyMemberRoles(member, listOf(availableRole), null)).thenReturn(roleUpdateAction)
-        doAnswer {
-            val consumer = it.arguments[1] as Consumer<Throwable>
-            consumer.accept(IllegalStateException("Discord rejected the update"))
+        doAnswer { invocation ->
+            invocation.component2<Consumer<Throwable>>().accept(IllegalStateException("Discord rejected the update"))
             null
-        }.whenever(roleUpdateAction).queue(any<Consumer<Void?>>(), any<Consumer<Throwable>>())
+        }.whenever(roleUpdateAction).queue(any(), any())
 
         command.onStringSelectInteraction(selectEvent)
 
@@ -319,14 +314,12 @@ class RolesTest {
         whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
     }
 
-    @Suppress("UNCHECKED_CAST")
     private fun stubDeferredSelectReply() {
         whenever(selectEvent.deferReply(true)).thenReturn(deferredReplyAction)
-        doAnswer {
-            val consumer = it.arguments[0] as Consumer<InteractionHook>
+        doAnswer { (consumer: Consumer<InteractionHook>) ->
             consumer.accept(interactionHook)
             null
-        }.whenever(deferredReplyAction).queue(any<Consumer<InteractionHook>>())
+        }.whenever(deferredReplyAction).queue(any())
     }
 
     private fun stubSelectInteractionContext() {

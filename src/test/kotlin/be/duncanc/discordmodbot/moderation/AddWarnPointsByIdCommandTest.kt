@@ -506,7 +506,6 @@ The user was not warned by DM, please do so manually when they rejoin.""",
         )
     }
 
-    @Suppress("UNCHECKED_CAST")
     private fun stubSuccessfulMuteModalFlow(
         unmuteDays: Int?,
         targetMemberPresent: Boolean = false,
@@ -552,27 +551,23 @@ The user was not warned by DM, please do so manually when they rejoin.""",
         whenever(guild.addRoleToMember(targetMember, muteRole)).thenReturn(addRoleAction)
         whenever(addRoleAction.reason("Spamming")).thenReturn(addRoleAction)
         if (muteRoleAssignmentSucceeds) {
-            doAnswer {
-                val success = it.arguments[0] as Consumer<Void?>
-                success.accept(null)
+            doAnswer { invocation ->
+                invocation.component1<Consumer<Void?>>().accept(null)
                 null
-            }.whenever(addRoleAction).queue(any<Consumer<Void?>>(), any<Consumer<Throwable>>())
+            }.whenever(addRoleAction).queue(any(), any())
         } else {
-            doAnswer {
-                val failure = it.arguments[1] as Consumer<Throwable>
-                failure.accept(IllegalStateException("Missing permissions"))
+            doAnswer { invocation ->
+                invocation.component2<Consumer<Throwable>>().accept(IllegalStateException("Missing permissions"))
                 null
-            }.whenever(addRoleAction).queue(any<Consumer<Void?>>(), any<Consumer<Throwable>>())
+            }.whenever(addRoleAction).queue(any(), any())
         }
         doQueue(replyAction)
     }
 
-    @Suppress("UNCHECKED_CAST")
     private fun doQueue(reply: ReplyCallbackAction) {
-        doAnswer {
-            val consumer = it.arguments[0] as Consumer<InteractionHook>
+        doAnswer { (consumer: Consumer<InteractionHook>) ->
             consumer.accept(interactionHook)
             null
-        }.whenever(reply).queue(any<Consumer<InteractionHook>>())
+        }.whenever(reply).queue(any())
     }
 }

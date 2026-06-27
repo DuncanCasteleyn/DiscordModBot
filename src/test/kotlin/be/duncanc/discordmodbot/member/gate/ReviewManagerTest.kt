@@ -79,7 +79,7 @@ class ReviewManagerTest {
     @Test
     fun `createSession ignores null and legacy applicants and returns oldest applicants for guild first`() {
         @Suppress("UNCHECKED_CAST")
-        val repositoryEntries = listOf<MemberGateQuestion?>(
+        val repositoryEntries = listOf(
             null,
             MemberGateQuestion(
                 id = "legacy",

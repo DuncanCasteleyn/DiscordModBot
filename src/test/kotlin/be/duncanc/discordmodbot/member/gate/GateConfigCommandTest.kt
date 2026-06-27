@@ -276,18 +276,16 @@ class GateConfigCommandTest {
         whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
     }
 
-    @Suppress("UNCHECKED_CAST")
     private fun stubDeferredReply(includeEphemeralFollowup: Boolean = false) {
         whenever(slashEvent.deferReply(true)).thenReturn(replyAction)
         whenever(interactionHook.sendMessage(any<String>())).thenReturn(followupAction)
         if (includeEphemeralFollowup) {
             whenever(followupAction.setEphemeral(true)).thenReturn(followupAction)
         }
-        doAnswer {
-            val consumer = it.arguments[0] as Consumer<InteractionHook>
+        doAnswer { (consumer: Consumer<InteractionHook>) ->
             consumer.accept(interactionHook)
             null
-        }.whenever(replyAction).queue(any<Consumer<InteractionHook>>())
+        }.whenever(replyAction).queue(any())
     }
 
     private fun getSubcommand(name: String): SubcommandData {

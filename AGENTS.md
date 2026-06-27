@@ -4,7 +4,8 @@ Repository guidance for coding agents working in `DiscordModBot`.
 
 ## Scope
 
-- Kotlin 2.4.0, Spring Boot 4.1.0, Gradle 9.6.1, **Java 25** (toolchain and `jvmTarget` both set to 25; CI uses Liberica).
+- Kotlin 2.4.0, Spring Boot 4.1.0, Gradle 9.6.1, **Java 25** (toolchain and `jvmTarget` both set to 25; CI uses
+  Liberica).
 - Use the Gradle wrapper: `./gradlew` on Unix, `gradlew.bat` on Windows.
 - No `.cursor/rules/`, `.cursorrules`, `.github/copilot-instructions.md`, or `opencode.json` exist.
 
@@ -20,14 +21,16 @@ Repository guidance for coding agents working in `DiscordModBot`.
 
 - All tests: `./gradlew test`
 - One class: `./gradlew test --tests "be.duncanc.discordmodbot.moderation.ScheduledUnmuteServiceTest"`
-- One standard method: `./gradlew test --tests "be.duncanc.discordmodbot.ApplicationModulesTest.verifiesApplicationModules"`
+- One standard method:
+  `./gradlew test --tests "be.duncanc.discordmodbot.ApplicationModulesTest.verifiesApplicationModules"`
 - One backtick method: quote the full selector, e.g.
   `./gradlew test --tests "be.duncanc.discordmodbot.moderation.ScheduledUnmuteServiceTest.planning an unmute should fail when using time in the past"`
 - If selector matching is uncertain, run the whole class.
 
 ## Test Environment
 
-- Tests use the `testing` Spring profile and H2 in MySQL compatibility mode (`src/test/resources/application.properties`).
+- Tests use the `testing` Spring profile and H2 in MySQL compatibility mode (
+  `src/test/resources/application.properties`).
 - Fast iteration: `./gradlew test`
 - MariaDB path: start services with `docker compose up -d` (MariaDB 12.3.2 on 3306, Redis 8.8.0 on 6379), then:
   ```bash
@@ -38,7 +41,8 @@ Repository guidance for coding agents working in `DiscordModBot`.
   ./gradlew check
   ```
 - Prefer H2 unless changing DB-specific behavior.
-- Some tests (e.g. `GuildWarnPointRepositoryTest`) are `@Disabled` due to known Hibernate issues; leave them unless fixing the root cause.
+- Some tests (e.g. `GuildWarnPointRepositoryTest`) are `@Disabled` due to known Hibernate issues; leave them unless
+  fixing the root cause.
 
 ## CI
 
@@ -51,7 +55,8 @@ Repository guidance for coding agents working in `DiscordModBot`.
 
 - Package root: `be.duncanc.discordmodbot`.
 - Spring Modulith bounded contexts. Shared modules: `bootstrap`, `discord`.
-- Modules verified by `ApplicationModulesTest`: `bootstrap`, `discord`, `logging`, `member.gate`, `moderation`, `narou.novel.api`, `reporting`, `roles`, `server.config`, `utility`, `voting`.
+- Modules verified by `ApplicationModulesTest`: `bootstrap`, `discord`, `logging`, `member.gate`, `moderation`,
+  `narou.novel.api`, `reporting`, `roles`, `server.config`, `utility`, `voting`.
 - Each module has a `ModuleMetadata.kt` with `@PackageInfo` and `@ApplicationModule`.
 - Modulith detection strategy is `explicitly-annotated` (`spring.modulith.detection-strategy=explicitly-annotated`).
 - Keep persistence types in the module-local `persistence` package.
@@ -66,7 +71,8 @@ Repository guidance for coding agents working in `DiscordModBot`.
 ## Code Style
 
 - Follow `.editorconfig`: UTF-8, CRLF line endings, 4-space indents, final newline, 120-column limit.
-- Kotlin official style (`kotlin.code.style=official`); no trailing commas on normal call sites/collection literals unless the surrounding file already uses them.
+- Kotlin official style (`kotlin.code.style=official`); no trailing commas on normal call sites/collection literals
+  unless the surrounding file already uses them.
 - Imports layout: regular imports, then `java.*`, `javax.*`, `kotlin.*`, aliases last. Avoid wildcard imports.
 - `-Xjsr305=strict` is enabled; respect nullability annotations.
 - Prefer constructor injection; do not introduce field injection.
@@ -79,10 +85,31 @@ Repository guidance for coding agents working in `DiscordModBot`.
 
 ## Testing Conventions
 
-- Tests use `@SpringBootTest(classes = [...])` with `@MockitoBean`/`@MockitoSpyBean` and `@TestConstructor(AutowireMode.ALL)`, pure Mockito with `@ExtendWith(MockitoExtension::class)`, or `@DataJpaTest`.
+- Tests use `@SpringBootTest(classes = [...])` with `@MockitoBean`/`@MockitoSpyBean` and
+  `@TestConstructor(AutowireMode.ALL)`, pure Mockito with `@ExtendWith(MockitoExtension::class)`, or `@DataJpaTest`.
 - Mockito agent is attached automatically by Gradle (`-javaagent`).
 - Verify exact exception messages when behavior depends on them.
-- If touching persistence, scheduling, or transactions, run the MariaDB `./gradlew check` path rather than only `./gradlew test`.
+- If touching persistence, scheduling, or transactions, run the MariaDB `./gradlew check` path rather than only
+  `./gradlew test`.
+
+### Mockito callback stubbing
+
+When stubbing JDA `RestAction.queue(...)` or similar callback-based methods, avoid explicit unchecked casts from
+`InvocationOnMock.arguments`. Use mockito-kotlin's typed component accessors instead:
+
+```kotlin
+// preferred for callbacks passed as the first argument
+doAnswer { invocation ->
+    invocation.component1<Consumer<InteractionHook>>().accept(hook)
+    null
+}.whenever(replyAction).queue(any(), any())
+
+// for single-argument callbacks, destructuring also works
+doAnswer { (consumer: Consumer<InteractionHook>) ->
+    consumer.accept(hook)
+    null
+}.whenever(replyAction).queue(any())
+```
 
 ## Workflow
 
