@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.14.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.14.0...v2.14.1) (2026-06-27)
+
+
+### Bug Fixes
+
+* **moderation:** improve trap channel warning and handling ([#712](https://github.com/DuncanCasteleyn/DiscordModBot/issues/712)) ([4519fdd](https://github.com/DuncanCasteleyn/DiscordModBot/commit/4519fddb554e36f91b39504d0f1b72d5535717f8))
+
 ## [2.14.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.13.0...v2.14.0) (2026-06-27)
 
 
