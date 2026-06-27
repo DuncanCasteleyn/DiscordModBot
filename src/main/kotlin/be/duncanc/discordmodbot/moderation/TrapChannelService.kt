@@ -23,6 +23,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.awt.Color
+import java.time.Duration
 import java.time.Instant
 import java.time.OffsetDateTime
 import java.util.concurrent.ConcurrentHashMap
@@ -94,6 +95,10 @@ class TrapChannelService(
             return
         }
 
+        member.timeoutFor(Duration.ofHours(1))
+            .reason(TRAP_BAN_REASON)
+            .queue()
+
         val actionKey = guild.id + ":" + member.id
         if (!pendingTrapActions.add(actionKey)) {
             return
@@ -101,7 +106,7 @@ class TrapChannelService(
 
         val scheduledUnbanAt = OffsetDateTime.now().plusHours(AUTO_UNBAN_DELAY_HOURS)
 
-        guild.ban(member, 10, TimeUnit.MINUTES)
+        member.ban(10, TimeUnit.MINUTES)
             .reason(TRAP_BAN_REASON)
             .queue(
                 {
@@ -192,15 +197,15 @@ class TrapChannelService(
     }
 
     private fun postTrapWarning(channel: MessageChannelUnion, member: Member) {
+        val user = member.user
+
         val embed = EmbedBuilder()
             .setColor(Color.RED)
-            .setAuthor(member.nicknameAndUsername, null, member.user.effectiveAvatarUrl)
+            .setAuthor(user.name, null, user.effectiveAvatarUrl)
             .setTitle("Spambot trap triggered")
             .setDescription("This user was automatically banned for posting in the trap channel. Do not post here.")
-            .addField("User", member.nicknameAndUsername, true)
-            .addField("Reason", TRAP_BAN_REASON, false)
             .setTimestamp(Instant.now())
-            .setFooter(member.id, member.user.effectiveAvatarUrl)
+            .setFooter(user.id, user.effectiveAvatarUrl)
             .build()
 
         channel.sendMessageEmbeds(embed).queue()

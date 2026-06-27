@@ -19,6 +19,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.*
 import java.awt.Color
+import java.time.Duration
 import java.time.OffsetDateTime
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -57,6 +58,9 @@ class TrapChannelServiceTest {
     private lateinit var channelUnion: MessageChannelUnion
 
     @Mock
+    private lateinit var timeoutAction: AuditableRestAction<Void>
+
+    @Mock
     private lateinit var banAction: AuditableRestAction<Void>
 
     @Mock
@@ -80,14 +84,18 @@ class TrapChannelServiceTest {
     @Test
     fun `message in configured trap channel bans user and schedules unban`() {
         stubTrapEvent()
-        whenever(guild.ban(member, 10, TimeUnit.MINUTES)).thenReturn(banAction)
+        whenever(member.timeoutFor(Duration.ofHours(1))).thenReturn(timeoutAction)
+        whenever(timeoutAction.reason(any())).thenReturn(timeoutAction)
+        whenever(member.ban(10, TimeUnit.MINUTES)).thenReturn(banAction)
         whenever(banAction.reason(any())).thenReturn(banAction)
         whenever(channelUnion.sendMessageEmbeds(any<MessageEmbed>())).thenReturn(messageCreateAction)
         doSuccess(banAction)
 
         service.handleTrapMessage(event)
 
-        verify(guild).ban(member, 10, TimeUnit.MINUTES)
+        verify(member).timeoutFor(Duration.ofHours(1))
+        verify(timeoutAction).reason("Triggered the spam trap channel")
+        verify(member).ban(10, TimeUnit.MINUTES)
         verify(banAction).reason("Triggered the spam trap channel")
 
         val unbanCaptor = argumentCaptor<TrapChannelUnban>()
@@ -100,6 +108,7 @@ class TrapChannelServiceTest {
         val embed = embedCaptor.firstValue
         kotlin.test.assertEquals(Color.RED, embed.color)
         kotlin.test.assertEquals("Spambot trap triggered", embed.title)
+        kotlin.test.assertEquals("spammer#0001", embed.author!!.name)
         kotlin.test.assertTrue(embed.description!!.contains("automatically banned"))
         kotlin.test.assertEquals("5", embed.footer!!.text)
         kotlin.test.assertNotNull(embed.timestamp)
@@ -179,7 +188,9 @@ class TrapChannelServiceTest {
         whenever(member.idLong).thenReturn(5L)
         whenever(member.user).thenReturn(user)
         whenever(member.nickname).thenReturn("spammer")
+        whenever(user.id).thenReturn("5")
         whenever(user.name).thenReturn("spammer#0001")
+        whenever(user.effectiveAvatarUrl).thenReturn("https://cdn.discordapp.com/avatars/5/avatar.png")
         whenever(event.channel).thenReturn(channelUnion)
         whenever(channelUnion.idLong).thenReturn(99L)
         whenever(channelUnion.asMention).thenReturn("<#99>")
