@@ -197,8 +197,6 @@ class TrapChannelService(
             .setAuthor(member.nicknameAndUsername, null, member.user.effectiveAvatarUrl)
             .setTitle("Spambot trap triggered")
             .setDescription("This user was automatically banned for posting in the trap channel. Do not post here.")
-            .addField("User", member.nicknameAndUsername, true)
-            .addField("Reason", TRAP_BAN_REASON, false)
             .setTimestamp(Instant.now())
             .setFooter(member.id, member.user.effectiveAvatarUrl)
             .build()
