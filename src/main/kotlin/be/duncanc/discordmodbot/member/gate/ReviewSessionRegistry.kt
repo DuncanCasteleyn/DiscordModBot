@@ -3,6 +3,7 @@ package be.duncanc.discordmodbot.member.gate
 import be.duncanc.discordmodbot.member.gate.persistence.ReviewSessionState
 import be.duncanc.discordmodbot.member.gate.persistence.ReviewSessionStateRepository
 import org.springframework.stereotype.Component
+import java.time.Instant
 
 @Component
 class ReviewSessionRegistry(
@@ -10,7 +11,9 @@ class ReviewSessionRegistry(
 ) {
     data class StoredReviewSession(
         val reviewerId: Long,
-        val session: ReviewSession
+        val session: ReviewSession,
+        val sessionId: String,
+        val updatedAt: Instant
     )
 
     fun remember(guildId: Long, reviewerId: Long, session: ReviewSession) {
@@ -25,11 +28,13 @@ class ReviewSessionRegistry(
                 id = createId(guildId, reviewerId),
                 guildId = guildId,
                 reviewerId = reviewerId,
+                sessionId = session.sessionId,
                 oldestPendingUserId = session.oldestPendingUserId,
                 pendingUserIds = pendingUserIds,
                 approvedCount = session.approvedCount,
                 rejectedCount = session.rejectedCount,
-                manualActionCount = session.manualActionCount
+                manualActionCount = session.manualActionCount,
+                updatedAt = Instant.now()
             )
         )
     }
@@ -50,13 +55,32 @@ class ReviewSessionRegistry(
     }
 
     fun forgetOtherSessions(guildId: Long, reviewerId: Long): List<StoredReviewSession> {
+        return getOtherSessions(guildId, reviewerId)
+            .mapNotNull { state ->
+                reviewSessionStateRepository.deleteById(createId(guildId, state.reviewerId))
+                state
+            }
+    }
+
+    fun forgetSessions(guildId: Long, reviewerIds: Set<Long>): List<StoredReviewSession> {
+        if (reviewerIds.isEmpty()) {
+            return emptyList()
+        }
+
         return reviewSessionStateRepository.findAll()
             .filterNotNull()
-            .filter { it.guildId == guildId && it.reviewerId != reviewerId }
+            .filter { it.guildId == guildId && it.reviewerId in reviewerIds }
             .mapNotNull { state ->
                 reviewSessionStateRepository.deleteById(state.id)
                 state.toStoredSession()
             }
+    }
+
+    fun getOtherSessions(guildId: Long, reviewerId: Long): List<StoredReviewSession> {
+        return reviewSessionStateRepository.findAll()
+            .filterNotNull()
+            .filter { it.guildId == guildId && it.reviewerId != reviewerId }
+            .mapNotNull { it.toStoredSession() }
     }
 
     private fun createId(guildId: Long, reviewerId: Long): String = "$guildId:$reviewerId"
@@ -66,12 +90,14 @@ class ReviewSessionRegistry(
             return null
         }
 
-        return StoredReviewSession(reviewerId, toSession())
+        val session = toSession()
+        return StoredReviewSession(reviewerId, session, session.sessionId, updatedAt)
     }
 
     private fun ReviewSessionState.toSession(): ReviewSession {
         return ReviewSession(
             pendingUserIds = pendingUserIds,
+            sessionId = sessionId.ifBlank { "$guildId:$reviewerId:$updatedAt" },
             oldestPendingUserId = oldestPendingUserId,
             approvedCount = approvedCount,
             rejectedCount = rejectedCount,

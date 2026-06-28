@@ -12,6 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Instant
 import java.util.*
 
 @ExtendWith(MockitoExtension::class)
@@ -28,8 +29,10 @@ class ReviewSessionRegistryTest {
 
     @Test
     fun `remember stores session state in redis repository`() {
+        val before = Instant.now()
         val session = ReviewSession(
             pendingUserIds = listOf(20L, 10L),
+            sessionId = "session-99",
             oldestPendingUserId = 10L,
             approvedCount = 1,
             rejectedCount = 2,
@@ -42,11 +45,14 @@ class ReviewSessionRegistryTest {
         verify(reviewSessionStateRepository).save(captor.capture())
         val state = captor.firstValue
         assertEquals("1:99", state.id)
+        assertEquals("session-99", state.sessionId)
         assertEquals(10L, state.oldestPendingUserId)
         assertEquals(listOf(20L, 10L), state.pendingUserIds)
         assertEquals(1, state.approvedCount)
         assertEquals(2, state.rejectedCount)
         assertEquals(3, state.manualActionCount)
+        assertEquals(false, state.updatedAt.isBefore(before))
+        assertEquals(false, state.updatedAt.isAfter(Instant.now()))
     }
 
     @Test
@@ -57,6 +63,7 @@ class ReviewSessionRegistryTest {
                     id = "1:99",
                     guildId = 1L,
                     reviewerId = 99L,
+                    sessionId = "session-99",
                     oldestPendingUserId = 10L,
                     pendingUserIds = listOf(20L, 10L),
                     approvedCount = 1,
@@ -71,6 +78,7 @@ class ReviewSessionRegistryTest {
         assertEquals(20L, session?.getCurrentUserId())
         assertEquals(false, session?.isCurrentOldest())
         assertEquals(listOf(20L, 10L), session?.toPendingUserIds())
+        assertEquals("session-99", session?.sessionId)
         assertEquals(1, session?.approvedCount)
         assertEquals(2, session?.rejectedCount)
         assertEquals(3, session?.manualActionCount)
@@ -95,17 +103,20 @@ class ReviewSessionRegistryTest {
 
     @Test
     fun `forget other sessions returns and deletes sessions from other reviewers in guild`() {
+        val updatedAt = Instant.parse("2026-06-28T12:00:00Z")
         whenever(reviewSessionStateRepository.findAll()).thenReturn(
             listOf(
                 ReviewSessionState(
                     id = "1:42",
                     guildId = 1L,
                     reviewerId = 42L,
+                    sessionId = "session-42",
                     oldestPendingUserId = 10L,
                     pendingUserIds = listOf(10L),
                     approvedCount = 1,
                     rejectedCount = 2,
-                    manualActionCount = 3
+                    manualActionCount = 3,
+                    updatedAt = updatedAt
                 ),
                 ReviewSessionState(
                     id = "1:99",
@@ -128,10 +139,81 @@ class ReviewSessionRegistryTest {
 
         assertEquals(1, sessions.size)
         assertEquals(42L, sessions.first().reviewerId)
+        assertEquals("session-42", sessions.first().sessionId)
         assertEquals(10L, sessions.first().session.getCurrentUserId())
         assertEquals(1, sessions.first().session.approvedCount)
         assertEquals(2, sessions.first().session.rejectedCount)
         assertEquals(3, sessions.first().session.manualActionCount)
+        assertEquals(updatedAt, sessions.first().updatedAt)
+        verify(reviewSessionStateRepository).deleteById("1:42")
+    }
+
+    @Test
+    fun `get other sessions returns sessions without deleting them`() {
+        val updatedAt = Instant.parse("2026-06-28T12:00:00Z")
+        whenever(reviewSessionStateRepository.findAll()).thenReturn(
+            listOf(
+                ReviewSessionState(
+                    id = "1:42",
+                    guildId = 1L,
+                    reviewerId = 42L,
+                    sessionId = "session-42",
+                    oldestPendingUserId = 10L,
+                    pendingUserIds = listOf(10L),
+                    updatedAt = updatedAt
+                ),
+                ReviewSessionState(
+                    id = "1:99",
+                    guildId = 1L,
+                    reviewerId = 99L,
+                    oldestPendingUserId = 20L,
+                    pendingUserIds = listOf(20L)
+                )
+            )
+        )
+
+        val sessions = reviewSessionRegistry.getOtherSessions(1L, 99L)
+
+        assertEquals(1, sessions.size)
+        assertEquals(42L, sessions.first().reviewerId)
+        assertEquals("session-42", sessions.first().sessionId)
+        assertEquals(updatedAt, sessions.first().updatedAt)
+    }
+
+    @Test
+    fun `forget sessions deletes only requested reviewers in guild`() {
+        whenever(reviewSessionStateRepository.findAll()).thenReturn(
+            listOf(
+                ReviewSessionState(
+                    id = "1:42",
+                    guildId = 1L,
+                    reviewerId = 42L,
+                    sessionId = "session-42",
+                    oldestPendingUserId = 10L,
+                    pendingUserIds = listOf(10L)
+                ),
+                ReviewSessionState(
+                    id = "1:43",
+                    guildId = 1L,
+                    reviewerId = 43L,
+                    oldestPendingUserId = 20L,
+                    pendingUserIds = listOf(20L)
+                ),
+                ReviewSessionState(
+                    id = "2:42",
+                    guildId = 2L,
+                    reviewerId = 42L,
+                    oldestPendingUserId = 30L,
+                    pendingUserIds = listOf(30L)
+                )
+            )
+        )
+
+        val sessions = reviewSessionRegistry.forgetSessions(1L, setOf(42L))
+
+        assertEquals(1, sessions.size)
+        assertEquals(42L, sessions.first().reviewerId)
+        assertEquals("session-42", sessions.first().sessionId)
         verify(reviewSessionStateRepository).deleteById("1:42")
     }
 }

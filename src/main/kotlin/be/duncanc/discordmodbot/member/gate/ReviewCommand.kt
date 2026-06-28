@@ -4,6 +4,8 @@ import be.duncanc.discordmodbot.discord.SlashCommand
 import be.duncanc.discordmodbot.discord.nicknameAndUsername
 import be.duncanc.discordmodbot.logging.GuildLogger
 import be.duncanc.discordmodbot.member.gate.persistence.MemberGateQuestion
+import be.duncanc.discordmodbot.member.gate.persistence.ReviewInterruptConfirmation
+import be.duncanc.discordmodbot.member.gate.persistence.ReviewInterruptConfirmationRepository
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.Permission
@@ -20,26 +22,38 @@ import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import net.dv8tion.jda.api.utils.MarkdownUtil
+import net.dv8tion.jda.api.utils.TimeFormat
 import org.springframework.stereotype.Component
 import java.awt.Color
+import java.time.Instant
+import java.util.UUID
 
 @Component
 class ReviewCommand(
     private val reviewManager: ReviewManager,
     private val reviewSessionRegistry: ReviewSessionRegistry,
+    private val reviewInterruptConfirmationRepository: ReviewInterruptConfirmationRepository,
     private val guildLogger: GuildLogger
 ) : ListenerAdapter(), SlashCommand {
     companion object {
         private const val COMMAND = "review"
         private const val BUTTON_PREFIX = "member-gate-review:"
+        private const val INTERRUPT_CONFIRM_PREFIX = "member-gate-review-interrupt:"
         private const val APPROVE_ACTION = "approve"
         private const val REJECT_ACTION = "reject"
         private const val MANUAL_ACTION = "manual"
+        private const val INTERRUPT_CONFIRM_ACTION = "confirm"
+        private const val INTERRUPT_CANCEL_ACTION = "cancel"
 
         private data class ReviewButtonAction(
             val action: String,
             val expectedUserId: Long,
             val expectedQueuedAt: Long
+        )
+
+        private data class InterruptButtonAction(
+            val action: String,
+            val token: String
         )
     }
 
@@ -80,8 +94,25 @@ class ReviewCommand(
             return
         }
 
-        reviewSessionRegistry.forgetOtherSessions(guild.idLong, event.user.idLong)
-            .forEach { logReviewInterrupted(guild, it) }
+        val otherSessions = reviewSessionRegistry.getOtherSessions(guild.idLong, event.user.idLong)
+        if (otherSessions.isNotEmpty()) {
+            val token = rememberInterruptConfirmation(guild.idLong, event.user.idLong, otherSessions)
+            event.reply(buildInterruptPrompt(guild, otherSessions))
+                .setEphemeral(true)
+                .addComponents(ActionRow.of(buildInterruptButtons(token)))
+                .queue()
+            return
+        }
+
+        replyWithNewReviewSession(event, guild, session, pendingQuestion)
+    }
+
+    private fun replyWithNewReviewSession(
+        event: SlashCommandInteractionEvent,
+        guild: Guild,
+        session: ReviewSession,
+        pendingQuestion: MemberGateQuestion
+    ) {
         reviewSessionRegistry.remember(guild.idLong, event.user.idLong, session)
         logReviewStarted(guild, event.member!!, session)
 
@@ -107,6 +138,12 @@ class ReviewCommand(
     }
 
     override fun onButtonInteraction(event: ButtonInteractionEvent) {
+        val interruptAction = parseInterruptButtonAction(event.componentId)
+        if (interruptAction != null) {
+            handleInterruptButton(event, interruptAction)
+            return
+        }
+
         if (!event.componentId.startsWith(BUTTON_PREFIX)) {
             return
         }
@@ -235,6 +272,103 @@ class ReviewCommand(
         return ReviewButtonAction(segments[0], expectedUserId, expectedQueuedAt)
     }
 
+    private fun handleInterruptButton(event: ButtonInteractionEvent, buttonAction: InterruptButtonAction) {
+        val guild = event.guild
+        if (guild == null || event.member?.hasPermission(Permission.MANAGE_ROLES) != true) {
+            event.reply("You need the manage roles permission to use this command.").setEphemeral(true).queue()
+            return
+        }
+
+        val confirmation = reviewInterruptConfirmationRepository.findById(buttonAction.token).orElse(null)
+        if (confirmation == null) {
+            event.reply("This confirmation prompt expired. Run `/review` again.").setEphemeral(true).queue()
+            return
+        }
+
+        if (confirmation.guildId != guild.idLong || confirmation.reviewerId != event.user.idLong) {
+            event.reply("This confirmation prompt belongs to another moderator.").setEphemeral(true).queue()
+            return
+        }
+
+        if (buttonAction.action == INTERRUPT_CANCEL_ACTION) {
+            reviewInterruptConfirmationRepository.deleteById(buttonAction.token)
+            event.editMessage("Review start cancelled. The other moderator's review session was not interrupted.")
+                .setComponents(emptyList())
+                .queue()
+            return
+        }
+
+        if (buttonAction.action != INTERRUPT_CONFIRM_ACTION) {
+            event.reply("This review action is no longer available. Run `/review` again.")
+                .setEphemeral(true)
+                .queue()
+            return
+        }
+
+        val currentOtherSessions = reviewSessionRegistry.getOtherSessions(guild.idLong, event.user.idLong)
+        val currentTargetSessionIds = currentOtherSessions.associate { it.reviewerId to it.sessionId }
+        if (currentTargetSessionIds != confirmation.targetSessionIds) {
+            reviewInterruptConfirmationRepository.deleteById(buttonAction.token)
+            event.editMessage("The active review sessions changed. Run `/review` again to confirm the current sessions.")
+                .setComponents(emptyList())
+                .queue()
+            return
+        }
+
+        val session = reviewManager.createSession(guild.idLong)
+        if (session == null) {
+            event.editMessage("Nobody is currently waiting for approval.").setComponents(emptyList()).queue()
+            return
+        }
+
+        val pendingQuestion = resolveCurrentQuestion(guild, event.jda, session)
+        if (pendingQuestion == null) {
+            reviewSessionRegistry.forget(guild.idLong, event.user.idLong)
+            event.editMessage("Nobody is currently waiting for approval.").setComponents(emptyList()).queue()
+            return
+        }
+
+        reviewInterruptConfirmationRepository.deleteById(buttonAction.token)
+        reviewSessionRegistry.forgetSessions(guild.idLong, confirmation.targetSessionIds.keys)
+            .forEach { logReviewInterrupted(guild, it) }
+        reviewSessionRegistry.remember(guild.idLong, event.user.idLong, session)
+        logReviewStarted(guild, event.member!!, session)
+
+        event.editMessage(buildReviewMessage(guild, session, pendingQuestion))
+            .setComponents(ActionRow.of(buildButtons(pendingQuestion)))
+            .queue()
+    }
+
+    private fun parseInterruptButtonAction(componentId: String): InterruptButtonAction? {
+        if (!componentId.startsWith(INTERRUPT_CONFIRM_PREFIX)) {
+            return null
+        }
+
+        val segments = componentId.removePrefix(INTERRUPT_CONFIRM_PREFIX).split(":", limit = 2)
+        if (segments.size != 2) {
+            return null
+        }
+
+        return InterruptButtonAction(segments[0], segments[1])
+    }
+
+    private fun rememberInterruptConfirmation(
+        guildId: Long,
+        reviewerId: Long,
+        sessions: List<ReviewSessionRegistry.StoredReviewSession>
+    ): String {
+        val token = UUID.randomUUID().toString().replace("-", "").take(12)
+        reviewInterruptConfirmationRepository.save(
+            ReviewInterruptConfirmation(
+                id = token,
+                guildId = guildId,
+                reviewerId = reviewerId,
+                targetSessionIds = sessions.associate { it.reviewerId to it.sessionId }
+            )
+        )
+        return token
+    }
+
     private fun resolveCurrentQuestion(guild: Guild, jda: JDA, session: ReviewSession): MemberGateQuestion? {
         while (true) {
             val currentUserId = session.getCurrentUserId() ?: return null
@@ -275,6 +409,30 @@ class ReviewCommand(
 
     private fun buildCompletionMessage(feedback: String): String {
         return "$feedback\n\nThere are no more pending applicants in the queue."
+    }
+
+    private fun buildInterruptPrompt(
+        guild: Guild,
+        sessions: List<ReviewSessionRegistry.StoredReviewSession>
+    ): String {
+        val sessionLines = sessions.joinToString("\n") { storedSession ->
+            val reviewer = guild.getMemberById(storedSession.reviewerId)
+            val reviewerName = reviewer?.user?.asMention ?: "<@${storedSession.reviewerId}>"
+            val pendingCount = storedSession.session.toPendingUserIds().size
+            "- $reviewerName has $pendingCount pending applicant(s), last updated ${formatUpdatedAt(storedSession.updatedAt)}."
+        }
+
+        return "Another moderator is already reviewing members:\n" +
+                sessionLines +
+                "\n\nDo you want to interrupt their session and start yours?"
+    }
+
+    private fun formatUpdatedAt(updatedAt: Instant): String {
+        return if (updatedAt == Instant.EPOCH) {
+            "at an unknown time"
+        } else {
+            TimeFormat.RELATIVE.atInstant(updatedAt).toString()
+        }
     }
 
     private fun logReviewStarted(guild: Guild, moderator: Member, session: ReviewSession) {
@@ -325,4 +483,17 @@ class ReviewCommand(
         Button.danger("$BUTTON_PREFIX$REJECT_ACTION:${question.userId}:${question.queuedAt}", "Reject"),
         Button.primary("$BUTTON_PREFIX$MANUAL_ACTION:${question.userId}:${question.queuedAt}", "Manual Action")
     )
+
+    private fun buildInterruptButtons(token: String): List<Button> {
+        return listOf(
+            Button.danger(
+                "$INTERRUPT_CONFIRM_PREFIX$INTERRUPT_CONFIRM_ACTION:$token",
+                "Interrupt review"
+            ),
+            Button.secondary(
+                "$INTERRUPT_CONFIRM_PREFIX$INTERRUPT_CANCEL_ACTION:$token",
+                "Cancel"
+            )
+        )
+    }
 }
