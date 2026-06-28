@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.14.2](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.14.1...v2.14.2) (2026-06-28)
+
+
+### Bug Fixes
+
+* **member-gate:** confirm review session interruptions ([#715](https://github.com/DuncanCasteleyn/DiscordModBot/issues/715)) ([07e0e24](https://github.com/DuncanCasteleyn/DiscordModBot/commit/07e0e240993758a67690a2d780e37d80d300fe9c))
+* **moderation:** require reasons for message reports ([#717](https://github.com/DuncanCasteleyn/DiscordModBot/issues/717)) ([bab8177](https://github.com/DuncanCasteleyn/DiscordModBot/commit/bab81778c585522b6fe8af96a296824675725273))
+
 ## [2.14.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.14.0...v2.14.1) (2026-06-27)
 
 
