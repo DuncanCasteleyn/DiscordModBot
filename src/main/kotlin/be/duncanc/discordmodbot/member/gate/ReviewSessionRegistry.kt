@@ -60,6 +60,20 @@ class ReviewSessionRegistry(
             }
     }
 
+    fun forgetSessions(guildId: Long, reviewerIds: Set<Long>): List<StoredReviewSession> {
+        if (reviewerIds.isEmpty()) {
+            return emptyList()
+        }
+
+        return reviewSessionStateRepository.findAll()
+            .filterNotNull()
+            .filter { it.guildId == guildId && it.reviewerId in reviewerIds }
+            .mapNotNull { state ->
+                reviewSessionStateRepository.deleteById(state.id)
+                state.toStoredSession()
+            }
+    }
+
     fun getOtherSessions(guildId: Long, reviewerId: Long): List<StoredReviewSession> {
         return reviewSessionStateRepository.findAll()
             .filterNotNull()

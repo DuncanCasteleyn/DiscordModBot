@@ -139,9 +139,9 @@ class ReviewCommandTest {
         whenever(buttonEvent.user).thenReturn(user)
     }
 
-    private fun stubInterruptButtonInteraction(action: String = "confirm") {
+    private fun stubInterruptButtonInteraction(action: String = "confirm", targetReviewerIds: String = "42") {
         stubCommonIdentity()
-        whenever(buttonEvent.componentId).thenReturn("member-gate-review-interrupt:$action:99")
+        whenever(buttonEvent.componentId).thenReturn("member-gate-review-interrupt:$action:99:$targetReviewerIds")
         whenever(buttonEvent.guild).thenReturn(guild)
         whenever(buttonEvent.member).thenReturn(member)
         whenever(buttonEvent.user).thenReturn(user)
@@ -349,15 +349,14 @@ class ReviewCommandTest {
             rejectedCount = 1,
             manualActionCount = 3
         )
-        whenever(reviewSessionRegistry.forgetOtherSessions(1L, 99L)).thenReturn(
-            listOf(
-                ReviewSessionRegistry.StoredReviewSession(
-                    reviewerId = 42L,
-                    session = interruptedSession,
-                    updatedAt = Instant.parse("2026-06-28T12:00:00Z")
-                )
-            )
+        val storedSession = ReviewSessionRegistry.StoredReviewSession(
+            reviewerId = 42L,
+            session = interruptedSession,
+            updatedAt = Instant.parse("2026-06-28T12:00:00Z")
         )
+        whenever(reviewSessionRegistry.getOtherSessions(1L, 99L)).thenReturn(listOf(storedSession))
+        whenever(reviewSessionRegistry.forgetSessions(1L, setOf(42L))).thenReturn(listOf(storedSession))
+
         val session = ReviewSession(listOf(10L))
         whenever(reviewManager.createSession(1L)).thenReturn(session)
         whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(
@@ -378,10 +377,73 @@ class ReviewCommandTest {
     }
 
     @Test
+    fun `confirming stale interruption asks moderator to review current sessions`() {
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(user.idLong).thenReturn(99L)
+        whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
+        whenever(buttonEvent.componentId).thenReturn("member-gate-review-interrupt:confirm:99:42")
+        whenever(buttonEvent.guild).thenReturn(guild)
+        whenever(buttonEvent.member).thenReturn(member)
+        whenever(buttonEvent.user).thenReturn(user)
+        stubButtonEditWithList()
+
+        whenever(reviewSessionRegistry.getOtherSessions(1L, 99L)).thenReturn(
+            listOf(
+                ReviewSessionRegistry.StoredReviewSession(
+                    reviewerId = 43L,
+                    session = ReviewSession(listOf(50L)),
+                    updatedAt = Instant.parse("2026-06-28T12:00:00Z")
+                )
+            )
+        )
+
+        command.onButtonInteraction(buttonEvent)
+
+        verify(buttonEvent).editMessage("The active review sessions changed. Run `/review` again to confirm the current sessions.")
+        verify(reviewSessionRegistry, never()).forgetSessions(any(), any())
+        verify(reviewManager, never()).createSession(any())
+    }
+
+    @Test
+    fun `confirming interruption deletes only sessions shown in prompt`() {
+        stubInterruptButtonInteraction(targetReviewerIds = "42,43")
+        stubModeratorName()
+        stubButtonEditWithActionRow()
+
+        val storedSessions = listOf(
+            ReviewSessionRegistry.StoredReviewSession(
+                reviewerId = 42L,
+                session = ReviewSession(listOf(50L)),
+                updatedAt = Instant.parse("2026-06-28T12:00:00Z")
+            ),
+            ReviewSessionRegistry.StoredReviewSession(
+                reviewerId = 43L,
+                session = ReviewSession(listOf(60L)),
+                updatedAt = Instant.parse("2026-06-28T12:00:00Z")
+            )
+        )
+        whenever(reviewSessionRegistry.getOtherSessions(1L, 99L)).thenReturn(storedSessions)
+        whenever(reviewSessionRegistry.forgetSessions(1L, setOf(42L, 43L))).thenReturn(storedSessions)
+        val session = ReviewSession(listOf(10L))
+        whenever(reviewManager.createSession(1L)).thenReturn(session)
+        whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(
+            pendingQuestion(guildId = 1L, userId = 10L, question = "Q1", answer = "A1", queuedAt = 10L)
+        )
+        whenever(guild.getMemberById(42L)).thenReturn(null)
+        whenever(guild.getMemberById(43L)).thenReturn(null)
+        stubApplicantPresent(10L, "<@10>")
+
+        command.onButtonInteraction(buttonEvent)
+
+        verify(reviewSessionRegistry).forgetSessions(1L, setOf(42L, 43L))
+        verify(reviewSessionRegistry, never()).forgetOtherSessions(any(), any())
+    }
+
+    @Test
     fun `cancelling interruption keeps another moderator's unfinished session`() {
         whenever(user.idLong).thenReturn(99L)
         whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
-        whenever(buttonEvent.componentId).thenReturn("member-gate-review-interrupt:cancel:99")
+        whenever(buttonEvent.componentId).thenReturn("member-gate-review-interrupt:cancel:99:42")
         whenever(buttonEvent.guild).thenReturn(guild)
         whenever(buttonEvent.member).thenReturn(member)
         whenever(buttonEvent.user).thenReturn(user)

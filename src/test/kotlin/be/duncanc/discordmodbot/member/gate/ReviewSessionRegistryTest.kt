@@ -171,4 +171,39 @@ class ReviewSessionRegistryTest {
         assertEquals(42L, sessions.first().reviewerId)
         assertEquals(updatedAt, sessions.first().updatedAt)
     }
+
+    @Test
+    fun `forget sessions deletes only requested reviewers in guild`() {
+        whenever(reviewSessionStateRepository.findAll()).thenReturn(
+            listOf(
+                ReviewSessionState(
+                    id = "1:42",
+                    guildId = 1L,
+                    reviewerId = 42L,
+                    oldestPendingUserId = 10L,
+                    pendingUserIds = listOf(10L)
+                ),
+                ReviewSessionState(
+                    id = "1:43",
+                    guildId = 1L,
+                    reviewerId = 43L,
+                    oldestPendingUserId = 20L,
+                    pendingUserIds = listOf(20L)
+                ),
+                ReviewSessionState(
+                    id = "2:42",
+                    guildId = 2L,
+                    reviewerId = 42L,
+                    oldestPendingUserId = 30L,
+                    pendingUserIds = listOf(30L)
+                )
+            )
+        )
+
+        val sessions = reviewSessionRegistry.forgetSessions(1L, setOf(42L))
+
+        assertEquals(1, sessions.size)
+        assertEquals(42L, sessions.first().reviewerId)
+        verify(reviewSessionStateRepository).deleteById("1:42")
+    }
 }

@@ -49,7 +49,8 @@ class ReviewCommand(
 
         private data class InterruptButtonAction(
             val action: String,
-            val reviewerId: Long
+            val reviewerId: Long,
+            val targetReviewerIds: Set<Long>
         )
     }
 
@@ -94,7 +95,7 @@ class ReviewCommand(
         if (otherSessions.isNotEmpty()) {
             event.reply(buildInterruptPrompt(guild, otherSessions))
                 .setEphemeral(true)
-                .addComponents(ActionRow.of(buildInterruptButtons(event.user.idLong)))
+                .addComponents(ActionRow.of(buildInterruptButtons(event.user.idLong, otherSessions)))
                 .queue()
             return
         }
@@ -293,6 +294,15 @@ class ReviewCommand(
             return
         }
 
+        val currentOtherSessions = reviewSessionRegistry.getOtherSessions(guild.idLong, event.user.idLong)
+        val currentTargetReviewerIds = currentOtherSessions.map { it.reviewerId }.toSet()
+        if (currentTargetReviewerIds != buttonAction.targetReviewerIds) {
+            event.editMessage("The active review sessions changed. Run `/review` again to confirm the current sessions.")
+                .setComponents(emptyList())
+                .queue()
+            return
+        }
+
         val session = reviewManager.createSession(guild.idLong)
         if (session == null) {
             event.editMessage("Nobody is currently waiting for approval.").setComponents(emptyList()).queue()
@@ -306,7 +316,7 @@ class ReviewCommand(
             return
         }
 
-        reviewSessionRegistry.forgetOtherSessions(guild.idLong, event.user.idLong)
+        reviewSessionRegistry.forgetSessions(guild.idLong, buttonAction.targetReviewerIds)
             .forEach { logReviewInterrupted(guild, it) }
         reviewSessionRegistry.remember(guild.idLong, event.user.idLong, session)
         logReviewStarted(guild, event.member!!, session)
@@ -321,13 +331,18 @@ class ReviewCommand(
             return null
         }
 
-        val segments = componentId.removePrefix(INTERRUPT_CONFIRM_PREFIX).split(":", limit = 2)
-        if (segments.size != 2) {
+        val segments = componentId.removePrefix(INTERRUPT_CONFIRM_PREFIX).split(":", limit = 3)
+        if (segments.size != 3) {
             return null
         }
 
         val reviewerId = segments[1].toLongOrNull() ?: return null
-        return InterruptButtonAction(segments[0], reviewerId)
+        val targetReviewerIds = segments[2]
+            .split(",")
+            .filter { it.isNotBlank() }
+            .map { it.toLongOrNull() ?: return null }
+            .toSet()
+        return InterruptButtonAction(segments[0], reviewerId, targetReviewerIds)
     }
 
     private fun resolveCurrentQuestion(guild: Guild, jda: JDA, session: ReviewSession): MemberGateQuestion? {
@@ -445,8 +460,20 @@ class ReviewCommand(
         Button.primary("$BUTTON_PREFIX$MANUAL_ACTION:${question.userId}:${question.queuedAt}", "Manual Action")
     )
 
-    private fun buildInterruptButtons(reviewerId: Long) = listOf(
-        Button.danger("$INTERRUPT_CONFIRM_PREFIX$INTERRUPT_CONFIRM_ACTION:$reviewerId", "Interrupt review"),
-        Button.secondary("$INTERRUPT_CONFIRM_PREFIX$INTERRUPT_CANCEL_ACTION:$reviewerId", "Cancel")
-    )
+    private fun buildInterruptButtons(
+        reviewerId: Long,
+        sessions: List<ReviewSessionRegistry.StoredReviewSession>
+    ): List<Button> {
+        val targetReviewerIds = sessions.joinToString(",") { it.reviewerId.toString() }
+        return listOf(
+            Button.danger(
+                "$INTERRUPT_CONFIRM_PREFIX$INTERRUPT_CONFIRM_ACTION:$reviewerId:$targetReviewerIds",
+                "Interrupt review"
+            ),
+            Button.secondary(
+                "$INTERRUPT_CONFIRM_PREFIX$INTERRUPT_CANCEL_ACTION:$reviewerId:$targetReviewerIds",
+                "Cancel"
+            )
+        )
+    }
 }
