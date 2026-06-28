@@ -12,6 +12,7 @@ class ReviewSessionRegistry(
     data class StoredReviewSession(
         val reviewerId: Long,
         val session: ReviewSession,
+        val sessionId: String,
         val updatedAt: Instant
     )
 
@@ -27,6 +28,7 @@ class ReviewSessionRegistry(
                 id = createId(guildId, reviewerId),
                 guildId = guildId,
                 reviewerId = reviewerId,
+                sessionId = session.sessionId,
                 oldestPendingUserId = session.oldestPendingUserId,
                 pendingUserIds = pendingUserIds,
                 approvedCount = session.approvedCount,
@@ -88,12 +90,14 @@ class ReviewSessionRegistry(
             return null
         }
 
-        return StoredReviewSession(reviewerId, toSession(), updatedAt)
+        val session = toSession()
+        return StoredReviewSession(reviewerId, session, session.sessionId, updatedAt)
     }
 
     private fun ReviewSessionState.toSession(): ReviewSession {
         return ReviewSession(
             pendingUserIds = pendingUserIds,
+            sessionId = sessionId.ifBlank { "$guildId:$reviewerId:$updatedAt" },
             oldestPendingUserId = oldestPendingUserId,
             approvedCount = approvedCount,
             rejectedCount = rejectedCount,

@@ -328,6 +328,7 @@ class ReviewCommandTest {
 
         val interruptedSession = ReviewSession(
             pendingUserIds = listOf(50L),
+            sessionId = "session-42",
             approvedCount = 2,
             rejectedCount = 1,
             manualActionCount = 3
@@ -337,6 +338,7 @@ class ReviewCommandTest {
                 ReviewSessionRegistry.StoredReviewSession(
                     reviewerId = 42L,
                     session = interruptedSession,
+                    sessionId = "session-42",
                     updatedAt = Instant.parse("2026-06-28T12:00:00Z")
                 )
             )
@@ -357,7 +359,7 @@ class ReviewCommandTest {
         val confirmation = captureSavedInterruptConfirmation()
         assertEquals(1L, confirmation.guildId)
         assertEquals(99L, confirmation.reviewerId)
-        assertEquals(setOf(42L), confirmation.targetReviewerIds)
+        assertEquals(mapOf(42L to "session-42"), confirmation.targetSessionIds)
         assertTrue(captureInterruptButtonId(0).length <= Button.ID_MAX_LENGTH)
         assertTrue(captureInterruptButtonId(1).length <= Button.ID_MAX_LENGTH)
         verify(reviewSessionRegistry, never()).forgetOtherSessions(any(), any())
@@ -372,6 +374,7 @@ class ReviewCommandTest {
 
         val interruptedSession = ReviewSession(
             pendingUserIds = listOf(50L),
+            sessionId = "session-42",
             approvedCount = 2,
             rejectedCount = 1,
             manualActionCount = 3
@@ -379,6 +382,7 @@ class ReviewCommandTest {
         val storedSession = ReviewSessionRegistry.StoredReviewSession(
             reviewerId = 42L,
             session = interruptedSession,
+            sessionId = "session-42",
             updatedAt = Instant.parse("2026-06-28T12:00:00Z")
         )
         whenever(reviewInterruptConfirmationRepository.findById("token")).thenReturn(
@@ -387,7 +391,7 @@ class ReviewCommandTest {
                     id = "token",
                     guildId = 1L,
                     reviewerId = 99L,
-                    targetReviewerIds = setOf(42L)
+                    targetSessionIds = mapOf(42L to "session-42")
                 )
             )
         )
@@ -430,7 +434,7 @@ class ReviewCommandTest {
                     id = "token",
                     guildId = 1L,
                     reviewerId = 99L,
-                    targetReviewerIds = setOf(42L)
+                    targetSessionIds = mapOf(42L to "session-42")
                 )
             )
         )
@@ -439,7 +443,48 @@ class ReviewCommandTest {
             listOf(
                 ReviewSessionRegistry.StoredReviewSession(
                     reviewerId = 43L,
-                    session = ReviewSession(listOf(50L)),
+                    session = ReviewSession(listOf(50L), sessionId = "session-43"),
+                    sessionId = "session-43",
+                    updatedAt = Instant.parse("2026-06-28T12:00:00Z")
+                )
+            )
+        )
+
+        command.onButtonInteraction(buttonEvent)
+
+        verify(buttonEvent).editMessage("The active review sessions changed. Run `/review` again to confirm the current sessions.")
+        verify(reviewInterruptConfirmationRepository).deleteById("token")
+        verify(reviewSessionRegistry, never()).forgetSessions(any(), any())
+        verify(reviewManager, never()).createSession(any())
+    }
+
+    @Test
+    fun `confirming stale interruption rejects changed session from same moderator`() {
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(user.idLong).thenReturn(99L)
+        whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
+        whenever(buttonEvent.componentId).thenReturn("member-gate-review-interrupt:confirm:token")
+        whenever(buttonEvent.guild).thenReturn(guild)
+        whenever(buttonEvent.member).thenReturn(member)
+        whenever(buttonEvent.user).thenReturn(user)
+        stubButtonEditWithList()
+        whenever(reviewInterruptConfirmationRepository.findById("token")).thenReturn(
+            Optional.of(
+                ReviewInterruptConfirmation(
+                    id = "token",
+                    guildId = 1L,
+                    reviewerId = 99L,
+                    targetSessionIds = mapOf(42L to "old-session-42")
+                )
+            )
+        )
+
+        whenever(reviewSessionRegistry.getOtherSessions(1L, 99L)).thenReturn(
+            listOf(
+                ReviewSessionRegistry.StoredReviewSession(
+                    reviewerId = 42L,
+                    session = ReviewSession(listOf(50L), sessionId = "new-session-42"),
+                    sessionId = "new-session-42",
                     updatedAt = Instant.parse("2026-06-28T12:00:00Z")
                 )
             )
@@ -462,12 +507,14 @@ class ReviewCommandTest {
         val storedSessions = listOf(
             ReviewSessionRegistry.StoredReviewSession(
                 reviewerId = 42L,
-                session = ReviewSession(listOf(50L)),
+                session = ReviewSession(listOf(50L), sessionId = "session-42"),
+                sessionId = "session-42",
                 updatedAt = Instant.parse("2026-06-28T12:00:00Z")
             ),
             ReviewSessionRegistry.StoredReviewSession(
                 reviewerId = 43L,
-                session = ReviewSession(listOf(60L)),
+                session = ReviewSession(listOf(60L), sessionId = "session-43"),
+                sessionId = "session-43",
                 updatedAt = Instant.parse("2026-06-28T12:00:00Z")
             )
         )
@@ -477,7 +524,7 @@ class ReviewCommandTest {
                     id = "token",
                     guildId = 1L,
                     reviewerId = 99L,
-                    targetReviewerIds = setOf(42L, 43L)
+                    targetSessionIds = mapOf(42L to "session-42", 43L to "session-43")
                 )
             )
         )
@@ -514,7 +561,7 @@ class ReviewCommandTest {
                     id = "token",
                     guildId = 1L,
                     reviewerId = 99L,
-                    targetReviewerIds = setOf(42L)
+                    targetSessionIds = mapOf(42L to "session-42")
                 )
             )
         )

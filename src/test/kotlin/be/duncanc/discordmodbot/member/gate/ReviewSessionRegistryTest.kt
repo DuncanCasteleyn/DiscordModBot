@@ -32,6 +32,7 @@ class ReviewSessionRegistryTest {
         val before = Instant.now()
         val session = ReviewSession(
             pendingUserIds = listOf(20L, 10L),
+            sessionId = "session-99",
             oldestPendingUserId = 10L,
             approvedCount = 1,
             rejectedCount = 2,
@@ -44,6 +45,7 @@ class ReviewSessionRegistryTest {
         verify(reviewSessionStateRepository).save(captor.capture())
         val state = captor.firstValue
         assertEquals("1:99", state.id)
+        assertEquals("session-99", state.sessionId)
         assertEquals(10L, state.oldestPendingUserId)
         assertEquals(listOf(20L, 10L), state.pendingUserIds)
         assertEquals(1, state.approvedCount)
@@ -61,6 +63,7 @@ class ReviewSessionRegistryTest {
                     id = "1:99",
                     guildId = 1L,
                     reviewerId = 99L,
+                    sessionId = "session-99",
                     oldestPendingUserId = 10L,
                     pendingUserIds = listOf(20L, 10L),
                     approvedCount = 1,
@@ -75,6 +78,7 @@ class ReviewSessionRegistryTest {
         assertEquals(20L, session?.getCurrentUserId())
         assertEquals(false, session?.isCurrentOldest())
         assertEquals(listOf(20L, 10L), session?.toPendingUserIds())
+        assertEquals("session-99", session?.sessionId)
         assertEquals(1, session?.approvedCount)
         assertEquals(2, session?.rejectedCount)
         assertEquals(3, session?.manualActionCount)
@@ -106,6 +110,7 @@ class ReviewSessionRegistryTest {
                     id = "1:42",
                     guildId = 1L,
                     reviewerId = 42L,
+                    sessionId = "session-42",
                     oldestPendingUserId = 10L,
                     pendingUserIds = listOf(10L),
                     approvedCount = 1,
@@ -134,6 +139,7 @@ class ReviewSessionRegistryTest {
 
         assertEquals(1, sessions.size)
         assertEquals(42L, sessions.first().reviewerId)
+        assertEquals("session-42", sessions.first().sessionId)
         assertEquals(10L, sessions.first().session.getCurrentUserId())
         assertEquals(1, sessions.first().session.approvedCount)
         assertEquals(2, sessions.first().session.rejectedCount)
@@ -151,6 +157,7 @@ class ReviewSessionRegistryTest {
                     id = "1:42",
                     guildId = 1L,
                     reviewerId = 42L,
+                    sessionId = "session-42",
                     oldestPendingUserId = 10L,
                     pendingUserIds = listOf(10L),
                     updatedAt = updatedAt
@@ -169,6 +176,7 @@ class ReviewSessionRegistryTest {
 
         assertEquals(1, sessions.size)
         assertEquals(42L, sessions.first().reviewerId)
+        assertEquals("session-42", sessions.first().sessionId)
         assertEquals(updatedAt, sessions.first().updatedAt)
     }
 
@@ -180,6 +188,7 @@ class ReviewSessionRegistryTest {
                     id = "1:42",
                     guildId = 1L,
                     reviewerId = 42L,
+                    sessionId = "session-42",
                     oldestPendingUserId = 10L,
                     pendingUserIds = listOf(10L)
                 ),
@@ -204,6 +213,7 @@ class ReviewSessionRegistryTest {
 
         assertEquals(1, sessions.size)
         assertEquals(42L, sessions.first().reviewerId)
+        assertEquals("session-42", sessions.first().sessionId)
         verify(reviewSessionStateRepository).deleteById("1:42")
     }
 }

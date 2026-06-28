@@ -306,8 +306,8 @@ class ReviewCommand(
         }
 
         val currentOtherSessions = reviewSessionRegistry.getOtherSessions(guild.idLong, event.user.idLong)
-        val currentTargetReviewerIds = currentOtherSessions.map { it.reviewerId }.toSet()
-        if (currentTargetReviewerIds != confirmation.targetReviewerIds) {
+        val currentTargetSessionIds = currentOtherSessions.associate { it.reviewerId to it.sessionId }
+        if (currentTargetSessionIds != confirmation.targetSessionIds) {
             reviewInterruptConfirmationRepository.deleteById(buttonAction.token)
             event.editMessage("The active review sessions changed. Run `/review` again to confirm the current sessions.")
                 .setComponents(emptyList())
@@ -329,7 +329,7 @@ class ReviewCommand(
         }
 
         reviewInterruptConfirmationRepository.deleteById(buttonAction.token)
-        reviewSessionRegistry.forgetSessions(guild.idLong, confirmation.targetReviewerIds)
+        reviewSessionRegistry.forgetSessions(guild.idLong, confirmation.targetSessionIds.keys)
             .forEach { logReviewInterrupted(guild, it) }
         reviewSessionRegistry.remember(guild.idLong, event.user.idLong, session)
         logReviewStarted(guild, event.member!!, session)
@@ -363,7 +363,7 @@ class ReviewCommand(
                 id = token,
                 guildId = guildId,
                 reviewerId = reviewerId,
-                targetReviewerIds = sessions.map { it.reviewerId }.toSet()
+                targetSessionIds = sessions.associate { it.reviewerId to it.sessionId }
             )
         )
         return token

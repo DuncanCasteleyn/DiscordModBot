@@ -10,6 +10,7 @@ data class ReviewSessionState(
     val id: String,
     val guildId: Long,
     val reviewerId: Long,
+    val sessionId: String = "",
     val oldestPendingUserId: Long,
     val pendingUserIds: List<Long>,
     val approvedCount: Int = 0,

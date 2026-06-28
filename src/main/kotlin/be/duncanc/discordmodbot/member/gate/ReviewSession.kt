@@ -1,7 +1,10 @@
 package be.duncanc.discordmodbot.member.gate
 
+import java.util.UUID
+
 class ReviewSession(
     pendingUserIds: List<Long>,
+    val sessionId: String = UUID.randomUUID().toString(),
     val oldestPendingUserId: Long = pendingUserIds.firstOrNull()
         ?: throw IllegalArgumentException("A review session requires at least one pending user."),
     var approvedCount: Int = 0,
