@@ -12,6 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Instant
 import java.util.*
 
 @ExtendWith(MockitoExtension::class)
@@ -28,6 +29,7 @@ class ReviewSessionRegistryTest {
 
     @Test
     fun `remember stores session state in redis repository`() {
+        val before = Instant.now()
         val session = ReviewSession(
             pendingUserIds = listOf(20L, 10L),
             oldestPendingUserId = 10L,
@@ -47,6 +49,8 @@ class ReviewSessionRegistryTest {
         assertEquals(1, state.approvedCount)
         assertEquals(2, state.rejectedCount)
         assertEquals(3, state.manualActionCount)
+        assertEquals(false, state.updatedAt.isBefore(before))
+        assertEquals(false, state.updatedAt.isAfter(Instant.now()))
     }
 
     @Test
@@ -95,6 +99,7 @@ class ReviewSessionRegistryTest {
 
     @Test
     fun `forget other sessions returns and deletes sessions from other reviewers in guild`() {
+        val updatedAt = Instant.parse("2026-06-28T12:00:00Z")
         whenever(reviewSessionStateRepository.findAll()).thenReturn(
             listOf(
                 ReviewSessionState(
@@ -105,7 +110,8 @@ class ReviewSessionRegistryTest {
                     pendingUserIds = listOf(10L),
                     approvedCount = 1,
                     rejectedCount = 2,
-                    manualActionCount = 3
+                    manualActionCount = 3,
+                    updatedAt = updatedAt
                 ),
                 ReviewSessionState(
                     id = "1:99",
@@ -132,6 +138,37 @@ class ReviewSessionRegistryTest {
         assertEquals(1, sessions.first().session.approvedCount)
         assertEquals(2, sessions.first().session.rejectedCount)
         assertEquals(3, sessions.first().session.manualActionCount)
+        assertEquals(updatedAt, sessions.first().updatedAt)
         verify(reviewSessionStateRepository).deleteById("1:42")
+    }
+
+    @Test
+    fun `get other sessions returns sessions without deleting them`() {
+        val updatedAt = Instant.parse("2026-06-28T12:00:00Z")
+        whenever(reviewSessionStateRepository.findAll()).thenReturn(
+            listOf(
+                ReviewSessionState(
+                    id = "1:42",
+                    guildId = 1L,
+                    reviewerId = 42L,
+                    oldestPendingUserId = 10L,
+                    pendingUserIds = listOf(10L),
+                    updatedAt = updatedAt
+                ),
+                ReviewSessionState(
+                    id = "1:99",
+                    guildId = 1L,
+                    reviewerId = 99L,
+                    oldestPendingUserId = 20L,
+                    pendingUserIds = listOf(20L)
+                )
+            )
+        )
+
+        val sessions = reviewSessionRegistry.getOtherSessions(1L, 99L)
+
+        assertEquals(1, sessions.size)
+        assertEquals(42L, sessions.first().reviewerId)
+        assertEquals(updatedAt, sessions.first().updatedAt)
     }
 }

@@ -21,6 +21,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.*
+import java.time.Instant
 
 @ExtendWith(MockitoExtension::class)
 class ReviewCommandTest {
@@ -98,7 +99,7 @@ class ReviewCommandTest {
     private fun stubSlashReviewStart() {
         stubSlashReviewCommand()
         whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(null)
-        whenever(reviewSessionRegistry.forgetOtherSessions(1L, 99L)).thenReturn(emptyList())
+        whenever(reviewSessionRegistry.getOtherSessions(1L, 99L)).thenReturn(emptyList())
     }
 
     private fun stubSlashReviewCommand() {
@@ -136,6 +137,15 @@ class ReviewCommandTest {
         whenever(buttonEvent.guild).thenReturn(guild)
         whenever(buttonEvent.member).thenReturn(member)
         whenever(buttonEvent.user).thenReturn(user)
+    }
+
+    private fun stubInterruptButtonInteraction(action: String = "confirm") {
+        stubCommonIdentity()
+        whenever(buttonEvent.componentId).thenReturn("member-gate-review-interrupt:$action:99")
+        whenever(buttonEvent.guild).thenReturn(guild)
+        whenever(buttonEvent.member).thenReturn(member)
+        whenever(buttonEvent.user).thenReturn(user)
+        whenever(buttonEvent.jda).thenReturn(jda)
     }
 
     private fun stubButtonReply() {
@@ -273,7 +283,7 @@ class ReviewCommandTest {
         val storedSession = ReviewSession(listOf(20L))
         val newSession = ReviewSession(listOf(30L))
         whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(storedSession)
-        whenever(reviewSessionRegistry.forgetOtherSessions(1L, 99L)).thenReturn(emptyList())
+        whenever(reviewSessionRegistry.getOtherSessions(1L, 99L)).thenReturn(emptyList())
         whenever(reviewManager.createSession(1L)).thenReturn(newSession)
         whenever(reviewManager.getPendingQuestion(1L, 20L)).thenReturn(null)
         whenever(reviewManager.getPendingQuestion(1L, 30L)).thenReturn(
@@ -292,9 +302,46 @@ class ReviewCommandTest {
     }
 
     @Test
-    fun `starting review logs and removes another moderator's unfinished session`() {
+    fun `starting review prompts before interrupting another moderator's unfinished session`() {
         stubSlashReviewStart()
+
+        val interruptedSession = ReviewSession(
+            pendingUserIds = listOf(50L),
+            approvedCount = 2,
+            rejectedCount = 1,
+            manualActionCount = 3
+        )
+        whenever(reviewSessionRegistry.getOtherSessions(1L, 99L)).thenReturn(
+            listOf(
+                ReviewSessionRegistry.StoredReviewSession(
+                    reviewerId = 42L,
+                    session = interruptedSession,
+                    updatedAt = Instant.parse("2026-06-28T12:00:00Z")
+                )
+            )
+        )
+        val session = ReviewSession(listOf(10L))
+        whenever(reviewManager.createSession(1L)).thenReturn(session)
+        whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(
+            pendingQuestion(guildId = 1L, userId = 10L, question = "Q1", answer = "A1", queuedAt = 10L)
+        )
+        whenever(guild.getMemberById(10L)).thenReturn(mock())
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        val messageCaptor = argumentCaptor<String>()
+        verify(slashEvent).reply(messageCaptor.capture())
+        assertTrue(messageCaptor.firstValue.contains("Another moderator is already reviewing members:"))
+        assertTrue(messageCaptor.firstValue.contains("<@42> has 1 pending applicant(s), last updated <t:1782648000:R>."))
+        verify(reviewSessionRegistry, never()).forgetOtherSessions(any(), any())
+        verify(reviewSessionRegistry, never()).remember(eq(1L), eq(99L), same(session))
+    }
+
+    @Test
+    fun `confirming interruption logs and removes another moderator's unfinished session`() {
+        stubInterruptButtonInteraction()
         stubModeratorName()
+        stubButtonEditWithActionRow()
 
         val interruptedSession = ReviewSession(
             pendingUserIds = listOf(50L),
@@ -303,7 +350,13 @@ class ReviewCommandTest {
             manualActionCount = 3
         )
         whenever(reviewSessionRegistry.forgetOtherSessions(1L, 99L)).thenReturn(
-            listOf(ReviewSessionRegistry.StoredReviewSession(42L, interruptedSession))
+            listOf(
+                ReviewSessionRegistry.StoredReviewSession(
+                    reviewerId = 42L,
+                    session = interruptedSession,
+                    updatedAt = Instant.parse("2026-06-28T12:00:00Z")
+                )
+            )
         )
         val session = ReviewSession(listOf(10L))
         whenever(reviewManager.createSession(1L)).thenReturn(session)
@@ -313,11 +366,32 @@ class ReviewCommandTest {
         whenever(guild.getMemberById(42L)).thenReturn(null)
         stubApplicantPresent(10L, "<@10>")
 
-        command.onSlashCommandInteraction(slashEvent)
+        command.onButtonInteraction(buttonEvent)
 
         verifyReviewLog("Member gate review interrupted", "Approved", "2")
         verifyReviewLog("Member gate review interrupted", "Rejected", "1")
         verifyReviewLog("Member gate review interrupted", "Manual action", "3")
+        verify(reviewSessionRegistry).remember(eq(1L), eq(99L), same(session))
+        val messageCaptor = argumentCaptor<String>()
+        verify(buttonEvent).editMessage(messageCaptor.capture())
+        assertTrue(messageCaptor.firstValue.contains("Applicant: <@10> (`10`)"))
+    }
+
+    @Test
+    fun `cancelling interruption keeps another moderator's unfinished session`() {
+        whenever(user.idLong).thenReturn(99L)
+        whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
+        whenever(buttonEvent.componentId).thenReturn("member-gate-review-interrupt:cancel:99")
+        whenever(buttonEvent.guild).thenReturn(guild)
+        whenever(buttonEvent.member).thenReturn(member)
+        whenever(buttonEvent.user).thenReturn(user)
+        stubButtonEditWithList()
+
+        command.onButtonInteraction(buttonEvent)
+
+        verify(buttonEvent).editMessage("Review start cancelled. The other moderator's review session was not interrupted.")
+        verify(reviewSessionRegistry, never()).forgetOtherSessions(any(), any())
+        verify(reviewManager, never()).createSession(any())
     }
 
     @Test

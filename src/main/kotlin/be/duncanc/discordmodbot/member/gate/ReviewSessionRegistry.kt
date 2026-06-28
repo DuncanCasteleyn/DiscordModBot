@@ -3,6 +3,7 @@ package be.duncanc.discordmodbot.member.gate
 import be.duncanc.discordmodbot.member.gate.persistence.ReviewSessionState
 import be.duncanc.discordmodbot.member.gate.persistence.ReviewSessionStateRepository
 import org.springframework.stereotype.Component
+import java.time.Instant
 
 @Component
 class ReviewSessionRegistry(
@@ -10,7 +11,8 @@ class ReviewSessionRegistry(
 ) {
     data class StoredReviewSession(
         val reviewerId: Long,
-        val session: ReviewSession
+        val session: ReviewSession,
+        val updatedAt: Instant
     )
 
     fun remember(guildId: Long, reviewerId: Long, session: ReviewSession) {
@@ -29,7 +31,8 @@ class ReviewSessionRegistry(
                 pendingUserIds = pendingUserIds,
                 approvedCount = session.approvedCount,
                 rejectedCount = session.rejectedCount,
-                manualActionCount = session.manualActionCount
+                manualActionCount = session.manualActionCount,
+                updatedAt = Instant.now()
             )
         )
     }
@@ -50,13 +53,18 @@ class ReviewSessionRegistry(
     }
 
     fun forgetOtherSessions(guildId: Long, reviewerId: Long): List<StoredReviewSession> {
+        return getOtherSessions(guildId, reviewerId)
+            .mapNotNull { state ->
+                reviewSessionStateRepository.deleteById(createId(guildId, state.reviewerId))
+                state
+            }
+    }
+
+    fun getOtherSessions(guildId: Long, reviewerId: Long): List<StoredReviewSession> {
         return reviewSessionStateRepository.findAll()
             .filterNotNull()
             .filter { it.guildId == guildId && it.reviewerId != reviewerId }
-            .mapNotNull { state ->
-                reviewSessionStateRepository.deleteById(state.id)
-                state.toStoredSession()
-            }
+            .mapNotNull { it.toStoredSession() }
     }
 
     private fun createId(guildId: Long, reviewerId: Long): String = "$guildId:$reviewerId"
@@ -66,7 +74,7 @@ class ReviewSessionRegistry(
             return null
         }
 
-        return StoredReviewSession(reviewerId, toSession())
+        return StoredReviewSession(reviewerId, toSession(), updatedAt)
     }
 
     private fun ReviewSessionState.toSession(): ReviewSession {
