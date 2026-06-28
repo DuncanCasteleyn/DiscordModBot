@@ -1,4 +1,4 @@
-name: Test MariaDB
+name: Test PostgreSQL
 
 on:
   push:
@@ -17,17 +17,16 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      mariadb:
-        image: mariadb:12.3.2@sha256:b1c7bf836e64ed9406a8984af29509f40089d55cea14b32f12c4726a1f17104b
+      postgres:
+        image: postgres:18@sha256:4aabea78cf39b90e834caf3af7d602a18565f6fe2508705c8d01aa63245c2e20
         ports:
-          - 3306:3306
+          - 5432:5432
         env:
-          MARIADB_USER: spring
-          MARIADB_PASSWORD: test
-          MARIADB_DATABASE: discordmodbot
-          MARIADB_ROOT_PASSWORD: test
+          POSTGRES_USER: spring
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: discordmodbot
         options: >-
-          --health-cmd "/usr/local/bin/healthcheck.sh --su-mysql --connect --innodb_initialized"
+          --health-cmd "pg_isready -U spring -d discordmodbot"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -47,8 +46,9 @@ jobs:
       - name: Run Gradle check
         run: ./gradlew check
         env:
-          SPRING_DATASOURCE_URL: jdbc:mariadb://127.0.0.1:3306/discordmodbot
+          SPRING_PROFILES_ACTIVE: testing,postgresql
+          SPRING_DATASOURCE_URL: jdbc:postgresql://127.0.0.1:5432/discordmodbot
           SPRING_DATASOURCE_USERNAME: spring
           SPRING_DATASOURCE_PASSWORD: test
-          SPRING_DATASOURCE_DRIVERCLASSNAME: org.mariadb.jdbc.Driver
-          SPRING_FLYWAY_LOCATIONS: classpath:db/migration/mariadb
+          SPRING_DATASOURCE_DRIVERCLASSNAME: org.postgresql.Driver
+          SPRING_FLYWAY_LOCATIONS: classpath:db/migration/postgresql

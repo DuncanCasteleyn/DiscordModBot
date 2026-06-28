@@ -65,7 +65,8 @@ Repository guidance for coding agents working in `DiscordModBot`.
 ## Persistence & Migrations
 
 - JPA + Spring Data, plus Redis via `@RedisHash`.
-- Flyway migrations live in `src/main/resources/db/migration`. Hibernate `ddl-auto` is `none` in production.
+- Flyway migrations live in vendor-specific folders under `src/main/resources/db/migration` (`mariadb` and
+  `postgresql`). Hibernate `ddl-auto` is `none` in production.
 - Common pattern: class-level `@Transactional(readOnly = true)`; method-level `@Transactional` for writes.
 
 ## Code Style
