@@ -153,6 +153,11 @@ class ReportMessageContextMenu(
         }
 
         if (!action.confirm) {
+            val existingState = reportedMessageService.getState(action.guildId, action.channelId, action.messageId)
+            if (existingState == ReportedMessageState.URGENT) {
+                event.editMessage(ALREADY_REPORTED_MESSAGE).setComponents(emptyList()).queue()
+                return
+            }
             event.editMessage("Urgent report cancelled.").setComponents(emptyList()).queue()
             return
         }

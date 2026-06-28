@@ -567,6 +567,22 @@ class ReportMessageContextMenuTest {
     }
 
     @Test
+    fun `stale cancel button clears confirmation after urgent report was sent`() {
+        whenever(buttonEvent.componentId).thenReturn("report:cancel:1:123:456:99")
+        whenever(buttonEvent.user).thenReturn(reporterUser)
+        whenever(reporterUser.idLong).thenReturn(99L)
+        whenever(reportedMessageService.getState(1L, 123L, 456L)).thenReturn(ReportedMessageState.URGENT)
+        whenever(buttonEvent.editMessage("This issue was already reported.")).thenReturn(editAction)
+        whenever(editAction.setComponents(emptyList<ActionRow>())).thenReturn(editAction)
+
+        command.onButtonInteraction(buttonEvent)
+
+        verify(buttonEvent).editMessage("This issue was already reported.")
+        verify(editAction).setComponents(emptyList<ActionRow>())
+        verify(editAction).queue()
+    }
+
+    @Test
     fun `report embed uses author name when reported member is null`() {
         stubReportWithNullMember("Report Message")
         whenever(event.replyModal(any())).thenReturn(modalAction)
