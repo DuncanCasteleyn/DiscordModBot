@@ -11,13 +11,16 @@ import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.entities.channel.unions.GuildMessageChannelUnion
+import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 import net.dv8tion.jda.api.interactions.InteractionHook
 import net.dv8tion.jda.api.interactions.commands.Command
+import net.dv8tion.jda.api.interactions.modals.ModalMapping
 import net.dv8tion.jda.api.requests.RestAction
 import net.dv8tion.jda.api.requests.restaction.WebhookMessageEditAction
 import net.dv8tion.jda.api.requests.restaction.interactions.MessageEditCallbackAction
+import net.dv8tion.jda.api.requests.restaction.interactions.ModalCallbackAction
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -27,6 +30,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
@@ -60,6 +64,9 @@ class ReportMessageContextMenuTest {
     private lateinit var buttonEvent: ButtonInteractionEvent
 
     @Mock
+    private lateinit var modalEvent: ModalInteractionEvent
+
+    @Mock
     private lateinit var guild: Guild
 
     @Mock
@@ -87,6 +94,9 @@ class ReportMessageContextMenuTest {
     private lateinit var replyAction: ReplyCallbackAction
 
     @Mock
+    private lateinit var modalAction: ModalCallbackAction
+
+    @Mock
     private lateinit var editAction: MessageEditCallbackAction
 
     @Mock
@@ -106,6 +116,9 @@ class ReportMessageContextMenuTest {
 
     @Mock
     private lateinit var retrieveMessageAction: RestAction<Message>
+
+    @Mock
+    private lateinit var reasonValue: ModalMapping
 
     private lateinit var command: ReportMessageContextMenu
 
@@ -140,8 +153,15 @@ class ReportMessageContextMenuTest {
     @Test
     fun `non-urgent report logs to moderation channel with here ping`() {
         stubReport("Report Message")
+        whenever(event.replyModal(any())).thenReturn(modalAction)
 
         command.onMessageContextInteraction(event)
+
+        verify(event).replyModal(argThat { id == "report:reason:1:123:456:99:false" })
+
+        stubReportReasonModal(urgent = false)
+
+        command.onModalInteraction(modalEvent)
 
         val embedCaptor = argumentCaptor<EmbedBuilder>()
         verify(guildLogger).logWithContent(
@@ -158,19 +178,27 @@ class ReportMessageContextMenuTest {
         assertEquals("Duncan(reporter-user) (99)", embed.fields[0].value)
         assertEquals("Reported user", embed.fields[1].name)
         assertEquals("ReportedUser", embed.fields[1].value)
+        assertTrue(embed.fields.any { it.name == "Reason" && it.value == "Breaking the server rules" })
         assertTrue(embed.fields.any { it.name == "Message" && it.value == "This should be reviewed" })
         assertTrue(embed.fields.any { it.name == "Attachment(s)" && it.value == "https://example.invalid/image.png" })
         verify(reportedMessageService).markReported(1L, 123L, 456L, urgent = false)
-        verify(event).reply("Your report has been sent to the moderation team.")
-        verify(replyAction).queue()
+        verify(interactionHook).editOriginal("Your report has been sent to the moderation team.")
+        verify(hookEditAction).queue()
     }
 
     @Test
     fun `urgent report logs to moderation channel with everyone ping`() {
         stubReport("Urgent Report Message")
+        whenever(event.replyModal(any())).thenReturn(modalAction)
         whenever(reportSettingsService.getUrgentMention(guild)).thenReturn("@everyone")
 
         command.onMessageContextInteraction(event)
+
+        verify(event).replyModal(argThat { id == "report:reason:1:123:456:99:true" })
+
+        stubReportReasonModal(urgent = true)
+
+        command.onModalInteraction(modalEvent)
 
         val embedCaptor = argumentCaptor<EmbedBuilder>()
         verify(guildLogger).logWithContent(
@@ -183,16 +211,23 @@ class ReportMessageContextMenuTest {
         )
         verify(reportedMessageService).markReported(1L, 123L, 456L, urgent = true)
         assertEquals("Urgent message report", embedCaptor.firstValue.build().title)
-        verify(event).reply("Your report has been sent to the moderation team.")
-        verify(replyAction).queue()
+        assertTrue(
+            embedCaptor.firstValue.build().fields.any { it.name == "Reason" && it.value == "Breaking the server rules" }
+        )
+        verify(interactionHook).editOriginal("Your report has been sent to the moderation team.")
     }
 
     @Test
     fun `urgent report logs to moderation channel with configured role ping`() {
         stubReport("Urgent Report Message")
+        whenever(event.replyModal(any())).thenReturn(modalAction)
         whenever(reportSettingsService.getUrgentMention(guild)).thenReturn("<@&5>")
 
         command.onMessageContextInteraction(event)
+
+        stubReportReasonModal(urgent = true)
+
+        command.onModalInteraction(modalEvent)
 
         verify(guildLogger).logWithContent(
             any<EmbedBuilder>(),
@@ -203,8 +238,7 @@ class ReportMessageContextMenuTest {
             eq("<@&5>")
         )
         verify(reportedMessageService).markReported(1L, 123L, 456L, urgent = true)
-        verify(event).reply("Your report has been sent to the moderation team.")
-        verify(replyAction).queue()
+        verify(interactionHook).editOriginal("Your report has been sent to the moderation team.")
     }
 
     @Test
@@ -216,6 +250,27 @@ class ReportMessageContextMenuTest {
 
         verify(event).reply("This issue was already reported.")
         verify(reportRateLimitService, never()).tryConsume(any(), any())
+        verify(guildLogger, never()).logWithContent(
+            any<EmbedBuilder>(),
+            any<User>(),
+            any<Guild>(),
+            isNull<List<MessageEmbed>>(),
+            any<GuildLogger.LogTypeAction>(),
+            any<String>()
+        )
+    }
+
+    @Test
+    fun `report reason must have at least five characters`() {
+        whenever(modalEvent.modalId).thenReturn("report:reason:1:123:456:99:false")
+        whenever(modalEvent.getValue("reason")).thenReturn(reasonValue)
+        whenever(reasonValue.asString).thenReturn("no")
+        whenever(modalEvent.reply(any<String>())).thenReturn(replyAction)
+        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
+
+        command.onModalInteraction(modalEvent)
+
+        verify(modalEvent).reply("Reason must be at least 5 characters.")
         verify(guildLogger, never()).logWithContent(
             any<EmbedBuilder>(),
             any<User>(),
@@ -313,14 +368,16 @@ class ReportMessageContextMenuTest {
     fun `urgent confirmation logs urgent report and upgrades state`() {
         stubUrgentConfirmation()
         whenever(reportedMessageService.getState(1L, 123L, 456L)).thenReturn(ReportedMessageState.NON_URGENT)
-        whenever(reportRateLimitService.tryConsume(1L, 99L)).thenReturn(true)
-        whenever(buttonEvent.jda).thenReturn(jda)
-        whenever(jda.getChannelById(MessageChannel::class.java, 123L)).thenReturn(messageChannel)
-        whenever(messageChannel.retrieveMessageById(456L)).thenReturn(retrieveMessageAction)
-        doRetrieveMessageSuccess()
+        whenever(buttonEvent.replyModal(any())).thenReturn(modalAction)
         whenever(reportSettingsService.getUrgentMention(guild)).thenReturn("@everyone")
 
         command.onButtonInteraction(buttonEvent)
+
+        verify(buttonEvent).replyModal(argThat { id == "report:reason:1:123:456:99:true" })
+
+        stubReportReasonModal(urgent = true, existingState = ReportedMessageState.NON_URGENT)
+
+        command.onModalInteraction(modalEvent)
 
         verify(guildLogger).logWithContent(
             any<EmbedBuilder>(),
@@ -331,10 +388,7 @@ class ReportMessageContextMenuTest {
             eq("@everyone")
         )
         verify(reportedMessageService).markUrgent(1L, 123L, 456L)
-        verify(buttonEvent).deferEdit()
-        verify(deferredEditAction).queue(any<Consumer<InteractionHook>>())
         verify(interactionHook).editOriginal("Your urgent report has been sent to the moderation team.")
-        verify(hookEditAction).setComponents(emptyList<ActionRow>())
         verify(hookEditAction).queue()
     }
 
@@ -342,17 +396,19 @@ class ReportMessageContextMenuTest {
     fun `urgent confirmation updates deferred response when message retrieval fails`() {
         stubUrgentConfirmation(includeRetrievedMessageDetails = false)
         whenever(reportedMessageService.getState(1L, 123L, 456L)).thenReturn(ReportedMessageState.NON_URGENT)
-        whenever(buttonEvent.jda).thenReturn(jda)
+        whenever(buttonEvent.replyModal(any())).thenReturn(modalAction)
+
+        command.onButtonInteraction(buttonEvent)
+
+        stubReportReasonModal(urgent = true, existingState = ReportedMessageState.NON_URGENT, retrieveMessage = false)
         whenever(jda.getChannelById(MessageChannel::class.java, 123L)).thenReturn(messageChannel)
         whenever(messageChannel.retrieveMessageById(456L)).thenReturn(retrieveMessageAction)
         doRetrieveMessageFailure()
 
-        command.onButtonInteraction(buttonEvent)
+        command.onModalInteraction(modalEvent)
 
-        verify(buttonEvent).deferEdit()
-        verify(deferredEditAction).queue(any<Consumer<InteractionHook>>())
+        verify(modalEvent).deferReply(true)
         verify(interactionHook).editOriginal("I could not find that message anymore.")
-        verify(hookEditAction).setComponents(emptyList<ActionRow>())
         verify(hookEditAction).queue()
         verify(reportRateLimitService, never()).tryConsume(any(), any())
         verify(guildLogger, never()).logWithContent(
@@ -511,10 +567,31 @@ class ReportMessageContextMenuTest {
     }
 
     @Test
+    fun `stale cancel button clears confirmation after urgent report was sent`() {
+        whenever(buttonEvent.componentId).thenReturn("report:cancel:1:123:456:99")
+        whenever(buttonEvent.user).thenReturn(reporterUser)
+        whenever(reporterUser.idLong).thenReturn(99L)
+        whenever(reportedMessageService.getState(1L, 123L, 456L)).thenReturn(ReportedMessageState.URGENT)
+        whenever(buttonEvent.editMessage("This issue was already reported.")).thenReturn(editAction)
+        whenever(editAction.setComponents(emptyList<ActionRow>())).thenReturn(editAction)
+
+        command.onButtonInteraction(buttonEvent)
+
+        verify(buttonEvent).editMessage("This issue was already reported.")
+        verify(editAction).setComponents(emptyList<ActionRow>())
+        verify(editAction).queue()
+    }
+
+    @Test
     fun `report embed uses author name when reported member is null`() {
         stubReportWithNullMember("Report Message")
+        whenever(event.replyModal(any())).thenReturn(modalAction)
 
         command.onMessageContextInteraction(event)
+
+        stubReportReasonModal(urgent = false)
+
+        command.onModalInteraction(modalEvent)
 
         val embedCaptor = argumentCaptor<EmbedBuilder>()
         verify(guildLogger).logWithContent(
@@ -561,6 +638,41 @@ class ReportMessageContextMenuTest {
         assertEquals(2, commands.size)
         assertEquals(listOf(Command.Type.MESSAGE, Command.Type.MESSAGE), commands.map { it.type })
         assertEquals(listOf("Report Message", "Urgent Report Message"), commands.map { it.name })
+    }
+
+    private fun stubReportReasonModal(
+        urgent: Boolean,
+        reason: String = "Breaking the server rules",
+        existingState: ReportedMessageState? = null,
+        retrieveMessage: Boolean = true
+    ) {
+        whenever(modalEvent.modalId).thenReturn("report:reason:1:123:456:99:$urgent")
+        whenever(modalEvent.getValue("reason")).thenReturn(reasonValue)
+        whenever(reasonValue.asString).thenReturn(reason)
+        whenever(modalEvent.guild).thenReturn(guild)
+        whenever(modalEvent.member).thenReturn(reporter)
+        whenever(modalEvent.jda).thenReturn(jda)
+        whenever(modalEvent.deferReply(true)).thenReturn(replyAction)
+        whenever(interactionHook.editOriginal(any<String>())).thenReturn(hookEditAction)
+        doAnswer { invocation ->
+            invocation.component1<Consumer<InteractionHook>>().accept(interactionHook)
+            null
+        }.whenever(replyAction).queue(any<Consumer<InteractionHook>>())
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(reporter.idLong).thenReturn(99L)
+        whenever(reporter.isTimedOut).thenReturn(false)
+        whenever(muteService.isUserMuted(1L, 99L)).thenReturn(false)
+        whenever(reportSettingsService.isReportingEnabled(1L)).thenReturn(true)
+        whenever(reportSettingsService.isUserBlocked(1L, 99L)).thenReturn(false)
+        whenever(reportedMessageService.getState(1L, 123L, 456L)).thenReturn(existingState)
+        whenever(guildLogger.canSendModeratorLog(guild)).thenReturn(true)
+        whenever(reportRateLimitService.hasActiveToken(1L, 99L)).thenReturn(false)
+        if (retrieveMessage) {
+            whenever(reportRateLimitService.tryConsume(1L, 99L)).thenReturn(true)
+            whenever(jda.getChannelById(MessageChannel::class.java, 123L)).thenReturn(messageChannel)
+            whenever(messageChannel.retrieveMessageById(456L)).thenReturn(retrieveMessageAction)
+            doRetrieveMessageSuccess()
+        }
     }
 
     private fun stubReport(commandName: String, timedOut: Boolean = false, muted: Boolean = false) {
@@ -616,8 +728,6 @@ class ReportMessageContextMenuTest {
         whenever(event.name).thenReturn(commandName)
         whenever(event.guild).thenReturn(guild)
         whenever(event.member).thenReturn(reporter)
-        whenever(event.reply(any<String>())).thenReturn(replyAction)
-        whenever(replyAction.setEphemeral(true)).thenReturn(replyAction)
         whenever(guild.idLong).thenReturn(1L)
         whenever(reporter.idLong).thenReturn(99L)
         whenever(reporter.isTimedOut).thenReturn(timedOut)
@@ -626,7 +736,6 @@ class ReportMessageContextMenuTest {
             if (!muted) {
                 whenever(reportSettingsService.isReportingEnabled(1L)).thenReturn(true)
                 whenever(reportSettingsService.isUserBlocked(1L, 99L)).thenReturn(false)
-                whenever(reportRateLimitService.tryConsume(1L, 99L)).thenReturn(true)
             }
         }
         whenever(reporter.user).thenReturn(reporterUser)
@@ -683,13 +792,6 @@ class ReportMessageContextMenuTest {
         whenever(reporterUser.idLong).thenReturn(99L)
         whenever(buttonEvent.guild).thenReturn(guild)
         whenever(buttonEvent.member).thenReturn(reporter)
-        whenever(buttonEvent.deferEdit()).thenReturn(deferredEditAction)
-        whenever(interactionHook.editOriginal(any<String>())).thenReturn(hookEditAction)
-        whenever(hookEditAction.setComponents(any<List<ActionRow>>())).thenReturn(hookEditAction)
-        doAnswer { (success: Consumer<InteractionHook>) ->
-            success.accept(interactionHook)
-            null
-        }.whenever(deferredEditAction).queue(any())
         whenever(guild.idLong).thenReturn(1L)
         whenever(reporter.idLong).thenReturn(99L)
         whenever(reporter.isTimedOut).thenReturn(false)
