@@ -4,6 +4,8 @@ import be.duncanc.discordmodbot.discord.SlashCommand
 import be.duncanc.discordmodbot.discord.nicknameAndUsername
 import be.duncanc.discordmodbot.logging.GuildLogger
 import be.duncanc.discordmodbot.member.gate.persistence.MemberGateQuestion
+import be.duncanc.discordmodbot.member.gate.persistence.ReviewInterruptConfirmation
+import be.duncanc.discordmodbot.member.gate.persistence.ReviewInterruptConfirmationRepository
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.Permission
@@ -24,11 +26,13 @@ import net.dv8tion.jda.api.utils.TimeFormat
 import org.springframework.stereotype.Component
 import java.awt.Color
 import java.time.Instant
+import java.util.UUID
 
 @Component
 class ReviewCommand(
     private val reviewManager: ReviewManager,
     private val reviewSessionRegistry: ReviewSessionRegistry,
+    private val reviewInterruptConfirmationRepository: ReviewInterruptConfirmationRepository,
     private val guildLogger: GuildLogger
 ) : ListenerAdapter(), SlashCommand {
     companion object {
@@ -49,8 +53,7 @@ class ReviewCommand(
 
         private data class InterruptButtonAction(
             val action: String,
-            val reviewerId: Long,
-            val targetReviewerIds: Set<Long>
+            val token: String
         )
     }
 
@@ -93,9 +96,10 @@ class ReviewCommand(
 
         val otherSessions = reviewSessionRegistry.getOtherSessions(guild.idLong, event.user.idLong)
         if (otherSessions.isNotEmpty()) {
+            val token = rememberInterruptConfirmation(guild.idLong, event.user.idLong, otherSessions)
             event.reply(buildInterruptPrompt(guild, otherSessions))
                 .setEphemeral(true)
-                .addComponents(ActionRow.of(buildInterruptButtons(event.user.idLong, otherSessions)))
+                .addComponents(ActionRow.of(buildInterruptButtons(token)))
                 .queue()
             return
         }
@@ -275,12 +279,19 @@ class ReviewCommand(
             return
         }
 
-        if (buttonAction.reviewerId != event.user.idLong) {
+        val confirmation = reviewInterruptConfirmationRepository.findById(buttonAction.token).orElse(null)
+        if (confirmation == null) {
+            event.reply("This confirmation prompt expired. Run `/review` again.").setEphemeral(true).queue()
+            return
+        }
+
+        if (confirmation.guildId != guild.idLong || confirmation.reviewerId != event.user.idLong) {
             event.reply("This confirmation prompt belongs to another moderator.").setEphemeral(true).queue()
             return
         }
 
         if (buttonAction.action == INTERRUPT_CANCEL_ACTION) {
+            reviewInterruptConfirmationRepository.deleteById(buttonAction.token)
             event.editMessage("Review start cancelled. The other moderator's review session was not interrupted.")
                 .setComponents(emptyList())
                 .queue()
@@ -296,7 +307,8 @@ class ReviewCommand(
 
         val currentOtherSessions = reviewSessionRegistry.getOtherSessions(guild.idLong, event.user.idLong)
         val currentTargetReviewerIds = currentOtherSessions.map { it.reviewerId }.toSet()
-        if (currentTargetReviewerIds != buttonAction.targetReviewerIds) {
+        if (currentTargetReviewerIds != confirmation.targetReviewerIds) {
+            reviewInterruptConfirmationRepository.deleteById(buttonAction.token)
             event.editMessage("The active review sessions changed. Run `/review` again to confirm the current sessions.")
                 .setComponents(emptyList())
                 .queue()
@@ -316,7 +328,8 @@ class ReviewCommand(
             return
         }
 
-        reviewSessionRegistry.forgetSessions(guild.idLong, buttonAction.targetReviewerIds)
+        reviewInterruptConfirmationRepository.deleteById(buttonAction.token)
+        reviewSessionRegistry.forgetSessions(guild.idLong, confirmation.targetReviewerIds)
             .forEach { logReviewInterrupted(guild, it) }
         reviewSessionRegistry.remember(guild.idLong, event.user.idLong, session)
         logReviewStarted(guild, event.member!!, session)
@@ -331,18 +344,29 @@ class ReviewCommand(
             return null
         }
 
-        val segments = componentId.removePrefix(INTERRUPT_CONFIRM_PREFIX).split(":", limit = 3)
-        if (segments.size != 3) {
+        val segments = componentId.removePrefix(INTERRUPT_CONFIRM_PREFIX).split(":", limit = 2)
+        if (segments.size != 2) {
             return null
         }
 
-        val reviewerId = segments[1].toLongOrNull() ?: return null
-        val targetReviewerIds = segments[2]
-            .split(",")
-            .filter { it.isNotBlank() }
-            .map { it.toLongOrNull() ?: return null }
-            .toSet()
-        return InterruptButtonAction(segments[0], reviewerId, targetReviewerIds)
+        return InterruptButtonAction(segments[0], segments[1])
+    }
+
+    private fun rememberInterruptConfirmation(
+        guildId: Long,
+        reviewerId: Long,
+        sessions: List<ReviewSessionRegistry.StoredReviewSession>
+    ): String {
+        val token = UUID.randomUUID().toString().replace("-", "").take(12)
+        reviewInterruptConfirmationRepository.save(
+            ReviewInterruptConfirmation(
+                id = token,
+                guildId = guildId,
+                reviewerId = reviewerId,
+                targetReviewerIds = sessions.map { it.reviewerId }.toSet()
+            )
+        )
+        return token
     }
 
     private fun resolveCurrentQuestion(guild: Guild, jda: JDA, session: ReviewSession): MemberGateQuestion? {
@@ -460,18 +484,14 @@ class ReviewCommand(
         Button.primary("$BUTTON_PREFIX$MANUAL_ACTION:${question.userId}:${question.queuedAt}", "Manual Action")
     )
 
-    private fun buildInterruptButtons(
-        reviewerId: Long,
-        sessions: List<ReviewSessionRegistry.StoredReviewSession>
-    ): List<Button> {
-        val targetReviewerIds = sessions.joinToString(",") { it.reviewerId.toString() }
+    private fun buildInterruptButtons(token: String): List<Button> {
         return listOf(
             Button.danger(
-                "$INTERRUPT_CONFIRM_PREFIX$INTERRUPT_CONFIRM_ACTION:$reviewerId:$targetReviewerIds",
+                "$INTERRUPT_CONFIRM_PREFIX$INTERRUPT_CONFIRM_ACTION:$token",
                 "Interrupt review"
             ),
             Button.secondary(
-                "$INTERRUPT_CONFIRM_PREFIX$INTERRUPT_CANCEL_ACTION:$reviewerId:$targetReviewerIds",
+                "$INTERRUPT_CONFIRM_PREFIX$INTERRUPT_CANCEL_ACTION:$token",
                 "Cancel"
             )
         )
