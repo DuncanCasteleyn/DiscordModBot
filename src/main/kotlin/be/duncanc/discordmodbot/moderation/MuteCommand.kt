@@ -146,7 +146,7 @@ class MuteCommand(
                 return@queue
             }
 
-            guild.addRoleToMember(targetMember, muteRole).queue({
+            guild.addRoleToMember(targetMember, muteRole).reason(reason.toAuditReason()).queue({
                 muteService.muteUserById(guild.idLong, targetUserId)
                 val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
                 if (guildLogger != null) {
