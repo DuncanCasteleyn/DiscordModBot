@@ -32,5 +32,30 @@ jobs:
         uses: anomalyco/opencode/github@77fc88c8ade8e5a620ebbe1197f3a572d29ae91a # latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          OPENCODE_CONFIG_CONTENT: |
+            {
+              "$schema": "https://opencode.ai/config.json",
+              "agent": {
+                "build": {
+                  "permission": {
+                    "read": "allow",
+                    "edit": "allow",
+                    "glob": "allow",
+                    "grep": "allow",
+                    "list": "allow",
+                    "bash": "allow",
+                    "task": "allow",
+                    "external_directory": "deny",
+                    "todowrite": "allow",
+                    "question": "deny",
+                    "webfetch": "allow",
+                    "websearch": "allow",
+                    "lsp": "allow",
+                    "doom_loop": "deny",
+                    "skill": "allow"
+                  }
+                }
+              }
+            }
         with:
           model: opencode-go/kimi-k2.7-code
