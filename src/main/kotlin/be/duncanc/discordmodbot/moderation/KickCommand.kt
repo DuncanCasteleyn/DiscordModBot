@@ -112,7 +112,7 @@ class KickCommand : ListenerAdapter(), SlashCommand {
     private fun processKick(event: ModalInteractionEvent, member: Member, targetMember: Member, reason: String) {
         event.deferReply(true).queue { hook ->
             val guild = event.guild!!
-            val kickRestAction = guild.kick(targetMember)
+            val kickRestAction = guild.kick(targetMember).reason(reason.toAuditReason())
 
             val userKickNotification = EmbedBuilder()
                 .setColor(Color.RED)

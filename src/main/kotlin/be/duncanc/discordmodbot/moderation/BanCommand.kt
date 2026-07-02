@@ -113,7 +113,7 @@ class BanCommand : ListenerAdapter(), SlashCommand {
     private fun processBan(event: ModalInteractionEvent, member: Member, targetMember: Member, reason: String) {
         event.deferReply(true).queue { hook ->
             val guild = event.guild!!
-            val banRestAction = guild.ban(targetMember, 7, TimeUnit.DAYS)
+            val banRestAction = guild.ban(targetMember, 7, TimeUnit.DAYS).reason(reason.toAuditReason())
             val description = StringBuilder("Reason: $reason")
             if (guild.idLong == 175856762677624832L) {
                 description.append("\n\n")
@@ -147,7 +147,7 @@ class BanCommand : ListenerAdapter(), SlashCommand {
     private fun processBanById(event: ModalInteractionEvent, member: Member, targetUserId: Long, reason: String) {
         event.deferReply(true).queue { hook ->
             val guild = event.guild!!
-            val banRestAction = guild.ban(User.fromId(targetUserId), 7, TimeUnit.DAYS)
+            val banRestAction = guild.ban(User.fromId(targetUserId), 7, TimeUnit.DAYS).reason(reason.toAuditReason())
 
             event.jda.retrieveUserById(targetUserId).queue(
                 { targetUser ->

@@ -119,7 +119,7 @@ class BanUserByIdCommand : ListenerAdapter(), SlashCommand {
                     User.fromId(userId),
                     1,
                     TimeUnit.DAYS
-                ).queue({
+                ).reason(reason.toAuditReason()).queue({
                     val guildLogger = event.jda.registeredListeners.firstOrNull { it is GuildLogger } as GuildLogger?
                     if (guildLogger != null) {
                         val logEmbed = EmbedBuilder()
