@@ -118,7 +118,7 @@ class MuteByIdCommand(
 
             val targetMember = guild.getMemberById(userId)
             targetMember?.let {
-                guild.addRoleToMember(it, muteRole).reason(reason).queue()
+                guild.addRoleToMember(it, muteRole).reason(reason.toAuditReason()).queue()
             }
 
             val logEmbed = EmbedBuilder()

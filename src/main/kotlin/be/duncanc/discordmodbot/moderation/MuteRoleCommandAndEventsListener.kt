@@ -32,6 +32,7 @@ class MuteRoleCommandAndEventsListener(
         private const val COMMAND = "muterole"
         private const val DESCRIPTION = "Set or remove the mute role for this server."
         private const val OPTION_ROLE = "role"
+        private const val RESTORE_MUTE_REASON = "Restoring mute role because user was previously muted before leaving"
     }
 
     override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
@@ -98,7 +99,9 @@ class MuteRoleCommandAndEventsListener(
     override fun onGuildMemberJoin(event: GuildMemberJoinEvent) {
         val muteRoleId = muteService.getMuteRoleId(event.guild.idLong) ?: return
         if (muteService.isUserMuted(event.guild.idLong, event.user.idLong)) {
-            event.guild.addRoleToMember(event.member, event.guild.getRoleById(muteRoleId)!!).queue()
+            event.guild.addRoleToMember(event.member, event.guild.getRoleById(muteRoleId)!!)
+                .reason(RESTORE_MUTE_REASON)
+                .queue()
             val logEmbed = EmbedBuilder()
                 .setColor(Color.YELLOW)
                 .setTitle("User automatically muted")

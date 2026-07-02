@@ -299,7 +299,7 @@ class AddWarnPointsByIdCommand(
                     return
                 }
 
-                guild.addRoleToMember(targetMember, muteRole).reason(reason).queue(
+                guild.addRoleToMember(targetMember, muteRole).reason(reason.toAuditReason()).queue(
                     {
                         try {
                             muteService.muteUserById(guild.idLong, targetUserId)

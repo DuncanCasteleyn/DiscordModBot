@@ -292,7 +292,7 @@ class AddWarnPointsCommand(
                     return
                 }
 
-                guild.addRoleToMember(targetMember, muteRole).reason(reason).queue(
+                guild.addRoleToMember(targetMember, muteRole).reason(reason.toAuditReason()).queue(
                     {
                         muteService.muteUserById(guild.idLong, targetUserId)
                         try {
@@ -381,7 +381,7 @@ class AddWarnPointsCommand(
                     )
                     return
                 }
-                guild.kick(targetMember).reason(reason).queue()
+                guild.kick(targetMember).reason(reason.toAuditReason()).queue()
             }
         }
 
