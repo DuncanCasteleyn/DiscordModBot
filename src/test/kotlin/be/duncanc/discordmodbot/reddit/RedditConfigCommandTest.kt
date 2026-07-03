@@ -22,6 +22,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Duration
@@ -113,6 +114,18 @@ class RedditConfigCommandTest {
         )
         whenever(redditPostMirrorRepository.findAll()).thenReturn(listOf(mirror))
         whenever(redditPendingPostRepository.findAll()).thenReturn(listOf(pending))
+        whenever(redditPollingService.baselineCurrentPosts(1L, "Anime")).thenReturn(
+            listOf(
+                RedditPost(
+                    id = "t3_new",
+                    title = "New",
+                    author = "Subaru",
+                    permalink = "https://www.reddit.com/r/Anime/comments/t3_new/title/",
+                    publishedAt = Instant.parse("2026-07-02T12:00:00Z"),
+                    thumbnailUrl = null
+                )
+            )
+        )
         command.subreddit = "Anime"
 
         command.onSlashCommandInteraction(slashEvent)
@@ -124,6 +137,42 @@ class RedditConfigCommandTest {
         verify(redditPendingPostRepository).delete(pending)
         verify(redditPollingService).baselineCurrentPosts(1L, "Anime")
         verify(slashEvent).reply("Reddit post mirroring now watches r/Anime.")
+    }
+
+    @Test
+    fun `set channel does not save settings when baseline fails`() {
+        stubAuthorizedSlashCommand("set-channel")
+        whenever(redditAlertSettingsRepository.findById(1L)).thenReturn(
+            Optional.of(RedditAlertSettings(guildId = 1L, subreddit = "Anime"))
+        )
+        whenever(redditPollingService.baselineCurrentPosts(1L, "Anime")).thenThrow(
+            IllegalStateException("Reddit unavailable")
+        )
+        command.selectedChannel = textChannel
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        verify(redditAlertSettingsRepository, never()).save(any<RedditAlertSettings>())
+        verify(slashEvent).reply("Reddit unavailable")
+    }
+
+    @Test
+    fun `set subreddit does not save settings or clear tracked posts when baseline fails`() {
+        stubAuthorizedSlashCommand("set-subreddit")
+        whenever(redditAlertSettingsRepository.findById(1L)).thenReturn(
+            Optional.of(RedditAlertSettings(guildId = 1L, channelId = 11L, subreddit = "Re_Zero"))
+        )
+        whenever(redditPollingService.baselineCurrentPosts(1L, "Anime")).thenThrow(
+            IllegalStateException("Reddit unavailable")
+        )
+        command.subreddit = "Anime"
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        verify(redditAlertSettingsRepository, never()).save(any<RedditAlertSettings>())
+        verify(redditPostMirrorRepository, never()).delete(any<RedditPostMirror>())
+        verify(redditPendingPostRepository, never()).delete(any<RedditPendingPost>())
+        verify(slashEvent).reply("Reddit unavailable")
     }
 
     @Test
