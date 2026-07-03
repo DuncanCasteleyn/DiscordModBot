@@ -53,12 +53,14 @@ class RedditPollingService(
         }
     }
 
-    fun baselineCurrentPosts(guildId: Long, subreddit: String) {
+    fun baselineCurrentPosts(guildId: Long, subreddit: String): List<RedditPost> {
         val posts = try {
             redditRssClient.fetchNewestPosts(subreddit)
         } catch (exception: Exception) {
             LOG.warn("Failed to baseline Reddit RSS posts for r/{} in guild {}", subreddit, guildId, exception)
-            return
+            throw IllegalStateException(
+                "Failed to reach Reddit while enabling alerts for r/$subreddit. Please try again later."
+            )
         }
 
         posts.forEach { post ->
@@ -80,6 +82,7 @@ class RedditPollingService(
                 redditPostMirrorRepository.save(existingMirror)
             }
         }
+        return posts
     }
 
     private fun processGuild(settings: RedditAlertSettings, posts: List<RedditPost>) {
@@ -91,10 +94,12 @@ class RedditPollingService(
         }
 
         cleanupRemovedPosts(settings.guildId, posts)
-        posts.sortedBy { it.publishedAt }.forEach { post -> mirrorPost(settings.guildId, settings.subreddit, channel, post) }
+        posts.sortedBy { it.publishedAt }.forEach { post -> mirrorPost(settings, channel, post) }
     }
 
-    private fun mirrorPost(guildId: Long, subreddit: String, channel: TextChannel, post: RedditPost) {
+    private fun mirrorPost(settings: RedditAlertSettings, channel: TextChannel, post: RedditPost) {
+        val guildId = settings.guildId
+        val subreddit = settings.subreddit
         val mirrorId = RedditPostMirror.id(guildId, post.id)
         val existingMirror = redditPostMirrorRepository.findById(mirrorId).orElse(null)
         if (existingMirror != null) {
@@ -127,8 +132,12 @@ class RedditPollingService(
                     redditPendingPostRepository.deleteById(pendingId)
                 }
             },
-            onFailure = { exception ->
+            onFailure = onFailure@{ exception ->
                 redditPendingPostRepository.deleteById(pendingId)
+                if (isTerminalMessageFailure(exception)) {
+                    disableChannel(settings, "channel ${channel.idLong} is inaccessible")
+                    return@onFailure
+                }
                 LOG.warn("Failed to mirror Reddit post {} for guild {}", post.id, guildId, exception)
             }
         )
@@ -164,9 +173,13 @@ class RedditPollingService(
     }
 
     private fun disableMissingChannel(settings: RedditAlertSettings, channelId: Long) {
+        disableChannel(settings, "channel $channelId no longer exists")
+    }
+
+    private fun disableChannel(settings: RedditAlertSettings, reason: String) {
         settings.channelId = null
         redditAlertSettingsRepository.save(settings)
-        LOG.warn("Disabled Reddit alerts for guild {} because channel {} no longer exists", settings.guildId, channelId)
+        LOG.warn("Disabled Reddit alerts for guild {}: {}", settings.guildId, reason)
     }
 
     internal fun sendPostMessage(

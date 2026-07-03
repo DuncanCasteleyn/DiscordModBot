@@ -73,10 +73,18 @@ class RedditConfigCommand(
                         subreddit = redditProperties.subreddit
                     )
                 }
+                val subreddit = settings.subreddit
+                try {
+                    redditPollingService.baselineCurrentPosts(guild.idLong, subreddit)
+                } catch (exception: IllegalStateException) {
+                    event.reply(exception.message ?: "Failed to enable Reddit alerts. Please try again later.")
+                        .setEphemeral(true)
+                        .queue()
+                    return
+                }
                 settings.channelId = channel.idLong
                 redditAlertSettingsRepository.save(settings)
-                redditPollingService.baselineCurrentPosts(guild.idLong, settings.subreddit)
-                event.reply("Reddit posts from r/${settings.subreddit} will be mirrored to ${channel.asMention}.")
+                event.reply("Reddit posts from r/$subreddit will be mirrored to ${channel.asMention}.")
                     .setEphemeral(true)
                     .queue()
             }
@@ -86,10 +94,17 @@ class RedditConfigCommand(
                 val settings = redditAlertSettingsRepository.findById(guild.idLong).orElseGet {
                     RedditAlertSettings(guildId = guild.idLong, subreddit = subreddit)
                 }
+                val posts = try {
+                    redditPollingService.baselineCurrentPosts(guild.idLong, subreddit)
+                } catch (exception: IllegalStateException) {
+                    event.reply(exception.message ?: "Failed to enable Reddit alerts. Please try again later.")
+                        .setEphemeral(true)
+                        .queue()
+                    return
+                }
                 settings.subreddit = subreddit
-                clearTrackedPosts(guild.idLong)
+                clearTrackedPostsExcept(guild.idLong, posts.map { it.id }.toSet())
                 redditAlertSettingsRepository.save(settings)
-                redditPollingService.baselineCurrentPosts(guild.idLong, settings.subreddit)
                 event.reply("Reddit post mirroring now watches r/$subreddit.").setEphemeral(true).queue()
             }
 
@@ -168,8 +183,12 @@ class RedditConfigCommand(
     }
 
     private fun clearTrackedPosts(guildId: Long) {
+        clearTrackedPostsExcept(guildId, emptySet())
+    }
+
+    private fun clearTrackedPostsExcept(guildId: Long, keepPostIds: Set<String>) {
         redditPostMirrorRepository.findAll()
-            .filter { it.guildId == guildId }
+            .filter { it.guildId == guildId && it.redditPostId !in keepPostIds }
             .forEach { redditPostMirrorRepository.delete(it) }
         redditPendingPostRepository.findAll()
             .filter { it.id.startsWith("$guildId:") }
