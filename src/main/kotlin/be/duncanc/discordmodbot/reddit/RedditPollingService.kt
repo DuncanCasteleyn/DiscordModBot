@@ -16,6 +16,7 @@ import net.dv8tion.jda.api.requests.ErrorResponse
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.awt.Color
 import java.time.Instant
 
@@ -32,6 +33,7 @@ class RedditPollingService(
     }
 
     @Scheduled(cron = $$"${discord-mod-bot.reddit.poll-cron:0 */2 * * * *}")
+    @Transactional
     fun pollSubreddit() {
         val settings = redditAlertSettingsRepository.findAll().filter { it.channelId != null }
         if (settings.isEmpty()) {
@@ -94,7 +96,12 @@ class RedditPollingService(
         }
 
         cleanupRemovedPosts(settings.guildId, posts)
-        posts.sortedBy { it.publishedAt }.forEach { post -> mirrorPost(settings, channel, post) }
+        posts.sortedBy { it.publishedAt }.forEach { post ->
+            if (settings.channelId == null) {
+                return
+            }
+            mirrorPost(settings, channel, post)
+        }
     }
 
     private fun mirrorPost(settings: RedditAlertSettings, channel: TextChannel, post: RedditPost) {
@@ -146,8 +153,8 @@ class RedditPollingService(
     private fun cleanupRemovedPosts(guildId: Long, posts: List<RedditPost>) {
         val currentPostIds = posts.mapTo(mutableSetOf()) { it.id }
         val oldestFeedPost = posts.minByOrNull { it.publishedAt } ?: return
-        redditPostMirrorRepository.findAll()
-            .filter { it.guildId == guildId && !it.deleted && it.discordChannelId != null && it.discordMessageId != null }
+        redditPostMirrorRepository.findAllByGuildId(guildId)
+            .filter { !it.deleted && it.discordChannelId != null && it.discordMessageId != null }
             .filter { it.redditPostId !in currentPostIds && !it.publishedAt.isBefore(oldestFeedPost.publishedAt) }
             .forEach { mirror -> deleteMirroredMessage(mirror) }
     }

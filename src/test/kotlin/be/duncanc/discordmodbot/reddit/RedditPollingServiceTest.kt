@@ -94,9 +94,9 @@ class RedditPollingServiceTest {
     @Test
     fun `poll mirrors new rss post and stores discord message id`() {
         whenever(redditRssClient.fetchNewestPosts("Re_Zero")).thenReturn(listOf(post("t3_new")))
-        whenever(redditAlertSettingsRepository.findAll()).thenReturn(listOf(RedditAlertSettings(1L, 11L)))
+        whenever(redditAlertSettingsRepository.findAll()).thenReturn(listOf(RedditAlertSettings(1L, 11L, "Re_Zero")))
         whenever(jda.getTextChannelById(11L)).thenReturn(textChannel)
-        whenever(redditPostMirrorRepository.findAll()).thenReturn(emptyList())
+        whenever(redditPostMirrorRepository.findAllByGuildId(1L)).thenReturn(emptyList())
         whenever(redditPostMirrorRepository.findById("1:t3_new")).thenReturn(Optional.empty())
         whenever(redditPendingPostRepository.existsById("1:t3_new")).thenReturn(false)
         whenever(redditPendingPostRepository.save(any<RedditPendingPost>())).thenAnswer { it.arguments[0] }
@@ -128,11 +128,11 @@ class RedditPollingServiceTest {
 
     @Test
     fun `poll disables channel on terminal send failure`() {
-        val settings = RedditAlertSettings(1L, 11L)
+        val settings = RedditAlertSettings(1L, 11L, "Re_Zero")
         whenever(redditRssClient.fetchNewestPosts("Re_Zero")).thenReturn(listOf(post("t3_new")))
         whenever(redditAlertSettingsRepository.findAll()).thenReturn(listOf(settings))
         whenever(jda.getTextChannelById(11L)).thenReturn(textChannel)
-        whenever(redditPostMirrorRepository.findAll()).thenReturn(emptyList())
+        whenever(redditPostMirrorRepository.findAllByGuildId(1L)).thenReturn(emptyList())
         whenever(redditPostMirrorRepository.findById("1:t3_new")).thenReturn(Optional.empty())
         whenever(redditPendingPostRepository.existsById("1:t3_new")).thenReturn(false)
         whenever(redditPendingPostRepository.save(any<RedditPendingPost>())).thenAnswer { it.arguments[0] }
@@ -155,6 +155,36 @@ class RedditPollingServiceTest {
     }
 
     @Test
+    fun `poll skips remaining posts after terminal send failure disables channel`() {
+        val settings = RedditAlertSettings(1L, 11L, "Re_Zero")
+        whenever(redditRssClient.fetchNewestPosts("Re_Zero")).thenReturn(
+            listOf(
+                post("t3_first"),
+                post("t3_second")
+            )
+        )
+        whenever(redditAlertSettingsRepository.findAll()).thenReturn(listOf(settings))
+        whenever(jda.getTextChannelById(11L)).thenReturn(textChannel)
+        whenever(redditPostMirrorRepository.findAllByGuildId(1L)).thenReturn(emptyList())
+        whenever(redditPostMirrorRepository.findById("1:t3_first")).thenReturn(Optional.empty())
+        whenever(redditPendingPostRepository.existsById("1:t3_first")).thenReturn(false)
+        whenever(redditPendingPostRepository.save(any<RedditPendingPost>())).thenAnswer { it.arguments[0] }
+        whenever(textChannel.idLong).thenReturn(11L)
+        whenever(textChannel.sendMessageEmbeds(any<MessageEmbed>())).thenReturn(messageCreateAction)
+        val exception = mock<ErrorResponseException>()
+        whenever(exception.errorResponse).thenReturn(ErrorResponse.MISSING_PERMISSIONS)
+        doAnswer { invocation ->
+            invocation.component2<Consumer<Throwable>>().accept(exception)
+            null
+        }.whenever(messageCreateAction).queue(any(), any())
+
+        service.pollSubreddit()
+
+        verify(textChannel, times(1)).sendMessageEmbeds(any<MessageEmbed>())
+        verify(redditAlertSettingsRepository).save(settings)
+    }
+
+    @Test
     fun `poll deletes mirrored message when tracked post is missing inside rss window`() {
         val trackedMirror = RedditPostMirror(
             id = "1:t3_removed",
@@ -171,9 +201,9 @@ class RedditPollingServiceTest {
                 post("t3_older", publishedAt = Instant.parse("2026-07-02T11:00:00Z"))
             )
         )
-        whenever(redditAlertSettingsRepository.findAll()).thenReturn(listOf(RedditAlertSettings(1L, 11L)))
+        whenever(redditAlertSettingsRepository.findAll()).thenReturn(listOf(RedditAlertSettings(1L, 11L, "Re_Zero")))
         whenever(jda.getTextChannelById(11L)).thenReturn(textChannel)
-        whenever(redditPostMirrorRepository.findAll()).thenReturn(listOf(trackedMirror))
+        whenever(redditPostMirrorRepository.findAllByGuildId(1L)).thenReturn(listOf(trackedMirror))
         whenever(redditPostMirrorRepository.findById("1:t3_older")).thenReturn(
             Optional.of(
                 trackedMirror.copy(

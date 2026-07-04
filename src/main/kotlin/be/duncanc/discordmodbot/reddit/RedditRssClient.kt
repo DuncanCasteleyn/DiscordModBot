@@ -24,6 +24,7 @@ class RedditRssClient(
     internal fun parse(feed: String): List<RedditPost> {
         val factory = DocumentBuilderFactory.newInstance()
         factory.isNamespaceAware = true
+        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
         val document = factory.newDocumentBuilder().parse(ByteArrayInputStream(feed.toByteArray(Charsets.UTF_8)))
         val entries = document.getElementsByTagNameNS(ATOM_NAMESPACE, "entry")
         return (0 until entries.length).map { index ->
