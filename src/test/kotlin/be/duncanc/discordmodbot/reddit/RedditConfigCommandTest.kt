@@ -22,6 +22,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -112,7 +113,7 @@ class RedditConfigCommandTest {
         whenever(redditAlertSettingsRepository.findById(1L)).thenReturn(
             Optional.of(RedditAlertSettings(guildId = 1L, channelId = 11L, subreddit = "Re_Zero"))
         )
-        whenever(redditPostMirrorRepository.findAll()).thenReturn(listOf(mirror))
+        whenever(redditPostMirrorRepository.findAllByGuildId(1L)).thenReturn(listOf(mirror))
         whenever(redditPendingPostRepository.findAll()).thenReturn(listOf(pending))
         whenever(redditPollingService.baselineCurrentPosts(1L, "Anime")).thenReturn(
             listOf(
@@ -187,7 +188,7 @@ class RedditConfigCommandTest {
             publishedAt = Instant.parse("2026-07-02T12:00:00Z"),
             permalink = "https://www.reddit.com/r/Re_Zero/comments/old/title/"
         )
-        whenever(redditPostMirrorRepository.findAll()).thenReturn(listOf(mirror))
+        whenever(redditPostMirrorRepository.findAllByGuildId(1L)).thenReturn(listOf(mirror))
         whenever(redditPendingPostRepository.findAll()).thenReturn(emptyList())
 
         command.onSlashCommandInteraction(slashEvent)
@@ -213,6 +214,22 @@ class RedditConfigCommandTest {
         verify(slashEvent).reply(replyCaptor.capture())
         assertEquals(true, replyCaptor.firstValue.contains("- Subreddit: r/Anime"))
         assertEquals(true, replyCaptor.firstValue.contains("- Mirror channel: <#11>"))
+    }
+
+    @Test
+    fun `set subreddit rejects invalid subreddit names`() {
+        stubSlashCommandContext()
+        whenever(member.hasPermission(Permission.MANAGE_CHANNEL)).thenReturn(true)
+        whenever(slashEvent.subcommandName).thenReturn("set-subreddit")
+        val optionMapping = mock<net.dv8tion.jda.api.interactions.commands.OptionMapping>()
+        whenever(slashEvent.getOption("subreddit")).thenReturn(optionMapping)
+        whenever(optionMapping.asString).thenReturn("__")
+        command.subreddit = null
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        verify(redditAlertSettingsRepository, never()).findById(any())
+        verify(slashEvent).reply("Please provide a valid subreddit name.")
     }
 
     @Test

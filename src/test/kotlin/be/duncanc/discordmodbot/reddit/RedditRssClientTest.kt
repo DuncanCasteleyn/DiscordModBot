@@ -1,12 +1,38 @@
 package be.duncanc.discordmodbot.reddit
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.springframework.web.client.RestClient
 import java.time.Instant
 
 class RedditRssClientTest {
+    @Test
+    fun `parse rejects feeds with doctype declarations`() {
+        val client = RedditRssClient(
+            redditRestClient = mock<RestClient>()
+        )
+
+        assertThrows(Exception::class.java) {
+            client.parse(
+                """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <!DOCTYPE feed [
+                  <!ENTITY xxe SYSTEM "file:///etc/passwd">
+                ]>
+                <feed xmlns="http://www.w3.org/2005/Atom">
+                  <entry>
+                    <id>t3_xxe</id>
+                    <title>XXE</title>
+                    <published>2026-07-02T21:29:12+00:00</published>
+                  </entry>
+                </feed>
+                """.trimIndent()
+            )
+        }
+    }
+
     @Test
     fun `parse reads reddit atom entries`() {
         val client = RedditRssClient(
