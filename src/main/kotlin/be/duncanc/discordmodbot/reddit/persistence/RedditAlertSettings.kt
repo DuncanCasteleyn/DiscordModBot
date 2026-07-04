@@ -14,9 +14,5 @@ data class RedditAlertSettings(
     @Column(nullable = true)
     var channelId: Long? = null,
     @Column(nullable = false, length = 100)
-    var subreddit: String = DEFAULT_SUBREDDIT
-) {
-    companion object {
-        const val DEFAULT_SUBREDDIT = "Re_Zero"
-    }
-}
+    var subreddit: String
+)
