@@ -38,7 +38,7 @@ class RedditConfigCommand(
         private const val SUBCOMMAND_SET_CHANNEL = "set-channel"
         private const val SUBCOMMAND_SET_SUBREDDIT = "set-subreddit"
         private const val SUBCOMMAND_DISABLE = "disable"
-        private val SUBREDDIT_REGEX = Regex("[A-Za-z0-9_]{2,21}")
+        private val SUBREDDIT_REGEX = Regex("^(?=.*[A-Za-z0-9])[A-Za-z0-9_]{3,21}$")
     }
 
     override fun onGuildLeave(event: GuildLeaveEvent) {
@@ -163,7 +163,6 @@ class RedditConfigCommand(
             appendLine()
             appendLine("- Subreddit: r/${settings?.subreddit ?: redditProperties.subreddit}")
             appendLine("- Mirror channel: ${formatChannel(guild, settings?.channelId)}")
-            appendLine("- Mentions: Disabled")
         }
 
         event.reply(message).setEphemeral(true).queue()
@@ -187,8 +186,8 @@ class RedditConfigCommand(
     }
 
     private fun clearTrackedPostsExcept(guildId: Long, keepPostIds: Set<String>) {
-        redditPostMirrorRepository.findAll()
-            .filter { it.guildId == guildId && it.redditPostId !in keepPostIds }
+        redditPostMirrorRepository.findAllByGuildId(guildId)
+            .filter { it.redditPostId !in keepPostIds }
             .forEach { redditPostMirrorRepository.delete(it) }
         redditPendingPostRepository.findAll()
             .filter { it.id.startsWith("$guildId:") }
