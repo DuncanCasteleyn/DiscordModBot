@@ -41,6 +41,7 @@ jobs:
           OPENCODE_CONFIG_CONTENT: |
             {
               "$schema": "https://opencode.ai/config.json",
+              "share": "disabled",
               "agent": {
                 "build": {
                   "permission": {
