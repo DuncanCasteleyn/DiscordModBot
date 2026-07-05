@@ -9,6 +9,7 @@ import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.entities.channel.unions.GuildMessageChannelUnion
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent
@@ -18,16 +19,19 @@ import net.dv8tion.jda.api.interactions.InteractionHook
 import net.dv8tion.jda.api.interactions.commands.Command
 import net.dv8tion.jda.api.interactions.modals.ModalMapping
 import net.dv8tion.jda.api.requests.RestAction
+import net.dv8tion.jda.api.requests.restaction.MessageCreateAction
 import net.dv8tion.jda.api.requests.restaction.WebhookMessageEditAction
 import net.dv8tion.jda.api.requests.restaction.interactions.MessageEditCallbackAction
 import net.dv8tion.jda.api.requests.restaction.interactions.ModalCallbackAction
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction
+import net.dv8tion.jda.api.utils.messages.MessageCreateData
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
+import org.mockito.Mockito.lenient
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
@@ -115,6 +119,12 @@ class ReportMessageContextMenuTest {
     private lateinit var messageChannel: MessageChannel
 
     @Mock
+    private lateinit var reportChannel: TextChannel
+
+    @Mock
+    private lateinit var sendReportAction: MessageCreateAction
+
+    @Mock
     private lateinit var retrieveMessageAction: RestAction<Message>
 
     @Mock
@@ -184,6 +194,92 @@ class ReportMessageContextMenuTest {
         verify(reportedMessageService).markReported(1L, 123L, 456L, urgent = false)
         verify(interactionHook).editOriginal("Your report has been sent to the moderation team.")
         verify(hookEditAction).queue()
+    }
+
+    @Test
+    fun `non-urgent report sends to configured report channel with here ping`() {
+        stubReport("Report Message")
+        whenever(event.replyModal(any())).thenReturn(modalAction)
+        whenever(reportSettingsService.getReportChannel(guild)).thenReturn(reportChannel)
+        whenever(reportSettingsService.canSendReportToConfiguredChannel(guild)).thenReturn(true)
+        whenever(reportChannel.sendMessage(any<MessageCreateData>()))
+            .thenReturn(sendReportAction)
+        whenever(targetUser.id).thenReturn("2")
+        whenever(targetUser.effectiveAvatarUrl).thenReturn("https://example.invalid/avatar.png")
+
+        command.onMessageContextInteraction(event)
+
+        stubReportReasonModal(urgent = false)
+
+        command.onModalInteraction(modalEvent)
+
+        verify(reportChannel).sendMessage(
+            argThat<MessageCreateData> {
+                content == "@here" &&
+                    embeds.single().title == "Message report" &&
+                    embeds.single().timestamp != null &&
+                    embeds.single().footer?.text == "2" &&
+                    embeds.single().footer?.iconUrl == "https://example.invalid/avatar.png"
+            }
+        )
+        verify(sendReportAction).queue()
+        verify(guildLogger, never()).logWithContent(
+            any<EmbedBuilder>(),
+            any<User>(),
+            any<Guild>(),
+            isNull<List<MessageEmbed>>(),
+            any<GuildLogger.LogTypeAction>(),
+            any<String>()
+        )
+    }
+
+    @Test
+    fun `non-urgent report falls back to moderator log when configured report channel is unusable`() {
+        stubReport("Report Message")
+        whenever(event.replyModal(any())).thenReturn(modalAction)
+        whenever(reportSettingsService.getReportChannel(guild)).thenReturn(reportChannel)
+        whenever(reportSettingsService.canSendReportToConfiguredChannel(guild)).thenReturn(false)
+        whenever(guildLogger.canSendModeratorLog(guild)).thenReturn(true)
+
+        command.onMessageContextInteraction(event)
+
+        verify(event).replyModal(argThat { id == "report:reason:1:123:456:99:false" })
+
+        stubReportReasonModal(urgent = false)
+
+        command.onModalInteraction(modalEvent)
+
+        verify(guildLogger).logWithContent(
+            any<EmbedBuilder>(),
+            eq(targetUser),
+            eq(guild),
+            isNull<List<MessageEmbed>>(),
+            eq(GuildLogger.LogTypeAction.MODERATOR),
+            eq("@here")
+        )
+        verify(reportChannel, never()).sendMessage(any<MessageCreateData>())
+    }
+
+    @Test
+    fun `non-urgent report is rejected when configured report channel and moderator log are unusable`() {
+        stubReporterAndTargetIdsForModLogCheck("Report Message")
+        whenever(reportSettingsService.canSendReportToConfiguredChannel(guild)).thenReturn(false)
+        whenever(guildLogger.canSendModeratorLog(guild)).thenReturn(false)
+
+        command.onMessageContextInteraction(event)
+
+        verify(event).reply(
+            "Message reporting is not configured on this server. The bot needs a report channel or moderator log channel with permission to send messages and embeds."
+        )
+        verify(replyAction).queue()
+        verify(guildLogger, never()).logWithContent(
+            any<EmbedBuilder>(),
+            any<User>(),
+            any<Guild>(),
+            isNull<List<MessageEmbed>>(),
+            any<GuildLogger.LogTypeAction>(),
+            any<String>()
+        )
     }
 
     @Test
@@ -617,7 +713,7 @@ class ReportMessageContextMenuTest {
         command.onMessageContextInteraction(event)
 
         verify(event).reply(
-            "Message reporting is not configured on this server. The bot needs a moderator log channel with permission to send messages and embeds."
+            "Message reporting is not configured on this server. The bot needs a report channel or moderator log channel with permission to send messages and embeds."
         )
         verify(replyAction).queue()
         verify(guildLogger, never()).logWithContent(
@@ -665,7 +761,7 @@ class ReportMessageContextMenuTest {
         whenever(reportSettingsService.isReportingEnabled(1L)).thenReturn(true)
         whenever(reportSettingsService.isUserBlocked(1L, 99L)).thenReturn(false)
         whenever(reportedMessageService.getState(1L, 123L, 456L)).thenReturn(existingState)
-        whenever(guildLogger.canSendModeratorLog(guild)).thenReturn(true)
+        lenient().`when`(guildLogger.canSendModeratorLog(guild)).thenReturn(true)
         whenever(reportRateLimitService.hasActiveToken(1L, 99L)).thenReturn(false)
         if (retrieveMessage) {
             whenever(reportRateLimitService.tryConsume(1L, 99L)).thenReturn(true)

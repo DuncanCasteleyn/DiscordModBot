@@ -16,14 +16,18 @@ import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
+import net.dv8tion.jda.api.exceptions.PermissionException
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.InteractionContextType
 import net.dv8tion.jda.api.interactions.InteractionHook
 import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.modals.Modal
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.awt.Color
+import java.time.Instant
 
 @Component
 class ReportMessageContextMenu(
@@ -45,7 +49,8 @@ class ReportMessageContextMenu(
         private const val ALREADY_REPORTED_MESSAGE = "This issue was already reported."
         private const val HERE_MENTION = "@here"
         private const val NO_MOD_LOG_CHANNEL_MESSAGE =
-            "Message reporting is not configured on this server. The bot needs a moderator log channel with permission to send messages and embeds."
+            "Message reporting is not configured on this server. The bot needs a report channel or moderator log channel with permission to send messages and embeds."
+        private val LOG = LoggerFactory.getLogger(ReportMessageContextMenu::class.java)
     }
 
     private data class UrgentConfirmationAction(
@@ -115,7 +120,7 @@ class ReportMessageContextMenu(
                     .queue()
                 return
             }
-            if (!guildLogger.canSendModeratorLog(guild)) {
+            if (!canSendReport(guild)) {
                 event.reply(NO_MOD_LOG_CHANNEL_MESSAGE).setEphemeral(true).queue()
                 return
             }
@@ -133,7 +138,7 @@ class ReportMessageContextMenu(
             return
         }
 
-        if (!guildLogger.canSendModeratorLog(guild)) {
+        if (!canSendReport(guild)) {
             event.reply(NO_MOD_LOG_CHANNEL_MESSAGE).setEphemeral(true).queue()
             return
         }
@@ -208,7 +213,7 @@ class ReportMessageContextMenu(
             return
         }
 
-        if (!guildLogger.canSendModeratorLog(guild)) {
+        if (!canSendReport(guild)) {
             event.editMessage(NO_MOD_LOG_CHANNEL_MESSAGE).setComponents(emptyList()).queue()
             return
         }
@@ -276,7 +281,7 @@ class ReportMessageContextMenu(
             return
         }
 
-        if (!guildLogger.canSendModeratorLog(guild)) {
+        if (!canSendReport(guild)) {
             event.reply(NO_MOD_LOG_CHANNEL_MESSAGE).setEphemeral(true).queue()
             return
         }
@@ -332,6 +337,33 @@ class ReportMessageContextMenu(
 
     private fun logReport(guild: Guild, reporter: Member, target: Message, urgent: Boolean, reason: String) {
         val ping = if (urgent) reportSettingsService.getUrgentMention(guild) else HERE_MENTION
+        val reportChannel = reportSettingsService.getReportChannel(guild)
+        if (reportChannel != null && reportSettingsService.canSendReportToConfiguredChannel(guild)) {
+            try {
+                val embed = createReportEmbed(target, reporter, urgent, reason)
+                    .setTimestamp(Instant.now())
+                    .setFooter(target.author.id, target.author.effectiveAvatarUrl)
+                    .build()
+                reportChannel.sendMessage(
+                    MessageCreateBuilder()
+                        .setEmbeds(embed)
+                        .addContent(ping)
+                        .setAllowedMentions(
+                            setOf(Message.MentionType.EVERYONE, Message.MentionType.HERE, Message.MentionType.ROLE)
+                        )
+                        .build()
+                ).queue()
+            } catch (e: PermissionException) {
+                LOG.warn(
+                    "{}: {}\nGuild: {}",
+                    e.javaClass.simpleName,
+                    e.message,
+                    guild
+                )
+            }
+            return
+        }
+
         guildLogger.logWithContent(
             logEmbed = createReportEmbed(target, reporter, urgent, reason),
             associatedUser = target.author,
@@ -339,6 +371,14 @@ class ReportMessageContextMenu(
             actionType = GuildLogger.LogTypeAction.MODERATOR,
             content = ping
         )
+    }
+
+    private fun canSendReport(guild: Guild): Boolean {
+        if (reportSettingsService.canSendReportToConfiguredChannel(guild)) {
+            return true
+        }
+
+        return guildLogger.canSendModeratorLog(guild)
     }
 
     private fun tryConsumeRateLimit(hook: InteractionHook, guild: Guild, reporter: Member): Boolean {
