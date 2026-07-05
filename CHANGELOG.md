@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.14.3](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.14.2...v2.14.3) (2026-07-05)
+
+
+### Bug Fixes
+
+* configure report channel ([#724](https://github.com/DuncanCasteleyn/DiscordModBot/issues/724)) ([07b66dd](https://github.com/DuncanCasteleyn/DiscordModBot/commit/07b66ddd696c2a4289ab27649c92680b0340f613))
+* **moderation:** set audit reasons for mod actions ([#719](https://github.com/DuncanCasteleyn/DiscordModBot/issues/719)) ([db5de1e](https://github.com/DuncanCasteleyn/DiscordModBot/commit/db5de1e8b33f9dac505ea75b292167e8451403b7))
+
 ## [2.14.2](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.14.1...v2.14.2) (2026-06-28)
 
 
