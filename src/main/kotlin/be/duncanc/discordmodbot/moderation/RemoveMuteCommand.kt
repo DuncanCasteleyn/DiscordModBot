@@ -19,6 +19,7 @@ class RemoveMuteCommand(
         private const val COMMAND = "unmute"
         private const val DESCRIPTION = "This command will remove the muted role from a user."
         private const val OPTION_USER = "user"
+        private const val AUDIT_REASON = "User used /unmute slash command."
     }
 
     override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
@@ -55,7 +56,7 @@ class RemoveMuteCommand(
 
         event.deferReply(true).queue { hook ->
             val guild = event.guild!!
-            guild.removeRoleFromMember(targetMember, muteRole).queue({
+            guild.removeRoleFromMember(targetMember, muteRole).reason(AUDIT_REASON).queue({
                 hook.editOriginal("Unmuted ${targetMember.asMention}.").queue()
             }) { throwable ->
                 hook.editOriginal("Failed to unmute ${targetMember.asMention}: ${throwable.message}").queue()

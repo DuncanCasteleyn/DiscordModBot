@@ -71,7 +71,8 @@ class ReviewManager(
 
         val member = guild.getMemberById(userId)
         if (member != null) {
-            memberGateService.getMemberRole(guild.idLong, jda)?.let { guild.addRoleToMember(member, it).queue() }
+            memberGateService.getMemberRole(guild.idLong, jda)
+                ?.let { guild.addRoleToMember(member, it).reason("Member gate approval.").queue() }
         }
 
         clearPendingQuestion(guild.idLong, jda, userId)

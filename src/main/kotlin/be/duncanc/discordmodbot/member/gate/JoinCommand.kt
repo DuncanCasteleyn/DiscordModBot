@@ -171,7 +171,11 @@ class JoinCommand(
     private fun accept(member: Member) {
         val guild = member.guild
         memberGateService.getMemberRole(guild.idLong, member.jda)
-            ?.let { guild.addRoleToMember(member, it).queue() }
+            ?.let {
+                guild.addRoleToMember(member, it)
+                    .reason("Member gate auto-accept: no questions configured.")
+                    .queue()
+            }
     }
 
     private fun informMember(member: Member, question: String, answer: String, event: ModalInteractionEvent) {

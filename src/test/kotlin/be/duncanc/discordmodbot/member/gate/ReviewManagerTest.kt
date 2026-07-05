@@ -148,11 +148,13 @@ class ReviewManagerTest {
         whenever(user.asMention).thenReturn("<@10>")
         whenever(memberGateService.getMemberRole(1L, jda)).thenReturn(role)
         whenever(guild.addRoleToMember(member, role)).thenReturn(addRoleAction)
+        whenever(addRoleAction.reason("Member gate approval.")).thenReturn(addRoleAction)
         whenever(promptRegistry.forget(1L, 10L)).thenReturn(null)
 
         val result = reviewManager.approve(guild, jda, 10L)
 
         assertEquals("Approved <@10>.", result)
+        verify(addRoleAction).reason("Member gate approval.")
         verify(addRoleAction).queue()
         verify(memberGateQuestionRepository).deleteById(MemberGateQuestion.createId(1L, 10L))
         verify(promptRegistry).forget(1L, 10L)
