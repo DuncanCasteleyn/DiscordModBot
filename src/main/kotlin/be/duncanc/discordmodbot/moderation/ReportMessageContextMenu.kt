@@ -338,7 +338,7 @@ class ReportMessageContextMenu(
     private fun logReport(guild: Guild, reporter: Member, target: Message, urgent: Boolean, reason: String) {
         val ping = if (urgent) reportSettingsService.getUrgentMention(guild) else HERE_MENTION
         val reportChannel = reportSettingsService.getReportChannel(guild)
-        if (reportChannel != null) {
+        if (reportChannel != null && reportSettingsService.canSendReportToConfiguredChannel(guild)) {
             try {
                 val embed = createReportEmbed(target, reporter, urgent, reason)
                     .setTimestamp(Instant.now())
@@ -374,8 +374,8 @@ class ReportMessageContextMenu(
     }
 
     private fun canSendReport(guild: Guild): Boolean {
-        if (reportSettingsService.getReportChannel(guild) != null) {
-            return reportSettingsService.canSendReportToConfiguredChannel(guild)
+        if (reportSettingsService.canSendReportToConfiguredChannel(guild)) {
+            return true
         }
 
         return guildLogger.canSendModeratorLog(guild)

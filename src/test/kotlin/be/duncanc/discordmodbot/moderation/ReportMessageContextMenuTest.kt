@@ -234,6 +234,55 @@ class ReportMessageContextMenuTest {
     }
 
     @Test
+    fun `non-urgent report falls back to moderator log when configured report channel is unusable`() {
+        stubReport("Report Message")
+        whenever(event.replyModal(any())).thenReturn(modalAction)
+        whenever(reportSettingsService.getReportChannel(guild)).thenReturn(reportChannel)
+        whenever(reportSettingsService.canSendReportToConfiguredChannel(guild)).thenReturn(false)
+        whenever(guildLogger.canSendModeratorLog(guild)).thenReturn(true)
+
+        command.onMessageContextInteraction(event)
+
+        verify(event).replyModal(argThat { id == "report:reason:1:123:456:99:false" })
+
+        stubReportReasonModal(urgent = false)
+
+        command.onModalInteraction(modalEvent)
+
+        verify(guildLogger).logWithContent(
+            any<EmbedBuilder>(),
+            eq(targetUser),
+            eq(guild),
+            isNull<List<MessageEmbed>>(),
+            eq(GuildLogger.LogTypeAction.MODERATOR),
+            eq("@here")
+        )
+        verify(reportChannel, never()).sendMessage(any<MessageCreateData>())
+    }
+
+    @Test
+    fun `non-urgent report is rejected when configured report channel and moderator log are unusable`() {
+        stubReporterAndTargetIdsForModLogCheck("Report Message")
+        whenever(reportSettingsService.canSendReportToConfiguredChannel(guild)).thenReturn(false)
+        whenever(guildLogger.canSendModeratorLog(guild)).thenReturn(false)
+
+        command.onMessageContextInteraction(event)
+
+        verify(event).reply(
+            "Message reporting is not configured on this server. The bot needs a report channel or moderator log channel with permission to send messages and embeds."
+        )
+        verify(replyAction).queue()
+        verify(guildLogger, never()).logWithContent(
+            any<EmbedBuilder>(),
+            any<User>(),
+            any<Guild>(),
+            isNull<List<MessageEmbed>>(),
+            any<GuildLogger.LogTypeAction>(),
+            any<String>()
+        )
+    }
+
+    @Test
     fun `urgent report logs to moderation channel with everyone ping`() {
         stubReport("Urgent Report Message")
         whenever(event.replyModal(any())).thenReturn(modalAction)
