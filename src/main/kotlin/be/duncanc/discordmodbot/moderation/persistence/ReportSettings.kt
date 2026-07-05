@@ -20,6 +20,9 @@ data class ReportSettings(
     @Column(name = "urgent_role_id")
     var urgentRoleId: Long? = null,
 
+    @Column(name = "report_channel_id")
+    var reportChannelId: Long? = null,
+
     @Column(name = "enabled")
     var enabled: Boolean = false,
 
@@ -41,5 +44,6 @@ data class ReportSettings(
 
     override fun hashCode(): Int = Hibernate.getClass(this).hashCode()
 
-    override fun toString(): String = "ReportSettings(guildId=$guildId, urgentRoleId=$urgentRoleId, enabled=$enabled)"
+    override fun toString(): String =
+        "ReportSettings(guildId=$guildId, urgentRoleId=$urgentRoleId, reportChannelId=$reportChannelId, enabled=$enabled)"
 }

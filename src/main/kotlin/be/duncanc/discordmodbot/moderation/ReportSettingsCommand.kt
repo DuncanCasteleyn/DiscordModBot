@@ -4,12 +4,15 @@ import be.duncanc.discordmodbot.discord.SlashCommand
 import be.duncanc.discordmodbot.moderation.persistence.ReportSettings
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.channel.ChannelType
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.InteractionContextType
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions
 import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.Commands
+import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
 import org.springframework.stereotype.Component
@@ -26,9 +29,12 @@ class ReportSettingsCommand(
         private const val SUBCOMMAND_ALLOW_USER = "allow-user"
         private const val SUBCOMMAND_SET_URGENT_ROLE = "set-urgent-role"
         private const val SUBCOMMAND_CLEAR_URGENT_ROLE = "clear-urgent-role"
+        private const val SUBCOMMAND_SET_CHANNEL = "set-channel"
+        private const val SUBCOMMAND_CLEAR_CHANNEL = "clear-channel"
         private const val SUBCOMMAND_TOGGLE = "toggle"
         private const val OPTION_USER = "user"
         private const val OPTION_ROLE = "role"
+        private const val OPTION_CHANNEL = "channel"
         private const val BLOCKED_USER_DISPLAY_LIMIT = 20
     }
 
@@ -52,9 +58,17 @@ class ReportSettingsCommand(
             SUBCOMMAND_BLOCK_USER -> blockUser(event, guild.idLong)
             SUBCOMMAND_ALLOW_USER -> allowUser(event, guild.idLong)
             SUBCOMMAND_SET_URGENT_ROLE -> setUrgentRole(event, guild.idLong)
+            SUBCOMMAND_SET_CHANNEL -> setReportChannel(event, guild.idLong)
             SUBCOMMAND_CLEAR_URGENT_ROLE -> {
                 reportSettingsService.clearUrgentRole(guild.idLong)
                 event.reply("Urgent report role cleared. Urgent reports will mention @everyone.")
+                    .setEphemeral(true)
+                    .queue()
+            }
+
+            SUBCOMMAND_CLEAR_CHANNEL -> {
+                reportSettingsService.clearReportChannel(guild.idLong)
+                event.reply("Report channel cleared. Reports will use the moderator log channel.")
                     .setEphemeral(true)
                     .queue()
             }
@@ -83,6 +97,9 @@ class ReportSettingsCommand(
                     SubcommandData(SUBCOMMAND_SET_URGENT_ROLE, "Set the role mentioned by urgent reports")
                         .addOption(OptionType.ROLE, OPTION_ROLE, "The role to mention", true),
                     SubcommandData(SUBCOMMAND_CLEAR_URGENT_ROLE, "Clear the urgent report role"),
+                    SubcommandData(SUBCOMMAND_SET_CHANNEL, "Set the channel used for message reports")
+                        .addOptions(textChannelOption("The channel used for message reports")),
+                    SubcommandData(SUBCOMMAND_CLEAR_CHANNEL, "Use the moderator log channel for message reports"),
                     SubcommandData(SUBCOMMAND_TOGGLE, "Enable or disable message reporting")
                 )
         )
@@ -121,17 +138,48 @@ class ReportSettingsCommand(
         event.reply("Urgent reports will now mention ${role.asMention}.").setEphemeral(true).queue()
     }
 
+    private fun setReportChannel(event: SlashCommandInteractionEvent, guildId: Long) {
+        val channel = getRequiredTextChannel(event) ?: return
+
+        reportSettingsService.setReportChannel(guildId, channel.idLong)
+        event.reply("Message reports will now be sent to ${channel.asMention}.").setEphemeral(true).queue()
+    }
+
     private fun showCurrentSettings(event: SlashCommandInteractionEvent, guild: Guild) {
         val settings = reportSettingsService.getSettings(guild.idLong)
         val message = buildString {
             appendLine("Report settings for ${guild.name}")
             appendLine()
             appendLine("- Reporting: ${if (settings.enabled) "enabled" else "disabled"}")
+            appendLine("- Report channel: ${formatChannel(guild, settings.reportChannelId)}")
             appendLine("- Urgent mention: ${reportSettingsService.getUrgentMention(guild)}")
             appendLine("- Blocked users: ${formatBlockedUsers(settings)}")
         }
 
         event.reply(message).setEphemeral(true).queue()
+    }
+
+    private fun getRequiredTextChannel(event: SlashCommandInteractionEvent): TextChannel? {
+        val channel = event.getOption(OPTION_CHANNEL)?.asChannel?.asTextChannel()
+        if (channel == null) {
+            event.reply("Please choose a text channel.").setEphemeral(true).queue()
+            return null
+        }
+
+        return channel
+    }
+
+    private fun formatChannel(guild: Guild, channelId: Long?): String {
+        if (channelId == null) {
+            return "Using moderator log channel"
+        }
+
+        return guild.getTextChannelById(channelId)?.asMention ?: "Channel not found (ID: $channelId)"
+    }
+
+    private fun textChannelOption(description: String): OptionData {
+        return OptionData(OptionType.CHANNEL, OPTION_CHANNEL, description, true)
+            .setChannelTypes(ChannelType.TEXT)
     }
 
     private fun formatBlockedUsers(settings: ReportSettings): String {

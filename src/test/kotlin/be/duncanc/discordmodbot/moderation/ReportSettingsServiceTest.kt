@@ -4,6 +4,7 @@ import be.duncanc.discordmodbot.moderation.persistence.ReportSettings
 import be.duncanc.discordmodbot.moderation.persistence.ReportSettingsRepository
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Role
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -28,6 +29,9 @@ class ReportSettingsServiceTest {
 
     @Mock
     private lateinit var role: Role
+
+    @Mock
+    private lateinit var textChannel: TextChannel
 
     @Test
     fun `urgent mention falls back to everyone when role is not configured`() {
@@ -145,5 +149,40 @@ class ReportSettingsServiceTest {
         verify(reportSettingsRepository).save(settingsCaptor.capture())
         assertFalse(enabled)
         assertFalse(settingsCaptor.firstValue.enabled)
+    }
+
+    @Test
+    fun `setReportChannel creates settings and stores channel id`() {
+        val service = ReportSettingsService(reportSettingsRepository)
+        whenever(reportSettingsRepository.findById(1L)).thenReturn(Optional.empty())
+
+        service.setReportChannel(1L, 123L)
+
+        val settingsCaptor = argumentCaptor<ReportSettings>()
+        verify(reportSettingsRepository).save(settingsCaptor.capture())
+        assertEquals(123L, settingsCaptor.firstValue.reportChannelId)
+    }
+
+    @Test
+    fun `clearReportChannel without existing settings does not create a row`() {
+        val service = ReportSettingsService(reportSettingsRepository)
+        whenever(reportSettingsRepository.findById(1L)).thenReturn(Optional.empty())
+
+        service.clearReportChannel(1L)
+
+        verify(reportSettingsRepository, never()).save(any<ReportSettings>())
+    }
+
+    @Test
+    fun `getReportChannel returns configured text channel`() {
+        val service = ReportSettingsService(reportSettingsRepository)
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(guild.getTextChannelById(123L)).thenReturn(textChannel)
+        whenever(reportSettingsRepository.findById(1L))
+            .thenReturn(Optional.of(ReportSettings(1L, reportChannelId = 123L)))
+
+        val channel = service.getReportChannel(guild)
+
+        assertEquals(textChannel, channel)
     }
 }
