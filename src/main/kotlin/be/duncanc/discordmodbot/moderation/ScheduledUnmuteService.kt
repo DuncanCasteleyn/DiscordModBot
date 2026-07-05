@@ -116,7 +116,7 @@ class ScheduledUnmuteService(
     }
 
     private fun removeMute(guild: Guild, member: Member, scheduledUnmute: ScheduledUnmute, role: Role) {
-        guild.removeRoleFromMember(member, role).queue {
+        guild.removeRoleFromMember(member, role).reason("Mute expired").queue {
             scheduledUnmuteRepository.delete(scheduledUnmute)
             logUnmute(guild, member)
             informUserIsUnmuted(member)

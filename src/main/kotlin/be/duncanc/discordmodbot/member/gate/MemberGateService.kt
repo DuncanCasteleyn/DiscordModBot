@@ -192,18 +192,23 @@ class MemberGateService(
                     val noRoles = it.roles.isEmpty()
                     noRoles && reachedTimeLimit && notQueuedForApproval
                 }.forEach { member ->
+                    val reason =
+                        "You did not complete the server entry process within ${guildSettings.removeTimeHours} hour(s)"
                     val userKickNotification = EmbedBuilder()
                         .setColor(Color.RED)
                         .setTitle("${guild.name}: You have been kicked", null)
-                        .setDescription("Reason: You did not complete the server entry process within ${guildSettings.removeTimeHours} hour(s)")
+                        .setDescription("Reason: $reason")
                         .build()
                     member.user.openPrivateChannel().queue(
                         {
                             it.sendMessageEmbeds(userKickNotification)
-                                .queue({ guild.kick(member).queue() }, { guild.kick(member).queue() })
+                                .queue(
+                                    { guild.kick(member).reason(reason).queue() },
+                                    { guild.kick(member).reason(reason).queue() }
+                                )
                         },
                         {
-                            guild.kick(member).queue()
+                            guild.kick(member).reason(reason).queue()
                         })
                 }
             }

@@ -159,6 +159,7 @@ class ScheduledUnmuteServiceTest(
         whenever(jda.getGuildById(1)).thenReturn(guild)
         whenever(guild.getRoleById(1)).thenReturn(role)
         whenever(guild.removeRoleFromMember(member, role)).thenReturn(auditableRestAction)
+        whenever(auditableRestAction.reason("Mute expired")).thenReturn(auditableRestAction)
         whenever(guild.getMemberById(any<Long>())).thenReturn(member)
         // Act
         scheduledUnmuteService.performUnmute()
@@ -170,5 +171,6 @@ class ScheduledUnmuteServiceTest(
         verify(muteRolesRepository).findById(any())
         verify(guild).getRoleById(1)
         verify(guild).removeRoleFromMember(member, role)
+        verify(auditableRestAction).reason("Mute expired")
     }
 }
