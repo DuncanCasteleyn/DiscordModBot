@@ -58,7 +58,11 @@ class ReportSettingsCommand(
             SUBCOMMAND_BLOCK_USER -> blockUser(event, guild.idLong)
             SUBCOMMAND_ALLOW_USER -> allowUser(event, guild.idLong)
             SUBCOMMAND_SET_URGENT_ROLE -> setUrgentRole(event, guild.idLong)
-            SUBCOMMAND_SET_CHANNEL -> setReportChannel(event, guild.idLong)
+            SUBCOMMAND_SET_CHANNEL -> {
+                if (!hasManageChannelPermission(event)) return
+                setReportChannel(event, guild.idLong)
+            }
+
             SUBCOMMAND_CLEAR_URGENT_ROLE -> {
                 reportSettingsService.clearUrgentRole(guild.idLong)
                 event.reply("Urgent report role cleared. Urgent reports will mention @everyone.")
@@ -67,6 +71,7 @@ class ReportSettingsCommand(
             }
 
             SUBCOMMAND_CLEAR_CHANNEL -> {
+                if (!hasManageChannelPermission(event)) return
                 reportSettingsService.clearReportChannel(guild.idLong)
                 event.reply("Report channel cleared. Reports will use the moderator log channel.")
                     .setEphemeral(true)
@@ -136,6 +141,16 @@ class ReportSettingsCommand(
 
         reportSettingsService.setUrgentRole(guildId, role.idLong)
         event.reply("Urgent reports will now mention ${role.asMention}.").setEphemeral(true).queue()
+    }
+
+    private fun hasManageChannelPermission(event: SlashCommandInteractionEvent): Boolean {
+        val member = event.member ?: return false
+        if (!member.hasPermission(Permission.MANAGE_CHANNEL)) {
+            event.reply("You need manage channel permission to use this command.").setEphemeral(true).queue()
+            return false
+        }
+
+        return true
     }
 
     private fun setReportChannel(event: SlashCommandInteractionEvent, guildId: Long) {

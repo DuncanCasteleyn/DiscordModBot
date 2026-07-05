@@ -145,6 +145,7 @@ class ReportSettingsCommandTest {
     @Test
     fun `set channel stores report channel`() {
         stubAuthorizedCommand("set-channel")
+        whenever(member.hasPermission(Permission.MANAGE_CHANNEL)).thenReturn(true)
         whenever(event.getOption("channel")).thenReturn(channelOption)
         whenever(channelOption.asChannel).thenReturn(channelUnion)
         whenever(channelUnion.asTextChannel()).thenReturn(textChannel)
@@ -158,13 +159,36 @@ class ReportSettingsCommandTest {
     }
 
     @Test
+    fun `set channel requires manage channel permission`() {
+        stubAuthorizedCommandWithoutGuildId("set-channel")
+        whenever(member.hasPermission(Permission.MANAGE_CHANNEL)).thenReturn(false)
+
+        command.onSlashCommandInteraction(event)
+
+        verify(event).reply("You need manage channel permission to use this command.")
+        verify(reportSettingsService, never()).setReportChannel(any(), any())
+    }
+
+    @Test
     fun `clear channel removes report channel`() {
         stubAuthorizedCommand("clear-channel")
+        whenever(member.hasPermission(Permission.MANAGE_CHANNEL)).thenReturn(true)
 
         command.onSlashCommandInteraction(event)
 
         verify(reportSettingsService).clearReportChannel(1L)
         verify(event).reply("Report channel cleared. Reports will use the moderator log channel.")
+    }
+
+    @Test
+    fun `clear channel requires manage channel permission`() {
+        stubAuthorizedCommandWithoutGuildId("clear-channel")
+        whenever(member.hasPermission(Permission.MANAGE_CHANNEL)).thenReturn(false)
+
+        command.onSlashCommandInteraction(event)
+
+        verify(event).reply("You need manage channel permission to use this command.")
+        verify(reportSettingsService, never()).clearReportChannel(any())
     }
 
     @Test
@@ -240,6 +264,11 @@ class ReportSettingsCommandTest {
         stubGuildCommand(subcommandName)
         whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
         whenever(guild.idLong).thenReturn(1L)
+    }
+
+    private fun stubAuthorizedCommandWithoutGuildId(subcommandName: String) {
+        stubGuildCommand(subcommandName)
+        whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
     }
 
     private fun stubGuildCommand(subcommandName: String) {
