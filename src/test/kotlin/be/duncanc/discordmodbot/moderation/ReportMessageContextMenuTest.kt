@@ -204,6 +204,8 @@ class ReportMessageContextMenuTest {
         whenever(reportSettingsService.canSendReportToConfiguredChannel(guild)).thenReturn(true)
         whenever(reportChannel.sendMessage(any<MessageCreateData>()))
             .thenReturn(sendReportAction)
+        whenever(targetUser.id).thenReturn("2")
+        whenever(targetUser.effectiveAvatarUrl).thenReturn("https://example.invalid/avatar.png")
 
         command.onMessageContextInteraction(event)
 
@@ -213,7 +215,11 @@ class ReportMessageContextMenuTest {
 
         verify(reportChannel).sendMessage(
             argThat<MessageCreateData> {
-                content == "@here" && embeds.single().title == "Message report"
+                content == "@here" &&
+                    embeds.single().title == "Message report" &&
+                    embeds.single().timestamp != null &&
+                    embeds.single().footer?.text == "2" &&
+                    embeds.single().footer?.iconUrl == "https://example.invalid/avatar.png"
             }
         )
         verify(sendReportAction).queue()
