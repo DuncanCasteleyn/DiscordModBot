@@ -8,6 +8,7 @@ import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.entities.messages.MessageSearchResponse
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions
@@ -15,10 +16,12 @@ import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
+import net.dv8tion.jda.api.requests.restaction.MessageSearchAction
 import org.springframework.stereotype.Component
 import java.awt.Color
 import java.time.OffsetDateTime
 import java.util.concurrent.CompletableFuture
+import kotlin.math.min
 
 @Component
 class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
@@ -196,6 +199,18 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
         fromMessageId: ULong? = null,
         toMessageId: ULong? = null
     ): CompletableFuture<ArrayList<Message>> {
+        if (targetUserId != null) {
+            return collectFilteredMessagesViaSearch(channel, amount, targetUserId, fromMessageId, toMessageId)
+        }
+        return collectAllMessages(channel, amount, fromMessageId, toMessageId)
+    }
+
+    private fun collectAllMessages(
+        channel: TextChannel,
+        amount: Int,
+        fromMessageId: ULong? = null,
+        toMessageId: ULong? = null
+    ): CompletableFuture<ArrayList<Message>> {
         val messages = ArrayList<Message>()
         val oldestPurgeableMessageDate = OffsetDateTime.now().minusWeeks(2)
         var collecting = fromMessageId == null
@@ -220,11 +235,9 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
                     return@forEachAsync false
                 }
 
-                if (targetUserId == null || targetUserId == message.author.idLong) {
-                    messages.add(message)
-                    if (messages.size >= amount) {
-                        return@forEachAsync false
-                    }
+                messages.add(message)
+                if (messages.size >= amount) {
+                    return@forEachAsync false
                 }
 
                 if (toMessageId != null && messageId == toMessageId) {
@@ -234,6 +247,79 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
                 true
             }
             .thenApply { messages }
+    }
+
+    private fun collectFilteredMessagesViaSearch(
+        channel: TextChannel,
+        amount: Int,
+        targetUserId: Long,
+        fromMessageId: ULong? = null,
+        toMessageId: ULong? = null
+    ): CompletableFuture<ArrayList<Message>> {
+        val result = CompletableFuture<ArrayList<Message>>()
+        val collectedMessages = ArrayList<Message>()
+        val oldestPurgeableMessageDate = OffsetDateTime.now().minusWeeks(2)
+
+        fun buildSearchAction(maxId: ULong? = null): MessageSearchAction {
+            var action = channel.guild.searchMessages()
+                .channels(channel)
+                .authors(targetUserId)
+                .limit(min(amount, MessageSearchAction.MAX_LIMIT))
+                .sortBy(MessageSearchAction.SortType.TIMESTAMP)
+                .sortOrder(MessageSearchAction.SortOrder.DESC)
+
+            if (maxId != null) {
+                action = action.maxId(maxId.toLong())
+            }
+
+            if (toMessageId != null && toMessageId != 0uL) {
+                action = action.minId((toMessageId - 1uL).toLong())
+            }
+
+            return action
+        }
+
+        fun handleResponse(response: MessageSearchResponse) {
+            if (response.isNotReady) {
+                result.completeExceptionally(
+                    IllegalStateException("The search index is not ready yet, please try again later.")
+                )
+                return
+            }
+
+            val results = response.asResults()
+            val messages = results.messages
+
+            for (message in messages) {
+                if (message.timeCreated.isBefore(oldestPurgeableMessageDate)) {
+                    result.complete(collectedMessages)
+                    return
+                }
+
+                collectedMessages.add(message)
+                if (collectedMessages.size >= amount) {
+                    result.complete(collectedMessages)
+                    return
+                }
+            }
+
+            if (messages.isEmpty()) {
+                result.complete(collectedMessages)
+                return
+            }
+
+            val oldestId = messages.minOf { it.idLong.toULong() }
+            buildSearchAction(oldestId).queue({ handleResponse(it) }, { result.completeExceptionally(it) })
+        }
+
+        val initialMaxId = if (fromMessageId != null && fromMessageId != ULong.MAX_VALUE) {
+            fromMessageId + 1uL
+        } else {
+            null
+        }
+
+        buildSearchAction(initialMaxId).queue({ handleResponse(it) }, { result.completeExceptionally(it) })
+        return result
     }
 
     private fun logPurge(
