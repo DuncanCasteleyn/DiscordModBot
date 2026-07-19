@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component
 import java.awt.Color
 import java.time.OffsetDateTime
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 import kotlin.math.min
 
 @Component
@@ -35,6 +36,7 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
         private const val OPTION_FROM = "from"
         private const val OPTION_TO = "to"
         internal const val MAX_PURGE_AMOUNT = 100
+        private const val MAX_NOT_READY_RETRIES = 3
 
         private sealed interface MessageIdOption {
             data object Omitted : MessageIdOption
@@ -257,8 +259,15 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
         toMessageId: ULong? = null
     ): CompletableFuture<ArrayList<Message>> {
         val result = CompletableFuture<ArrayList<Message>>()
+        if (toMessageId != null && toMessageId > Long.MAX_VALUE.toULong()) {
+            // Real snowflakes are always smaller than 2^63, so no message can match this range.
+            result.complete(ArrayList())
+            return result
+        }
+
         val collectedMessages = ArrayList<Message>()
         val oldestPurgeableMessageDate = OffsetDateTime.now().minusWeeks(2)
+        var notReadyRetries = 0
 
         fun buildSearchAction(maxId: ULong? = null): MessageSearchAction {
             var action = channel.guild.searchMessages()
@@ -279,10 +288,21 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
             return action
         }
 
-        fun handleResponse(response: MessageSearchResponse) {
+        fun handleResponse(response: MessageSearchResponse, maxId: ULong?) {
             if (response.isNotReady) {
-                result.completeExceptionally(
-                    IllegalStateException("The search index is not ready yet, please try again later.")
+                if (notReadyRetries >= MAX_NOT_READY_RETRIES) {
+                    result.completeExceptionally(
+                        IllegalStateException("The search index is not ready yet, please try again later.")
+                    )
+                    return
+                }
+
+                notReadyRetries++
+                buildSearchAction(maxId).queueAfter(
+                    response.asNotReady().retryAfter.toMillis(),
+                    TimeUnit.MILLISECONDS,
+                    { handleResponse(it, maxId) },
+                    { result.completeExceptionally(it) }
                 )
                 return
             }
@@ -294,6 +314,11 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
                 if (message.timeCreated.isBefore(oldestPurgeableMessageDate)) {
                     result.complete(collectedMessages)
                     return
+                }
+
+                // The search implicitly includes child threads, whose messages cannot be purged from this channel.
+                if (message.channel.idLong != channel.idLong) {
+                    continue
                 }
 
                 collectedMessages.add(message)
@@ -309,16 +334,17 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
             }
 
             val oldestId = messages.minOf { it.idLong.toULong() }
-            buildSearchAction(oldestId).queue({ handleResponse(it) }, { result.completeExceptionally(it) })
+            buildSearchAction(oldestId).queue({ handleResponse(it, oldestId) }, { result.completeExceptionally(it) })
         }
 
-        val initialMaxId = if (fromMessageId != null && fromMessageId != ULong.MAX_VALUE) {
+        // Real snowflakes are always smaller than 2^63, so a fromMessageId that does not fit in a long excludes nothing.
+        val initialMaxId = if (fromMessageId != null && fromMessageId < Long.MAX_VALUE.toULong()) {
             fromMessageId + 1uL
         } else {
             null
         }
 
-        buildSearchAction(initialMaxId).queue({ handleResponse(it) }, { result.completeExceptionally(it) })
+        buildSearchAction(initialMaxId).queue({ handleResponse(it, initialMaxId) }, { result.completeExceptionally(it) })
         return result
     }
 
@@ -402,7 +428,7 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
                         ),
                     SubcommandData(
                         SUBCOMMAND_FILTERED,
-                        "Delete up to the specified number of messages from targets, not older than 2 weeks."
+                        "Delete messages from the target user, not older than 2 weeks. Very recent messages may be missed."
                     )
                         .addOption(
                             OptionType.INTEGER,
