@@ -453,7 +453,7 @@ class PurgeChannelCommandTest {
         verify(textChannel).purgeMessages(listOf(message))
         verify(interactionHook).editOriginal("Attempting to delete 1 message(s) from <@99>.")
         verify(messageSearchAction).queueAfter(
-            any<Long>(),
+            eq(1_000L),
             any<TimeUnit>(),
             any<Consumer<MessageSearchResponse>>(),
             any<Consumer<Throwable>>()
@@ -740,6 +740,7 @@ class PurgeChannelCommandTest {
         whenever(guild.searchMessages()).thenReturn(messageSearchAction)
         whenever(messageSearchAction.channels(any<TextChannel>())).thenReturn(messageSearchAction)
         whenever(messageSearchAction.authors(any<Long>())).thenReturn(messageSearchAction)
+        whenever(messageSearchAction.includeNsfw(any())).thenReturn(messageSearchAction)
         whenever(messageSearchAction.limit(any())).thenReturn(messageSearchAction)
         whenever(messageSearchAction.sortBy(any())).thenReturn(messageSearchAction)
         whenever(messageSearchAction.sortOrder(any())).thenReturn(messageSearchAction)

@@ -37,6 +37,7 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
         private const val OPTION_TO = "to"
         internal const val MAX_PURGE_AMOUNT = 100
         private const val MAX_NOT_READY_RETRIES = 3
+        private const val MIN_NOT_READY_RETRY_DELAY_MS = 1_000L
 
         private sealed interface MessageIdOption {
             data object Omitted : MessageIdOption
@@ -273,6 +274,7 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
             var action = channel.guild.searchMessages()
                 .channels(channel)
                 .authors(targetUserId)
+                .includeNsfw(true)
                 .limit(min(amount, MessageSearchAction.MAX_LIMIT))
                 .sortBy(MessageSearchAction.SortType.TIMESTAMP)
                 .sortOrder(MessageSearchAction.SortOrder.DESC)
@@ -299,7 +301,8 @@ class PurgeChannelCommand : ListenerAdapter(), SlashCommand {
 
                 notReadyRetries++
                 buildSearchAction(maxId).queueAfter(
-                    response.asNotReady().retryAfter.toMillis(),
+                    // JDA documents a zero retryAfter as "retry after a short delay".
+                    maxOf(response.asNotReady().retryAfter.toMillis(), MIN_NOT_READY_RETRY_DELAY_MS),
                     TimeUnit.MILLISECONDS,
                     { handleResponse(it, maxId) },
                     { result.completeExceptionally(it) }
