@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.14.4](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.14.3...v2.14.4) (2026-07-25)
+
+
+### Bug Fixes
+
+* add missing audit log reasons ([#727](https://github.com/DuncanCasteleyn/DiscordModBot/issues/727)) ([0c62393](https://github.com/DuncanCasteleyn/DiscordModBot/commit/0c62393c75a33d640b26e470b74aff26b430a8a8))
+* **deps:** update dependency net.dv8tion:jda to v6.5.0 ([#726](https://github.com/DuncanCasteleyn/DiscordModBot/issues/726)) ([129f17a](https://github.com/DuncanCasteleyn/DiscordModBot/commit/129f17a3f0c2e95241a1861672d9b229a4a24dd7))
+* **deps:** update kotlin monorepo to v2.4.10 ([#735](https://github.com/DuncanCasteleyn/DiscordModBot/issues/735)) ([5305f25](https://github.com/DuncanCasteleyn/DiscordModBot/commit/5305f25391bfc160da5fdd797cebd5272a806fdd))
+* **moderation:** use searchMessages for filtered channel purge ([#745](https://github.com/DuncanCasteleyn/DiscordModBot/issues/745)) ([2297a6a](https://github.com/DuncanCasteleyn/DiscordModBot/commit/2297a6ab1a21aaacdae337f57ea327f9b1ef748b))
+* **narouNovelApi:** stop pinging everyone when no alert role is configured ([428c7f4](https://github.com/DuncanCasteleyn/DiscordModBot/commit/428c7f41c608d848379cd14d96183e288829f740))
+
 ## [2.14.3](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.14.2...v2.14.3) (2026-07-05)
 
 
