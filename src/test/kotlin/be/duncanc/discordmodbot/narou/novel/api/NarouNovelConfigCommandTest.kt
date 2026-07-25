@@ -91,7 +91,7 @@ class NarouNovelConfigCommandTest {
         val replyCaptor = argumentCaptor<String>()
         verify(slashEvent).reply(replyCaptor.capture())
         assertEquals(true, replyCaptor.firstValue.contains("- Alert channel: Disabled"))
-        assertEquals(true, replyCaptor.firstValue.contains("- Ping target: @everyone"))
+        assertEquals(true, replyCaptor.firstValue.contains("- Ping target: None"))
         assertEquals(true, replyCaptor.firstValue.contains("- Published novel growth threshold: 1000"))
     }
 
@@ -193,7 +193,7 @@ class NarouNovelConfigCommandTest {
         val settingsCaptor = argumentCaptor<NarouNovelAlertSettings>()
         verify(narouNovelAlertSettingsRepository).save(settingsCaptor.capture())
         assertEquals(null, settingsCaptor.firstValue.pingRoleId)
-        verify(slashEvent).reply("Narou novel alerts will now ping @everyone.")
+        verify(slashEvent).reply("Narou novel alerts will no longer ping anyone.")
     }
 
     @Test

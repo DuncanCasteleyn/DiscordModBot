@@ -85,7 +85,7 @@ class NarouNovelConfigCommand(
                 initializeBaselines(settings)
                 narouNovelAlertSettingsRepository.save(settings)
                 val reply = if (role == null) {
-                    "Narou novel alerts will now ping @everyone."
+                    "Narou novel alerts will no longer ping anyone."
                 } else {
                     "Narou novel alerts will now ping ${role.asMention}."
                 }
@@ -128,7 +128,7 @@ class NarouNovelConfigCommand(
                     SubcommandData(SUBCOMMAND_SET_CHANNEL, "Set the channel that receives Narou novel alerts")
                         .addOptions(textChannelOption("The channel used for Narou novel alerts")),
                     SubcommandData(SUBCOMMAND_SET_PING_ROLE, "Set which role Narou novel alerts ping")
-                        .addOptions(roleOption("Role to ping for Narou novel alerts (omit to use @everyone)", false)),
+                        .addOptions(roleOption("Role to ping for Narou novel alerts (omit for no ping)", false)),
                     SubcommandData(SUBCOMMAND_SET_THRESHOLD, "Set the character growth threshold for alerts")
                         .addOptions(thresholdOption("Minimum published novel growth required before an alert is sent")),
                     SubcommandData(SUBCOMMAND_DISABLE, "Disable Narou novel alerts for this server")
@@ -205,7 +205,7 @@ class NarouNovelConfigCommand(
 
     private fun formatPingTarget(guild: Guild, pingRoleId: Long?): String {
         if (pingRoleId == null) {
-            return "@everyone"
+            return "None"
         }
 
         return guild.getRoleById(pingRoleId)?.asMention ?: "Missing role (ID: $pingRoleId)"

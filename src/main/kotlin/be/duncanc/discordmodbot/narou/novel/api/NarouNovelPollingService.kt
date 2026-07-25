@@ -33,7 +33,6 @@ class NarouNovelPollingService(
     companion object {
         internal const val NOVEL_CODE = "n2267be"
         private const val NOVEL_URL = "https://ncode.syosetu.com/n2267be/"
-        private const val DEFAULT_ALERT_MENTION = "@everyone"
         private const val EMBED_TITLE = "Narou update for $NOVEL_CODE"
         private val LOG = LoggerFactory.getLogger(NarouNovelPollingService::class.java)
     }
@@ -223,7 +222,7 @@ class NarouNovelPollingService(
     }
 
     private fun resolveAlertMention(settings: NarouNovelAlertSettings): String {
-        val pingRoleId = settings.pingRoleId ?: return DEFAULT_ALERT_MENTION
+        val pingRoleId = settings.pingRoleId ?: return ""
         val role = jda.getRoleById(pingRoleId)
         if (role != null) {
             return role.asMention

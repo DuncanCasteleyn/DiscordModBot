@@ -572,7 +572,7 @@ class NarouNovelPollingServiceTest {
         totalCharacters: Long,
         chapterLink: String,
         nextChapterLink: String,
-        expectedMessageContent: String = "@everyone",
+        expectedMessageContent: String = "",
         index: Int = 0
     ) {
         assertEquals(expectedMessageContent, service.sentMessageContents[index])
