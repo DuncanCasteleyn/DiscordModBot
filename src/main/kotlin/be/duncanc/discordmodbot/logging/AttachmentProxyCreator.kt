@@ -3,15 +3,15 @@ package be.duncanc.discordmodbot.logging
 import be.duncanc.discordmodbot.discord.IOUtils
 import be.duncanc.discordmodbot.logging.persistence.AttachmentProxy
 import be.duncanc.discordmodbot.logging.persistence.AttachmentProxyRepository
-import java.io.ByteArrayOutputStream
-import java.io.InputStream
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.utils.FileUpload
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 
 /**
  * Created by Duncan on 14/01/2017.
@@ -48,22 +48,30 @@ class AttachmentProxyCreator(
 
         val attachments = ArrayList<String>()
         var hadFailures = false
-        event.message.attachments.forEach { attachment ->
+        val originalMessage = event.message
+
+        originalMessage.attachments.forEach { attachment ->
             try {
                 if (attachment.size < 8 shl 20) {  //8MB
                     attachment.proxy.download().get(30, TimeUnit.SECONDS).let { inputStream: InputStream ->
                         val outputStream = ByteArrayOutputStream()
                         IOUtils.copy(inputStream, outputStream)
 
-                        event.jda.getTextChannelById(CACHE_CHANNEL)?.sendFiles(
-                            FileUpload.fromData(outputStream.toByteArray(), attachment.fileName)
-                        )?.map { message ->
-                            message.attachments.map { messageAttachment ->
-                                "[${messageAttachment.fileName}](${messageAttachment.url})"
+                        event.jda.getTextChannelById(CACHE_CHANNEL)
+                            ?.sendFiles(
+                                FileUpload.fromData(outputStream.toByteArray(), attachment.fileName)
+                            )
+                            ?.addContent(originalMessage.jumpUrl)
+                            ?.map { message ->
+                                message.attachments.map { messageAttachment ->
+                                    "[${messageAttachment.fileName}](${messageAttachment.url})"
+                                }
                             }
-                        }?.submit()?.get(30, TimeUnit.SECONDS)?.let {
-                            attachments.addAll(it)
-                        }
+                            ?.submit()
+                            ?.get(30, TimeUnit.SECONDS)
+                            ?.let {
+                                attachments.addAll(it)
+                            }
                     }
                 } else {
                     LOG.warn("The file was larger than 8MB.")
@@ -80,7 +88,7 @@ class AttachmentProxyCreator(
             }
 
             hadFailures -> {
-                AttachmentProxy(event.messageIdLong, emptyList(), hadFailures)
+                AttachmentProxy(event.messageIdLong, emptyList(), true)
             }
 
             else -> {
