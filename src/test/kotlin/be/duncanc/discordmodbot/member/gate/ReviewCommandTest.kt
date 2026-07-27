@@ -15,6 +15,7 @@ import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
+import net.dv8tion.jda.api.interactions.commands.OptionMapping
 import net.dv8tion.jda.api.requests.restaction.interactions.MessageEditCallbackAction
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -263,6 +264,98 @@ class ReviewCommandTest {
     }
 
     @Test
+    fun `starting review with max members passes the limit to session creation`() {
+        stubSlashReviewStart()
+        stubModeratorName()
+
+        val maxMembersOption = mock<OptionMapping>()
+        whenever(maxMembersOption.asInt).thenReturn(2)
+        whenever(slashEvent.getOption("max-members")).thenReturn(maxMembersOption)
+
+        val session = ReviewSession(listOf(10L, 20L))
+        whenever(reviewManager.createSession(1L, 2)).thenReturn(session)
+        whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(
+            pendingQuestion(guildId = 1L, userId = 10L, question = "Q1", answer = "A1", queuedAt = 10L)
+        )
+        stubApplicantPresent(10L, "<@10>")
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        verify(reviewManager).createSession(1L, 2)
+        verify(reviewSessionRegistry).remember(eq(1L), eq(99L), same(session))
+        val messageCaptor = argumentCaptor<String>()
+        verify(slashEvent).reply(messageCaptor.capture())
+        assertTrue(messageCaptor.firstValue.contains("Applicant: <@10> (`10`)"))
+    }
+
+    @Test
+    fun `confirming interruption carries the max members limit over to the new session`() {
+        stubInterruptButtonInteraction("member-gate-review-interrupt:confirm:token")
+        stubModeratorName()
+        stubButtonEditWithActionRow()
+
+        val storedSession = ReviewSessionRegistry.StoredReviewSession(
+            reviewerId = 42L,
+            session = ReviewSession(listOf(50L), sessionId = "session-42"),
+            sessionId = "session-42",
+            updatedAt = Instant.parse("2026-06-28T12:00:00Z")
+        )
+        whenever(reviewInterruptConfirmationRepository.findById("token")).thenReturn(
+            Optional.of(
+                ReviewInterruptConfirmation(
+                    id = "token",
+                    guildId = 1L,
+                    reviewerId = 99L,
+                    targetSessionIds = mapOf(42L to "session-42"),
+                    maxMembers = 5
+                )
+            )
+        )
+        whenever(reviewSessionRegistry.getOtherSessions(1L, 99L)).thenReturn(listOf(storedSession))
+        whenever(reviewSessionRegistry.forgetSessions(1L, setOf(42L))).thenReturn(listOf(storedSession))
+
+        val session = ReviewSession(listOf(10L))
+        whenever(reviewManager.createSession(1L, 5)).thenReturn(session)
+        whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(
+            pendingQuestion(guildId = 1L, userId = 10L, question = "Q1", answer = "A1", queuedAt = 10L)
+        )
+        whenever(guild.getMemberById(42L)).thenReturn(null)
+        stubApplicantPresent(10L, "<@10>")
+
+        command.onButtonInteraction(buttonEvent)
+
+        verify(reviewManager).createSession(1L, 5)
+        verify(reviewSessionRegistry).remember(eq(1L), eq(99L), same(session))
+    }
+
+    @Test
+    fun `approve completion mentions remaining applicants when more are waiting`() {
+        stubSlashReviewStart()
+        stubApproveButtonInteraction()
+        stubButtonEditWithList()
+
+        val session = ReviewSession(listOf(10L))
+        whenever(reviewManager.createSession(1L)).thenReturn(session)
+        whenever(reviewSessionRegistry.get(1L, 99L)).thenReturn(null, session)
+        stubModeratorName()
+        whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(
+            pendingQuestion(guildId = 1L, userId = 10L, question = "Q1", answer = "A1", queuedAt = 10L)
+        )
+        stubApplicantPresent(10L, "<@10>")
+        whenever(reviewManager.approve(eq(guild), eq(jda), eq(10L))).thenReturn("Approved <@10>.")
+        whenever(reviewManager.hasPendingApplicants(1L)).thenReturn(true)
+
+        command.onSlashCommandInteraction(slashEvent)
+        command.onButtonInteraction(buttonEvent)
+
+        val messageCaptor = argumentCaptor<String>()
+        verify(buttonEvent).editMessage(messageCaptor.capture())
+        val completionMessage = messageCaptor.allValues.last()
+        assertTrue(completionMessage.contains("Approved <@10>."))
+        assertTrue(completionMessage.contains("There are still applicants waiting for approval. Run `/review` again to continue."))
+    }
+
+    @Test
     fun `starting review again continues existing moderator session`() {
         stubSlashReviewCommand()
 
@@ -283,7 +376,7 @@ class ReviewCommandTest {
         verify(slashEvent).reply(messageCaptor.capture())
         assertTrue(messageCaptor.firstValue.contains("Applicant: <@20> (`20`)"))
         assertTrue(messageCaptor.firstValue.contains("Continuing with the next pending applicant."))
-        verify(reviewManager, never()).createSession(any())
+        verify(reviewManager, never()).createSession(any(), anyOrNull())
         verify(reviewSessionRegistry, never()).forgetOtherSessions(any(), any())
         verify(reviewSessionRegistry).remember(eq(1L), eq(99L), same(storedSession))
         verify(guildLogger, never()).log(
@@ -455,7 +548,7 @@ class ReviewCommandTest {
         verify(buttonEvent).editMessage("The active review sessions changed. Run `/review` again to confirm the current sessions.")
         verify(reviewInterruptConfirmationRepository).deleteById("token")
         verify(reviewSessionRegistry, never()).forgetSessions(any(), any())
-        verify(reviewManager, never()).createSession(any())
+        verify(reviewManager, never()).createSession(any(), anyOrNull())
     }
 
     @Test
@@ -495,7 +588,7 @@ class ReviewCommandTest {
         verify(buttonEvent).editMessage("The active review sessions changed. Run `/review` again to confirm the current sessions.")
         verify(reviewInterruptConfirmationRepository).deleteById("token")
         verify(reviewSessionRegistry, never()).forgetSessions(any(), any())
-        verify(reviewManager, never()).createSession(any())
+        verify(reviewManager, never()).createSession(any(), anyOrNull())
     }
 
     @Test
@@ -571,7 +664,7 @@ class ReviewCommandTest {
         verify(buttonEvent).editMessage("Review start cancelled. The other moderator's review session was not interrupted.")
         verify(reviewInterruptConfirmationRepository).deleteById("token")
         verify(reviewSessionRegistry, never()).forgetOtherSessions(any(), any())
-        verify(reviewManager, never()).createSession(any())
+        verify(reviewManager, never()).createSession(any(), anyOrNull())
     }
 
     @Test

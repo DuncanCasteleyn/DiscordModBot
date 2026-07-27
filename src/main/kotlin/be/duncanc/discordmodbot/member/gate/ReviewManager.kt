@@ -16,7 +16,7 @@ class ReviewManager(
     private val promptRegistry: ReviewPromptRegistry
 ) {
     @Transactional(readOnly = true)
-    fun createSession(guildId: Long): ReviewSession? {
+    fun createSession(guildId: Long, maxMembers: Int? = null): ReviewSession? {
         val storedQuestions = memberGateQuestionRepository.findAll()
 
         val pendingUserIds = storedQuestions
@@ -25,9 +25,17 @@ class ReviewManager(
             .filter { it.guildId == guildId && it.userId.toULong() > 0uL }
             .sortedBy { it.queuedAt }
             .map { it.userId }
+            .take(maxMembers ?: Int.MAX_VALUE)
             .toList()
 
         return pendingUserIds.takeIf { it.isNotEmpty() }?.let(::ReviewSession)
+    }
+
+    @Transactional(readOnly = true)
+    fun hasPendingApplicants(guildId: Long): Boolean {
+        return memberGateQuestionRepository.findAll()
+            .filterNotNull()
+            .any { it.guildId == guildId && it.userId.toULong() > 0uL }
     }
 
     @Transactional(readOnly = true)

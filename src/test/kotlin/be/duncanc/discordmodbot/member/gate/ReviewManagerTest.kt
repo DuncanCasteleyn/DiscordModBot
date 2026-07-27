@@ -103,6 +103,42 @@ class ReviewManagerTest {
     }
 
     @Test
+    fun `createSession limits the session to the oldest max members`() {
+        val repositoryEntries = listOf(
+            pendingQuestion(guildId = 1L, userId = 30L, queuedAt = 30L, question = "Q3", answer = "A3"),
+            pendingQuestion(guildId = 1L, userId = 10L, queuedAt = 10L, question = "Q1", answer = "A1"),
+            pendingQuestion(guildId = 1L, userId = 20L, queuedAt = 20L, question = "Q2", answer = "A2")
+        )
+        whenever(memberGateQuestionRepository.findAll()).thenReturn(repositoryEntries)
+
+        val session = reviewManager.createSession(1L, 2)
+
+        assertEquals(10L, session?.getCurrentUserId())
+        assertEquals(20L, session?.advanceAfterReview())
+        assertNull(session?.advanceAfterReview())
+    }
+
+    @Test
+    fun `hasPendingApplicants returns true when the guild has queued applicants`() {
+        val repositoryEntries = listOf(
+            pendingQuestion(guildId = 1L, userId = 10L, queuedAt = 10L, question = "Q1", answer = "A1")
+        )
+        whenever(memberGateQuestionRepository.findAll()).thenReturn(repositoryEntries)
+
+        assertEquals(true, reviewManager.hasPendingApplicants(1L))
+    }
+
+    @Test
+    fun `hasPendingApplicants returns false when the guild has no queued applicants`() {
+        val repositoryEntries = listOf(
+            pendingQuestion(guildId = 2L, userId = 10L, queuedAt = 10L, question = "Q1", answer = "A1")
+        )
+        whenever(memberGateQuestionRepository.findAll()).thenReturn(repositoryEntries)
+
+        assertEquals(false, reviewManager.hasPendingApplicants(1L))
+    }
+
+    @Test
     fun `getPendingQuestion uses guild scoped redis id`() {
         val question = pendingQuestion(guildId = 1L, userId = 10L, queuedAt = 10L, question = "Q1", answer = "A1")
         whenever(memberGateQuestionRepository.findById(MemberGateQuestion.createId(1L, 10L))).thenReturn(Optional.of(question))
