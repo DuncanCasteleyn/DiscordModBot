@@ -88,6 +88,7 @@ class ReviewCommand(
             return
         }
 
+        reviewManager.pruneStaleApplicants(guild, event.jda)
         val maxMembers = event.getOption(OPTION_MAX_MEMBERS)?.asInt
         val session = reviewManager.createSession(guild.idLong, maxMembers)
         if (session == null) {
@@ -327,6 +328,7 @@ class ReviewCommand(
             return
         }
 
+        reviewManager.pruneStaleApplicants(guild, event.jda)
         val session = reviewManager.createSession(guild.idLong, confirmation.maxMembers)
         if (session == null) {
             event.editMessage("Nobody is currently waiting for approval.").setComponents(emptyList()).queue()
@@ -454,11 +456,17 @@ class ReviewCommand(
     }
 
     private fun logReviewStarted(guild: Guild, moderator: Member, session: ReviewSession) {
+        val sessionSize = session.toPendingUserIds().size
+        val totalPending = reviewManager.countPendingApplicants(guild.idLong)
         val logEmbed = EmbedBuilder()
             .setColor(Color.GREEN)
             .setTitle("Member gate review started")
             .addField("Moderator", moderator.nicknameAndUsername, false)
-            .addField("Pending applicants", session.toPendingUserIds().size.toString(), true)
+            .addField("Pending applicants", totalPending.toString(), true)
+
+        if (sessionSize != totalPending) {
+            logEmbed.addField("In this session", sessionSize.toString(), true)
+        }
 
         guildLogger.log(logEmbed, moderator.user, guild, null, GuildLogger.LogTypeAction.MODERATOR)
     }

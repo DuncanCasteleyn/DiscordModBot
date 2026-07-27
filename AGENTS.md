@@ -40,6 +40,11 @@ Repository guidance for coding agents working in `DiscordModBot`.
   SPRING_DATASOURCE_DRIVERCLASSNAME=org.mariadb.jdbc.Driver \
   ./gradlew check
   ```
+  - On some machines Docker is Podman-backed: the `docker compose` v2 plugin is unavailable; use the standalone
+    `docker-compose` binary instead (e.g. `docker-compose up -d`).
+  - Environment variables do not invalidate Gradle's up-to-date checks, so a `check` run right after a plain
+    `./gradlew check` will skip `test` as UP-TO-DATE. Force re-execution with `./gradlew check --rerun-tasks` to
+    actually run the tests against MariaDB.
 - Prefer H2 unless changing DB-specific behavior.
 - Some tests (e.g. `GuildWarnPointRepositoryTest`) are `@Disabled` due to known Hibernate issues; leave them unless
   fixing the root cause.

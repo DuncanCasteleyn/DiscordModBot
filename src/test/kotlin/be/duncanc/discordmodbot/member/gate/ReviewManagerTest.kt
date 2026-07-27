@@ -139,6 +139,42 @@ class ReviewManagerTest {
     }
 
     @Test
+    fun `countPendingApplicants counts only the guild's queued applicants`() {
+        val repositoryEntries = listOf(
+            pendingQuestion(guildId = 1L, userId = 10L, queuedAt = 10L, question = "Q1", answer = "A1"),
+            pendingQuestion(guildId = 1L, userId = 20L, queuedAt = 20L, question = "Q2", answer = "A2"),
+            pendingQuestion(guildId = 2L, userId = 99L, queuedAt = 5L, question = "QX", answer = "AX")
+        )
+        whenever(memberGateQuestionRepository.findAll()).thenReturn(repositoryEntries)
+
+        assertEquals(2, reviewManager.countPendingApplicants(1L))
+    }
+
+    @Test
+    fun `pruneStaleApplicants removes only applicants who left the guild`() {
+        val staleQuestion = pendingQuestion(guildId = 1L, userId = 20L, queuedAt = 20L, question = "Q2", answer = "A2")
+        val repositoryEntries = listOf(
+            pendingQuestion(guildId = 1L, userId = 10L, queuedAt = 10L, question = "Q1", answer = "A1"),
+            staleQuestion,
+            pendingQuestion(guildId = 2L, userId = 99L, queuedAt = 5L, question = "QX", answer = "AX")
+        )
+        whenever(memberGateQuestionRepository.findAll()).thenReturn(repositoryEntries)
+        whenever(memberGateQuestionRepository.findById(MemberGateQuestion.createId(1L, 20L))).thenReturn(
+            Optional.of(staleQuestion)
+        )
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(guild.getMemberById(10L)).thenReturn(member)
+        whenever(guild.getMemberById(20L)).thenReturn(null)
+        whenever(promptRegistry.forget(1L, 20L)).thenReturn(null)
+
+        reviewManager.pruneStaleApplicants(guild, jda)
+
+        verify(memberGateQuestionRepository).deleteById(MemberGateQuestion.createId(1L, 20L))
+        verify(memberGateQuestionRepository, never()).deleteById(MemberGateQuestion.createId(1L, 10L))
+        verify(memberGateQuestionRepository, never()).deleteById(MemberGateQuestion.createId(2L, 99L))
+    }
+
+    @Test
     fun `getPendingQuestion uses guild scoped redis id`() {
         val question = pendingQuestion(guildId = 1L, userId = 10L, queuedAt = 10L, question = "Q1", answer = "A1")
         whenever(memberGateQuestionRepository.findById(MemberGateQuestion.createId(1L, 10L))).thenReturn(Optional.of(question))

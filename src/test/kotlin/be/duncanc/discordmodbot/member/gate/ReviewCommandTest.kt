@@ -253,6 +253,7 @@ class ReviewCommandTest {
 
         val session = ReviewSession(listOf(10L, 20L))
         whenever(reviewManager.createSession(1L)).thenReturn(session)
+        whenever(reviewManager.countPendingApplicants(1L)).thenReturn(2)
         whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(
             pendingQuestion(guildId = 1L, userId = 10L, question = "Q1", answer = "A1", queuedAt = 10L)
         )
@@ -282,10 +283,34 @@ class ReviewCommandTest {
         command.onSlashCommandInteraction(slashEvent)
 
         verify(reviewManager).createSession(1L, 2)
+        verify(reviewManager).pruneStaleApplicants(guild, jda)
         verify(reviewSessionRegistry).remember(eq(1L), eq(99L), same(session))
         val messageCaptor = argumentCaptor<String>()
         verify(slashEvent).reply(messageCaptor.capture())
         assertTrue(messageCaptor.firstValue.contains("Applicant: <@10> (`10`)"))
+    }
+
+    @Test
+    fun `starting review with max members logs queue total and session size`() {
+        stubSlashReviewStart()
+        stubModeratorName()
+
+        val maxMembersOption = mock<OptionMapping>()
+        whenever(maxMembersOption.asInt).thenReturn(2)
+        whenever(slashEvent.getOption("max-members")).thenReturn(maxMembersOption)
+
+        val session = ReviewSession(listOf(10L, 20L))
+        whenever(reviewManager.createSession(1L, 2)).thenReturn(session)
+        whenever(reviewManager.countPendingApplicants(1L)).thenReturn(3)
+        whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(
+            pendingQuestion(guildId = 1L, userId = 10L, question = "Q1", answer = "A1", queuedAt = 10L)
+        )
+        stubApplicantPresent(10L, "<@10>")
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        verifyReviewLog("Member gate review started", "Pending applicants", "3")
+        verifyReviewLog("Member gate review started", "In this session", "2")
     }
 
     @Test
@@ -352,7 +377,8 @@ class ReviewCommandTest {
         verify(buttonEvent).editMessage(messageCaptor.capture())
         val completionMessage = messageCaptor.allValues.last()
         assertTrue(completionMessage.contains("Approved <@10>."))
-        assertTrue(completionMessage.contains("There are still applicants waiting for approval. Run `/review` again to continue."))
+        val expectedMessage = "There are still applicants waiting for approval. Run `/review` again to continue."
+        assertTrue(completionMessage.contains(expectedMessage))
     }
 
     @Test
