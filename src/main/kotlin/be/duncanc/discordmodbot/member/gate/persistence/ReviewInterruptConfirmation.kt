@@ -9,5 +9,6 @@ data class ReviewInterruptConfirmation(
     val id: String,
     val guildId: Long,
     val reviewerId: Long,
-    val targetSessionIds: Map<Long, String>
+    val targetSessionIds: Map<Long, String>,
+    val maxMembers: Int? = null
 )

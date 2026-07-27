@@ -5,6 +5,9 @@ import be.duncanc.discordmodbot.member.gate.persistence.MemberGateQuestionReposi
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.exceptions.ErrorResponseException
+import net.dv8tion.jda.api.requests.ErrorResponse
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.util.concurrent.TimeUnit
@@ -15,8 +18,12 @@ class ReviewManager(
     private val memberGateService: MemberGateService,
     private val promptRegistry: ReviewPromptRegistry
 ) {
+    companion object {
+        private val LOG = LoggerFactory.getLogger(ReviewManager::class.java)
+    }
+
     @Transactional(readOnly = true)
-    fun createSession(guildId: Long): ReviewSession? {
+    fun createSession(guildId: Long, maxMembers: Int? = null): ReviewSession? {
         val storedQuestions = memberGateQuestionRepository.findAll()
 
         val pendingUserIds = storedQuestions
@@ -25,9 +32,48 @@ class ReviewManager(
             .filter { it.guildId == guildId && it.userId.toULong() > 0uL }
             .sortedBy { it.queuedAt }
             .map { it.userId }
+            .take(maxMembers ?: Int.MAX_VALUE)
             .toList()
 
         return pendingUserIds.takeIf { it.isNotEmpty() }?.let(::ReviewSession)
+    }
+
+    @Transactional
+    fun pruneStaleApplicants(guild: Guild, jda: JDA) {
+        memberGateQuestionRepository.findAll()
+            .filterNotNull()
+            .filter { it.guildId == guild.idLong && it.userId.toULong() > 0uL }
+            .forEach { question ->
+                guild.retrieveMemberById(question.userId).queue(
+                    { },
+                    { throwable ->
+                        if ((throwable as? ErrorResponseException)?.errorResponse == ErrorResponse.UNKNOWN_MEMBER) {
+                            clearPendingQuestion(guild.idLong, jda, question.userId)
+                        } else {
+                            LOG.warn(
+                                "Failed to check membership of {} in guild {}; keeping the pending question.",
+                                question.userId,
+                                guild.idLong,
+                                throwable
+                            )
+                        }
+                    }
+                )
+            }
+    }
+
+    @Transactional(readOnly = true)
+    fun hasPendingApplicants(guildId: Long): Boolean {
+        return memberGateQuestionRepository.findAll()
+            .filterNotNull()
+            .any { it.guildId == guildId && it.userId.toULong() > 0uL }
+    }
+
+    @Transactional(readOnly = true)
+    fun countPendingApplicants(guildId: Long): Int {
+        return memberGateQuestionRepository.findAll()
+            .filterNotNull()
+            .count { it.guildId == guildId && it.userId.toULong() > 0uL }
     }
 
     @Transactional(readOnly = true)

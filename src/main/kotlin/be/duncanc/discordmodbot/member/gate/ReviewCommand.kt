@@ -19,7 +19,9 @@ import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.InteractionContextType
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions
+import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.Commands
+import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import net.dv8tion.jda.api.utils.MarkdownUtil
 import net.dv8tion.jda.api.utils.TimeFormat
@@ -37,6 +39,7 @@ class ReviewCommand(
 ) : ListenerAdapter(), SlashCommand {
     companion object {
         private const val COMMAND = "review"
+        private const val OPTION_MAX_MEMBERS = "max-members"
         private const val BUTTON_PREFIX = "member-gate-review:"
         private const val INTERRUPT_CONFIRM_PREFIX = "member-gate-review-interrupt:"
         private const val APPROVE_ACTION = "approve"
@@ -62,6 +65,10 @@ class ReviewCommand(
             Commands.slash(COMMAND, "Review pending member gate applications")
                 .setContexts(InteractionContextType.GUILD)
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_ROLES))
+                .addOptions(
+                    OptionData(OptionType.INTEGER, OPTION_MAX_MEMBERS, "Maximum number of members to review")
+                        .setMinValue(1)
+                )
         )
     }
 
@@ -81,7 +88,9 @@ class ReviewCommand(
             return
         }
 
-        val session = reviewManager.createSession(guild.idLong)
+        reviewManager.pruneStaleApplicants(guild, event.jda)
+        val maxMembers = event.getOption(OPTION_MAX_MEMBERS)?.asInt
+        val session = reviewManager.createSession(guild.idLong, maxMembers)
         if (session == null) {
             event.reply("Nobody is currently waiting for approval.").setEphemeral(true).queue()
             return
@@ -96,7 +105,7 @@ class ReviewCommand(
 
         val otherSessions = reviewSessionRegistry.getOtherSessions(guild.idLong, event.user.idLong)
         if (otherSessions.isNotEmpty()) {
-            val token = rememberInterruptConfirmation(guild.idLong, event.user.idLong, otherSessions)
+            val token = rememberInterruptConfirmation(guild.idLong, event.user.idLong, otherSessions, maxMembers)
             event.reply(buildInterruptPrompt(guild, otherSessions))
                 .setEphemeral(true)
                 .addComponents(ActionRow.of(buildInterruptButtons(token)))
@@ -230,7 +239,9 @@ class ReviewCommand(
         if (pendingQuestion == null) {
             logReviewCompleted(guild, event.member!!, session)
             reviewSessionRegistry.forget(guild.idLong, event.user.idLong)
-            event.editMessage(buildCompletionMessage(feedback)).setComponents(emptyList()).queue()
+            event.editMessage(buildCompletionMessage(feedback, reviewManager.hasPendingApplicants(guild.idLong)))
+                .setComponents(emptyList())
+                .queue()
             return
         }
 
@@ -247,7 +258,9 @@ class ReviewCommand(
         if (pendingQuestion == null) {
             logReviewCompleted(guild, event.member!!, session)
             reviewSessionRegistry.forget(guild.idLong, event.user.idLong)
-            event.editMessage(buildCompletionMessage(feedback)).setComponents(emptyList()).queue()
+            event.editMessage(buildCompletionMessage(feedback, reviewManager.hasPendingApplicants(guild.idLong)))
+                .setComponents(emptyList())
+                .queue()
             return
         }
 
@@ -315,7 +328,8 @@ class ReviewCommand(
             return
         }
 
-        val session = reviewManager.createSession(guild.idLong)
+        reviewManager.pruneStaleApplicants(guild, event.jda)
+        val session = reviewManager.createSession(guild.idLong, confirmation.maxMembers)
         if (session == null) {
             event.editMessage("Nobody is currently waiting for approval.").setComponents(emptyList()).queue()
             return
@@ -355,7 +369,8 @@ class ReviewCommand(
     private fun rememberInterruptConfirmation(
         guildId: Long,
         reviewerId: Long,
-        sessions: List<ReviewSessionRegistry.StoredReviewSession>
+        sessions: List<ReviewSessionRegistry.StoredReviewSession>,
+        maxMembers: Int? = null
     ): String {
         val token = UUID.randomUUID().toString().replace("-", "").take(12)
         reviewInterruptConfirmationRepository.save(
@@ -363,7 +378,8 @@ class ReviewCommand(
                 id = token,
                 guildId = guildId,
                 reviewerId = reviewerId,
-                targetSessionIds = sessions.associate { it.reviewerId to it.sessionId }
+                targetSessionIds = sessions.associate { it.reviewerId to it.sessionId },
+                maxMembers = maxMembers
             )
         )
         return token
@@ -407,8 +423,12 @@ class ReviewCommand(
                 "\nChoose `Approve`, `Reject`, or `Manual action`."
     }
 
-    private fun buildCompletionMessage(feedback: String): String {
-        return "$feedback\n\nThere are no more pending applicants in the queue."
+    private fun buildCompletionMessage(feedback: String, hasMoreApplicants: Boolean): String {
+        return if (hasMoreApplicants) {
+            "$feedback\n\nThere are still applicants waiting for approval. Run `/review` again to continue."
+        } else {
+            "$feedback\n\nThere are no more pending applicants in the queue."
+        }
     }
 
     private fun buildInterruptPrompt(
@@ -436,11 +456,17 @@ class ReviewCommand(
     }
 
     private fun logReviewStarted(guild: Guild, moderator: Member, session: ReviewSession) {
+        val sessionSize = session.toPendingUserIds().size
+        val totalPending = reviewManager.countPendingApplicants(guild.idLong)
         val logEmbed = EmbedBuilder()
             .setColor(Color.GREEN)
             .setTitle("Member gate review started")
             .addField("Moderator", moderator.nicknameAndUsername, false)
-            .addField("Pending applicants", session.toPendingUserIds().size.toString(), true)
+            .addField("Pending applicants", totalPending.toString(), true)
+
+        if (sessionSize != totalPending) {
+            logEmbed.addField("In this session", sessionSize.toString(), true)
+        }
 
         guildLogger.log(logEmbed, moderator.user, guild, null, GuildLogger.LogTypeAction.MODERATOR)
     }

@@ -8,7 +8,11 @@ import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Role
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.exceptions.ErrorResponseException
+import net.dv8tion.jda.api.requests.ErrorResponse
+import net.dv8tion.jda.api.requests.Response
 import net.dv8tion.jda.api.requests.restaction.AuditableRestAction
+import net.dv8tion.jda.api.requests.restaction.CacheRestAction
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -19,6 +23,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.*
 import java.util.*
+import java.util.function.Consumer
 
 @ExtendWith(MockitoExtension::class)
 class ReviewManagerTest {
@@ -100,6 +105,111 @@ class ReviewManagerTest {
 
         assertEquals(10L, session?.getCurrentUserId())
         assertEquals(20L, session?.advanceAfterReview())
+    }
+
+    @Test
+    fun `createSession limits the session to the oldest max members`() {
+        val repositoryEntries = listOf(
+            pendingQuestion(guildId = 1L, userId = 30L, queuedAt = 30L, question = "Q3", answer = "A3"),
+            pendingQuestion(guildId = 1L, userId = 10L, queuedAt = 10L, question = "Q1", answer = "A1"),
+            pendingQuestion(guildId = 1L, userId = 20L, queuedAt = 20L, question = "Q2", answer = "A2")
+        )
+        whenever(memberGateQuestionRepository.findAll()).thenReturn(repositoryEntries)
+
+        val session = reviewManager.createSession(1L, 2)
+
+        assertEquals(10L, session?.getCurrentUserId())
+        assertEquals(20L, session?.advanceAfterReview())
+        assertNull(session?.advanceAfterReview())
+    }
+
+    @Test
+    fun `hasPendingApplicants returns true when the guild has queued applicants`() {
+        val repositoryEntries = listOf(
+            pendingQuestion(guildId = 1L, userId = 10L, queuedAt = 10L, question = "Q1", answer = "A1")
+        )
+        whenever(memberGateQuestionRepository.findAll()).thenReturn(repositoryEntries)
+
+        assertEquals(true, reviewManager.hasPendingApplicants(1L))
+    }
+
+    @Test
+    fun `hasPendingApplicants returns false when the guild has no queued applicants`() {
+        val repositoryEntries = listOf(
+            pendingQuestion(guildId = 2L, userId = 10L, queuedAt = 10L, question = "Q1", answer = "A1")
+        )
+        whenever(memberGateQuestionRepository.findAll()).thenReturn(repositoryEntries)
+
+        assertEquals(false, reviewManager.hasPendingApplicants(1L))
+    }
+
+    @Test
+    fun `countPendingApplicants counts only the guild's queued applicants`() {
+        val repositoryEntries = listOf(
+            pendingQuestion(guildId = 1L, userId = 10L, queuedAt = 10L, question = "Q1", answer = "A1"),
+            pendingQuestion(guildId = 1L, userId = 20L, queuedAt = 20L, question = "Q2", answer = "A2"),
+            pendingQuestion(guildId = 2L, userId = 99L, queuedAt = 5L, question = "QX", answer = "AX")
+        )
+        whenever(memberGateQuestionRepository.findAll()).thenReturn(repositoryEntries)
+
+        assertEquals(2, reviewManager.countPendingApplicants(1L))
+    }
+
+    @Test
+    fun `pruneStaleApplicants removes only applicants who left the guild`() {
+        val staleQuestion = pendingQuestion(guildId = 1L, userId = 20L, queuedAt = 20L, question = "Q2", answer = "A2")
+        val repositoryEntries = listOf(
+            pendingQuestion(guildId = 1L, userId = 10L, queuedAt = 10L, question = "Q1", answer = "A1"),
+            staleQuestion,
+            pendingQuestion(guildId = 2L, userId = 99L, queuedAt = 5L, question = "QX", answer = "AX")
+        )
+        whenever(memberGateQuestionRepository.findAll()).thenReturn(repositoryEntries)
+        whenever(memberGateQuestionRepository.findById(MemberGateQuestion.createId(1L, 20L))).thenReturn(
+            Optional.of(staleQuestion)
+        )
+        whenever(guild.idLong).thenReturn(1L)
+        val presentMemberAction = mock<CacheRestAction<Member>>()
+        whenever(guild.retrieveMemberById(10L)).thenReturn(presentMemberAction)
+        doAnswer { invocation ->
+            invocation.component1<Consumer<Member>>().accept(member)
+            null
+        }.whenever(presentMemberAction).queue(any(), any())
+        val missingMemberAction = mock<CacheRestAction<Member>>()
+        whenever(guild.retrieveMemberById(20L)).thenReturn(missingMemberAction)
+        doAnswer { invocation ->
+            invocation.component2<Consumer<Throwable>>().accept(
+                ErrorResponseException.create(ErrorResponse.UNKNOWN_MEMBER, Response(10007L, emptySet<String>()))
+            )
+            null
+        }.whenever(missingMemberAction).queue(any(), any())
+        whenever(promptRegistry.forget(1L, 20L)).thenReturn(null)
+
+        reviewManager.pruneStaleApplicants(guild, jda)
+
+        verify(memberGateQuestionRepository).deleteById(MemberGateQuestion.createId(1L, 20L))
+        verify(memberGateQuestionRepository, never()).deleteById(MemberGateQuestion.createId(1L, 10L))
+        verify(memberGateQuestionRepository, never()).deleteById(MemberGateQuestion.createId(2L, 99L))
+    }
+
+    @Test
+    fun `pruneStaleApplicants keeps applicants when member retrieval fails transiently`() {
+        val repositoryEntries = listOf(
+            pendingQuestion(guildId = 1L, userId = 20L, queuedAt = 20L, question = "Q2", answer = "A2")
+        )
+        whenever(memberGateQuestionRepository.findAll()).thenReturn(repositoryEntries)
+        whenever(guild.idLong).thenReturn(1L)
+        val failingMemberAction = mock<CacheRestAction<Member>>()
+        whenever(guild.retrieveMemberById(20L)).thenReturn(failingMemberAction)
+        doAnswer { invocation ->
+            invocation.component2<Consumer<Throwable>>().accept(
+                ErrorResponseException.create(ErrorResponse.SERVER_ERROR, Response(500L, emptySet<String>()))
+            )
+            null
+        }.whenever(failingMemberAction).queue(any(), any())
+
+        reviewManager.pruneStaleApplicants(guild, jda)
+
+        verify(memberGateQuestionRepository, never()).deleteById(MemberGateQuestion.createId(1L, 20L))
     }
 
     @Test
