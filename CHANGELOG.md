@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.15.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.14.4...v2.15.0) (2026-07-27)
+
+
+### Features
+
+* **member-gate:** add optional max-members limit to review queue ([#748](https://github.com/DuncanCasteleyn/DiscordModBot/issues/748)) ([0451932](https://github.com/DuncanCasteleyn/DiscordModBot/commit/045193245a042d8ac3c1b4d3bebe18be7d8876ee))
+
+
+### Bug Fixes
+
+* **moderation:** add jump url to attachment proxy creation ([ed945af](https://github.com/DuncanCasteleyn/DiscordModBot/commit/ed945af063baef7614db19c988852f0746c5d40b))
+
 ## [2.14.4](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.14.3...v2.14.4) (2026-07-25)
 
 
