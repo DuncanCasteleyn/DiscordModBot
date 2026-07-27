@@ -5,6 +5,9 @@ import be.duncanc.discordmodbot.member.gate.persistence.MemberGateQuestionReposi
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.exceptions.ErrorResponseException
+import net.dv8tion.jda.api.requests.ErrorResponse
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.util.concurrent.TimeUnit
@@ -15,6 +18,10 @@ class ReviewManager(
     private val memberGateService: MemberGateService,
     private val promptRegistry: ReviewPromptRegistry
 ) {
+    companion object {
+        private val LOG = LoggerFactory.getLogger(ReviewManager::class.java)
+    }
+
     @Transactional(readOnly = true)
     fun createSession(guildId: Long, maxMembers: Int? = null): ReviewSession? {
         val storedQuestions = memberGateQuestionRepository.findAll()
@@ -36,8 +43,23 @@ class ReviewManager(
         memberGateQuestionRepository.findAll()
             .filterNotNull()
             .filter { it.guildId == guild.idLong && it.userId.toULong() > 0uL }
-            .filter { guild.getMemberById(it.userId) == null }
-            .forEach { clearPendingQuestion(guild.idLong, jda, it.userId) }
+            .forEach { question ->
+                guild.retrieveMemberById(question.userId).queue(
+                    { },
+                    { throwable ->
+                        if ((throwable as? ErrorResponseException)?.errorResponse == ErrorResponse.UNKNOWN_MEMBER) {
+                            clearPendingQuestion(guild.idLong, jda, question.userId)
+                        } else {
+                            LOG.warn(
+                                "Failed to check membership of {} in guild {}; keeping the pending question.",
+                                question.userId,
+                                guild.idLong,
+                                throwable
+                            )
+                        }
+                    }
+                )
+            }
     }
 
     @Transactional(readOnly = true)

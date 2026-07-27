@@ -8,7 +8,11 @@ import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Role
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.exceptions.ErrorResponseException
+import net.dv8tion.jda.api.requests.ErrorResponse
+import net.dv8tion.jda.api.requests.Response
 import net.dv8tion.jda.api.requests.restaction.AuditableRestAction
+import net.dv8tion.jda.api.requests.restaction.CacheRestAction
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -19,6 +23,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.*
 import java.util.*
+import java.util.function.Consumer
 
 @ExtendWith(MockitoExtension::class)
 class ReviewManagerTest {
@@ -163,8 +168,20 @@ class ReviewManagerTest {
             Optional.of(staleQuestion)
         )
         whenever(guild.idLong).thenReturn(1L)
-        whenever(guild.getMemberById(10L)).thenReturn(member)
-        whenever(guild.getMemberById(20L)).thenReturn(null)
+        val presentMemberAction = mock<CacheRestAction<Member>>()
+        whenever(guild.retrieveMemberById(10L)).thenReturn(presentMemberAction)
+        doAnswer { invocation ->
+            invocation.component1<Consumer<Member>>().accept(member)
+            null
+        }.whenever(presentMemberAction).queue(any(), any())
+        val missingMemberAction = mock<CacheRestAction<Member>>()
+        whenever(guild.retrieveMemberById(20L)).thenReturn(missingMemberAction)
+        doAnswer { invocation ->
+            invocation.component2<Consumer<Throwable>>().accept(
+                ErrorResponseException.create(ErrorResponse.UNKNOWN_MEMBER, Response(10007L, emptySet<String>()))
+            )
+            null
+        }.whenever(missingMemberAction).queue(any(), any())
         whenever(promptRegistry.forget(1L, 20L)).thenReturn(null)
 
         reviewManager.pruneStaleApplicants(guild, jda)
@@ -172,6 +189,27 @@ class ReviewManagerTest {
         verify(memberGateQuestionRepository).deleteById(MemberGateQuestion.createId(1L, 20L))
         verify(memberGateQuestionRepository, never()).deleteById(MemberGateQuestion.createId(1L, 10L))
         verify(memberGateQuestionRepository, never()).deleteById(MemberGateQuestion.createId(2L, 99L))
+    }
+
+    @Test
+    fun `pruneStaleApplicants keeps applicants when member retrieval fails transiently`() {
+        val repositoryEntries = listOf(
+            pendingQuestion(guildId = 1L, userId = 20L, queuedAt = 20L, question = "Q2", answer = "A2")
+        )
+        whenever(memberGateQuestionRepository.findAll()).thenReturn(repositoryEntries)
+        whenever(guild.idLong).thenReturn(1L)
+        val failingMemberAction = mock<CacheRestAction<Member>>()
+        whenever(guild.retrieveMemberById(20L)).thenReturn(failingMemberAction)
+        doAnswer { invocation ->
+            invocation.component2<Consumer<Throwable>>().accept(
+                ErrorResponseException.create(ErrorResponse.SERVER_ERROR, Response(500L, emptySet<String>()))
+            )
+            null
+        }.whenever(failingMemberAction).queue(any(), any())
+
+        reviewManager.pruneStaleApplicants(guild, jda)
+
+        verify(memberGateQuestionRepository, never()).deleteById(MemberGateQuestion.createId(1L, 20L))
     }
 
     @Test
