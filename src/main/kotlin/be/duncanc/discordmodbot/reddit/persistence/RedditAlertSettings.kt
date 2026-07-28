@@ -7,7 +7,7 @@ import jakarta.persistence.Table
 
 @Entity
 @Table(name = "reddit_alert_settings")
-data class RedditAlertSettings(
+class RedditAlertSettings(
     @Id
     @Column(updatable = false)
     val guildId: Long,
@@ -15,4 +15,19 @@ data class RedditAlertSettings(
     var channelId: Long? = null,
     @Column(nullable = false, length = 100)
     var subreddit: String
-)
+) {
+    constructor() : this(0L, null, "")
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) {
+            return true
+        }
+        if (javaClass != other?.javaClass) {
+            return false
+        }
+        other as RedditAlertSettings
+        return guildId == other.guildId
+    }
+
+    override fun hashCode(): Int = guildId.hashCode()
+}

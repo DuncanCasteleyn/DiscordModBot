@@ -18,6 +18,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.awt.Color
+import java.net.URI
 import java.time.Instant
 
 @Service
@@ -100,7 +101,11 @@ class RedditPollingService(
             if (settings.channelId == null) {
                 return
             }
-            mirrorPost(settings, channel, post)
+            try {
+                mirrorPost(settings, channel, post)
+            } catch (exception: Exception) {
+                LOG.warn("Failed to process Reddit post {} for guild {}", post.id, settings.guildId, exception)
+            }
         }
     }
 
@@ -118,7 +123,7 @@ class RedditPollingService(
             return
         }
 
-        redditPendingPostRepository.save(RedditPendingPost(pendingId))
+        redditPendingPostRepository.save(RedditPendingPost(pendingId, guildId))
         sendPostMessage(
             channel = channel,
             embed = buildPostEmbed(subreddit, post),
@@ -162,7 +167,12 @@ class RedditPollingService(
     private fun deleteMirroredMessage(mirror: RedditPostMirror) {
         val channelId = mirror.discordChannelId ?: return
         val messageId = mirror.discordMessageId ?: return
-        val channel = jda.getTextChannelById(channelId) ?: return
+        val channel = jda.getTextChannelById(channelId)
+        if (channel == null) {
+            mirror.deleted = true
+            redditPostMirrorRepository.save(mirror)
+            return
+        }
         channel.deleteMessageById(messageId).queue(
             {
                 mirror.deleted = true
@@ -208,11 +218,20 @@ class RedditPollingService(
             .addField("Reddit", truncate(post.permalink, MessageEmbed.VALUE_MAX_LENGTH), false)
 
         val thumbnailUrl = post.thumbnailUrl
-        if (thumbnailUrl != null) {
+        if (thumbnailUrl != null && isValidThumbnailUrl(thumbnailUrl)) {
             embed.setImage(thumbnailUrl)
         }
 
         return embed.build()
+    }
+
+    private fun isValidThumbnailUrl(thumbnailUrl: String): Boolean {
+        return try {
+            val url = URI(thumbnailUrl).toURL()
+            (url.protocol == "http" || url.protocol == "https") && url.host.isNotBlank()
+        } catch (exception: Exception) {
+            false
+        }
     }
 
     internal fun isTerminalMessageFailure(exception: Throwable): Boolean {

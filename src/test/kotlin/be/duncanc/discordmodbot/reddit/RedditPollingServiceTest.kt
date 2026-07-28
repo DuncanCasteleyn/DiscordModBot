@@ -185,6 +185,45 @@ class RedditPollingServiceTest {
     }
 
     @Test
+    fun `poll marks tracked mirror deleted when mirrored channel is unavailable`() {
+        val trackedMirror = RedditPostMirror(
+            id = "1:t3_removed",
+            guildId = 1L,
+            redditPostId = "t3_removed",
+            discordChannelId = 12L,
+            discordMessageId = 101L,
+            publishedAt = Instant.parse("2026-07-02T12:00:00Z"),
+            permalink = "https://www.reddit.com/r/Re_Zero/comments/removed/title/"
+        )
+        whenever(redditRssClient.fetchNewestPosts("Re_Zero")).thenReturn(
+            listOf(
+                post("t3_newer", publishedAt = Instant.parse("2026-07-02T11:00:00Z"))
+            )
+        )
+        whenever(redditAlertSettingsRepository.findAll()).thenReturn(listOf(RedditAlertSettings(1L, 11L, "Re_Zero")))
+        whenever(jda.getTextChannelById(11L)).thenReturn(textChannel)
+        whenever(redditPostMirrorRepository.findAllByGuildId(1L)).thenReturn(listOf(trackedMirror))
+        whenever(redditPostMirrorRepository.save(any<RedditPostMirror>())).thenAnswer { it.arguments[0] }
+        whenever(jda.getTextChannelById(12L)).thenReturn(null)
+
+        service.pollSubreddit()
+
+        val mirrorCaptor = argumentCaptor<RedditPostMirror>()
+        verify(redditPostMirrorRepository).save(mirrorCaptor.capture())
+        assertEquals(true, mirrorCaptor.firstValue.deleted)
+    }
+
+    @Test
+    fun `buildPostEmbed ignores invalid thumbnail urls`() {
+        val embed = service.buildPostEmbed(
+            "Re_Zero",
+            post("t3_first").copy(thumbnailUrl = "not-a-valid-url")
+        )
+
+        assertEquals(null, embed.image)
+    }
+
+    @Test
     fun `poll deletes mirrored message when tracked post is missing inside rss window`() {
         val trackedMirror = RedditPostMirror(
             id = "1:t3_removed",

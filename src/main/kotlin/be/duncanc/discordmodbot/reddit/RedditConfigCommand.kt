@@ -189,8 +189,7 @@ class RedditConfigCommand(
         redditPostMirrorRepository.findAllByGuildId(guildId)
             .filter { it.redditPostId !in keepPostIds }
             .forEach { redditPostMirrorRepository.delete(it) }
-        redditPendingPostRepository.findAll()
-            .filter { it.id.startsWith("$guildId:") }
+        redditPendingPostRepository.findAllByGuildId(guildId)
             .forEach { redditPendingPostRepository.delete(it) }
     }
 
