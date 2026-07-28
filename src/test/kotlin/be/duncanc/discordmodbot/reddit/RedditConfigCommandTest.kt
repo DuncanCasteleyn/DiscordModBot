@@ -72,6 +72,7 @@ class RedditConfigCommandTest {
                 subreddit = "Re_Zero",
                 pollCron = "0 */2 * * * *",
                 readTimeout = Duration.ofSeconds(10),
+                connectTimeout = Duration.ofSeconds(10),
                 userAgent = "test"
             )
         )
@@ -109,12 +110,12 @@ class RedditConfigCommandTest {
             publishedAt = Instant.parse("2026-07-02T12:00:00Z"),
             permalink = "https://www.reddit.com/r/Re_Zero/comments/old/title/"
         )
-        val pending = RedditPendingPost("1:t3_pending")
+        val pending = RedditPendingPost("1:t3_pending", 1L)
         whenever(redditAlertSettingsRepository.findById(1L)).thenReturn(
             Optional.of(RedditAlertSettings(guildId = 1L, channelId = 11L, subreddit = "Re_Zero"))
         )
         whenever(redditPostMirrorRepository.findAllByGuildId(1L)).thenReturn(listOf(mirror))
-        whenever(redditPendingPostRepository.findAll()).thenReturn(listOf(pending))
+        whenever(redditPendingPostRepository.findAllByGuildId(1L)).thenReturn(listOf(pending))
         whenever(redditPollingService.baselineCurrentPosts(1L, "Anime")).thenReturn(
             listOf(
                 RedditPost(
@@ -189,7 +190,7 @@ class RedditConfigCommandTest {
             permalink = "https://www.reddit.com/r/Re_Zero/comments/old/title/"
         )
         whenever(redditPostMirrorRepository.findAllByGuildId(1L)).thenReturn(listOf(mirror))
-        whenever(redditPendingPostRepository.findAll()).thenReturn(emptyList())
+        whenever(redditPendingPostRepository.findAllByGuildId(1L)).thenReturn(emptyList())
 
         command.onSlashCommandInteraction(slashEvent)
 
