@@ -27,14 +27,22 @@ class RedditRssClient(
         factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
         val document = factory.newDocumentBuilder().parse(ByteArrayInputStream(feed.toByteArray(Charsets.UTF_8)))
         val entries = document.getElementsByTagNameNS(ATOM_NAMESPACE, "entry")
-        return (0 until entries.length).map { index ->
+        return (0 until entries.length).mapNotNull { index ->
             val entry = entries.item(index) as Element
+            val publishedAt = try {
+                Instant.parse(entry.text("published"))
+            } catch (exception: Exception) {
+                null
+            }
+            if (publishedAt == null) {
+                return@mapNotNull null
+            }
             RedditPost(
                 id = entry.text("id"),
                 title = entry.text("title"),
                 author = entry.child("author")?.text("name")?.removePrefix("/u/"),
                 permalink = entry.child("link")?.getAttribute("href") ?: "",
-                publishedAt = Instant.parse(entry.text("published")),
+                publishedAt = publishedAt,
                 thumbnailUrl = entry.child(MEDIA_NAMESPACE, "thumbnail")?.getAttribute("url")?.takeIf { it.isNotBlank() }
             )
         }.filter { it.id.isNotBlank() && it.permalink.isNotBlank() }
