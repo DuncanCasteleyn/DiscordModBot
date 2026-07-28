@@ -34,6 +34,38 @@ class RedditRssClientTest {
     }
 
     @Test
+    fun `parse skips entries with malformed published timestamp`() {
+        val client = RedditRssClient(
+            redditRestClient = mock<RestClient>()
+        )
+
+        val posts = client.parse(
+            """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <feed xmlns="http://www.w3.org/2005/Atom">
+                <entry>
+                    <author><name>/u/Subaru</name></author>
+                    <id>t3_invalid</id>
+                    <link href="https://www.reddit.com/r/Re_Zero/comments/invalid/title/" />
+                    <published>not-a-timestamp</published>
+                    <title>Invalid timestamp</title>
+                </entry>
+                <entry>
+                    <author><name>/u/Rem</name></author>
+                    <id>t3_valid</id>
+                    <link href="https://www.reddit.com/r/Re_Zero/comments/valid/title/" />
+                    <published>2026-07-02T21:29:12+00:00</published>
+                    <title>Valid timestamp</title>
+                </entry>
+            </feed>
+            """.trimIndent()
+        )
+
+        assertEquals(1, posts.size)
+        assertEquals("t3_valid", posts.first().id)
+    }
+
+    @Test
     fun `parse reads reddit atom entries`() {
         val client = RedditRssClient(
             redditRestClient = mock<RestClient>()

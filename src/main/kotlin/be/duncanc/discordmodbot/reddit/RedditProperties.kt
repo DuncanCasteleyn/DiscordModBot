@@ -17,6 +17,8 @@ data class RedditProperties(
     val pollCron: String,
     @DefaultValue("10s")
     val readTimeout: Duration,
+    @DefaultValue("10s")
+    val connectTimeout: Duration,
     @NotEmpty
     @DefaultValue("DiscordModBot reddit RSS mirror")
     val userAgent: String

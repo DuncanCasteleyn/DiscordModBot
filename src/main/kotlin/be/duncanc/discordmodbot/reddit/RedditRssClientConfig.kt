@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.client.JdkClientHttpRequestFactory
 import org.springframework.web.client.RestClient
+import java.net.http.HttpClient
 
 @Configuration
 class RedditRssClientConfig {
@@ -16,7 +17,10 @@ class RedditRssClientConfig {
         redditProperties: RedditProperties,
         restClientBuilder: RestClient.Builder
     ): RestClient {
-        val requestFactory = JdkClientHttpRequestFactory()
+        val httpClient = HttpClient.newBuilder()
+            .connectTimeout(redditProperties.connectTimeout)
+            .build()
+        val requestFactory = JdkClientHttpRequestFactory(httpClient)
         requestFactory.setReadTimeout(redditProperties.readTimeout)
 
         return restClientBuilder

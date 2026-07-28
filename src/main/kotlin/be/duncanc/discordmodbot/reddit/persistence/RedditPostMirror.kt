@@ -2,12 +2,14 @@ package be.duncanc.discordmodbot.reddit.persistence
 
 import org.springframework.data.annotation.Id
 import org.springframework.data.redis.core.RedisHash
+import org.springframework.data.redis.core.index.Indexed
 import java.time.Instant
 
 @RedisHash("redditPostMirror", timeToLive = 86400)
 data class RedditPostMirror(
     @Id
     val id: String,
+    @Indexed
     val guildId: Long,
     val redditPostId: String,
     val discordChannelId: Long?,
