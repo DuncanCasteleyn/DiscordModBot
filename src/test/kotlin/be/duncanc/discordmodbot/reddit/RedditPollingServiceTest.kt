@@ -74,6 +74,7 @@ class RedditPollingServiceTest {
             redditPendingPostRepository = redditPendingPostRepository,
             jda = jda
         )
+        service.self = service
     }
 
     @Test

@@ -14,6 +14,8 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.exceptions.ErrorResponseException
 import net.dv8tion.jda.api.requests.ErrorResponse
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Lazy
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -33,8 +35,11 @@ class RedditPollingService(
         private val LOG = LoggerFactory.getLogger(RedditPollingService::class.java)
     }
 
+    @set:Autowired
+    @set:Lazy
+    lateinit var self: RedditPollingService
+
     @Scheduled(cron = $$"${discord-mod-bot.reddit.poll-cron:0 */2 * * * *}")
-    @Transactional
     fun pollSubreddit() {
         val settings = redditAlertSettingsRepository.findAll().filter { it.channelId != null }
         if (settings.isEmpty()) {
@@ -52,10 +57,11 @@ class RedditPollingService(
                 return@forEach
             }
 
-            subredditSettings.forEach { processGuild(it, posts) }
+            subredditSettings.forEach { self.processGuildTransactional(it, posts) }
         }
     }
 
+    @Transactional
     fun baselineCurrentPosts(guildId: Long, subreddit: String): List<RedditPost> {
         val posts = try {
             redditRssClient.fetchNewestPosts(subreddit)
@@ -86,6 +92,11 @@ class RedditPollingService(
             }
         }
         return posts
+    }
+
+    @Transactional
+    fun processGuildTransactional(settings: RedditAlertSettings, posts: List<RedditPost>) {
+        processGuild(settings, posts)
     }
 
     private fun processGuild(settings: RedditAlertSettings, posts: List<RedditPost>) {
