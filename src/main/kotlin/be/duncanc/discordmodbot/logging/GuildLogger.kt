@@ -45,6 +45,7 @@ import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
 
 /**
@@ -231,6 +232,9 @@ class GuildLogger
                 logEmbed.setColor(LIGHT_BLUE)
             }
             logEmbed.addField("Message URL", "[Link](${oldMessage.jumpUrl})", false)
+            oldMessage.repliedToUrl?.let {
+                logEmbed.addField("Replied to", "[Link]($it)", false)
+            }
             oldMessage.emotes?.let {
                 logEmbed.addField("Emote(s)", oldMessage.emotes, false)
             }
@@ -323,34 +327,43 @@ class GuildLogger
             .setTitle("#" + event.channel.name + ": Bulk delete")
             .addField("Amount of deleted messages", event.messageIds.size.toString(), false)
 
-        val logWriter = StringBuilder(event.channel.toString()).append("\n")
-
-        var messageLogged = false
-        event.messageIds.forEach { id ->
+        val messages = event.messageIds.mapNotNull { id ->
             val idLong = java.lang.Long.parseUnsignedLong(id)
-            val message = messageHistory.getMessage(event.channel.idLong, idLong)
-            if (message != null) {
-                messageLogged = true
-                event.jda.retrieveUserById(message.userId).queue { user ->
-                    logWriter.append(user.toString()).append(":\n").append(message.content).append("\n\n")
-                    val attachmentString = messageHistory.getAttachmentsString(idLong)
-                    if (attachmentString != null) {
-                        logWriter.append("Attachment(s):\n").append(attachmentString).append("\n")
-                    } else {
-                        logWriter.append("\n")
-                    }
-                    message.emotes?.let {
-                        logWriter.append("Emote(s):\n")
-                        logWriter.append(it)
-                    }
+            messageHistory.getMessage(event.channel.idLong, idLong)?.let { message ->
+                idLong to message
+            }
+        }
+        if (messages.isEmpty()) {
+            return
+        }
+
+        val remainingLookups = AtomicInteger(messages.size)
+        val entries = arrayOfNulls<String>(messages.size)
+        messages.forEachIndexed { index, (id, message) ->
+            event.jda.retrieveUserById(message.userId).queue { user ->
+                val entry = StringBuilder(user.toString()).append(":\n").append(message.content).append("\n\n")
+                val attachmentString = messageHistory.getAttachmentsString(id)
+                if (attachmentString != null) {
+                    entry.append("Attachment(s):\n").append(attachmentString).append("\n")
+                } else {
+                    entry.append("\n")
+                }
+                message.repliedToUrl?.let {
+                    entry.append("Replied to:\n").append(it).append("\n")
+                }
+                message.emotes?.let {
+                    entry.append("Emote(s):\n").append(it)
+                }
+                entries[index] = entry.toString()
+
+                if (remainingLookups.decrementAndGet() == 0) {
+                    val logWriter = StringBuilder(event.channel.toString()).append("\n")
+                    entries.filterNotNull().forEach { logWriter.append(it).append("\n") }
+                    logWriter.append("Logged on ").append(OffsetDateTime.now().toString())
+                    logBulkDelete(event, logEmbed, logWriter.toString().toByteArray())
                 }
             }
         }
-        if (messageLogged) {
-            logWriter.append("Logged on ").append(OffsetDateTime.now().toString())
-            logBulkDelete(event, logEmbed, logWriter.toString().toByteArray())
-        }
-
     }
 
     private fun logBulkDelete(event: MessageBulkDeleteEvent, logEmbed: EmbedBuilder, bytes: ByteArray) {

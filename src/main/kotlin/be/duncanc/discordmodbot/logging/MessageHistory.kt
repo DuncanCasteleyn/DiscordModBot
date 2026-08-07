@@ -3,6 +3,7 @@ package be.duncanc.discordmodbot.logging
 import be.duncanc.discordmodbot.logging.persistence.DiscordMessage
 import be.duncanc.discordmodbot.logging.persistence.DiscordMessageRepository
 import net.dv8tion.jda.api.entities.emoji.CustomEmoji
+import net.dv8tion.jda.api.entities.MessageReference.MessageReferenceType
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.events.message.MessageUpdateEvent
 import org.springframework.beans.factory.annotation.Autowired
@@ -45,7 +46,14 @@ constructor(
             message.channel.idLong,
             message.author.idLong,
             messageContentEncryptor.encrypt(message.contentDisplay),
-            linkEmotes(message.mentions.customEmojis)
+            linkEmotes(message.mentions.customEmojis),
+            message.messageReference?.takeIf { it.type == MessageReferenceType.DEFAULT }?.let { reference ->
+                reference.messageIdLong.takeIf {
+                    it != 0L && reference.guildIdLong != 0L && reference.channelIdLong != 0L
+                }?.let { messageId ->
+                    "https://discord.com/channels/${reference.guildIdLong}/${reference.channelIdLong}/$messageId"
+                }
+            }
         )
         discordMessageRepository.save(discordMessage)
         if (message.attachments.size > 0) {
@@ -72,7 +80,8 @@ constructor(
                 message.channel.idLong,
                 message.author.idLong,
                 messageContentEncryptor.encrypt(message.contentDisplay),
-                existingMessage?.emotes
+                existingMessage?.emotes,
+                existingMessage?.repliedToUrl
             )
             discordMessageRepository.save(discordMessage)
         }
