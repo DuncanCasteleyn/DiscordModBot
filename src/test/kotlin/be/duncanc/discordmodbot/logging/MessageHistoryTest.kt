@@ -4,6 +4,7 @@ import be.duncanc.discordmodbot.logging.persistence.DiscordMessage
 import be.duncanc.discordmodbot.logging.persistence.DiscordMessageRepository
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.MessageReference
 import net.dv8tion.jda.api.entities.Mentions
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
@@ -52,6 +53,9 @@ class MessageHistoryTest {
     @Mock
     private lateinit var mentions: Mentions
 
+    @Mock
+    private lateinit var messageReference: MessageReference
+
     private lateinit var messageContentEncryptor: MessageContentEncryptor
     private lateinit var messageHistory: MessageHistory
 
@@ -79,6 +83,25 @@ class MessageHistoryTest {
     }
 
     @Test
+    fun `store message preserves the replied to message URL`() {
+        stubReceivedMessage(content = "reply")
+        whenever(message.messageReference).thenReturn(messageReference)
+        whenever(messageReference.type).thenReturn(MessageReference.MessageReferenceType.DEFAULT)
+        whenever(messageReference.guildIdLong).thenReturn(1L)
+        whenever(messageReference.channelIdLong).thenReturn(10L)
+        whenever(messageReference.messageIdLong).thenReturn(200L)
+
+        messageHistory.storeMessage(receivedEvent)
+
+        val messageCaptor = argumentCaptor<DiscordMessage>()
+        verify(discordMessageRepository).save(messageCaptor.capture())
+        assertEquals(
+            "https://discord.com/channels/1/10/200",
+            messageCaptor.firstValue.repliedToUrl
+        )
+    }
+
+    @Test
     fun `update message encrypts content before saving`() {
         stubUpdatedMessage(content = "updated content")
         whenever(discordMessageRepository.existsById(100L)).thenReturn(true)
@@ -90,7 +113,8 @@ class MessageHistoryTest {
                     channelId = 10L,
                     userId = 20L,
                     content = messageContentEncryptor.encrypt("old content"),
-                    emotes = "[wave](https://cdn.discordapp.com/emote.png)"
+                    emotes = "[wave](https://cdn.discordapp.com/emote.png)",
+                    repliedToUrl = "https://discord.com/channels/1/10/50"
                 )
             )
         )
@@ -102,6 +126,7 @@ class MessageHistoryTest {
         assertNotEquals("updated content", messageCaptor.firstValue.content)
         assertEquals("updated content", messageContentEncryptor.decrypt(messageCaptor.firstValue.content))
         assertEquals("[wave](https://cdn.discordapp.com/emote.png)", messageCaptor.firstValue.emotes)
+        assertEquals("https://discord.com/channels/1/10/50", messageCaptor.firstValue.repliedToUrl)
     }
 
     @Test
