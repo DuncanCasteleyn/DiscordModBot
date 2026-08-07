@@ -9,6 +9,6 @@ services:
       MARIADB_DATABASE: discordmodbot
       MARIADB_ROOT_PASSWORD: test
   redis:
-    image: redis:8.8.1@sha256:ef1a6a8bfb32dca06dd9c5d3cfbdf233e7791999ca0df4ef54be3ccffebebf6c
+    image: redis:8.8.1@sha256:3eafabb4c93fcb8b36b666e07a43f096cb157bc6b07dce4b2492b895c63cf37f
     ports:
       - "6379:6379"
