@@ -234,7 +234,7 @@ class GuildLoggerTest {
         doAnswer { invocation ->
             invocation.component1<Consumer<User>>().accept(user)
             null
-        }.whenever(retrieveUserAction).queue(any())
+        }.whenever(retrieveUserAction).queue(any(), any())
         whenever(loggingSettingsRepository.findById(1L)).thenReturn(
             Optional.of(LoggingSettings(1L, userLogChannel = 30L))
         )
@@ -247,6 +247,43 @@ class GuildLoggerTest {
         verify(logChannel, timeout(1000)).sendFiles(fileCaptor.capture())
         val logContent = fileCaptor.firstValue.data.use { it.readBytes().toString(Charsets.UTF_8) }
         assertTrue(logContent.contains("Replied to:\nhttps://discord.com/channels/1/10/50"))
+    }
+
+    @Test
+    fun `bulk deleted message log is produced when author lookup fails`() {
+        val guildLogger = guildLogger()
+        val oldMessage = DiscordMessage(
+            messageId = 100L,
+            guildId = 1L,
+            channelId = 10L,
+            userId = 20L,
+            content = "deleted content"
+        )
+        whenever(bulkDeleteEvent.guild).thenReturn(guild)
+        whenever(bulkDeleteEvent.channel).thenReturn(bulkChannel)
+        whenever(bulkDeleteEvent.jda).thenReturn(jda)
+        whenever(bulkDeleteEvent.messageIds).thenReturn(listOf("100"))
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(bulkChannel.idLong).thenReturn(10L)
+        whenever(bulkChannel.name).thenReturn("general")
+        whenever(messageHistory.getMessage(10L, 100L)).thenReturn(oldMessage)
+        whenever(jda.retrieveUserById(20L)).thenReturn(retrieveUserAction)
+        doAnswer { invocation ->
+            invocation.component2<Consumer<Throwable>>().accept(RuntimeException("lookup failed"))
+            null
+        }.whenever(retrieveUserAction).queue(any(), any())
+        whenever(loggingSettingsRepository.findById(1L)).thenReturn(
+            Optional.of(LoggingSettings(1L, userLogChannel = 30L))
+        )
+        whenever(guild.getTextChannelById(30L)).thenReturn(logChannel)
+        whenever(logChannel.sendFiles(any<FileUpload>())).thenReturn(sendAction)
+
+        guildLogger.onMessageBulkDelete(bulkDeleteEvent)
+
+        val fileCaptor = argumentCaptor<FileUpload>()
+        verify(logChannel, timeout(1000)).sendFiles(fileCaptor.capture())
+        val logContent = fileCaptor.firstValue.data.use { it.readBytes().toString(Charsets.UTF_8) }
+        assertTrue(logContent.contains("20:\ndeleted content"))
     }
 
     private fun guildLogger(): GuildLogger {

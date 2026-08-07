@@ -340,8 +340,8 @@ class GuildLogger
         val remainingLookups = AtomicInteger(messages.size)
         val entries = arrayOfNulls<String>(messages.size)
         messages.forEachIndexed { index, (id, message) ->
-            event.jda.retrieveUserById(message.userId).queue { user ->
-                val entry = StringBuilder(user.toString()).append(":\n").append(message.content).append("\n\n")
+            fun completeLookup(author: String) {
+                val entry = StringBuilder(author).append(":\n").append(message.content).append("\n\n")
                 val attachmentString = messageHistory.getAttachmentsString(id)
                 if (attachmentString != null) {
                     entry.append("Attachment(s):\n").append(attachmentString).append("\n")
@@ -363,6 +363,11 @@ class GuildLogger
                     logBulkDelete(event, logEmbed, logWriter.toString().toByteArray())
                 }
             }
+
+            event.jda.retrieveUserById(message.userId).queue(
+                { user -> completeLookup(user.toString()) },
+                { completeLookup(message.userId.toString()) }
+            )
         }
     }
 
