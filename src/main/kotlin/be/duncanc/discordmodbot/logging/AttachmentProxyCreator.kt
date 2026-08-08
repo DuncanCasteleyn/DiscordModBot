@@ -21,10 +21,10 @@ import java.util.concurrent.TimeUnit
  */
 @Component
 class AttachmentProxyCreator(
-    private val attachmentProxyRepository: AttachmentProxyRepository
+    private val attachmentProxyRepository: AttachmentProxyRepository,
+    private val attachmentCacheProperties: AttachmentCacheProperties
 ) {
     companion object {
-        private const val CACHE_CHANNEL = 310006048595509248L
         private val LOG = LoggerFactory.getLogger(AttachmentProxyCreator::class.java)
     }
 
@@ -57,7 +57,7 @@ class AttachmentProxyCreator(
                         val outputStream = ByteArrayOutputStream()
                         IOUtils.copy(inputStream, outputStream)
 
-                        event.jda.getTextChannelById(CACHE_CHANNEL)
+                        event.jda.getTextChannelById(attachmentCacheProperties.channelId)
                             ?.sendFiles(
                                 FileUpload.fromData(outputStream.toByteArray(), attachment.fileName)
                             )
