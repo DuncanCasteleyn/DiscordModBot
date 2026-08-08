@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.16.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.15.0...v2.16.0) (2026-08-08)
+
+
+### Features
+
+* **logging:** include reply links in deletion logs ([#764](https://github.com/DuncanCasteleyn/DiscordModBot/issues/764)) ([adf394b](https://github.com/DuncanCasteleyn/DiscordModBot/commit/adf394bfedb5b3c386fa56be5144807d1a7882cc))
+
 ## [2.15.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.14.4...v2.15.0) (2026-07-27)
 
 
