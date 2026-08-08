@@ -18,10 +18,11 @@ For environment variables, convert property names to uppercase and replace `.`/`
 
 These are bound from `discord-mod-bot.*` and the application will fail to start if they are missing.
 
-| Property                    | Environment Variable        | Required | Description                                                      |
-|-----------------------------|-----------------------------|----------|------------------------------------------------------------------|
-| `discord-mod-bot.owner-id`  | `DISCORD_MOD_BOT_OWNER_ID`  | Yes      | Discord user ID for the bot owner (used for owner-only actions). |
-| `discord-mod-bot.bot-token` | `DISCORD_MOD_BOT_BOT_TOKEN` | Yes      | Discord bot token used to connect to the Discord gateway.        |
+| Property                                  | Environment Variable                         | Required | Description                                                      |
+|-------------------------------------------|----------------------------------------------|----------|------------------------------------------------------------------|
+| `discord-mod-bot.owner-id`                | `DISCORD_MOD_BOT_OWNER_ID`                   | Yes      | Discord user ID for the bot owner (used for owner-only actions). |
+| `discord-mod-bot.bot-token`               | `DISCORD_MOD_BOT_BOT_TOKEN`                  | Yes      | Discord bot token used to connect to the Discord gateway.        |
+| `discord-mod-bot.attachment-cache.channel-id` | `DISCORD_MOD_BOT_ATTACHMENT_CACHE_CHANNEL_ID` | Yes      | Discord text channel used to cache attachments.                 |
 
 ### Default runtime properties
 
@@ -44,6 +45,7 @@ These defaults are defined in `src/main/resources/application.properties`.
 ```bash
 export DISCORD_MOD_BOT_OWNER_ID=123456789012345678
 export DISCORD_MOD_BOT_BOT_TOKEN=your-token-here
+export DISCORD_MOD_BOT_ATTACHMENT_CACHE_CHANNEL_ID=310006048595509248
 export SPRING_DATASOURCE_URL=jdbc:mariadb://127.0.0.1:3306/discordmodbot
 export SPRING_DATASOURCE_USERNAME=spring
 export SPRING_DATASOURCE_PASSWORD=test
