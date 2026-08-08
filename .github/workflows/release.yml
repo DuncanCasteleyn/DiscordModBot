@@ -23,3 +23,29 @@ jobs:
     steps:
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         id: release
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: ${{ steps.release.outputs.release_created }}
+        with:
+          ref: ${{ steps.release.outputs.sha }}
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        if: ${{ steps.release.outputs.release_created }}
+        with:
+          java-version: 25
+          distribution: liberica
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        if: ${{ steps.release.outputs.release_created }}
+
+      - name: Build fat JAR
+        if: ${{ steps.release.outputs.release_created }}
+        run: ./gradlew bootJar
+
+      - name: Upload fat JAR
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ steps.release.outputs.tag_name }}" build/libs/DiscordModBot.jar
