@@ -50,21 +50,21 @@ class AttachmentProxyCreator(
         var hadFailures = false
         val originalMessage = event.message
 
-        originalMessage.attachments.forEach { attachment ->
-            try {
-                if (attachment.size < 8 shl 20) {  //8MB
-                    attachment.proxy.download().get(30, TimeUnit.SECONDS).let { inputStream: InputStream ->
-                        val outputStream = ByteArrayOutputStream()
-                        IOUtils.copy(inputStream, outputStream)
+        val channel = event.jda.getTextChannelById(attachmentCacheProperties.channelId)
+        if (channel == null) {
+            LOG.error(
+                "The configured attachment cache channel could not be found: {}",
+                attachmentCacheProperties.channelId
+            )
+            hadFailures = true
+        } else {
+            originalMessage.attachments.forEach { attachment ->
+                try {
+                    if (attachment.size < 8 shl 20) {  //8MB
+                        attachment.proxy.download().get(30, TimeUnit.SECONDS).let { inputStream: InputStream ->
+                            val outputStream = ByteArrayOutputStream()
+                            IOUtils.copy(inputStream, outputStream)
 
-                        val channel = event.jda.getTextChannelById(attachmentCacheProperties.channelId)
-                        if (channel == null) {
-                            LOG.error(
-                                "The configured attachment cache channel could not be found: {}",
-                                attachmentCacheProperties.channelId
-                            )
-                            hadFailures = true
-                        } else {
                             channel.sendFiles(
                                 FileUpload.fromData(outputStream.toByteArray(), attachment.fileName)
                             )
@@ -80,14 +80,14 @@ class AttachmentProxyCreator(
                                     attachments.addAll(it)
                                 }
                         }
+                    } else {
+                        LOG.warn("The file was larger than 8MB.")
+                        hadFailures = true
                     }
-                } else {
-                    LOG.warn("The file was larger than 8MB.")
+                } catch (e: Exception) {
+                    LOG.info("An exception occurred when retrieving one of the attachments", e)
                     hadFailures = true
                 }
-            } catch (e: Exception) {
-                LOG.info("An exception occurred when retrieving one of the attachments", e)
-                hadFailures = true
             }
         }
         val attachmentProxy = when {
