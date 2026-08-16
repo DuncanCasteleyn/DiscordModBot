@@ -238,6 +238,9 @@ class GuildLogger
             oldMessage.emotes?.let {
                 logEmbed.addField("Emote(s)", oldMessage.emotes, false)
             }
+            oldMessage.stickers?.let {
+                logEmbed.addField("Sticker(s)", it, false)
+            }
             log(
                 logEmbed,
                 user,
@@ -353,6 +356,9 @@ class GuildLogger
                 }
                 message.emotes?.let {
                     entry.append("Emote(s):\n").append(it)
+                }
+                message.stickers?.let {
+                    entry.append("Sticker(s):\n").append(it)
                 }
                 entries[index] = entry.toString()
 
