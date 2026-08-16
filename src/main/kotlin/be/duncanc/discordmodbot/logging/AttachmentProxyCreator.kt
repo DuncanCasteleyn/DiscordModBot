@@ -57,21 +57,29 @@ class AttachmentProxyCreator(
                         val outputStream = ByteArrayOutputStream()
                         IOUtils.copy(inputStream, outputStream)
 
-                        event.jda.getTextChannelById(attachmentCacheProperties.channelId)
-                            ?.sendFiles(
+                        val channel = event.jda.getTextChannelById(attachmentCacheProperties.channelId)
+                        if (channel == null) {
+                            LOG.error(
+                                "The configured attachment cache channel could not be found: {}",
+                                attachmentCacheProperties.channelId
+                            )
+                            hadFailures = true
+                        } else {
+                            channel.sendFiles(
                                 FileUpload.fromData(outputStream.toByteArray(), attachment.fileName)
                             )
-                            ?.addContent(originalMessage.jumpUrl)
-                            ?.map { message ->
-                                message.attachments.map { messageAttachment ->
-                                    "[${messageAttachment.fileName}](${messageAttachment.url})"
+                                .addContent(originalMessage.jumpUrl)
+                                .map { message ->
+                                    message.attachments.map { messageAttachment ->
+                                        "[${messageAttachment.fileName}](${messageAttachment.url})"
+                                    }
                                 }
-                            }
-                            ?.submit()
-                            ?.get(30, TimeUnit.SECONDS)
-                            ?.let {
-                                attachments.addAll(it)
-                            }
+                                .submit()
+                                .get(30, TimeUnit.SECONDS)
+                                .let {
+                                    attachments.addAll(it)
+                                }
+                        }
                     }
                 } else {
                     LOG.warn("The file was larger than 8MB.")
