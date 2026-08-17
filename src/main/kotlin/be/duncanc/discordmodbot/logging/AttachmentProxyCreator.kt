@@ -21,10 +21,10 @@ import java.util.concurrent.TimeUnit
  */
 @Component
 class AttachmentProxyCreator(
-    private val attachmentProxyRepository: AttachmentProxyRepository
+    private val attachmentProxyRepository: AttachmentProxyRepository,
+    private val attachmentCacheProperties: AttachmentCacheProperties
 ) {
     companion object {
-        private const val CACHE_CHANNEL = 310006048595509248L
         private val LOG = LoggerFactory.getLogger(AttachmentProxyCreator::class.java)
     }
 
@@ -50,36 +50,44 @@ class AttachmentProxyCreator(
         var hadFailures = false
         val originalMessage = event.message
 
-        originalMessage.attachments.forEach { attachment ->
-            try {
-                if (attachment.size < 8 shl 20) {  //8MB
-                    attachment.proxy.download().get(30, TimeUnit.SECONDS).let { inputStream: InputStream ->
-                        val outputStream = ByteArrayOutputStream()
-                        IOUtils.copy(inputStream, outputStream)
+        val channel = event.jda.getTextChannelById(attachmentCacheProperties.channelId)
+        if (channel == null) {
+            LOG.error(
+                "The configured attachment cache channel could not be found: {}",
+                attachmentCacheProperties.channelId
+            )
+            hadFailures = true
+        } else {
+            originalMessage.attachments.forEach { attachment ->
+                try {
+                    if (attachment.size < 8 shl 20) {  //8MB
+                        attachment.proxy.download().get(30, TimeUnit.SECONDS).let { inputStream: InputStream ->
+                            val outputStream = ByteArrayOutputStream()
+                            IOUtils.copy(inputStream, outputStream)
 
-                        event.jda.getTextChannelById(CACHE_CHANNEL)
-                            ?.sendFiles(
+                            channel.sendFiles(
                                 FileUpload.fromData(outputStream.toByteArray(), attachment.fileName)
                             )
-                            ?.addContent(originalMessage.jumpUrl)
-                            ?.map { message ->
-                                message.attachments.map { messageAttachment ->
-                                    "[${messageAttachment.fileName}](${messageAttachment.url})"
+                                .addContent(originalMessage.jumpUrl)
+                                .map { message ->
+                                    message.attachments.map { messageAttachment ->
+                                        "[${messageAttachment.fileName}](${messageAttachment.url})"
+                                    }
                                 }
-                            }
-                            ?.submit()
-                            ?.get(30, TimeUnit.SECONDS)
-                            ?.let {
-                                attachments.addAll(it)
-                            }
+                                .submit()
+                                .get(30, TimeUnit.SECONDS)
+                                .let {
+                                    attachments.addAll(it)
+                                }
+                        }
+                    } else {
+                        LOG.warn("The file was larger than 8MB.")
+                        hadFailures = true
                     }
-                } else {
-                    LOG.warn("The file was larger than 8MB.")
+                } catch (e: Exception) {
+                    LOG.info("An exception occurred when retrieving one of the attachments", e)
                     hadFailures = true
                 }
-            } catch (e: Exception) {
-                LOG.info("An exception occurred when retrieving one of the attachments", e)
-                hadFailures = true
             }
         }
         val attachmentProxy = when {
