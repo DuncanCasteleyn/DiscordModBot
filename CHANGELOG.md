@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.17.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.16.0...v2.17.0) (2026-08-20)
+
+
+### Features
+
+* **logging:** configure attachment cache channel ([#767](https://github.com/DuncanCasteleyn/DiscordModBot/issues/767)) ([578184c](https://github.com/DuncanCasteleyn/DiscordModBot/commit/578184cdef3330df5bc8a7198d7587965d8bdf0f))
+
+
+### Bug Fixes
+
+* **deps:** update dependency org.apache.commons:commons-collections4 to v4.6.0 ([#769](https://github.com/DuncanCasteleyn/DiscordModBot/issues/769)) ([a3d91f7](https://github.com/DuncanCasteleyn/DiscordModBot/commit/a3d91f7196d3e175e5688e90b7e099bece0a152d))
+* **logging:** log stickers in deleted messages ([#773](https://github.com/DuncanCasteleyn/DiscordModBot/issues/773)) ([8f4f9ed](https://github.com/DuncanCasteleyn/DiscordModBot/commit/8f4f9edf7ff7cf0f0b5bbea8c70bb24559b5baeb))
+
 ## [2.16.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.15.0...v2.16.0) (2026-08-08)
 
 
