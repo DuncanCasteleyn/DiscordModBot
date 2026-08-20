@@ -14,7 +14,8 @@ data class DiscordMessage(
     val userId: Long,
     val content: String,
     val emotes: String? = null,
-    val repliedToUrl: String? = null
+    val repliedToUrl: String? = null,
+    val stickers: String? = null
 ) {
     @Transient
     val jumpUrl = "https://discord.com/channels/$guildId/$channelId/$messageId"

@@ -178,7 +178,8 @@ class GuildLoggerTest {
             channelId = 10L,
             userId = 20L,
             content = "deleted content",
-            repliedToUrl = "https://discord.com/channels/1/10/50"
+            repliedToUrl = "https://discord.com/channels/1/10/50",
+            stickers = "[wave](https://cdn.discordapp.com/sticker.png)"
         )
         whenever(event.guild).thenReturn(guild)
         whenever(event.channel).thenReturn(channel)
@@ -209,6 +210,8 @@ class GuildLoggerTest {
         verify(logChannel).sendMessage(messageCaptor.capture())
         val repliedToField = messageCaptor.firstValue.embeds.single().fields.first { it.name == "Replied to" }
         assertEquals("[Link](https://discord.com/channels/1/10/50)", repliedToField.value)
+        val stickerField = messageCaptor.firstValue.embeds.single().fields.first { it.name == "Sticker(s)" }
+        assertEquals("[wave](https://cdn.discordapp.com/sticker.png)", stickerField.value)
     }
 
     @Test
@@ -220,7 +223,8 @@ class GuildLoggerTest {
             channelId = 10L,
             userId = 20L,
             content = "deleted content",
-            repliedToUrl = "https://discord.com/channels/1/10/50"
+            repliedToUrl = "https://discord.com/channels/1/10/50",
+            stickers = "[wave](https://cdn.discordapp.com/sticker.png)"
         )
         whenever(bulkDeleteEvent.guild).thenReturn(guild)
         whenever(bulkDeleteEvent.channel).thenReturn(bulkChannel)
@@ -247,6 +251,7 @@ class GuildLoggerTest {
         verify(logChannel, timeout(1000)).sendFiles(fileCaptor.capture())
         val logContent = fileCaptor.firstValue.data.use { it.readBytes().toString(Charsets.UTF_8) }
         assertTrue(logContent.contains("Replied to:\nhttps://discord.com/channels/1/10/50"))
+        assertTrue(logContent.contains("Sticker(s):\n[wave](https://cdn.discordapp.com/sticker.png)"))
     }
 
     @Test

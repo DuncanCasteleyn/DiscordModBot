@@ -3,6 +3,7 @@ package be.duncanc.discordmodbot.logging
 import be.duncanc.discordmodbot.logging.persistence.DiscordMessage
 import be.duncanc.discordmodbot.logging.persistence.DiscordMessageRepository
 import net.dv8tion.jda.api.entities.emoji.CustomEmoji
+import net.dv8tion.jda.api.entities.sticker.StickerItem
 import net.dv8tion.jda.api.entities.MessageReference.MessageReferenceType
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.events.message.MessageUpdateEvent
@@ -53,7 +54,8 @@ constructor(
                 }?.let { messageId ->
                     "https://discord.com/channels/${reference.guildIdLong}/${reference.channelIdLong}/$messageId"
                 }
-            }
+            },
+            linkStickers(message.stickers)
         )
         discordMessageRepository.save(discordMessage)
         if (message.attachments.size > 0) {
@@ -81,7 +83,8 @@ constructor(
                 message.author.idLong,
                 messageContentEncryptor.encrypt(message.contentDisplay),
                 existingMessage?.emotes,
-                existingMessage?.repliedToUrl
+                existingMessage?.repliedToUrl,
+                existingMessage?.stickers
             )
             discordMessageRepository.save(discordMessage)
         }
@@ -113,6 +116,17 @@ constructor(
         val stringBuilder = StringBuilder()
         emotes.forEach {
             stringBuilder.append("[" + it.name + "](" + it.imageUrl + ")\n")
+        }
+        return stringBuilder.toString()
+    }
+
+    private fun linkStickers(stickers: List<StickerItem>): String? {
+        if (stickers.isEmpty()) {
+            return null
+        }
+        val stringBuilder = StringBuilder()
+        stickers.forEach {
+            stringBuilder.append("[" + it.name + "](" + it.iconUrl + ")\n")
         }
         return stringBuilder.toString()
     }

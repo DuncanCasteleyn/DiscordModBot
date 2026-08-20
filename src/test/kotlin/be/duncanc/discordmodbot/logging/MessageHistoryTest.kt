@@ -8,6 +8,7 @@ import net.dv8tion.jda.api.entities.MessageReference
 import net.dv8tion.jda.api.entities.Mentions
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
+import net.dv8tion.jda.api.entities.sticker.StickerItem
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.events.message.MessageUpdateEvent
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -56,6 +57,9 @@ class MessageHistoryTest {
     @Mock
     private lateinit var messageReference: MessageReference
 
+    @Mock
+    private lateinit var sticker: StickerItem
+
     private lateinit var messageContentEncryptor: MessageContentEncryptor
     private lateinit var messageHistory: MessageHistory
 
@@ -102,6 +106,23 @@ class MessageHistoryTest {
     }
 
     @Test
+    fun `store message preserves stickers`() {
+        stubReceivedMessage(content = "sticker")
+        whenever(message.stickers).thenReturn(listOf(sticker))
+        whenever(sticker.name).thenReturn("wave")
+        whenever(sticker.iconUrl).thenReturn("https://cdn.discordapp.com/sticker.png")
+
+        messageHistory.storeMessage(receivedEvent)
+
+        val messageCaptor = argumentCaptor<DiscordMessage>()
+        verify(discordMessageRepository).save(messageCaptor.capture())
+        assertEquals(
+            "[wave](https://cdn.discordapp.com/sticker.png)\n",
+            messageCaptor.firstValue.stickers
+        )
+    }
+
+    @Test
     fun `update message encrypts content before saving`() {
         stubUpdatedMessage(content = "updated content")
         whenever(discordMessageRepository.existsById(100L)).thenReturn(true)
@@ -114,7 +135,8 @@ class MessageHistoryTest {
                     userId = 20L,
                     content = messageContentEncryptor.encrypt("old content"),
                     emotes = "[wave](https://cdn.discordapp.com/emote.png)",
-                    repliedToUrl = "https://discord.com/channels/1/10/50"
+                    repliedToUrl = "https://discord.com/channels/1/10/50",
+                    stickers = "[sticker](https://cdn.discordapp.com/sticker.png)"
                 )
             )
         )
@@ -127,6 +149,7 @@ class MessageHistoryTest {
         assertEquals("updated content", messageContentEncryptor.decrypt(messageCaptor.firstValue.content))
         assertEquals("[wave](https://cdn.discordapp.com/emote.png)", messageCaptor.firstValue.emotes)
         assertEquals("https://discord.com/channels/1/10/50", messageCaptor.firstValue.repliedToUrl)
+        assertEquals("[sticker](https://cdn.discordapp.com/sticker.png)", messageCaptor.firstValue.stickers)
     }
 
     @Test
@@ -201,6 +224,7 @@ class MessageHistoryTest {
         if (includeMentions) {
             whenever(message.mentions).thenReturn(mentions)
             whenever(mentions.customEmojis).thenReturn(emptyList())
+            whenever(message.stickers).thenReturn(emptyList())
         }
         if (includeAttachments) {
             whenever(message.attachments).thenReturn(emptyList())
