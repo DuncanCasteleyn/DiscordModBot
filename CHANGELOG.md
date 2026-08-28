@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.17.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.17.0...v2.17.1) (2026-08-28)
+
+
+### Bug Fixes
+
+* **deps:** update dependency org.springframework.modulith:spring-modulith-bom to v2.1.1 ([#786](https://github.com/DuncanCasteleyn/DiscordModBot/issues/786)) ([7a50d65](https://github.com/DuncanCasteleyn/DiscordModBot/commit/7a50d65ddd41544a6331dcf7e3e476aa50bda711))
+* **deps:** update plugin org.springframework.boot to v4.1.1 ([#780](https://github.com/DuncanCasteleyn/DiscordModBot/issues/780)) ([20381fd](https://github.com/DuncanCasteleyn/DiscordModBot/commit/20381fd4068e0a817af7133db4540cdcfcdd03f3))
+* run attachment proxying asynchronously on virtual threads ([04d829a](https://github.com/DuncanCasteleyn/DiscordModBot/commit/04d829aca44a84620087532a4c6df040b10be0a5))
+
 ## [2.17.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.16.0...v2.17.0) (2026-08-20)
 
 
