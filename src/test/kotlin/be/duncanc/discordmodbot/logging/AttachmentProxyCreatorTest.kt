@@ -12,6 +12,7 @@ import net.dv8tion.jda.api.utils.FileUpload
 import net.dv8tion.jda.api.utils.NamedAttachmentProxy
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -27,6 +28,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Consumer
 
@@ -208,6 +210,35 @@ class AttachmentProxyCreatorTest {
         verify(attachmentProxyRepository).save(proxyCaptor.capture())
         assertTrue(proxyCaptor.firstValue.hadFailedCaches)
         assertTrue(future.isDone)
+    }
+
+    @Test
+    fun `proxy message attachments completes the future exceptionally when saving the proxy fails`() {
+        stubGuildMessage(smallAttachment())
+        whenever(receivedEvent.messageIdLong).thenReturn(100L)
+        whenever(message.jumpUrl).thenReturn("https://discord.com/channels/1/10/100")
+        stubSuccessfulUpload(uploadedAttachment())
+        whenever(attachmentProxyRepository.save(any<AttachmentProxy>())).thenThrow(RuntimeException("save failed"))
+
+        val future = attachmentProxyCreator.proxyMessageAttachments(receivedEvent)
+
+        assertTrue(future.isCompletedExceptionally)
+        val thrown = assertThrows(ExecutionException::class.java) { future.get() }
+        assertEquals("save failed", thrown.cause?.message)
+    }
+
+    @Test
+    fun `proxy message attachments completes the future normally when saving the proxy succeeds`() {
+        stubGuildMessage(smallAttachment())
+        whenever(receivedEvent.messageIdLong).thenReturn(100L)
+        whenever(message.jumpUrl).thenReturn("https://discord.com/channels/1/10/100")
+        stubSuccessfulUpload(uploadedAttachment())
+
+        val future = attachmentProxyCreator.proxyMessageAttachments(receivedEvent)
+
+        assertTrue(future.isDone)
+        assertFalse(future.isCompletedExceptionally)
+        verify(attachmentProxyRepository).save(any())
     }
 
     @Test

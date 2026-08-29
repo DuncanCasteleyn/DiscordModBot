@@ -56,8 +56,7 @@ class AttachmentProxyCreator(
                 attachmentCacheProperties.channelId
             )
             hadFailures = true
-            finalizeProxy(event.messageIdLong, attachments, hadFailures)
-            result.complete(Unit)
+            finalizeProxy(event.messageIdLong, attachments, hadFailures, result)
             return result
         }
 
@@ -75,8 +74,7 @@ class AttachmentProxyCreator(
 
         fun processNextChunk() {
             val chunk = if (iterator.hasNext()) iterator.next() else {
-                finalizeProxy(event.messageIdLong, attachments, hadFailures)
-                result.complete(Unit)
+                finalizeProxy(event.messageIdLong, attachments, hadFailures, result)
                 return
             }
             channel.sendFiles(*chunk.map { attachment ->
@@ -98,7 +96,7 @@ class AttachmentProxyCreator(
         return result
     }
 
-    private fun finalizeProxy(messageId: Long, attachments: List<String>, hadFailures: Boolean) {
+    private fun finalizeProxy(messageId: Long, attachments: List<String>, hadFailures: Boolean, result: CompletableFuture<Unit>) {
         val attachmentProxy = when {
             attachments.isNotEmpty() -> {
                 AttachmentProxy(messageId, attachments, hadFailures)
@@ -112,6 +110,11 @@ class AttachmentProxyCreator(
                 null
             }
         }
-        attachmentProxy?.let { attachmentProxyRepository.save(it) }
+        try {
+            attachmentProxy?.let { attachmentProxyRepository.save(it) }
+            result.complete(Unit)
+        } catch (e: Exception) {
+            result.completeExceptionally(e)
+        }
     }
 }
