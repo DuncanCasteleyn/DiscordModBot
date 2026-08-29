@@ -1,17 +1,14 @@
 package be.duncanc.discordmodbot.logging
 
-import be.duncanc.discordmodbot.discord.IOUtils
 import be.duncanc.discordmodbot.logging.persistence.AttachmentProxy
 import be.duncanc.discordmodbot.logging.persistence.AttachmentProxyRepository
+import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.utils.FileUpload
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
-import java.io.ByteArrayOutputStream
-import java.io.InputStream
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit
 
 /**
  * Created by Duncan on 14/01/2017.
@@ -33,7 +30,7 @@ class AttachmentProxyCreator(
             .map {
                 val attachmentUrlsBuilder = StringBuilder(it.attachmentUrls.joinToString("\n"))
                 if (it.hadFailedCaches) {
-                    attachmentUrlsBuilder.append("The message either contained (an) attachment(s) larger then 8MB and could not be uploaded again, or failed to create a proxy.")
+                    attachmentUrlsBuilder.append("The message either contained (an) attachment(s) larger than 20MB and could not be uploaded again, or failed to create a proxy.")
                 }
                 attachmentUrlsBuilder.toString()
             }
@@ -57,46 +54,54 @@ class AttachmentProxyCreator(
                 attachmentCacheProperties.channelId
             )
             hadFailures = true
-        } else {
-            originalMessage.attachments.forEach { attachment ->
-                try {
-                    if (attachment.size < 8 shl 20) {  //8MB
-                        attachment.proxy.download().get(30, TimeUnit.SECONDS).let { inputStream: InputStream ->
-                            val outputStream = ByteArrayOutputStream()
-                            IOUtils.copy(inputStream, outputStream)
+            finalizeProxy(event.messageIdLong, attachments, hadFailures)
+            return CompletableFuture.completedFuture(Unit)
+        }
 
-                            channel.sendFiles(
-                                FileUpload.fromData(outputStream.toByteArray(), attachment.fileName)
-                            )
-                                .addContent(originalMessage.jumpUrl)
-                                .map { message ->
-                                    message.attachments.map { messageAttachment ->
-                                        "[${messageAttachment.fileName}](${messageAttachment.url})"
-                                    }
-                                }
-                                .submit()
-                                .get(30, TimeUnit.SECONDS)
-                                .let {
-                                    attachments.addAll(it)
-                                }
-                        }
-                    } else {
-                        LOG.warn("The file was larger than 8MB.")
-                        hadFailures = true
-                    }
-                } catch (e: Exception) {
-                    LOG.info("An exception occurred when retrieving one of the attachments", e)
-                    hadFailures = true
-                }
+        val eligibleAttachments = originalMessage.attachments.filterNot { attachment ->
+            if (attachment.size >= 20 shl 20) {  //20MB
+                LOG.warn("The file was larger than 20MB.")
+                hadFailures = true
+                true
+            } else {
+                false
             }
         }
+
+        val iterator = eligibleAttachments.chunked(Message.MAX_FILE_AMOUNT).iterator()
+
+        fun processNextChunk() {
+            val chunk = if (iterator.hasNext()) iterator.next() else {
+                finalizeProxy(event.messageIdLong, attachments, hadFailures)
+                return
+            }
+            channel.sendFiles(*chunk.map { attachment ->
+                attachment.proxy.downloadAsFileUpload(attachment.fileName)
+            }.toTypedArray())
+                .addContent(originalMessage.jumpUrl)
+                .queue({ message ->
+                    message.attachments.mapTo(attachments) { messageAttachment ->
+                        "[${messageAttachment.fileName}](${messageAttachment.url})"
+                    }
+                    processNextChunk()
+                }, { throwable ->
+                    LOG.info("An exception occurred when retrieving one of the attachments", throwable)
+                    hadFailures = true
+                    processNextChunk()
+                })
+        }
+        processNextChunk()
+        return CompletableFuture.completedFuture(Unit)
+    }
+
+    private fun finalizeProxy(messageId: Long, attachments: List<String>, hadFailures: Boolean) {
         val attachmentProxy = when {
             attachments.isNotEmpty() -> {
-                AttachmentProxy(event.messageIdLong, attachments, hadFailures)
+                AttachmentProxy(messageId, attachments, hadFailures)
             }
 
             hadFailures -> {
-                AttachmentProxy(event.messageIdLong, emptyList(), true)
+                AttachmentProxy(messageId, emptyList(), true)
             }
 
             else -> {
@@ -104,6 +109,5 @@ class AttachmentProxyCreator(
             }
         }
         attachmentProxy?.let { attachmentProxyRepository.save(it) }
-        return CompletableFuture.completedFuture(Unit)
     }
 }
