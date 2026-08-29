@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.17.2](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.17.1...v2.17.2) (2026-08-29)
+
+
+### Performance Improvements
+
+* stream attachment uploads and batch them into messages of 10 ([#791](https://github.com/DuncanCasteleyn/DiscordModBot/issues/791)) ([ee36b44](https://github.com/DuncanCasteleyn/DiscordModBot/commit/ee36b44d42d98429a9209969e7c112772536a7d6))
+
 ## [2.17.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.17.0...v2.17.1) (2026-08-28)
 
 
