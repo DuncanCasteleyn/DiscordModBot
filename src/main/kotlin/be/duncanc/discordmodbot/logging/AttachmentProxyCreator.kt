@@ -47,6 +47,8 @@ class AttachmentProxyCreator(
         var hadFailures = false
         val originalMessage = event.message
 
+        val result = CompletableFuture<Unit>()
+
         val channel = event.jda.getTextChannelById(attachmentCacheProperties.channelId)
         if (channel == null) {
             LOG.error(
@@ -55,7 +57,8 @@ class AttachmentProxyCreator(
             )
             hadFailures = true
             finalizeProxy(event.messageIdLong, attachments, hadFailures)
-            return CompletableFuture.completedFuture(Unit)
+            result.complete(Unit)
+            return result
         }
 
         val eligibleAttachments = originalMessage.attachments.filterNot { attachment ->
@@ -73,6 +76,7 @@ class AttachmentProxyCreator(
         fun processNextChunk() {
             val chunk = if (iterator.hasNext()) iterator.next() else {
                 finalizeProxy(event.messageIdLong, attachments, hadFailures)
+                result.complete(Unit)
                 return
             }
             channel.sendFiles(*chunk.map { attachment ->
@@ -91,7 +95,7 @@ class AttachmentProxyCreator(
                 })
         }
         processNextChunk()
-        return CompletableFuture.completedFuture(Unit)
+        return result
     }
 
     private fun finalizeProxy(messageId: Long, attachments: List<String>, hadFailures: Boolean) {

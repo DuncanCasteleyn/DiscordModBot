@@ -27,6 +27,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Consumer
 
 @ExtendWith(MockitoExtension::class)
@@ -155,6 +156,61 @@ class AttachmentProxyCreatorTest {
     }
 
     @Test
+    fun `proxy message attachments completes the returned future only after all chunks are persisted`() {
+        stubGuildMessage(*Array(11) { smallAttachment() })
+        whenever(receivedEvent.messageIdLong).thenReturn(100L)
+        whenever(message.jumpUrl).thenReturn("https://discord.com/channels/1/10/100")
+        val queuedBatches = stubDelayedUpload(*Array(11) { uploadedAttachment() })
+
+        val future = attachmentProxyCreator.proxyMessageAttachments(receivedEvent)
+
+        assertFalse(future.isDone)
+        verify(attachmentProxyRepository, never()).save(any())
+
+        queuedBatches.removeFirst().succeed()
+
+        verify(channel, times(2)).sendFiles(anyVararg<FileUpload>())
+        assertFalse(future.isDone)
+        verify(attachmentProxyRepository, never()).save(any())
+
+        queuedBatches.removeFirst().succeed()
+
+        val proxyCaptor = argumentCaptor<AttachmentProxy>()
+        verify(attachmentProxyRepository).save(proxyCaptor.capture())
+        assertEquals(11, proxyCaptor.firstValue.attachmentUrls.size)
+        assertFalse(proxyCaptor.firstValue.hadFailedCaches)
+        assertTrue(future.isDone)
+    }
+
+    @Test
+    fun `proxy message attachments completes the returned future only after persisting a failed upload`() {
+        stubGuildMessage(smallAttachment())
+        whenever(receivedEvent.messageIdLong).thenReturn(100L)
+        whenever(message.jumpUrl).thenReturn("https://discord.com/channels/1/10/100")
+        val action = mock<MessageCreateAction> {
+            on(it.addContent(any<String>())).thenReturn(it)
+        }
+        whenever(channel.sendFiles(anyVararg<FileUpload>())).thenReturn(action)
+        val failureConsumer = AtomicReference<Consumer<Throwable>>()
+        doAnswer { invocation ->
+            failureConsumer.set(invocation.component2<Consumer<Throwable>>())
+            null
+        }.whenever(action).queue(any(), any())
+
+        val future = attachmentProxyCreator.proxyMessageAttachments(receivedEvent)
+
+        assertFalse(future.isDone)
+        verify(attachmentProxyRepository, never()).save(any())
+
+        failureConsumer.get().accept(RuntimeException("upload failed"))
+
+        val proxyCaptor = argumentCaptor<AttachmentProxy>()
+        verify(attachmentProxyRepository).save(proxyCaptor.capture())
+        assertTrue(proxyCaptor.firstValue.hadFailedCaches)
+        assertTrue(future.isDone)
+    }
+
+    @Test
     fun `bot messages are not proxied`() {
         whenever(receivedEvent.isFromGuild).thenReturn(true)
         whenever(receivedEvent.author).thenReturn(author)
@@ -229,5 +285,41 @@ class AttachmentProxyCreatorTest {
             null
         }.whenever(action).queue(any(), any())
         return action
+    }
+
+    private fun stubDelayedUpload(vararg uploadedAttachments: Message.Attachment): ArrayDeque<QueuedUploadBatch> {
+        val queuedBatches = ArrayDeque<QueuedUploadBatch>()
+        val batches = uploadedAttachments.toList().chunked(Message.MAX_FILE_AMOUNT)
+        val batchResults = ArrayDeque(batches.map { batchAttachments ->
+            mock<Message> {
+                on(it.attachments).thenReturn(batchAttachments)
+            }
+        })
+        val actions = batches.map {
+            mock<MessageCreateAction> {
+                on(it.addContent(any<String>())).thenReturn(it)
+            }
+        }
+        whenever(channel.sendFiles(anyVararg<FileUpload>()))
+            .thenReturn(actions.first(), *actions.drop(1).toTypedArray())
+        actions.forEach { action ->
+            doAnswer { invocation ->
+                queuedBatches.addLast(
+                    QueuedUploadBatch(
+                        batchResults.removeFirst(),
+                        invocation.component1<Consumer<Message>>()
+                    )
+                )
+                null
+            }.whenever(action).queue(any(), any())
+        }
+        return queuedBatches
+    }
+
+    private class QueuedUploadBatch(
+        val uploadedMessage: Message,
+        private val successConsumer: Consumer<Message>
+    ) {
+        fun succeed() = successConsumer.accept(uploadedMessage)
     }
 }
