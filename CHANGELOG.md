@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.18.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.18.0...v2.18.1) (2026-08-31)
+
+
+### Bug Fixes
+
+* **moderation:** show total active points in the warn reason dialogs ([db9c35f](https://github.com/DuncanCasteleyn/DiscordModBot/commit/db9c35fc11bc27a833b5ba5c43982e5aee25232a))
+
 ## [2.18.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.17.2...v2.18.0) (2026-08-31)
 
 
