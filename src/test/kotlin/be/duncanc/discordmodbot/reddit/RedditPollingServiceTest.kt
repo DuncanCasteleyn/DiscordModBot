@@ -121,6 +121,17 @@ class RedditPollingServiceTest {
     }
 
     @Test
+    fun `poll skips guilds without configured subreddit`() {
+        whenever(redditAlertSettingsRepository.findAll()).thenReturn(listOf(RedditAlertSettings(1L, 11L)))
+
+        service.pollSubreddit()
+
+        verify(redditRssClient, never()).fetchNewestPosts(any())
+        verify(redditPostMirrorRepository, never()).save(any<RedditPostMirror>())
+        verify(redditPendingPostRepository, never()).save(any<RedditPendingPost>())
+    }
+
+    @Test
     fun `baseline throws when rss client fails`() {
         whenever(redditRssClient.fetchNewestPosts("Re_Zero")).thenThrow(RuntimeException("network error"))
 

@@ -41,12 +41,12 @@ class RedditPollingService(
 
     @Scheduled(cron = $$"${discord-mod-bot.reddit.poll-cron:0 */2 * * * *}")
     fun pollSubreddit() {
-        val settings = redditAlertSettingsRepository.findAll().filter { it.channelId != null }
+        val settings = redditAlertSettingsRepository.findAll().filter { it.channelId != null && it.subreddit != null }
         if (settings.isEmpty()) {
             return
         }
 
-        settings.groupBy { it.subreddit }.forEach { (subreddit, subredditSettings) ->
+        settings.groupBy { it.subreddit!! }.forEach { (subreddit, subredditSettings) ->
             val posts = try {
                 redditRssClient.fetchNewestPosts(subreddit)
             } catch (exception: Exception) {
@@ -101,6 +101,7 @@ class RedditPollingService(
 
     private fun processGuild(settings: RedditAlertSettings, posts: List<RedditPost>) {
         val channelId = settings.channelId ?: return
+        val subreddit = settings.subreddit ?: return
         val channel = jda.getTextChannelById(channelId)
         if (channel == null) {
             disableMissingChannel(settings, channelId)
@@ -122,7 +123,7 @@ class RedditPollingService(
 
     private fun mirrorPost(settings: RedditAlertSettings, channel: TextChannel, post: RedditPost) {
         val guildId = settings.guildId
-        val subreddit = settings.subreddit
+        val subreddit = settings.subreddit ?: return
         val mirrorId = RedditPostMirror.id(guildId, post.id)
         val existingMirror = redditPostMirrorRepository.findById(mirrorId).orElse(null)
         if (existingMirror != null) {
