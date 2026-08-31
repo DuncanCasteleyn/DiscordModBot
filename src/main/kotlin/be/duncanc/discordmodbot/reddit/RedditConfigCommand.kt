@@ -26,8 +26,7 @@ class RedditConfigCommand(
     private val redditAlertSettingsRepository: RedditAlertSettingsRepository,
     private val redditPostMirrorRepository: RedditPostMirrorRepository,
     private val redditPendingPostRepository: RedditPendingPostRepository,
-    private val redditPollingService: RedditPollingService,
-    private val redditProperties: RedditProperties
+    private val redditPollingService: RedditPollingService
 ) : ListenerAdapter(), SlashCommand {
     companion object {
         private const val COMMAND = "reddit"
@@ -67,13 +66,18 @@ class RedditConfigCommand(
             SUBCOMMAND_SET_CHANNEL -> {
                 val channel = getRequiredTextChannel(event) ?: return
                 val settings = redditAlertSettingsRepository.findById(guild.idLong).orElseGet {
-                    RedditAlertSettings(
-                        guildId = guild.idLong,
-                        channelId = channel.idLong,
-                        subreddit = redditProperties.subreddit
-                    )
+                    RedditAlertSettings(guildId = guild.idLong, channelId = channel.idLong)
                 }
                 val subreddit = settings.subreddit
+                if (subreddit == null) {
+                    settings.channelId = channel.idLong
+                    redditAlertSettingsRepository.save(settings)
+                    event.reply(
+                        "Mirror channel saved as ${channel.asMention}. " +
+                            "Use /reddit set-subreddit to choose which subreddit to mirror."
+                    ).setEphemeral(true).queue()
+                    return
+                }
                 try {
                     redditPollingService.baselineCurrentPosts(guild.idLong, subreddit)
                 } catch (exception: IllegalStateException) {
@@ -93,6 +97,15 @@ class RedditConfigCommand(
                 val subreddit = getRequiredSubreddit(event) ?: return
                 val settings = redditAlertSettingsRepository.findById(guild.idLong).orElseGet {
                     RedditAlertSettings(guildId = guild.idLong, subreddit = subreddit)
+                }
+                if (settings.channelId == null) {
+                    settings.subreddit = subreddit
+                    redditAlertSettingsRepository.save(settings)
+                    event.reply(
+                        "Subreddit set to r/$subreddit. " +
+                            "Use /reddit set-channel to choose where posts are mirrored."
+                    ).setEphemeral(true).queue()
+                    return
                 }
                 val posts = try {
                     redditPollingService.baselineCurrentPosts(guild.idLong, subreddit)
@@ -161,7 +174,7 @@ class RedditConfigCommand(
         val message = buildString {
             appendLine("Reddit mirror settings for ${guild.name}")
             appendLine()
-            appendLine("- Subreddit: r/${settings?.subreddit ?: redditProperties.subreddit}")
+            appendLine("- Subreddit: ${settings?.subreddit?.let { "r/$it" } ?: "Not configured"}")
             appendLine("- Mirror channel: ${formatChannel(guild, settings?.channelId)}")
         }
 

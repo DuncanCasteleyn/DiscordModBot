@@ -10,9 +10,6 @@ import java.time.Duration
 @ConfigurationProperties("discord-mod-bot.reddit")
 data class RedditProperties(
     @NotEmpty
-    @DefaultValue("Re_Zero")
-    val subreddit: String,
-    @NotEmpty
     @DefaultValue("0 */2 * * * *")
     val pollCron: String,
     @DefaultValue("10s")

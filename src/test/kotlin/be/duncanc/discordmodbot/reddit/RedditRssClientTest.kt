@@ -3,11 +3,32 @@ package be.duncanc.discordmodbot.reddit
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import org.springframework.web.client.RestClient
 import java.time.Instant
 
 class RedditRssClientTest {
+    @Test
+    fun `fetch requests newest feed with max limit`() {
+        val redditRestClient = mock<RestClient>()
+        val uriSpec = mock<RestClient.RequestHeadersUriSpec<*>>()
+        val headersSpec = mock<RestClient.RequestHeadersSpec<*>>()
+        val responseSpec = mock<RestClient.ResponseSpec>()
+        val client = RedditRssClient(redditRestClient = redditRestClient)
+        whenever(redditRestClient.get()).thenReturn(uriSpec)
+        doReturn(headersSpec).whenever(uriSpec).uri("/r/{subreddit}/new/.rss?limit={limit}", "Re_Zero", 100)
+        whenever(headersSpec.retrieve()).thenReturn(responseSpec)
+        whenever(responseSpec.body(String::class.java)).thenReturn("<feed/>")
+
+        val posts = client.fetchNewestPosts("Re_Zero")
+
+        verify(uriSpec).uri("/r/{subreddit}/new/.rss?limit={limit}", "Re_Zero", 100)
+        assertEquals(emptyList<RedditPost>(), posts)
+    }
+
     @Test
     fun `parse rejects feeds with doctype declarations`() {
         val client = RedditRssClient(

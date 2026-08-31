@@ -13,10 +13,10 @@ class RedditAlertSettings(
     val guildId: Long,
     @Column(nullable = true)
     var channelId: Long? = null,
-    @Column(nullable = false, length = 100)
-    var subreddit: String
+    @Column(nullable = true, length = 100)
+    var subreddit: String? = null
 ) {
-    constructor() : this(0L, null, "")
+    constructor() : this(0L)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) {
