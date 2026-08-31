@@ -436,6 +436,54 @@ class AddWarnPointsCommandTest {
         )
     }
 
+    @Test
+    fun `zero point warning logs and does not inform the user`() {
+        val resultCaptor = argumentCaptor<String>()
+        val logCaptor = argumentCaptor<EmbedBuilder>()
+
+        stubSuccessfulSilentModalFlow(action = 0)
+
+        command.onModalInteraction(modalEvent)
+
+        verify(guildWarnPointsService).addWarnPoint(eq(99L), eq(1L), eq(0), eq(12L), eq("Minor offense"), any())
+        verify(guildLogger).log(
+            logCaptor.capture(),
+            eq(targetUser),
+            eq(guild),
+            isNull<List<MessageEmbed>>(),
+            eq(GuildLogger.LogTypeAction.MODERATOR),
+            isNull()
+        )
+        verify(targetUser, never()).openPrivateChannel()
+        verify(hook).sendMessage(resultCaptor.capture())
+        kotlin.test.assertEquals(
+            true,
+            resultCaptor.firstValue.contains("Silent warning: the user was not informed by DM.")
+        )
+        kotlin.test.assertEquals(
+            "0",
+            logCaptor.firstValue.build().fields.single { it.name == "Amount" }.value
+        )
+    }
+
+    @Test
+    fun `zero point warning with mute action still mutes without informing the user`() {
+        val resultCaptor = argumentCaptor<String>()
+
+        stubSuccessfulSilentModalFlow(action = 1)
+
+        command.onModalInteraction(modalEvent)
+
+        verify(guild).addRoleToMember(targetMember, muteRole)
+        verify(muteService).muteUserById(1L, 99L)
+        verify(targetUser, never()).openPrivateChannel()
+        verify(hook).sendMessage(resultCaptor.capture())
+        kotlin.test.assertEquals(
+            true,
+            resultCaptor.firstValue.contains("Silent warning: the user was not informed by DM.")
+        )
+    }
+
     private fun stubSlashCommand(action: Int) {
         whenever(slashEvent.name).thenReturn("addwarnpoints")
         whenever(slashEvent.member).thenReturn(member)
@@ -550,6 +598,62 @@ class AddWarnPointsCommandTest {
             invocation.component2<Consumer<Throwable>>().accept(IllegalStateException("DMs disabled"))
             null
         }.whenever(messageCreateAction).queue(any(), any())
+        whenever(hook.sendMessage(any<String>())).thenReturn(followupAction)
+        whenever(followupAction.setEphemeral(true)).thenReturn(followupAction)
+    }
+
+    private fun stubSuccessfulSilentModalFlow(action: Int) {
+        val settings = GuildWarnPointsSettings(
+            guildId = 1L,
+            maxPointsPerReason = 10,
+            announcePointsSummaryLimit = 99,
+            announceChannelId = 1L,
+            overrideWarnCommand = false
+        )
+        val warnPoint = GuildWarnPoint(
+            userId = 99L,
+            guildId = 1L,
+            points = 0,
+            creatorId = 12L,
+            reason = "Minor offense",
+            expireDate = OffsetDateTime.now().plusDays(3)
+        )
+
+        stubModalContext(modalId = "addwarnpoints_reason:99:0:3:$action")
+        whenever(modalEvent.jda).thenReturn(jda)
+        whenever(member.guild).thenReturn(guild)
+        whenever(member.idLong).thenReturn(12L)
+        whenever(member.user).thenReturn(moderatorUser)
+        whenever(moderatorUser.name).thenReturn("ModeratorUser")
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(guild.name).thenReturn("Guild")
+        whenever(targetMember.idLong).thenReturn(99L)
+        whenever(targetMember.guild).thenReturn(guild)
+        whenever(targetMember.user).thenReturn(targetUser)
+        whenever(targetMember.nickname).thenReturn(null)
+        whenever(targetUser.name).thenReturn("TargetUser")
+        whenever(jda.registeredListeners).thenReturn(listOf(guildLogger))
+        whenever(jda.getTextChannelById(1L)).thenReturn(mockTextChannel())
+        whenever(guildWarnPointsSettingsRepository.findById(1L)).thenReturn(Optional.of(settings))
+        whenever(modalEvent.getValue("reason")).thenReturn(reasonValue)
+        whenever(reasonValue.asString).thenReturn("Minor offense")
+        whenever(modalEvent.deferReply(true)).thenReturn(replyAction)
+        whenever(guildWarnPointsService.addWarnPoint(eq(99L), eq(1L), eq(0), eq(12L), eq("Minor offense"), any()))
+            .thenReturn(warnPoint)
+        whenever(guildWarnPointsService.getActivePointsCount(1L, 99L)).thenReturn(0)
+        whenever(guild.getMemberById(99L)).thenReturn(targetMember)
+        whenever(muteRoleCommandAndEventsListener.getMuteRole(guild)).thenReturn(muteRole)
+        whenever(guild.addRoleToMember(targetMember, muteRole)).thenReturn(addRoleAction)
+        whenever(addRoleAction.reason("Minor offense")).thenReturn(addRoleAction)
+        doAnswer { (consumer: Consumer<InteractionHook>) ->
+            consumer.accept(hook)
+            null
+        }.whenever(replyAction).queue(any())
+        doAnswer { invocation ->
+            invocation.component1<Consumer<Void?>>().accept(null)
+            null
+        }.whenever(addRoleAction).queue(any(), any())
+        whenever(targetUser.openPrivateChannel()).thenReturn(openPrivateChannelAction)
         whenever(hook.sendMessage(any<String>())).thenReturn(followupAction)
         whenever(followupAction.setEphemeral(true)).thenReturn(followupAction)
     }

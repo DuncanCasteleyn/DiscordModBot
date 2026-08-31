@@ -93,8 +93,8 @@ class AddWarnPointsByIdCommand(
         }
 
         val points = event.getOption(OPTION_POINTS)?.asInt
-        if (points == null || points < 1) {
-            event.reply("Points must be at least 1.").setEphemeral(true).queue()
+        if (points == null || points < 0) {
+            event.reply("Points cannot be negative. Use 0 for a silent warning.").setEphemeral(true).queue()
             return
         }
 
@@ -607,7 +607,8 @@ class AddWarnPointsByIdCommand(
             Commands.slash(COMMAND, DESCRIPTION)
                 .addOptions(
                     OptionData(OptionType.USER, OPTION_USER, "The user to add points to", true),
-                    OptionData(OptionType.INTEGER, OPTION_POINTS, "Number of points to add", true),
+                    OptionData(OptionType.INTEGER, OPTION_POINTS, "Number of points to add, 0 for a silent warning", true)
+                        .setMinValue(0L),
                     OptionData(OptionType.INTEGER, OPTION_DAYS, "Number of days until points expire", true),
                     OptionData(
                         OptionType.INTEGER,

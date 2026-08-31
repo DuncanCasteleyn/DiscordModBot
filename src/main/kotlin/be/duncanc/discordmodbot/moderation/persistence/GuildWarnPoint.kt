@@ -4,7 +4,7 @@ import jakarta.persistence.*
 import jakarta.validation.constraints.Future
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
-import jakarta.validation.constraints.Positive
+import jakarta.validation.constraints.PositiveOrZero
 import org.hibernate.Hibernate
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
@@ -27,7 +27,7 @@ data class GuildWarnPoint(
     @JdbcTypeCode(SqlTypes.BINARY)
     @Column(updatable = false, columnDefinition = "BINARY(16)", unique = true)
     val id: UUID = UUID.randomUUID(),
-    @field:Positive
+    @field:PositiveOrZero
     @Column(nullable = false, updatable = false)
     val points: Int,
     @field:NotNull
@@ -46,8 +46,8 @@ data class GuildWarnPoint(
 ) {
 
     init {
-        if (points <= 0) {
-            throw IllegalArgumentException("Points need to be a positive number")
+        if (points < 0) {
+            throw IllegalArgumentException("Points cannot be negative")
         }
         if (expireDate.isBefore(creationDate)) {
             throw IllegalArgumentException("UserWarnPoints can't expire before the date it was created.")
