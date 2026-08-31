@@ -184,6 +184,7 @@ class AddWarnPointsCommandTest {
     fun `mute slash command opens a combined modal`() {
         stubSlashCommand(action = 1)
         whenever(guildWarnPointsService.getActivePointsCount(1L, 99L)).thenReturn(3)
+        whenever(guildWarnPointsService.getActivePointsTotal(1L, 99L)).thenReturn(7)
         whenever(slashEvent.replyModal(any())).thenReturn(modalAction)
 
         command.onSlashCommandInteraction(slashEvent)
@@ -192,7 +193,7 @@ class AddWarnPointsCommandTest {
             id == "addwarnpoints_reason:99:2:3:1" &&
                 components.size == 4 &&
                 components[0].asTextDisplay().content == "Warning: TargetUser (<@99>, ID: 99)" &&
-                components[1].asTextDisplay().content == "Active warnings: 3"
+                components[1].asTextDisplay().content == "Active warnings: 3 (total points: 7)"
         })
     }
 
@@ -200,6 +201,7 @@ class AddWarnPointsCommandTest {
     fun `kick slash command opens a reason only modal`() {
         stubSlashCommand(action = 2)
         whenever(guildWarnPointsService.getActivePointsCount(1L, 99L)).thenReturn(1)
+        whenever(guildWarnPointsService.getActivePointsTotal(1L, 99L)).thenReturn(1)
         whenever(member.hasPermission(Permission.KICK_MEMBERS)).thenReturn(true)
         whenever(slashEvent.replyModal(any())).thenReturn(modalAction)
 
@@ -209,7 +211,7 @@ class AddWarnPointsCommandTest {
             id == "addwarnpoints_reason:99:2:3:2" &&
                 components.size == 3 &&
                 components[0].asTextDisplay().content == "Warning: TargetUser (<@99>, ID: 99)" &&
-                components[1].asTextDisplay().content == "Active warnings: 1"
+                components[1].asTextDisplay().content == "Active warnings: 1 (total points: 1)"
         })
     }
 

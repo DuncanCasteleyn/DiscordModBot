@@ -572,7 +572,8 @@ class AddWarnPointsByIdCommand(
     private fun createReasonModal(guildId: Long, targetUserId: Long, points: Int, days: Int, action: Int): Modal {
         val targetText = TextDisplay.of("Warning: <@$targetUserId> (ID: $targetUserId)")
         val activeWarningsText = TextDisplay.of(
-            "Active warnings: ${guildWarnPointsService.getActivePointsCount(guildId, targetUserId)}"
+            "Active warnings: ${guildWarnPointsService.getActivePointsCount(guildId, targetUserId)} " +
+                "(total points: ${guildWarnPointsService.getActivePointsTotal(guildId, targetUserId)})"
         )
         val textInput = TextInput.create(REASON_INPUT_ID, TextInputStyle.PARAGRAPH)
             .setPlaceholder("Enter the reason for this warning...")

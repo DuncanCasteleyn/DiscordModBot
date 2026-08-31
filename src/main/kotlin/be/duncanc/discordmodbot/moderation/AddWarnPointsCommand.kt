@@ -675,7 +675,8 @@ class AddWarnPointsCommand(
             "Warning: ${targetMember.nicknameAndUsername} (<@${targetMember.idLong}>, ID: ${targetMember.idLong})"
         )
         val activeWarningsText = TextDisplay.of(
-            "Active warnings: ${guildWarnPointsService.getActivePointsCount(guildId, targetMember.idLong)}"
+            "Active warnings: ${guildWarnPointsService.getActivePointsCount(guildId, targetMember.idLong)} " +
+                "(total points: ${guildWarnPointsService.getActivePointsTotal(guildId, targetMember.idLong)})"
         )
         val textInput = TextInput.create(REASON_INPUT_ID, TextInputStyle.PARAGRAPH)
             .setPlaceholder("Enter the reason for this warning...")

@@ -59,6 +59,11 @@ class GuildWarnPointsService(private val guildWarnPointsRepository: GuildWarnPoi
     }
 
     @Transactional(readOnly = true)
+    fun getActivePointsTotal(guildId: Long, userId: Long): Int {
+        return getActiveWarnings(guildId, userId).sumOf { it.points }
+    }
+
+    @Transactional(readOnly = true)
     fun getActiveWarnings(guildId: Long, userId: Long): Collection<GuildWarnPoint> {
         return guildWarnPointsRepository.findAllByGuildIdAndUserIdAndExpireDateAfter(
             guildId,
