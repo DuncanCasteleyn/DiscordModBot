@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.18.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.17.2...v2.18.0) (2026-08-31)
+
+
+### Features
+
+* **moderation:** add silent warnings via zero warn points ([#794](https://github.com/DuncanCasteleyn/DiscordModBot/issues/794)) ([7ad3849](https://github.com/DuncanCasteleyn/DiscordModBot/commit/7ad3849d66cd543b9c7e58998c28acad3be0cc75))
+
 ## [2.17.2](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.17.1...v2.17.2) (2026-08-29)
 
 
