@@ -85,8 +85,8 @@ class AddWarnPointsCommand(
         }
 
         val points = event.getOption(OPTION_POINTS)?.asInt
-        if (points == null || points < 1) {
-            event.reply("Points must be at least 1.").setEphemeral(true).queue()
+        if (points == null || points < 0) {
+            event.reply("Points cannot be negative. Use 0 for a silent warning.").setEphemeral(true).queue()
             return
         }
 
@@ -241,7 +241,9 @@ class AddWarnPointsCommand(
 
         val totalPoints = guildWarnPointsService.getActivePointsCount(guild.idLong, targetUserId)
 
-        performChecks(guildPointsSettings, targetUser, guild)
+        if (points > 0) {
+            performChecks(guildPointsSettings, targetUser, guild)
+        }
 
         when (action) {
             1 -> {
@@ -438,6 +440,7 @@ class AddWarnPointsCommand(
             targetMember,
             targetUser,
             reason,
+            points,
             totalPoints,
             hook,
             action,
@@ -549,6 +552,7 @@ class AddWarnPointsCommand(
         toInform: Member?,
         targetUser: User,
         reason: String,
+        points: Int,
         amountOfWarnings: Int,
         hook: InteractionHook,
         action: Byte,
@@ -556,6 +560,11 @@ class AddWarnPointsCommand(
         unmutePlanMessage: String?,
         moderatorNote: String?
     ) {
+        if (points == 0) {
+            onSilentWarning(hook, targetUserId, toInform, unmutePlanMessage, moderatorNote)
+            return
+        }
+
         val noteMessage = if (amountOfWarnings <= 1) {
             "Please watch your behavior in our server."
         } else {
@@ -599,6 +608,25 @@ class AddWarnPointsCommand(
                 }
             }
         ) { throwable -> onFailToInformUser(hook, targetUserId, toInform, throwable, unmutePlanMessage, moderatorNote) }
+    }
+
+    private fun onSilentWarning(
+        hook: InteractionHook,
+        targetUserId: Long,
+        toInform: Member?,
+        unmutePlanMessage: String?,
+        moderatorNote: String?
+    ) {
+        hook.sendMessage(
+            buildModeratorResultMessage(
+                "Added warn points to ${toInform ?: "<@$targetUserId>"}.",
+                "Silent warning: the user was not informed by DM.",
+                unmutePlanMessage,
+                moderatorNote
+            )
+        )
+            .setEphemeral(true)
+            .queue()
     }
 
     private fun onSuccessfulInformUser(
@@ -705,7 +733,8 @@ class AddWarnPointsCommand(
             Commands.slash(COMMAND, DESCRIPTION)
                 .addOptions(
                     OptionData(OptionType.USER, OPTION_USER, "The user to add points to", true),
-                    OptionData(OptionType.INTEGER, OPTION_POINTS, "Number of points to add", true),
+                    OptionData(OptionType.INTEGER, OPTION_POINTS, "Number of points to add, 0 for a silent warning", true)
+                        .setMinValue(0L),
                     OptionData(OptionType.INTEGER, OPTION_DAYS, "Number of days until points expire", true),
                     OptionData(
                         OptionType.INTEGER,

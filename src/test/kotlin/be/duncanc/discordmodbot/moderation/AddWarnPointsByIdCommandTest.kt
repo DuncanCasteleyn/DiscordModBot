@@ -216,6 +216,59 @@ The user was not warned by DM, please do so manually when they rejoin."""
     }
 
     @Test
+    fun `modal submission stores zero warn points as a silent warning for a departed user`() {
+        val warnPoint = warnPoint(points = 0)
+        val settings = settings()
+
+        whenever(modalEvent.modalId).thenReturn("addwarnpointsbyid_reason:99:0:3:0")
+        whenever(modalEvent.member).thenReturn(member)
+        whenever(modalEvent.guild).thenReturn(guild)
+        whenever(modalEvent.jda).thenReturn(jda)
+        whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
+        whenever(member.idLong).thenReturn(12L)
+        whenever(member.user).thenReturn(moderatorUser)
+        whenever(moderatorUser.name).thenReturn("ModeratorUser")
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(guild.getMemberById(99L)).thenReturn(null)
+        whenever(modalEvent.getValue("reason")).thenReturn(reasonValue)
+        whenever(reasonValue.asString).thenReturn("Spamming")
+        whenever(guildWarnPointsSettingsRepository.findById(1L)).thenReturn(Optional.of(settings))
+        whenever(jda.getTextChannelById(1L)).thenReturn(textChannel)
+        whenever(
+            guildWarnPointsService.addWarnPoint(
+                eq(99L),
+                eq(1L),
+                eq(0),
+                eq(12L),
+                eq("Spamming"),
+                any<OffsetDateTime>()
+            )
+        ).thenReturn(warnPoint)
+        whenever(guildWarnPointsService.getActivePointsCount(1L, 99L)).thenReturn(0)
+        whenever(modalEvent.deferReply(true)).thenReturn(replyAction)
+        whenever(interactionHook.sendMessage(any<String>())).thenReturn(followupAction)
+        doQueue(replyAction)
+
+        command.onModalInteraction(modalEvent)
+
+        verify(
+            guildWarnPointsService
+        ).addWarnPoint(
+            eq(99L),
+            eq(1L),
+            eq(0),
+            eq(12L),
+            eq("Spamming"),
+            any<OffsetDateTime>()
+        )
+        verify(textChannel, never()).sendMessage(any<String>())
+        verify(interactionHook).sendMessage(
+            """Added warn points to <@99>.
+The user was not warned by DM, please do so manually when they rejoin."""
+        )
+    }
+
+    @Test
     fun `modal submission rejects points above the configured cap`() {
         val settings = settings()
 
@@ -495,11 +548,11 @@ The user was not warned by DM, please do so manually when they rejoin.""",
         )
     }
 
-    private fun warnPoint(): GuildWarnPoint {
+    private fun warnPoint(points: Int = 2): GuildWarnPoint {
         return GuildWarnPoint(
             userId = 99L,
             guildId = 1L,
-            points = 2,
+            points = points,
             creatorId = 12L,
             reason = "Spamming",
             expireDate = OffsetDateTime.now().plusDays(2)
