@@ -13,7 +13,7 @@ class RedditRssClient(
 ) {
     fun fetchNewestPosts(subreddit: String): List<RedditPost> {
         val feed = redditRestClient.get()
-            .uri("/r/{subreddit}/new/.rss", subreddit)
+            .uri("/r/{subreddit}/new/.rss?limit={limit}", subreddit, MAX_FEED_LIMIT)
             .retrieve()
             .body(String::class.java)
             ?: throw IllegalStateException("Reddit RSS response was empty")
@@ -64,6 +64,7 @@ class RedditRssClient(
     companion object {
         private const val ATOM_NAMESPACE = "http://www.w3.org/2005/Atom"
         private const val MEDIA_NAMESPACE = "http://search.yahoo.com/mrss/"
+        private const val MAX_FEED_LIMIT = 100
     }
 }
 

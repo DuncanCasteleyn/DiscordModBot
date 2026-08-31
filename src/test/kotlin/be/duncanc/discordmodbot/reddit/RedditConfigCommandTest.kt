@@ -26,7 +26,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.time.Duration
 import java.time.Instant
 import java.util.Optional
 
@@ -67,14 +66,7 @@ class RedditConfigCommandTest {
             redditAlertSettingsRepository = redditAlertSettingsRepository,
             redditPostMirrorRepository = redditPostMirrorRepository,
             redditPendingPostRepository = redditPendingPostRepository,
-            redditPollingService = redditPollingService,
-            redditProperties = RedditProperties(
-                subreddit = "Re_Zero",
-                pollCron = "0 */2 * * * *",
-                readTimeout = Duration.ofSeconds(10),
-                connectTimeout = Duration.ofSeconds(10),
-                userAgent = "test"
-            )
+            redditPollingService = redditPollingService
         )
     }
 
@@ -96,6 +88,26 @@ class RedditConfigCommandTest {
         assertEquals("Anime", settingsCaptor.firstValue.subreddit)
         verify(redditPollingService).baselineCurrentPosts(1L, "Anime")
         verify(slashEvent).reply("Reddit posts from r/Anime will be mirrored to <#11>.")
+    }
+
+    @Test
+    fun `set channel without subreddit only saves channel and asks to configure subreddit`() {
+        stubAuthorizedSlashCommand("set-channel")
+        whenever(textChannel.idLong).thenReturn(11L)
+        whenever(textChannel.asMention).thenReturn("<#11>")
+        whenever(redditAlertSettingsRepository.findById(1L)).thenReturn(Optional.empty())
+        command.selectedChannel = textChannel
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        val settingsCaptor = argumentCaptor<RedditAlertSettings>()
+        verify(redditAlertSettingsRepository).save(settingsCaptor.capture())
+        assertEquals(11L, settingsCaptor.firstValue.channelId)
+        assertEquals(null, settingsCaptor.firstValue.subreddit)
+        verify(redditPollingService, never()).baselineCurrentPosts(any(), any())
+        verify(slashEvent).reply(
+            "Mirror channel saved as <#11>. Use /reddit set-subreddit to choose which subreddit to mirror."
+        )
     }
 
     @Test
@@ -139,6 +151,25 @@ class RedditConfigCommandTest {
         verify(redditPendingPostRepository).delete(pending)
         verify(redditPollingService).baselineCurrentPosts(1L, "Anime")
         verify(slashEvent).reply("Reddit post mirroring now watches r/Anime.")
+    }
+
+    @Test
+    fun `set subreddit without channel saves subreddit and asks to configure channel`() {
+        stubAuthorizedSlashCommand("set-subreddit")
+        whenever(redditAlertSettingsRepository.findById(1L)).thenReturn(Optional.empty())
+        command.subreddit = "Anime"
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        val settingsCaptor = argumentCaptor<RedditAlertSettings>()
+        verify(redditAlertSettingsRepository).save(settingsCaptor.capture())
+        assertEquals("Anime", settingsCaptor.firstValue.subreddit)
+        assertEquals(null, settingsCaptor.firstValue.channelId)
+        verify(redditPollingService, never()).baselineCurrentPosts(any(), any())
+        verify(redditPostMirrorRepository, never()).delete(any<RedditPostMirror>())
+        verify(slashEvent).reply(
+            "Subreddit set to r/Anime. Use /reddit set-channel to choose where posts are mirrored."
+        )
     }
 
     @Test
@@ -218,6 +249,21 @@ class RedditConfigCommandTest {
     }
 
     @Test
+    fun `show displays not configured when subreddit is missing`() {
+        stubAuthorizedSlashCommand("show")
+        whenever(guild.name).thenReturn("Test Guild")
+        whenever(redditAlertSettingsRepository.findById(1L)).thenReturn(
+            Optional.of(RedditAlertSettings(guildId = 1L, channelId = 11L))
+        )
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        val replyCaptor = argumentCaptor<String>()
+        verify(slashEvent).reply(replyCaptor.capture())
+        assertEquals(true, replyCaptor.firstValue.contains("- Subreddit: Not configured"))
+    }
+
+    @Test
     fun `set subreddit rejects invalid subreddit names`() {
         stubSlashCommandContext()
         whenever(member.hasPermission(Permission.MANAGE_CHANNEL)).thenReturn(true)
@@ -264,14 +310,12 @@ class RedditConfigCommandTest {
         redditAlertSettingsRepository: RedditAlertSettingsRepository,
         redditPostMirrorRepository: RedditPostMirrorRepository,
         redditPendingPostRepository: RedditPendingPostRepository,
-        redditPollingService: RedditPollingService,
-        redditProperties: RedditProperties
+        redditPollingService: RedditPollingService
     ) : RedditConfigCommand(
         redditAlertSettingsRepository,
         redditPostMirrorRepository,
         redditPendingPostRepository,
-        redditPollingService,
-        redditProperties
+        redditPollingService
     ) {
         var selectedChannel: TextChannel? = null
         var subreddit: String? = null
