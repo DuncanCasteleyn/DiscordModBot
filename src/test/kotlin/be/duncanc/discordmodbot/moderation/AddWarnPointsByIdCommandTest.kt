@@ -251,7 +251,9 @@ The user was not warned by DM, please do so manually when they rejoin."""
 
         command.onModalInteraction(modalEvent)
 
-        verify(guildWarnPointsService).addWarnPoint(
+        verify(
+            guildWarnPointsService
+        ).addWarnPoint(
             eq(99L),
             eq(1L),
             eq(0),
@@ -259,6 +261,7 @@ The user was not warned by DM, please do so manually when they rejoin."""
             eq("Spamming"),
             any<OffsetDateTime>()
         )
+        verify(textChannel, never()).sendMessage(any<String>())
         verify(interactionHook).sendMessage(
             """Added warn points to <@99>.
 The user was not warned by DM, please do so manually when they rejoin."""

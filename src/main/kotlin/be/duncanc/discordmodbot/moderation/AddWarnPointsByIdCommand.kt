@@ -265,7 +265,9 @@ class AddWarnPointsByIdCommand(
             expireDate
         )
 
-        performChecks(guildPointsSettings, targetUserId, guild)
+        if (points > 0) {
+            performChecks(guildPointsSettings, targetUserId, guild)
+        }
 
         if (action == 1) {
             try {

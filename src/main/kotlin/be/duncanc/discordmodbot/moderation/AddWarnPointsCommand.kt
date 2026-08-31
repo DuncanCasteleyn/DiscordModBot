@@ -241,7 +241,9 @@ class AddWarnPointsCommand(
 
         val totalPoints = guildWarnPointsService.getActivePointsCount(guild.idLong, targetUserId)
 
-        performChecks(guildPointsSettings, targetUser, guild)
+        if (points > 0) {
+            performChecks(guildPointsSettings, targetUser, guild)
+        }
 
         when (action) {
             1 -> {

@@ -140,6 +140,9 @@ class AddWarnPointsCommandTest {
     @Mock
     private lateinit var addRoleAction: AuditableRestAction<Void>
 
+    @Mock
+    private lateinit var announceChannel: net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+
     private lateinit var command: AddWarnPointsCommand
 
     @BeforeEach
@@ -455,6 +458,7 @@ class AddWarnPointsCommandTest {
             isNull()
         )
         verify(targetUser, never()).openPrivateChannel()
+        verify(announceChannel, never()).sendMessage(any<String>())
         verify(hook).sendMessage(resultCaptor.capture())
         kotlin.test.assertEquals(
             true,
@@ -633,7 +637,7 @@ class AddWarnPointsCommandTest {
         whenever(targetMember.nickname).thenReturn(null)
         whenever(targetUser.name).thenReturn("TargetUser")
         whenever(jda.registeredListeners).thenReturn(listOf(guildLogger))
-        whenever(jda.getTextChannelById(1L)).thenReturn(mockTextChannel())
+        whenever(jda.getTextChannelById(1L)).thenReturn(announceChannel)
         whenever(guildWarnPointsSettingsRepository.findById(1L)).thenReturn(Optional.of(settings))
         whenever(modalEvent.getValue("reason")).thenReturn(reasonValue)
         whenever(reasonValue.asString).thenReturn("Minor offense")
