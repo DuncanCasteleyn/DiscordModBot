@@ -419,9 +419,9 @@ class AddWarnPointsByIdCommand(
         userId: Long,
         guild: Guild
     ) {
-        val points = guildWarnPointsService.getActivePointsCount(guild.idLong, userId)
+        val totalPoints = guildWarnPointsService.getActivePointsTotal(guild.idLong, userId)
 
-        if (points >= guildWarnPointsSettings.announcePointsSummaryLimit) {
+        if (totalPoints >= guildWarnPointsSettings.announcePointsSummaryLimit) {
             val messageBuilder = StringBuilder().append("@everyone ")
                 .append(formatTarget(userId, guild.getMemberById(userId)))
                 .append(" has reached the limit of points set by your server administrator.\n\n")

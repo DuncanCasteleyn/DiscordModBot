@@ -490,6 +490,144 @@ class AddWarnPointsCommandTest {
         )
     }
 
+    @Test
+    fun `modal submission announces summary when active points reach the limit`() {
+        val messageCaptor = argumentCaptor<String>()
+        val settings = GuildWarnPointsSettings(
+            guildId = 1L,
+            maxPointsPerReason = 10,
+            announcePointsSummaryLimit = 3,
+            announceChannelId = 1L,
+            overrideWarnCommand = false
+        )
+        val warnPoint = GuildWarnPoint(
+            userId = 99L,
+            guildId = 1L,
+            points = 2,
+            creatorId = 12L,
+            reason = "Spamming",
+            expireDate = OffsetDateTime.now().plusDays(3)
+        )
+
+        stubModalContext(modalId = "addwarnpoints_reason:99:2:3:0")
+        whenever(modalEvent.jda).thenReturn(jda)
+        whenever(member.guild).thenReturn(guild)
+        whenever(member.idLong).thenReturn(12L)
+        whenever(member.user).thenReturn(moderatorUser)
+        whenever(moderatorUser.name).thenReturn("ModeratorUser")
+        whenever(member.nickname).thenReturn(null)
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(guild.name).thenReturn("Guild")
+        whenever(targetMember.idLong).thenReturn(99L)
+        whenever(targetMember.guild).thenReturn(guild)
+        whenever(targetMember.user).thenReturn(targetUser)
+        whenever(targetMember.nickname).thenReturn(null)
+        whenever(targetUser.name).thenReturn("TargetUser")
+        whenever(targetUser.idLong).thenReturn(99L)
+        whenever(jda.registeredListeners).thenReturn(listOf(guildLogger))
+        whenever(jda.getTextChannelById(1L)).thenReturn(announceChannel)
+        whenever(guild.getTextChannelById(1L)).thenReturn(announceChannel)
+        whenever(guildWarnPointsSettingsRepository.findById(1L)).thenReturn(Optional.of(settings))
+        whenever(modalEvent.getValue("reason")).thenReturn(reasonValue)
+        whenever(reasonValue.asString).thenReturn("Spamming")
+        whenever(modalEvent.deferReply(true)).thenReturn(replyAction)
+        whenever(guildWarnPointsService.addWarnPoint(eq(99L), eq(1L), eq(2), eq(12L), eq("Spamming"), any()))
+            .thenReturn(warnPoint)
+        whenever(guildWarnPointsService.getActivePointsCount(1L, 99L)).thenReturn(2)
+        whenever(guildWarnPointsService.getActivePointsTotal(1L, 99L)).thenReturn(3)
+        whenever(guildWarnPointsService.getActiveWarnings(1L, 99L)).thenReturn(listOf(warnPoint))
+        whenever(guild.getMemberById(12L)).thenReturn(member)
+        whenever(announceChannel.sendMessage(any<String>())).thenReturn(messageCreateAction)
+        doAnswer { (consumer: Consumer<InteractionHook>) ->
+            consumer.accept(hook)
+            null
+        }.whenever(replyAction).queue(any())
+        whenever(targetUser.openPrivateChannel()).thenReturn(openPrivateChannelAction)
+        doAnswer { invocation ->
+            invocation.component1<Consumer<PrivateChannel>>().accept(privateChannel)
+            null
+        }.whenever(openPrivateChannelAction).queue(any(), any())
+        whenever(privateChannel.sendMessageEmbeds(any<MessageEmbed>())).thenReturn(messageCreateAction)
+        doAnswer { invocation ->
+            invocation.component2<Consumer<Throwable>>().accept(IllegalStateException("DMs disabled"))
+            null
+        }.whenever(messageCreateAction).queue(any(), any())
+        whenever(hook.sendMessage(any<String>())).thenReturn(followupAction)
+        whenever(followupAction.setEphemeral(true)).thenReturn(followupAction)
+
+        command.onModalInteraction(modalEvent)
+
+        verify(announceChannel).sendMessage(messageCaptor.capture())
+        kotlin.test.assertEquals(true, messageCaptor.firstValue.contains("@everyone"))
+        kotlin.test.assertEquals(true, messageCaptor.firstValue.contains("has reached the limit of points"))
+        kotlin.test.assertEquals(true, messageCaptor.firstValue.contains("2 point(s) added by ModeratorUser"))
+        kotlin.test.assertEquals(true, messageCaptor.firstValue.contains("Reason: Spamming"))
+    }
+
+    @Test
+    fun `modal submission does not announce summary based on warning count alone`() {
+        val settings = GuildWarnPointsSettings(
+            guildId = 1L,
+            maxPointsPerReason = 10,
+            announcePointsSummaryLimit = 3,
+            announceChannelId = 1L,
+            overrideWarnCommand = false
+        )
+        val warnPoint = GuildWarnPoint(
+            userId = 99L,
+            guildId = 1L,
+            points = 2,
+            creatorId = 12L,
+            reason = "Spamming",
+            expireDate = OffsetDateTime.now().plusDays(3)
+        )
+
+        stubModalContext(modalId = "addwarnpoints_reason:99:2:3:0")
+        whenever(modalEvent.jda).thenReturn(jda)
+        whenever(member.guild).thenReturn(guild)
+        whenever(member.idLong).thenReturn(12L)
+        whenever(member.user).thenReturn(moderatorUser)
+        whenever(moderatorUser.name).thenReturn("ModeratorUser")
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(guild.name).thenReturn("Guild")
+        whenever(targetMember.idLong).thenReturn(99L)
+        whenever(targetMember.guild).thenReturn(guild)
+        whenever(targetMember.user).thenReturn(targetUser)
+        whenever(targetMember.nickname).thenReturn(null)
+        whenever(targetUser.name).thenReturn("TargetUser")
+        whenever(targetUser.idLong).thenReturn(99L)
+        whenever(jda.registeredListeners).thenReturn(listOf(guildLogger))
+        whenever(jda.getTextChannelById(1L)).thenReturn(announceChannel)
+        whenever(guildWarnPointsSettingsRepository.findById(1L)).thenReturn(Optional.of(settings))
+        whenever(modalEvent.getValue("reason")).thenReturn(reasonValue)
+        whenever(reasonValue.asString).thenReturn("Spamming")
+        whenever(modalEvent.deferReply(true)).thenReturn(replyAction)
+        whenever(guildWarnPointsService.addWarnPoint(eq(99L), eq(1L), eq(2), eq(12L), eq("Spamming"), any()))
+            .thenReturn(warnPoint)
+        whenever(guildWarnPointsService.getActivePointsCount(1L, 99L)).thenReturn(3)
+        whenever(guildWarnPointsService.getActivePointsTotal(1L, 99L)).thenReturn(2)
+        doAnswer { (consumer: Consumer<InteractionHook>) ->
+            consumer.accept(hook)
+            null
+        }.whenever(replyAction).queue(any())
+        whenever(targetUser.openPrivateChannel()).thenReturn(openPrivateChannelAction)
+        doAnswer { invocation ->
+            invocation.component1<Consumer<PrivateChannel>>().accept(privateChannel)
+            null
+        }.whenever(openPrivateChannelAction).queue(any(), any())
+        whenever(privateChannel.sendMessageEmbeds(any<MessageEmbed>())).thenReturn(messageCreateAction)
+        doAnswer { invocation ->
+            invocation.component2<Consumer<Throwable>>().accept(IllegalStateException("DMs disabled"))
+            null
+        }.whenever(messageCreateAction).queue(any(), any())
+        whenever(hook.sendMessage(any<String>())).thenReturn(followupAction)
+        whenever(followupAction.setEphemeral(true)).thenReturn(followupAction)
+
+        command.onModalInteraction(modalEvent)
+
+        verify(announceChannel, never()).sendMessage(any<String>())
+    }
+
     private fun stubSlashCommand(action: Int) {
         whenever(slashEvent.name).thenReturn("addwarnpoints")
         whenever(slashEvent.member).thenReturn(member)
@@ -570,6 +708,7 @@ class AddWarnPointsCommandTest {
         whenever(guildWarnPointsService.addWarnPoint(eq(99L), eq(1L), eq(2), eq(12L), eq("Spamming"), any()))
             .thenReturn(warnPoint)
         whenever(guildWarnPointsService.getActivePointsCount(1L, 99L)).thenReturn(1)
+        whenever(guildWarnPointsService.getActivePointsTotal(1L, 99L)).thenReturn(2)
         whenever(guild.getMemberById(99L)).thenReturn(if (targetStillPresent) targetMember else null)
         if (muteRoleConfigured) {
             whenever(muteRoleCommandAndEventsListener.getMuteRole(guild)).thenReturn(muteRole)

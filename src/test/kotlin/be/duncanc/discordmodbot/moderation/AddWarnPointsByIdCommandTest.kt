@@ -196,7 +196,7 @@ class AddWarnPointsByIdCommandTest {
                 any<OffsetDateTime>()
             )
         ).thenReturn(warnPoint)
-        whenever(guildWarnPointsService.getActivePointsCount(1L, 99L)).thenReturn(1)
+        whenever(guildWarnPointsService.getActivePointsTotal(1L, 99L)).thenReturn(2)
         whenever(modalEvent.deferReply(true)).thenReturn(replyAction)
         whenever(interactionHook.sendMessage(any<String>())).thenReturn(followupAction)
         doQueue(replyAction)
@@ -246,7 +246,7 @@ The user was not warned by DM, please do so manually when they rejoin."""
                 any<OffsetDateTime>()
             )
         ).thenReturn(warnPoint)
-        whenever(guildWarnPointsService.getActivePointsCount(1L, 99L)).thenReturn(0)
+        whenever(guildWarnPointsService.getActivePointsTotal(1L, 99L)).thenReturn(0)
         whenever(modalEvent.deferReply(true)).thenReturn(replyAction)
         whenever(interactionHook.sendMessage(any<String>())).thenReturn(followupAction)
         doQueue(replyAction)
@@ -268,6 +268,108 @@ The user was not warned by DM, please do so manually when they rejoin."""
             """Added warn points to <@99>.
 The user was not warned by DM, please do so manually when they rejoin."""
         )
+    }
+
+    @Test
+    fun `modal submission announces summary when active points reach the limit`() {
+        val messageCaptor = argumentCaptor<String>()
+        val warnPoint = warnPoint()
+        val settings = GuildWarnPointsSettings(
+            guildId = 1L,
+            maxPointsPerReason = 10,
+            announcePointsSummaryLimit = 3,
+            announceChannelId = 1L,
+            overrideWarnCommand = false
+        )
+        val messageCreateAction = mock<net.dv8tion.jda.api.requests.restaction.MessageCreateAction>()
+
+        whenever(modalEvent.modalId).thenReturn("addwarnpointsbyid_reason:99:2:3:0")
+        whenever(modalEvent.member).thenReturn(member)
+        whenever(modalEvent.guild).thenReturn(guild)
+        whenever(modalEvent.jda).thenReturn(jda)
+        whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
+        whenever(member.idLong).thenReturn(12L)
+        whenever(member.user).thenReturn(moderatorUser)
+        whenever(moderatorUser.name).thenReturn("ModeratorUser")
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(guild.getMemberById(99L)).thenReturn(null)
+        whenever(guild.getMemberById(12L)).thenReturn(member)
+        whenever(member.nickname).thenReturn(null)
+        whenever(modalEvent.getValue("reason")).thenReturn(reasonValue)
+        whenever(reasonValue.asString).thenReturn("Spamming")
+        whenever(guildWarnPointsSettingsRepository.findById(1L)).thenReturn(Optional.of(settings))
+        whenever(jda.getTextChannelById(1L)).thenReturn(textChannel)
+        whenever(guild.getTextChannelById(1L)).thenReturn(textChannel)
+        whenever(
+            guildWarnPointsService.addWarnPoint(
+                eq(99L),
+                eq(1L),
+                eq(2),
+                eq(12L),
+                eq("Spamming"),
+                any<OffsetDateTime>()
+            )
+        ).thenReturn(warnPoint)
+        whenever(guildWarnPointsService.getActivePointsTotal(1L, 99L)).thenReturn(3)
+        whenever(guildWarnPointsService.getActiveWarnings(1L, 99L)).thenReturn(listOf(warnPoint))
+        whenever(textChannel.sendMessage(any<String>())).thenReturn(messageCreateAction)
+        whenever(modalEvent.deferReply(true)).thenReturn(replyAction)
+        whenever(interactionHook.sendMessage(any<String>())).thenReturn(followupAction)
+        doQueue(replyAction)
+
+        command.onModalInteraction(modalEvent)
+
+        verify(textChannel).sendMessage(messageCaptor.capture())
+        kotlin.test.assertEquals(true, messageCaptor.firstValue.contains("@everyone"))
+        kotlin.test.assertEquals(true, messageCaptor.firstValue.contains("has reached the limit of points"))
+        kotlin.test.assertEquals(true, messageCaptor.firstValue.contains("2 point(s) added by ModeratorUser"))
+        kotlin.test.assertEquals(true, messageCaptor.firstValue.contains("Reason: Spamming"))
+    }
+
+    @Test
+    fun `modal submission does not announce summary based on warning count alone`() {
+        val warnPoint = warnPoint()
+        val settings = GuildWarnPointsSettings(
+            guildId = 1L,
+            maxPointsPerReason = 10,
+            announcePointsSummaryLimit = 3,
+            announceChannelId = 1L,
+            overrideWarnCommand = false
+        )
+
+        whenever(modalEvent.modalId).thenReturn("addwarnpointsbyid_reason:99:2:3:0")
+        whenever(modalEvent.member).thenReturn(member)
+        whenever(modalEvent.guild).thenReturn(guild)
+        whenever(modalEvent.jda).thenReturn(jda)
+        whenever(member.hasPermission(Permission.MANAGE_ROLES)).thenReturn(true)
+        whenever(member.idLong).thenReturn(12L)
+        whenever(member.user).thenReturn(moderatorUser)
+        whenever(moderatorUser.name).thenReturn("ModeratorUser")
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(guild.getMemberById(99L)).thenReturn(null)
+        whenever(modalEvent.getValue("reason")).thenReturn(reasonValue)
+        whenever(reasonValue.asString).thenReturn("Spamming")
+        whenever(guildWarnPointsSettingsRepository.findById(1L)).thenReturn(Optional.of(settings))
+        whenever(jda.getTextChannelById(1L)).thenReturn(textChannel)
+        whenever(
+            guildWarnPointsService.addWarnPoint(
+                eq(99L),
+                eq(1L),
+                eq(2),
+                eq(12L),
+                eq("Spamming"),
+                any<OffsetDateTime>()
+            )
+        ).thenReturn(warnPoint)
+        whenever(guildWarnPointsService.getActivePointsCount(1L, 99L)).thenReturn(3)
+        whenever(guildWarnPointsService.getActivePointsTotal(1L, 99L)).thenReturn(2)
+        whenever(modalEvent.deferReply(true)).thenReturn(replyAction)
+        whenever(interactionHook.sendMessage(any<String>())).thenReturn(followupAction)
+        doQueue(replyAction)
+
+        command.onModalInteraction(modalEvent)
+
+        verify(textChannel, never()).sendMessage(any<String>())
     }
 
     @Test
@@ -597,7 +699,7 @@ The user was not warned by DM, please do so manually when they rejoin.""",
                 any<OffsetDateTime>()
             )
         ).thenReturn(warnPoint)
-        whenever(guildWarnPointsService.getActivePointsCount(1L, 99L)).thenReturn(1)
+        whenever(guildWarnPointsService.getActivePointsTotal(1L, 99L)).thenReturn(2)
         whenever(modalEvent.deferReply(true)).thenReturn(replyAction)
         whenever(interactionHook.sendMessage(any<String>())).thenReturn(followupAction)
         whenever(muteRoleCommandAndEventsListener.getMuteRole(guild)).thenReturn(muteRole)
