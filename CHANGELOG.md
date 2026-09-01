@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.18.2](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.18.1...v2.18.2) (2026-09-01)
+
+
+### Bug Fixes
+
+* **moderation:** trigger points summary announcement on total active points instead of warning count ([#800](https://github.com/DuncanCasteleyn/DiscordModBot/issues/800)) ([5342a60](https://github.com/DuncanCasteleyn/DiscordModBot/commit/5342a60b48706fd5727d336e8dc6be6d8709ef7a))
+
 ## [2.18.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.18.0...v2.18.1) (2026-08-31)
 
 
