@@ -484,9 +484,9 @@ class AddWarnPointsCommand(
         user: User,
         guild: net.dv8tion.jda.api.entities.Guild
     ) {
-        val points = guildWarnPointsService.getActivePointsCount(guild.idLong, user.idLong)
+        val totalPoints = guildWarnPointsService.getActivePointsTotal(guild.idLong, user.idLong)
 
-        if (points >= guildWarnPointsSettings.announcePointsSummaryLimit) {
+        if (totalPoints >= guildWarnPointsSettings.announcePointsSummaryLimit) {
             val messageBuilder = StringBuilder().append("@everyone ")
                 .append(user.asMention)
                 .append(" has reached the limit of points set by your server administrator.\n\n")
