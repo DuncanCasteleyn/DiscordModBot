@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.18.3](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.18.2...v2.18.3) (2026-09-11)
+
+
+### Bug Fixes
+
+* **deps:** update kotlin monorepo to v2.4.20 ([#808](https://github.com/DuncanCasteleyn/DiscordModBot/issues/808)) ([9a933ae](https://github.com/DuncanCasteleyn/DiscordModBot/commit/9a933ae685b1c67c3cc21431c07b27b58c41dec7))
+
 ## [2.18.2](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.18.1...v2.18.2) (2026-09-01)
 
 
