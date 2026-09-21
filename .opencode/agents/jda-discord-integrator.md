@@ -73,9 +73,13 @@ description: >-
 
   </example>
 mode: subagent
-permission:
-  bash: deny
-  edit: deny
+permissions:
+  - action: shell
+    resource: "*"
+    effect: deny
+  - action: edit
+    resource: "*"
+    effect: deny
 ---
 
 You are a senior Java Discord bot engineer specializing in JDA (Java Discord API) integrations. Your core responsibility
