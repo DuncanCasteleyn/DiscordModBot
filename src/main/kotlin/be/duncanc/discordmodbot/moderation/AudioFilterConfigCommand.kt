@@ -84,7 +84,8 @@ class AudioFilterConfigCommand(
         val message = if (timeoutMinutes == null) {
             "Audio file filter enabled. Posted audio files will be deleted."
         } else {
-            "Audio file filter enabled. Posted audio files will be deleted and the poster will be timed out for $timeoutMinutes minutes."
+            "Audio file filter enabled. Posted audio files will be deleted and the poster will be timed out for " +
+                "$timeoutMinutes minutes."
         }
         event.reply(message).setEphemeral(true).queue()
     }

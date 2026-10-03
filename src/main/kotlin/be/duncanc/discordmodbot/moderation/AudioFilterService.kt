@@ -39,8 +39,11 @@ class AudioFilterService(
 
         private const val WARNING_DELETE_DELAY_SECONDS = 30L
 
-        private val AUDIO_EXTENSIONS =
-            setOf("mp3", "wav", "ogg", "oga", "flac", "m4a", "m4b", "aac", "wma", "opus", "mid", "midi", "amr", "aiff", "aif")
+        private val AUDIO_EXTENSIONS = setOf(
+            "mp3", "wav", "ogg", "oga", "flac",
+            "m4a", "m4b", "aac", "wma", "opus",
+            "mid", "midi", "amr", "aiff", "aif"
+        )
 
         const val MAX_TIMEOUT_MINUTES = 40320L // 28 days, the maximum Discord allows
     }
