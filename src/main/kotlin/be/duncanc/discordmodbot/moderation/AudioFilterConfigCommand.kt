@@ -67,10 +67,10 @@ class AudioFilterConfigCommand(
                 .addSubcommands(
                     SubcommandData(SUBCOMMAND_SHOW, "Show the current audio file filter settings"),
                     SubcommandData(SUBCOMMAND_ENABLE, "Enable the audio file filter for this server")
-                        .addOptions(timeoutOption("Optional timeout in minutes applied when a member posts audio", false)),
+                        .addOptions(timeoutOption("Optional timeout in minutes applied when a member posts audio")),
                     SubcommandData(SUBCOMMAND_DISABLE, "Disable the audio file filter for this server"),
                     SubcommandData(SUBCOMMAND_TIMEOUT, "Change or clear the timeout for posting audio")
-                        .addOptions(timeoutOption("Timeout in minutes, omit to remove the timeout", false))
+                        .addOptions(timeoutOption("Timeout in minutes, omit to remove the timeout"))
                 )
                 .setContexts(InteractionContextType.GUILD)
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.ADMINISTRATOR))
@@ -122,8 +122,8 @@ class AudioFilterConfigCommand(
         event.reply(message).setEphemeral(true).queue()
     }
 
-    private fun timeoutOption(description: String, required: Boolean): OptionData {
-        return OptionData(OptionType.INTEGER, OPTION_TIMEOUT, description, required)
+    private fun timeoutOption(description: String): OptionData {
+        return OptionData(OptionType.INTEGER, OPTION_TIMEOUT, description, false)
             .setMinValue(1)
             .setMaxValue(MAX_TIMEOUT_MINUTES)
     }
