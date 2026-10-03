@@ -102,7 +102,12 @@ class AudioFilterService(
         event.message.delete().reason(AUDIO_DELETE_REASON).queue(
             {
                 val channelMention = event.channel.asMention
-                postWarning(event.channel, member)
+                try {
+                    postWarning(event.channel, member)
+                } catch (e: Exception) {
+                    LOG.warn("Failed to post audio filter warning in guild {}", guild.id, e)
+                }
+
                 if (timeoutMinutes == null) {
                     logAudioDeletion(guild, member, channelMention, fileNames, TIMEOUT_NOT_APPLIED)
                 } else {
