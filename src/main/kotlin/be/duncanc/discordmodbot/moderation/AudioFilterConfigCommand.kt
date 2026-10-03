@@ -70,7 +70,7 @@ class AudioFilterConfigCommand(
                         .addOptions(timeoutOption("Optional timeout in minutes applied when a member posts audio", false)),
                     SubcommandData(SUBCOMMAND_DISABLE, "Disable the audio file filter for this server"),
                     SubcommandData(SUBCOMMAND_TIMEOUT, "Change or clear the timeout for posting audio")
-                        .addOptions(timeoutOption("Timeout in minutes, omit to remove the timeout", true))
+                        .addOptions(timeoutOption("Timeout in minutes, omit to remove the timeout", false))
                 )
                 .setContexts(InteractionContextType.GUILD)
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.ADMINISTRATOR))

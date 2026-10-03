@@ -187,7 +187,7 @@ class AudioFilterConfigCommandTest {
         assertEquals(MAX_TIMEOUT_MINUTES, enableOption.maxValue)
 
         val timeoutOptionData = commandData.subcommands.single { it.name == "timeout" }.options.single()
-        assertEquals(true, timeoutOptionData.isRequired)
+        assertEquals(false, timeoutOptionData.isRequired)
     }
 
     private fun captureReply(): String {
