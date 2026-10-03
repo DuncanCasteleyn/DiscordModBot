@@ -32,6 +32,11 @@ class AudioFilterService(
         private const val AUDIO_DELETE_REASON = "Posted a blocked audio file"
         private const val AUDIO_TIMEOUT_REASON = "Posted a blocked audio file"
 
+        private const val TIMEOUT_NOT_APPLIED = "None"
+        private const val TIMEOUT_SKIPPED = "Skipped: missing permission"
+        private const val TIMEOUT_FAILED = "Failed"
+        private const val TIMEOUT_APPLIED = "Applied (%d minutes)"
+
         private const val WARNING_DELETE_DELAY_SECONDS = 30L
 
         private val AUDIO_EXTENSIONS =
@@ -89,12 +94,19 @@ class AudioFilterService(
         }
 
         val fileNames = audioAttachments.joinToString(", ") { it.fileName }
+        val timeoutMinutes = settings.timeoutMinutes
 
         event.message.delete().reason(AUDIO_DELETE_REASON).queue(
             {
-                logAudioDeletion(guild, member, event.channel.asMention, fileNames, settings.timeoutMinutes)
-                applyTimeout(guild, member, settings.timeoutMinutes)
+                val channelMention = event.channel.asMention
                 postWarning(event.channel, member)
+                if (timeoutMinutes == null) {
+                    logAudioDeletion(guild, member, channelMention, fileNames, TIMEOUT_NOT_APPLIED)
+                } else {
+                    applyTimeout(guild, member, timeoutMinutes) { timeoutStatus ->
+                        logAudioDeletion(guild, member, channelMention, fileNames, timeoutStatus)
+                    }
+                }
             },
             { throwable ->
                 LOG.warn("Failed to delete message with audio from {} in guild {}", member.id, guild.id, throwable)
@@ -115,20 +127,23 @@ class AudioFilterService(
         }
     }
 
-    private fun applyTimeout(guild: Guild, member: Member, timeoutMinutes: Long?) {
-        if (timeoutMinutes == null) {
-            return
-        }
-
+    private fun applyTimeout(guild: Guild, member: Member, timeoutMinutes: Long, onResolved: (String) -> Unit) {
         val selfMember = guild.selfMember
         if (!selfMember.hasPermission(Permission.MODERATE_MEMBERS) || !selfMember.canInteract(member)) {
             LOG.warn("Unable to timeout {} in guild {} due to missing permissions or role hierarchy", member.id, guild.id)
+            onResolved(TIMEOUT_SKIPPED)
             return
         }
 
         member.timeoutFor(Duration.ofMinutes(timeoutMinutes))
             .reason(AUDIO_TIMEOUT_REASON)
-            .queue()
+            .queue(
+                { onResolved(TIMEOUT_APPLIED.format(timeoutMinutes)) },
+                { throwable ->
+                    LOG.warn("Failed to timeout {} in guild {}", member.id, guild.id, throwable)
+                    onResolved(TIMEOUT_FAILED)
+                }
+            )
     }
 
     private fun logAudioDeletion(
@@ -136,7 +151,7 @@ class AudioFilterService(
         member: Member,
         channelMention: String,
         fileNames: String,
-        timeoutMinutes: Long?
+        timeoutStatus: String
     ) {
         val logEmbed = EmbedBuilder()
             .setColor(Color.ORANGE)
@@ -145,7 +160,7 @@ class AudioFilterService(
             .addField("Channel", channelMention, true)
             .addField("File(s)", fileNames, false)
             .addField("Reason", AUDIO_DELETE_REASON, false)
-            .addField("Timeout", timeoutMinutes?.let { "$it minutes" } ?: "None", true)
+            .addField("Timeout", timeoutStatus, true)
 
         guildLogger.log(logEmbed, member.user, guild, actionType = GuildLogger.LogTypeAction.MODERATOR)
     }

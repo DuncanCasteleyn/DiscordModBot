@@ -3,6 +3,7 @@ package be.duncanc.discordmodbot.moderation
 import be.duncanc.discordmodbot.logging.GuildLogger
 import be.duncanc.discordmodbot.moderation.persistence.AudioFilterSettings
 import be.duncanc.discordmodbot.moderation.persistence.AudioFilterSettingsRepository
+import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
@@ -189,14 +190,7 @@ class AudioFilterServiceTest {
         verify(deleteAction).reason("Posted a blocked audio file")
         verify(member).timeoutFor(Duration.ofMinutes(60L))
         verify(timeoutAction).reason("Posted a blocked audio file")
-        verify(guildLogger).log(
-            any(),
-            eq(user),
-            eq(guild),
-            isNull(),
-            eq(GuildLogger.LogTypeAction.MODERATOR),
-            isNull()
-        )
+        assertEquals("Applied (60 minutes)", captureGuildLogTimeoutField())
         val embedCaptor = argumentCaptor<MessageEmbed>()
         verify(channelUnion).sendMessageEmbeds(embedCaptor.capture())
         val embed = embedCaptor.firstValue
@@ -244,14 +238,39 @@ class AudioFilterServiceTest {
 
         verify(message).delete()
         verify(member, never()).timeoutFor(any<Duration>())
-        verify(guildLogger).log(
-            any(),
-            eq(user),
-            eq(guild),
-            isNull(),
-            eq(GuildLogger.LogTypeAction.MODERATOR),
-            isNull()
-        )
+        assertEquals("None", captureGuildLogTimeoutField())
+    }
+
+    @Test
+    fun `handleMessage logs skipped timeout when the bot cannot timeout members`() {
+        stubEnabledFilterMessage(AudioFilterSettings(1L, 60L))
+        stubDeletableMember()
+        whenever(attachment.contentType).thenReturn("audio/mpeg")
+        stubSuccessfulDeletion()
+
+        service.handleMessage(event)
+
+        verify(member, never()).timeoutFor(any<Duration>())
+        assertEquals("Skipped: missing permission", captureGuildLogTimeoutField())
+    }
+
+    @Test
+    fun `handleMessage logs failed timeout when Discord rejects the timeout`() {
+        stubEnabledFilterMessage(AudioFilterSettings(1L, 60L))
+        stubDeletableMember()
+        whenever(attachment.contentType).thenReturn("audio/mpeg")
+        stubSuccessfulDeletion()
+        whenever(selfMember.hasPermission(Permission.MODERATE_MEMBERS)).thenReturn(true)
+        whenever(member.timeoutFor(Duration.ofMinutes(60L))).thenReturn(timeoutAction)
+        whenever(timeoutAction.reason(any())).thenReturn(timeoutAction)
+        doAnswer { invocation ->
+            invocation.component2<Consumer<Throwable>>().accept(RuntimeException("discord unavailable"))
+            null
+        }.whenever(timeoutAction).queue(any(), any())
+
+        service.handleMessage(event)
+
+        assertEquals("Failed", captureGuildLogTimeoutField())
     }
 
     @Test
@@ -314,6 +333,19 @@ class AudioFilterServiceTest {
         verify(audioFilterSettingsRepository).deleteById(1L)
     }
 
+    private fun captureGuildLogTimeoutField(): String {
+        val logEmbedCaptor = argumentCaptor<EmbedBuilder>()
+        verify(guildLogger).log(
+            logEmbedCaptor.capture(),
+            eq(user),
+            eq(guild),
+            isNull(),
+            eq(GuildLogger.LogTypeAction.MODERATOR),
+            isNull()
+        )
+        return logEmbedCaptor.firstValue.build().fields.single { it.name == "Timeout" }.value.orEmpty()
+    }
+
     private val enabledSettings: AudioFilterSettings
         get() = AudioFilterSettings(1L, null)
 
@@ -367,5 +399,9 @@ class AudioFilterServiceTest {
         whenever(selfMember.hasPermission(Permission.MODERATE_MEMBERS)).thenReturn(true)
         whenever(member.timeoutFor(duration)).thenReturn(timeoutAction)
         whenever(timeoutAction.reason(any())).thenReturn(timeoutAction)
+        doAnswer { invocation ->
+            invocation.component1<Consumer<Void?>>().accept(null)
+            null
+        }.whenever(timeoutAction).queue(any(), any())
     }
 }
