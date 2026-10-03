@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.19.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.18.2...v2.19.0) (2026-10-03)
+
+
+### Features
+
+* **moderation:** add audio file filter with optional timeout ([#806](https://github.com/DuncanCasteleyn/DiscordModBot/issues/806)) ([d9e4d12](https://github.com/DuncanCasteleyn/DiscordModBot/commit/d9e4d127ad844204897197375069709744b0fe93))
+
+
+### Bug Fixes
+
+* **deps:** update dependency net.dv8tion:jda to v6.7.0 ([#807](https://github.com/DuncanCasteleyn/DiscordModBot/issues/807)) ([2ca8dee](https://github.com/DuncanCasteleyn/DiscordModBot/commit/2ca8deea6c9fe6a6430dad29ff926c08f00c1e1c))
+* **deps:** update dependency org.mockito.kotlin:mockito-kotlin to v6.4.0 ([#823](https://github.com/DuncanCasteleyn/DiscordModBot/issues/823)) ([cf17f9d](https://github.com/DuncanCasteleyn/DiscordModBot/commit/cf17f9d73b2859a97a3db7fc7d2c916cc5b5ae6a))
+* **deps:** update kotlin monorepo to v2.4.20 ([#808](https://github.com/DuncanCasteleyn/DiscordModBot/issues/808)) ([9a933ae](https://github.com/DuncanCasteleyn/DiscordModBot/commit/9a933ae685b1c67c3cc21431c07b27b58c41dec7))
+
 ## [2.18.2](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.18.1...v2.18.2) (2026-09-01)
 
 
