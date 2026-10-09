@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.19.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.19.0...v2.19.1) (2026-10-09)
+
+
+### Bug Fixes
+
+* **deps:** update plugin org.jetbrains.kotlin.kapt to v2.4.21 ([#842](https://github.com/DuncanCasteleyn/DiscordModBot/issues/842)) ([3cd2f28](https://github.com/DuncanCasteleyn/DiscordModBot/commit/3cd2f28bd16114097a248d0abc6976ca40ae9c7e))
+
 ## [2.19.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.18.2...v2.19.0) (2026-10-03)
 
 
