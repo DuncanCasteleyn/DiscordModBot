@@ -35,7 +35,7 @@ jobs:
           distribution: liberica
 
       - name: Run opencode
-        uses: anomalyco/opencode/github@026b106bc5d41b679ffc413264229c340871e4d3 # v2.0.28
+        uses: anomalyco/opencode/github@042d0832f5f3a73eaa039a58a7d565776f6d4290 # v2.0.29
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
           OPENCODE_CONFIG_CONTENT: |
