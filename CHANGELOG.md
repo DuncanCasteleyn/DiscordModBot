@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.19.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.19.0...v2.19.1) (2026-10-29)
+
+
+### Bug Fixes
+
+* **deps:** update dependency org.springframework.modulith:spring-modulith-bom to v2.1.2 ([#857](https://github.com/DuncanCasteleyn/DiscordModBot/issues/857)) ([d0a85f0](https://github.com/DuncanCasteleyn/DiscordModBot/commit/d0a85f061ef3e9b6a3a8b31d82df7e7bc867570c))
+* **deps:** update plugin org.jetbrains.kotlin.kapt to v2.4.21 ([#842](https://github.com/DuncanCasteleyn/DiscordModBot/issues/842)) ([3cd2f28](https://github.com/DuncanCasteleyn/DiscordModBot/commit/3cd2f28bd16114097a248d0abc6976ca40ae9c7e))
+* **deps:** update plugin org.springframework.boot to v4.1.2 ([#858](https://github.com/DuncanCasteleyn/DiscordModBot/issues/858)) ([425eb84](https://github.com/DuncanCasteleyn/DiscordModBot/commit/425eb84f67c06a8e20612bdc924a704cdd7d48d6))
+
 ## [2.19.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.18.2...v2.19.0) (2026-10-03)
 
 
