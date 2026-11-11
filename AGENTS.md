@@ -88,6 +88,12 @@ Repository guidance for coding agents working in `DiscordModBot`.
 - Reuse `GuildLogger` for moderation/audit logging.
 - Preserve user-visible wording unless intentionally changing behavior.
 
+### JDA sources
+
+- Source code: https://github.com/discord-jda/JDA — use when API behavior is unclear. Always check out the tag
+  matching `jdaVersion` in `gradle.properties` (e.g. `v6.7.0`); the API changes between versions.
+- Wiki: https://jda.wiki/ — guides for events, interactions, components, and entity usage.
+
 ## Testing Conventions
 
 - Tests use `@SpringBootTest(classes = [...])` with `@MockitoBean`/`@MockitoSpyBean` and
