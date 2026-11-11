@@ -19,6 +19,7 @@ import net.dv8tion.jda.api.interactions.commands.OptionMapping
 import net.dv8tion.jda.api.requests.restaction.interactions.MessageEditCallbackAction
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -42,6 +43,9 @@ class ReviewCommandTest {
 
     @Mock
     private lateinit var guildLogger: GuildLogger
+
+    @Mock
+    private lateinit var memberGateAttemptService: MemberGateAttemptService
 
     @Mock
     private lateinit var slashEvent: SlashCommandInteractionEvent
@@ -71,7 +75,13 @@ class ReviewCommandTest {
 
     @BeforeEach
     fun setUp() {
-        command = ReviewCommand(reviewManager, reviewSessionRegistry, reviewInterruptConfirmationRepository, guildLogger)
+        command = ReviewCommand(
+            reviewManager,
+            reviewSessionRegistry,
+            reviewInterruptConfirmationRepository,
+            guildLogger,
+            memberGateAttemptService
+        )
     }
 
     private fun pendingQuestion(guildId: Long, userId: Long, question: String, answer: String, queuedAt: Long): MemberGateQuestion {
@@ -852,6 +862,46 @@ class ReviewCommandTest {
         verify(buttonEvent).editMessage(messageCaptor.capture())
         assertTrue(messageCaptor.firstValue.contains("Applicant: <@30> (`30`)"))
         verify(reviewManager).clearPendingQuestion(1L, jda, 20L)
+    }
+
+    @Test
+    fun `review message shows the applicant gate attempt count`() {
+        stubSlashReviewStart()
+        stubModeratorName()
+
+        val session = ReviewSession(listOf(10L))
+        whenever(reviewManager.createSession(1L)).thenReturn(session)
+        whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(
+            pendingQuestion(guildId = 1L, userId = 10L, question = "Q1", answer = "A1", queuedAt = 10L)
+        )
+        stubApplicantPresent(10L, "<@10>")
+        whenever(memberGateAttemptService.getAttemptCount(10L)).thenReturn(3)
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        val messageCaptor = argumentCaptor<String>()
+        verify(slashEvent).reply(messageCaptor.capture())
+        assertTrue(messageCaptor.firstValue.contains("Gate attempts: 3"))
+    }
+
+    @Test
+    fun `review message omits the gate attempt count when no record exists`() {
+        stubSlashReviewStart()
+        stubModeratorName()
+
+        val session = ReviewSession(listOf(10L))
+        whenever(reviewManager.createSession(1L)).thenReturn(session)
+        whenever(reviewManager.getPendingQuestion(1L, 10L)).thenReturn(
+            pendingQuestion(guildId = 1L, userId = 10L, question = "Q1", answer = "A1", queuedAt = 10L)
+        )
+        stubApplicantPresent(10L, "<@10>")
+        whenever(memberGateAttemptService.getAttemptCount(10L)).thenReturn(null)
+
+        command.onSlashCommandInteraction(slashEvent)
+
+        val messageCaptor = argumentCaptor<String>()
+        verify(slashEvent).reply(messageCaptor.capture())
+        assertFalse(messageCaptor.firstValue.contains("Gate attempts"))
     }
 
     private fun verifyReviewLog(title: String, fieldName: String, fieldValue: String) {

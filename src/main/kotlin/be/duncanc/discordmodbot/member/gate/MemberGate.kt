@@ -23,6 +23,7 @@ class MemberGate(
     private val memberGateService: MemberGateService,
     private val welcomeMessageService: WelcomeMessageService,
     private val reviewManager: ReviewManager,
+    private val memberGateAttemptService: MemberGateAttemptService,
     @Lazy
     private val jda: JDA
 ) : ListenerAdapter() {
@@ -35,9 +36,13 @@ class MemberGate(
      */
     override fun onGuildMemberRoleAdd(event: GuildMemberRoleAddEvent) {
         val guild = event.guild
-        val welcomeMessages = ArrayList(welcomeMessageService.getWelcomeMessages(guild.idLong))
         val memberRole = memberGateService.getMemberRole(guild.idLong, guild.jda)
-        if (welcomeMessages.isEmpty() || event.user.isBot || memberRole !in event.roles) {
+        if (event.user.isBot || memberRole !in event.roles) {
+            return
+        }
+        memberGateAttemptService.clearAttempts(event.user.idLong)
+        val welcomeMessages = ArrayList(welcomeMessageService.getWelcomeMessages(guild.idLong))
+        if (welcomeMessages.isEmpty()) {
             return
         }
         val welcomeMessage = welcomeMessages[random.nextInt(welcomeMessages.size)].getWelcomeMessage(event.user)
