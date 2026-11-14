@@ -35,7 +35,8 @@ class ReviewCommand(
     private val reviewManager: ReviewManager,
     private val reviewSessionRegistry: ReviewSessionRegistry,
     private val reviewInterruptConfirmationRepository: ReviewInterruptConfirmationRepository,
-    private val guildLogger: GuildLogger
+    private val guildLogger: GuildLogger,
+    private val memberGateAttemptService: MemberGateAttemptService
 ) : ListenerAdapter(), SlashCommand {
     companion object {
         private const val COMMAND = "review"
@@ -416,9 +417,13 @@ class ReviewCommand(
             "Continuing with the next pending applicant.\n\n"
         }
 
+        val attemptLine = memberGateAttemptService.getAttemptCount(question.userId)
+            ?.let { "Gate attempts: $it\n" } ?: ""
+
         return prefix +
                 oldestLine +
                 "Applicant: $applicant (`${question.userId}`)\n" +
+                attemptLine +
                 MarkdownUtil.codeblock("text", "${question.question}\n${question.answer}") +
                 "\nChoose `Approve`, `Reject`, or `Manual action`."
     }

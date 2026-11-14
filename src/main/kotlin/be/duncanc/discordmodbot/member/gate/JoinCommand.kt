@@ -30,7 +30,8 @@ private const val TEXT_ANSWER_ID = "join-answer"
 class JoinCommand(
     private val memberGateService: MemberGateService,
     private val reviewManager: ReviewManager,
-    private val guildLogger: GuildLogger
+    private val guildLogger: GuildLogger,
+    private val memberGateAttemptService: MemberGateAttemptService
 ) : ListenerAdapter(), SlashCommand {
 
     companion object {
@@ -188,6 +189,7 @@ class JoinCommand(
                 reviewManager.rememberInformPrompt(member.guild.idLong, member.user.idLong, message.idLong)
             }
         }
+        memberGateAttemptService.recordAttempt(member.idLong)
         reviewManager.savePendingQuestion(member, question, answer)
     }
 
