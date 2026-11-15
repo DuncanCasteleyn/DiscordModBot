@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.21.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.20.0...v2.21.0) (2026-11-15)
+
+
+### Features
+
+* **logging:** log voice channel activity ([#876](https://github.com/DuncanCasteleyn/DiscordModBot/issues/876)) ([3bf4ee5](https://github.com/DuncanCasteleyn/DiscordModBot/commit/3bf4ee5d41c56414559e007f47ce3de8584d0df4))
+
 ## [2.20.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.19.0...v2.20.0) (2026-11-14)
 
 
