@@ -37,6 +37,7 @@ class LogSettingsCommand(
         private const val SUBCOMMAND_TOGGLE_MEMBER_LEAVES = "toggle-member-leaves"
         private const val SUBCOMMAND_TOGGLE_MEMBER_BANS = "toggle-member-bans"
         private const val SUBCOMMAND_TOGGLE_MEMBER_UNBANS = "toggle-member-unbans"
+        private const val SUBCOMMAND_TOGGLE_VOICE_ACTIVITY = "toggle-voice-activity"
 
         private const val OPTION_CHANNEL = "channel"
     }
@@ -119,6 +120,12 @@ class LogSettingsCommand(
                 replyToggleStatus(event, "Member unban logging", settings.logMemberRemoveBan)
             }
 
+            SUBCOMMAND_TOGGLE_VOICE_ACTIVITY -> {
+                settings.logVoiceActivity = !settings.logVoiceActivity
+                loggingSettingsRepository.save(settings)
+                replyToggleStatus(event, "Voice activity logging", settings.logVoiceActivity)
+            }
+
             else -> event.reply("Please choose a valid /logsettings subcommand.").setEphemeral(true).queue()
         }
     }
@@ -137,7 +144,8 @@ class LogSettingsCommand(
                     SubcommandData(SUBCOMMAND_TOGGLE_MEMBER_JOINS, "Enable or disable member join logging"),
                     SubcommandData(SUBCOMMAND_TOGGLE_MEMBER_LEAVES, "Enable or disable member leave logging"),
                     SubcommandData(SUBCOMMAND_TOGGLE_MEMBER_BANS, "Enable or disable member ban logging"),
-                    SubcommandData(SUBCOMMAND_TOGGLE_MEMBER_UNBANS, "Enable or disable member unban logging")
+                    SubcommandData(SUBCOMMAND_TOGGLE_MEMBER_UNBANS, "Enable or disable member unban logging"),
+                    SubcommandData(SUBCOMMAND_TOGGLE_VOICE_ACTIVITY, "Enable or disable voice channel activity logging")
                 )
                 .setContexts(InteractionContextType.GUILD)
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_CHANNEL))
@@ -162,6 +170,7 @@ class LogSettingsCommand(
             appendLine("- Member leaves: ${formatStatus(settings.logMemberLeave)}")
             appendLine("- Member bans: ${formatStatus(settings.logMemberBan)}")
             appendLine("- Member unbans: ${formatStatus(settings.logMemberRemoveBan)}")
+            appendLine("- Voice activity: ${formatStatus(settings.logVoiceActivity)}")
         }
 
         event.reply(message).setEphemeral(true).queue()

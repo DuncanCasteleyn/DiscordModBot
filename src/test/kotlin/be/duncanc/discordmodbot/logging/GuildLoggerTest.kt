@@ -7,11 +7,15 @@ import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.audit.AuditLogEntry
 import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.entities.SelfMember
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.entities.channel.unions.AudioChannelUnion
 import net.dv8tion.jda.api.entities.channel.unions.GuildMessageChannelUnion
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
+import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent
 import net.dv8tion.jda.api.events.message.MessageBulkDeleteEvent
 import net.dv8tion.jda.api.events.message.MessageDeleteEvent
 import net.dv8tion.jda.api.requests.restaction.CacheRestAction
@@ -32,6 +36,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.timeout
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import java.util.Optional
 import java.util.function.Consumer
@@ -88,6 +93,18 @@ class GuildLoggerTest {
 
     @Mock
     private lateinit var sendAction: MessageCreateAction
+
+    @Mock
+    private lateinit var voiceEvent: GuildVoiceUpdateEvent
+
+    @Mock
+    private lateinit var member: Member
+
+    @Mock
+    private lateinit var joinedChannel: AudioChannelUnion
+
+    @Mock
+    private lateinit var leftChannel: AudioChannelUnion
 
     @Test
     fun `canSendModeratorLog returns false when no logging settings exist`() {
@@ -289,6 +306,83 @@ class GuildLoggerTest {
         verify(logChannel, timeout(1000)).sendFiles(fileCaptor.capture())
         val logContent = fileCaptor.firstValue.data.use { it.readBytes().toString(Charsets.UTF_8) }
         assertTrue(logContent.contains("20:\ndeleted content"))
+    }
+
+    private fun stubVoiceEvent(
+        settings: LoggingSettings,
+        left: AudioChannelUnion?,
+        joined: AudioChannelUnion?
+    ) {
+        whenever(voiceEvent.guild).thenReturn(guild)
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(loggingSettingsRepository.findById(1L)).thenReturn(Optional.of(settings))
+        whenever(voiceEvent.channelLeft).thenReturn(left)
+        whenever(voiceEvent.channelJoined).thenReturn(joined)
+        whenever(voiceEvent.member).thenReturn(member)
+        whenever(member.user).thenReturn(user)
+        whenever(user.name).thenReturn("user")
+        whenever(guild.getTextChannelById(30L)).thenReturn(logChannel)
+        whenever(logChannel.sendMessage(any<MessageCreateData>())).thenReturn(sendAction)
+    }
+
+    private fun capturedVoiceEmbed(): MessageEmbed {
+        val messageCaptor = argumentCaptor<MessageCreateData>()
+        verify(logChannel, timeout(1000)).sendMessage(messageCaptor.capture())
+        return messageCaptor.firstValue.embeds.single()
+    }
+
+    @Test
+    fun `voice activity is not logged when disabled`() {
+        val guildLogger = guildLogger()
+        whenever(voiceEvent.guild).thenReturn(guild)
+        whenever(guild.idLong).thenReturn(1L)
+        whenever(loggingSettingsRepository.findById(1L)).thenReturn(Optional.of(LoggingSettings(1L)))
+
+        guildLogger.onGuildVoiceUpdate(voiceEvent)
+
+        verifyNoInteractions(logChannel)
+    }
+
+    @Test
+    fun `joining a voice channel is logged`() {
+        val guildLogger = guildLogger()
+        stubVoiceEvent(LoggingSettings(1L, userLogChannel = 30L, logVoiceActivity = true), null, joinedChannel)
+        whenever(joinedChannel.asMention).thenReturn("<#100>")
+
+        guildLogger.onGuildVoiceUpdate(voiceEvent)
+
+        val embed = capturedVoiceEmbed()
+        assertEquals("User joined voice channel", embed.title)
+        assertEquals("<#100>", embed.fields.first { it.name == "Channel" }.value)
+        assertEquals("user", embed.fields.first { it.name == "User" }.value)
+    }
+
+    @Test
+    fun `leaving a voice channel is logged`() {
+        val guildLogger = guildLogger()
+        stubVoiceEvent(LoggingSettings(1L, userLogChannel = 30L, logVoiceActivity = true), leftChannel, null)
+        whenever(leftChannel.asMention).thenReturn("<#101>")
+
+        guildLogger.onGuildVoiceUpdate(voiceEvent)
+
+        val embed = capturedVoiceEmbed()
+        assertEquals("User left voice channel", embed.title)
+        assertEquals("<#101>", embed.fields.first { it.name == "Channel" }.value)
+    }
+
+    @Test
+    fun `moving between voice channels is logged`() {
+        val guildLogger = guildLogger()
+        stubVoiceEvent(LoggingSettings(1L, userLogChannel = 30L, logVoiceActivity = true), leftChannel, joinedChannel)
+        whenever(leftChannel.asMention).thenReturn("<#101>")
+        whenever(joinedChannel.asMention).thenReturn("<#100>")
+
+        guildLogger.onGuildVoiceUpdate(voiceEvent)
+
+        val embed = capturedVoiceEmbed()
+        assertEquals("User moved voice channel", embed.title)
+        assertEquals("<#101>", embed.fields.first { it.name == "From" }.value)
+        assertEquals("<#100>", embed.fields.first { it.name == "To" }.value)
     }
 
     private fun guildLogger(): GuildLogger {

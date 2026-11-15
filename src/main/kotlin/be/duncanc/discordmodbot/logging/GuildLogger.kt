@@ -21,6 +21,7 @@ import net.dv8tion.jda.api.events.guild.GuildUnbanEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent
 import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateNicknameEvent
+import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent
 import net.dv8tion.jda.api.events.message.MessageBulkDeleteEvent
 import net.dv8tion.jda.api.events.message.MessageDeleteEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -517,6 +518,40 @@ class GuildLogger
                 TimeFormat.DATE_SHORT_TIME_SHORT.atInstant(event.member.user.timeCreated.toInstant()).toString(),
                 false
             )
+        guildLoggerExecutor.execute { log(logEmbed, event.member.user, event.guild, null, LogTypeAction.USER) }
+    }
+
+    @Transactional(readOnly = true)
+    override fun onGuildVoiceUpdate(event: GuildVoiceUpdateEvent) {
+        if (!loggingSettingsRepository.findById(event.guild.idLong)
+                .orElse(LoggingSettings(event.guild.idLong)).logVoiceActivity
+        ) {
+            return
+        }
+
+        val channelLeft = event.channelLeft
+        val channelJoined = event.channelJoined
+        val logEmbed = EmbedBuilder()
+            .addField("User", event.member.nicknameAndUsername, false)
+        when {
+            channelLeft == null && channelJoined != null -> logEmbed
+                .setColor(Color.GREEN)
+                .setTitle("User joined voice channel")
+                .addField("Channel", channelJoined.asMention, false)
+
+            channelLeft != null && channelJoined == null -> logEmbed
+                .setColor(Color.RED)
+                .setTitle("User left voice channel")
+                .addField("Channel", channelLeft.asMention, false)
+
+            channelLeft != null && channelJoined != null -> logEmbed
+                .setColor(LIGHT_BLUE)
+                .setTitle("User moved voice channel")
+                .addField("From", channelLeft.asMention, true)
+                .addField("To", channelJoined.asMention, true)
+
+            else -> return
+        }
         guildLoggerExecutor.execute { log(logEmbed, event.member.user, event.guild, null, LogTypeAction.USER) }
     }
 
