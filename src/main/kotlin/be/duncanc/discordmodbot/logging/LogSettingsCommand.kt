@@ -85,42 +85,49 @@ class LogSettingsCommand(
             }
 
             SUBCOMMAND_TOGGLE_MESSAGE_UPDATES -> {
+                if (!requireModeratorLogChannel(event, settings)) return
                 settings.logMessageUpdate = !settings.logMessageUpdate
                 loggingSettingsRepository.save(settings)
                 replyToggleStatus(event, "Message update logging", settings.logMessageUpdate)
             }
 
             SUBCOMMAND_TOGGLE_MESSAGE_DELETES -> {
+                if (!requireModeratorLogChannel(event, settings)) return
                 settings.logMessageDelete = !settings.logMessageDelete
                 loggingSettingsRepository.save(settings)
                 replyToggleStatus(event, "Message delete logging", settings.logMessageDelete)
             }
 
             SUBCOMMAND_TOGGLE_MEMBER_JOINS -> {
+                if (!requireModeratorLogChannel(event, settings)) return
                 settings.logMemberJoin = !settings.logMemberJoin
                 loggingSettingsRepository.save(settings)
                 replyToggleStatus(event, "Member join logging", settings.logMemberJoin)
             }
 
             SUBCOMMAND_TOGGLE_MEMBER_LEAVES -> {
+                if (!requireModeratorLogChannel(event, settings)) return
                 settings.logMemberLeave = !settings.logMemberLeave
                 loggingSettingsRepository.save(settings)
                 replyToggleStatus(event, "Member leave logging", settings.logMemberLeave)
             }
 
             SUBCOMMAND_TOGGLE_MEMBER_BANS -> {
+                if (!requireModeratorLogChannel(event, settings)) return
                 settings.logMemberBan = !settings.logMemberBan
                 loggingSettingsRepository.save(settings)
                 replyToggleStatus(event, "Member ban logging", settings.logMemberBan)
             }
 
             SUBCOMMAND_TOGGLE_MEMBER_UNBANS -> {
+                if (!requireModeratorLogChannel(event, settings)) return
                 settings.logMemberRemoveBan = !settings.logMemberRemoveBan
                 loggingSettingsRepository.save(settings)
                 replyToggleStatus(event, "Member unban logging", settings.logMemberRemoveBan)
             }
 
             SUBCOMMAND_TOGGLE_VOICE_ACTIVITY -> {
+                if (!requireModeratorLogChannel(event, settings)) return
                 settings.logVoiceActivity = !settings.logVoiceActivity
                 loggingSettingsRepository.save(settings)
                 replyToggleStatus(event, "Voice activity logging", settings.logVoiceActivity)
@@ -200,6 +207,17 @@ class LogSettingsCommand(
 
     private fun replyToggleStatus(event: SlashCommandInteractionEvent, label: String, enabled: Boolean) {
         event.reply("$label is now ${formatStatus(enabled)}.").setEphemeral(true).queue()
+    }
+
+    private fun requireModeratorLogChannel(event: SlashCommandInteractionEvent, settings: LoggingSettings): Boolean {
+        if (settings.modLogChannel != null) {
+            return true
+        }
+
+        event.reply("A moderator log channel must be set first using /logsettings set-mod-channel.")
+            .setEphemeral(true)
+            .queue()
+        return false
     }
 
     private fun textChannelOption(description: String): OptionData {
