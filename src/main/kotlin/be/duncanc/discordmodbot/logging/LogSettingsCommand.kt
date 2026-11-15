@@ -37,6 +37,7 @@ class LogSettingsCommand(
         private const val SUBCOMMAND_TOGGLE_MEMBER_LEAVES = "toggle-member-leaves"
         private const val SUBCOMMAND_TOGGLE_MEMBER_BANS = "toggle-member-bans"
         private const val SUBCOMMAND_TOGGLE_MEMBER_UNBANS = "toggle-member-unbans"
+        private const val SUBCOMMAND_TOGGLE_VOICE_ACTIVITY = "toggle-voice-activity"
 
         private const val OPTION_CHANNEL = "channel"
     }
@@ -84,39 +85,52 @@ class LogSettingsCommand(
             }
 
             SUBCOMMAND_TOGGLE_MESSAGE_UPDATES -> {
+                if (!requireModeratorLogChannel(event, settings)) return
                 settings.logMessageUpdate = !settings.logMessageUpdate
                 loggingSettingsRepository.save(settings)
                 replyToggleStatus(event, "Message update logging", settings.logMessageUpdate)
             }
 
             SUBCOMMAND_TOGGLE_MESSAGE_DELETES -> {
+                if (!requireModeratorLogChannel(event, settings)) return
                 settings.logMessageDelete = !settings.logMessageDelete
                 loggingSettingsRepository.save(settings)
                 replyToggleStatus(event, "Message delete logging", settings.logMessageDelete)
             }
 
             SUBCOMMAND_TOGGLE_MEMBER_JOINS -> {
+                if (!requireModeratorLogChannel(event, settings)) return
                 settings.logMemberJoin = !settings.logMemberJoin
                 loggingSettingsRepository.save(settings)
                 replyToggleStatus(event, "Member join logging", settings.logMemberJoin)
             }
 
             SUBCOMMAND_TOGGLE_MEMBER_LEAVES -> {
+                if (!requireModeratorLogChannel(event, settings)) return
                 settings.logMemberLeave = !settings.logMemberLeave
                 loggingSettingsRepository.save(settings)
                 replyToggleStatus(event, "Member leave logging", settings.logMemberLeave)
             }
 
             SUBCOMMAND_TOGGLE_MEMBER_BANS -> {
+                if (!requireModeratorLogChannel(event, settings)) return
                 settings.logMemberBan = !settings.logMemberBan
                 loggingSettingsRepository.save(settings)
                 replyToggleStatus(event, "Member ban logging", settings.logMemberBan)
             }
 
             SUBCOMMAND_TOGGLE_MEMBER_UNBANS -> {
+                if (!requireModeratorLogChannel(event, settings)) return
                 settings.logMemberRemoveBan = !settings.logMemberRemoveBan
                 loggingSettingsRepository.save(settings)
                 replyToggleStatus(event, "Member unban logging", settings.logMemberRemoveBan)
+            }
+
+            SUBCOMMAND_TOGGLE_VOICE_ACTIVITY -> {
+                if (!requireModeratorLogChannel(event, settings)) return
+                settings.logVoiceActivity = !settings.logVoiceActivity
+                loggingSettingsRepository.save(settings)
+                replyToggleStatus(event, "Voice activity logging", settings.logVoiceActivity)
             }
 
             else -> event.reply("Please choose a valid /logsettings subcommand.").setEphemeral(true).queue()
@@ -137,7 +151,8 @@ class LogSettingsCommand(
                     SubcommandData(SUBCOMMAND_TOGGLE_MEMBER_JOINS, "Enable or disable member join logging"),
                     SubcommandData(SUBCOMMAND_TOGGLE_MEMBER_LEAVES, "Enable or disable member leave logging"),
                     SubcommandData(SUBCOMMAND_TOGGLE_MEMBER_BANS, "Enable or disable member ban logging"),
-                    SubcommandData(SUBCOMMAND_TOGGLE_MEMBER_UNBANS, "Enable or disable member unban logging")
+                    SubcommandData(SUBCOMMAND_TOGGLE_MEMBER_UNBANS, "Enable or disable member unban logging"),
+                    SubcommandData(SUBCOMMAND_TOGGLE_VOICE_ACTIVITY, "Enable or disable voice channel activity logging")
                 )
                 .setContexts(InteractionContextType.GUILD)
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MANAGE_CHANNEL))
@@ -162,6 +177,7 @@ class LogSettingsCommand(
             appendLine("- Member leaves: ${formatStatus(settings.logMemberLeave)}")
             appendLine("- Member bans: ${formatStatus(settings.logMemberBan)}")
             appendLine("- Member unbans: ${formatStatus(settings.logMemberRemoveBan)}")
+            appendLine("- Voice activity: ${formatStatus(settings.logVoiceActivity)}")
         }
 
         event.reply(message).setEphemeral(true).queue()
@@ -191,6 +207,17 @@ class LogSettingsCommand(
 
     private fun replyToggleStatus(event: SlashCommandInteractionEvent, label: String, enabled: Boolean) {
         event.reply("$label is now ${formatStatus(enabled)}.").setEphemeral(true).queue()
+    }
+
+    private fun requireModeratorLogChannel(event: SlashCommandInteractionEvent, settings: LoggingSettings): Boolean {
+        if (settings.modLogChannel != null) {
+            return true
+        }
+
+        event.reply("A moderator log channel must be set first using /logsettings set-mod-channel.")
+            .setEphemeral(true)
+            .queue()
+        return false
     }
 
     private fun textChannelOption(description: String): OptionData {

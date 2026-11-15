@@ -19,6 +19,7 @@ class BotConfiguration {
             GatewayIntent.GUILD_EXPRESSIONS,
             GatewayIntent.GUILD_MEMBERS,
             GatewayIntent.GUILD_MESSAGES,
+            GatewayIntent.GUILD_VOICE_STATES,
             GatewayIntent.MESSAGE_CONTENT,
             GatewayIntent.GUILD_MESSAGE_REACTIONS
         )
@@ -32,7 +33,7 @@ class BotConfiguration {
     ): JDA {
         val jda = JDABuilder.create(discordModBotConfig.botToken, INTENTS)
             .setBulkDeleteSplittingEnabled(false)
-            .disableCache(CacheFlag.VOICE_STATE, CacheFlag.SCHEDULED_EVENTS)
+            .disableCache(CacheFlag.SCHEDULED_EVENTS)
             .addEventListeners(*eventListeners)
             .setEnableShutdownHook(false)
             .build()

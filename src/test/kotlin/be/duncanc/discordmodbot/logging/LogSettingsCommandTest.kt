@@ -99,6 +99,7 @@ class LogSettingsCommandTest {
         assertTrue(message.contains("- User log channel: Using moderator log channel"))
         assertTrue(message.contains("- Edited messages: enabled"))
         assertTrue(message.contains("- Member unbans: enabled"))
+        assertTrue(message.contains("- Voice activity: disabled"))
     }
 
     @Test
@@ -227,6 +228,39 @@ class LogSettingsCommandTest {
     }
 
     @Test
+    fun `toggle voice activity flips setting`() {
+        assertToggle(
+            subcommand = "toggle-voice-activity",
+            initialSettings = LoggingSettings(1L, logVoiceActivity = false),
+            expectedMessage = "Voice activity logging is now enabled.",
+            verifySetting = { assertEquals(true, it.logVoiceActivity) }
+        )
+    }
+
+    @Test
+    fun `toggle handlers require a moderator log channel`() {
+        whenever(loggingSettingsRepository.findById(1L)).thenReturn(Optional.empty())
+
+        listOf(
+            "toggle-message-updates",
+            "toggle-message-deletes",
+            "toggle-member-joins",
+            "toggle-member-leaves",
+            "toggle-member-bans",
+            "toggle-member-unbans",
+            "toggle-voice-activity"
+        ).forEach { subcommand ->
+            stubAuthorizedSlashCommand(subcommand)
+            command.onSlashCommandInteraction(slashEvent)
+        }
+
+        verify(loggingSettingsRepository, never()).save(any())
+        verify(slashEvent, times(7)).reply(
+            "A moderator log channel must be set first using /logsettings set-mod-channel."
+        )
+    }
+
+    @Test
     fun `guild leave removes stored settings`() {
         whenever(guildLeaveEvent.guild).thenReturn(guild)
         whenever(guild.idLong).thenReturn(1L)
@@ -252,7 +286,8 @@ class LogSettingsCommandTest {
                 "toggle-member-joins",
                 "toggle-member-leaves",
                 "toggle-member-bans",
-                "toggle-member-unbans"
+                "toggle-member-unbans",
+                "toggle-voice-activity"
             ),
             commandData.subcommands.map(SubcommandData::getName)
         )
@@ -268,6 +303,7 @@ class LogSettingsCommandTest {
         verifySetting: (LoggingSettings) -> Unit
     ) {
         stubAuthorizedSlashCommand(subcommand)
+        initialSettings.modLogChannel = 11L
         whenever(loggingSettingsRepository.findById(1L)).thenReturn(Optional.of(initialSettings))
 
         command.onSlashCommandInteraction(slashEvent)
