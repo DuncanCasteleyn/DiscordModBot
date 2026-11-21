@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.21.1](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.21.0...v2.21.1) (2026-11-21)
+
+
+### Bug Fixes
+
+* **deps:** update dependency org.springframework.modulith:spring-modulith-bom to v2.1.3 ([#881](https://github.com/DuncanCasteleyn/DiscordModBot/issues/881)) ([45d1619](https://github.com/DuncanCasteleyn/DiscordModBot/commit/45d1619ab915ad2084877dec591d07529a336a92))
+* **deps:** update plugin org.springframework.boot to v4.1.3 ([#883](https://github.com/DuncanCasteleyn/DiscordModBot/issues/883)) ([3765870](https://github.com/DuncanCasteleyn/DiscordModBot/commit/37658700ebef64d95d956c1bea39e8dfce20359a))
+
 ## [2.21.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.20.0...v2.21.0) (2026-11-15)
 
 
