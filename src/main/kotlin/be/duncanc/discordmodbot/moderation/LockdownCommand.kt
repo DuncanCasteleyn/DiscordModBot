@@ -77,7 +77,17 @@ class LockdownCommand(
 
     internal fun resolveChannel(event: SlashCommandInteractionEvent): StandardGuildMessageChannel? {
         val option = event.getOption(OPTION_CHANNEL)
-        val channel = if (option != null) option.asChannel else event.channel
+        if (option != null) {
+            return option.asChannel as? StandardGuildMessageChannel
+        }
+
+        // Inside a thread the permissions and slowmode that matter belong to the channel the thread is in.
+        val channel = event.channel
+        if (channel.type.isThread) {
+            return channel.asThreadChannel().parentChannel.takeIf { it.type.isGuild }?.let {
+                runCatching { it.asStandardGuildMessageChannel() }.getOrNull()
+            }
+        }
         return channel as? StandardGuildMessageChannel
     }
 
@@ -152,15 +162,19 @@ class LockdownCommand(
                             "${channel.asMention} is being locked or unlocked right now. Please try again in a moment."
                         ).queue()
 
-                        is LockdownService.UnlockResult.Unlocked -> {
-                            val message = StringBuilder("${channel.asMention} is unlocked.")
-                            if (result.failedTargets.isNotEmpty()) {
-                                val failed = result.failedTargets
-                                    .joinToString(", ") { mention(it.targetType, it.targetId) }
-                                message.append("\nCould not restore the previous permissions of: ").append(failed)
-                            }
-                            hook.editOriginal(message.toString()).queue()
+                        LockdownService.UnlockResult.Unlocked -> {
+                            hook.editOriginal("${channel.asMention} is unlocked.").queue()
                             log(event, guild, channel, "Channel unlocked", Color.GREEN)
+                        }
+
+                        is LockdownService.UnlockResult.PartiallyUnlocked -> {
+                            val failed = result.failedTargets
+                                .joinToString(", ") { mention(it.targetType, it.targetId) }
+                            hook.editOriginal(
+                                "${channel.asMention} is only partly unlocked. Could not restore the previous " +
+                                        "permissions of: $failed. Use /lockdown off again to retry."
+                            ).queue()
+                            log(event, guild, channel, "Channel partially unlocked", Color.ORANGE)
                         }
 
                         null -> hook.editOriginal("Failed to unlock ${channel.asMention}.").queue()

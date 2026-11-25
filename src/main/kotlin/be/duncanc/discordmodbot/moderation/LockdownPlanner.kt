@@ -53,7 +53,24 @@ internal object LockdownPlanner {
         data class Update(val allow: Long, val deny: Long) : Restore
     }
 
-    fun planLock(everyoneRoleId: Long, overrides: List<OverrideSnapshot>): List<OverrideEdit> {
+    /**
+     * The overrides to change when locking. [protect] is applied first and gives the bot an explicit allow for the
+     * locked permissions it holds: Discord only lets the bot change permission bits it holds in the channel, so
+     * without it the bot would lose the ability to edit (and later restore) the channel once everyone is denied.
+     * [lockEdits] starts with the everyone role.
+     */
+    data class LockPlan(val protect: OverrideEdit?, val lockEdits: List<OverrideEdit>) {
+        val edits: List<OverrideEdit> get() = listOfNotNull(protect) + lockEdits
+    }
+
+    fun planLock(
+        everyoneRoleId: Long,
+        overrides: List<OverrideSnapshot>,
+        selfMemberId: Long = 0L,
+        selfPermissions: Long = 0L
+    ): LockPlan {
+        fun OverrideSnapshot.isSelf() = targetType == LockdownTargetType.MEMBER && targetId == selfMemberId
+
         val existingEveryone = overrides.firstOrNull {
             it.targetType == LockdownTargetType.ROLE && it.targetId == everyoneRoleId
         }
@@ -61,10 +78,31 @@ internal object LockdownPlanner {
             ?: OverrideSnapshot(everyoneRoleId, LockdownTargetType.ROLE, 0L, 0L, exempt = false)
 
         val others = overrides.filter {
-            it != existingEveryone && !it.exempt && it.allow and LOCKED_MASK != 0L
+            it != existingEveryone && !it.isSelf() && !it.exempt && it.allow and LOCKED_MASK != 0L
         }
 
-        return listOf(lockEdit(everyone, existingEveryone != null)) + others.map { lockEdit(it, true) }
+        val protect = planProtect(selfMemberId, selfPermissions, overrides.firstOrNull { it.isSelf() })
+        val lockEdits = listOf(lockEdit(everyone, existingEveryone != null)) + others.map { lockEdit(it, true) }
+        return LockPlan(protect, lockEdits)
+    }
+
+    private fun planProtect(selfMemberId: Long, selfPermissions: Long, existing: OverrideSnapshot?): OverrideEdit? {
+        val held = selfPermissions and LOCKED_MASK
+        if (held == 0L || (existing != null && existing.allow and held == held)) {
+            return null
+        }
+
+        val previousAllow = existing?.allow ?: 0L
+        val previousDeny = existing?.deny ?: 0L
+        return OverrideEdit(
+            targetId = selfMemberId,
+            targetType = LockdownTargetType.MEMBER,
+            previousAllow = previousAllow,
+            previousDeny = previousDeny,
+            newAllow = previousAllow or held,
+            newDeny = previousDeny and held.inv(),
+            existed = existing != null
+        )
     }
 
     fun planUnlock(saved: SavedState, current: OverrideSnapshot?): Restore {

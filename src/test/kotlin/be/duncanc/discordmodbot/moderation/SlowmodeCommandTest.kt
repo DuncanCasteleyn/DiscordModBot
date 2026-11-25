@@ -10,6 +10,9 @@ import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.channel.ChannelType
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel
+import net.dv8tion.jda.api.entities.channel.unions.IThreadContainerUnion
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.InteractionContextType
 import net.dv8tion.jda.api.interactions.InteractionHook
@@ -19,6 +22,7 @@ import net.dv8tion.jda.api.managers.channel.concrete.TextChannelManager
 import net.dv8tion.jda.api.requests.restaction.WebhookMessageEditAction
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -28,6 +32,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -180,6 +185,22 @@ class SlowmodeCommandTest {
         verify(guildLogger).log(
             any<EmbedBuilder>(), eq(user), eq(guild), anyOrNull(), eq(GuildLogger.LogTypeAction.MODERATOR), anyOrNull()
         )
+    }
+
+    @Test
+    fun `without a channel option the command uses the parent channel when run inside a thread`() {
+        val thread = mock<MessageChannelUnion>()
+        val threadChannel = mock<ThreadChannel>()
+        val parent = mock<IThreadContainerUnion>()
+        whenever(event.getOption("channel")).thenReturn(null)
+        whenever(event.channel).thenReturn(thread)
+        whenever(thread.type).thenReturn(ChannelType.GUILD_PUBLIC_THREAD)
+        whenever(thread.asThreadChannel()).thenReturn(threadChannel)
+        whenever(threadChannel.parentChannel).thenReturn(parent)
+        whenever(parent.type).thenReturn(ChannelType.TEXT)
+        whenever(parent.asTextChannel()).thenReturn(channel)
+
+        assertSame(channel, SlowmodeCommand(guildLogger).resolveChannel(event))
     }
 
     @Test

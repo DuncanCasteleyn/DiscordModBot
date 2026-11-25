@@ -90,7 +90,15 @@ class SlowmodeCommand(
 
     internal fun resolveChannel(event: SlashCommandInteractionEvent): TextChannel? {
         val option = event.getOption(OPTION_CHANNEL)
-        val channel = if (option != null) option.asChannel else event.channel
+        if (option != null) {
+            return option.asChannel as? TextChannel
+        }
+
+        // Slowmode can't be set on a thread this way, so use the channel the thread is in.
+        val channel = event.channel
+        if (channel.type.isThread) {
+            return channel.asThreadChannel().parentChannel.takeIf { it.type == ChannelType.TEXT }?.asTextChannel()
+        }
         return channel as? TextChannel
     }
 

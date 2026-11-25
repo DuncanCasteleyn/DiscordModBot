@@ -1,6 +1,8 @@
 package be.duncanc.discordmodbot.moderation
 
 import be.duncanc.discordmodbot.logging.GuildLogger
+import be.duncanc.discordmodbot.moderation.persistence.ChannelLockdown
+import be.duncanc.discordmodbot.moderation.persistence.LockdownTargetType
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
@@ -9,7 +11,10 @@ import net.dv8tion.jda.api.entities.SelfMember
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.entities.channel.ChannelType
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel
 import net.dv8tion.jda.api.entities.channel.middleman.StandardGuildMessageChannel
+import net.dv8tion.jda.api.entities.channel.unions.IThreadContainerUnion
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.InteractionContextType
 import net.dv8tion.jda.api.interactions.InteractionHook
@@ -18,6 +23,7 @@ import net.dv8tion.jda.api.requests.restaction.WebhookMessageEditAction
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction
 import net.dv8tion.jda.api.entities.Message
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -29,6 +35,7 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -165,7 +172,7 @@ class LockdownCommandTest {
         stubAuthorized("off")
         stubLogging()
         whenever(lockdownService.unlock(channel))
-            .thenReturn(CompletableFuture.completedFuture(LockdownService.UnlockResult.Unlocked(emptyList())))
+            .thenReturn(CompletableFuture.completedFuture(LockdownService.UnlockResult.Unlocked))
 
         command.onSlashCommandInteraction(event)
 
@@ -216,6 +223,44 @@ class LockdownCommandTest {
         verify(guildLogger).log(
             any<EmbedBuilder>(), eq(user), eq(guild), anyOrNull(), eq(GuildLogger.LogTypeAction.MODERATOR), anyOrNull()
         )
+    }
+
+    @Test
+    fun `lock off keeps the lockdown for targets that could not be restored and tells how to retry`() {
+        stubAuthorized("off")
+        stubLogging()
+        val failed = ChannelLockdown.ChannelLockdownId(1L, 5L, LockdownTargetType.ROLE, 7L)
+        whenever(lockdownService.unlock(channel))
+            .thenReturn(
+                CompletableFuture.completedFuture(LockdownService.UnlockResult.PartiallyUnlocked(listOf(failed)))
+            )
+
+        command.onSlashCommandInteraction(event)
+
+        val reply = argumentCaptor<String>()
+        verify(hook).editOriginal(reply.capture())
+        assertTrue(reply.firstValue.startsWith("<#5> is only partly unlocked"))
+        assertTrue(reply.firstValue.contains("<@&7>"))
+        assertTrue(reply.firstValue.contains("/lockdown off"))
+        verify(guildLogger).log(
+            any<EmbedBuilder>(), eq(user), eq(guild), anyOrNull(), eq(GuildLogger.LogTypeAction.MODERATOR), anyOrNull()
+        )
+    }
+
+    @Test
+    fun `without a channel option the command uses the parent channel when run inside a thread`() {
+        val thread = mock<MessageChannelUnion>()
+        val threadChannel = mock<ThreadChannel>()
+        val parent = mock<IThreadContainerUnion>()
+        whenever(event.getOption("channel")).thenReturn(null)
+        whenever(event.channel).thenReturn(thread)
+        whenever(thread.type).thenReturn(ChannelType.GUILD_PUBLIC_THREAD)
+        whenever(thread.asThreadChannel()).thenReturn(threadChannel)
+        whenever(threadChannel.parentChannel).thenReturn(parent)
+        whenever(parent.type).thenReturn(ChannelType.TEXT)
+        whenever(parent.asStandardGuildMessageChannel()).thenReturn(channel)
+
+        assertSame(channel, LockdownCommand(lockdownService, guildLogger).resolveChannel(event))
     }
 
     @Test
