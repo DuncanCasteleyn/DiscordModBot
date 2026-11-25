@@ -316,3 +316,6 @@ gradle-app.setting
 ## database files
 #################
 *.db
+
+# Claude Code local config
+.claude/
