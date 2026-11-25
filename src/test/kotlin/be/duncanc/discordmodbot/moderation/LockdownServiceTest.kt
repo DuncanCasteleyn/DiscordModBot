@@ -17,7 +17,13 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.*
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
@@ -103,14 +109,14 @@ class LockdownServiceTest {
     }
 
     @Test
-    fun `locking a channel while a lock is still in progress reports already locked`() {
+    fun `locking a channel while another lock is still in progress reports it as busy`() {
         stubEmptyChannel()
         whenever(upsertAction.submit()).thenReturn(CompletableFuture())
 
         service.lock(channel)
         val second = service.lock(channel).get(5, TimeUnit.SECONDS)
 
-        assertEquals(LockdownService.LockResult.AlreadyLocked, second)
+        assertEquals(LockdownService.LockResult.InProgress, second)
         verify(channel, times(1)).upsertPermissionOverride(any())
         verify(repository, times(1)).saveAll(any<Iterable<ChannelLockdown>>())
     }
@@ -139,8 +145,55 @@ class LockdownServiceTest {
 
         val result = service.lock(channel).get()
 
-        assertTrue(result is LockdownService.LockResult.Failed)
+        assertEquals(LockdownService.LockResult.PartiallyLocked("database down"), result)
         verify(repository, never()).deleteAllByGuildIdAndChannelId(any(), any())
+    }
+
+    @Test
+    fun `unlocking while a lock is still in progress reports it as busy and changes nothing`() {
+        stubEmptyChannel()
+        whenever(upsertAction.submit()).thenReturn(CompletableFuture())
+
+        service.lock(channel)
+        val result = service.unlock(channel).get(5, TimeUnit.SECONDS)
+
+        assertEquals(LockdownService.UnlockResult.InProgress, result)
+        verify(repository, never()).findAllByGuildIdAndChannelId(any(), any())
+    }
+
+    @Test
+    fun `unlocking keeps going when restoring one target throws immediately`() {
+        val everyoneOverride = stubSavedRoleOverride(GUILD_ID)
+        val roleOverride = stubSavedRoleOverride(7L)
+        val deleteAction = mock<AuditableRestAction<Void>>()
+        whenever(everyoneOverride.delete()).thenThrow(IllegalStateException("Missing permissions"))
+        whenever(roleOverride.delete()).thenReturn(deleteAction)
+        whenever(deleteAction.submit()).thenReturn(CompletableFuture.completedFuture(null))
+        whenever(channel.permissionOverrides).thenReturn(listOf(everyoneOverride, roleOverride))
+        whenever(repository.findAllByGuildIdAndChannelId(GUILD_ID, CHANNEL_ID)).thenReturn(
+            listOf(
+                ChannelLockdown(GUILD_ID, CHANNEL_ID, LockdownTargetType.ROLE, GUILD_ID, 0L, 0L, false),
+                ChannelLockdown(GUILD_ID, CHANNEL_ID, LockdownTargetType.ROLE, 7L, 0L, 0L, false)
+            )
+        )
+
+        val result = service.unlock(channel).get(5, TimeUnit.SECONDS)
+
+        val everyoneId = ChannelLockdown.ChannelLockdownId(GUILD_ID, CHANNEL_ID, LockdownTargetType.ROLE, GUILD_ID)
+        val roleId = ChannelLockdown.ChannelLockdownId(GUILD_ID, CHANNEL_ID, LockdownTargetType.ROLE, 7L)
+        assertEquals(LockdownService.UnlockResult.Unlocked(listOf(everyoneId)), result)
+        verify(roleOverride).delete()
+        verify(repository).deleteById(everyoneId)
+        verify(repository).deleteById(roleId)
+    }
+
+    private fun stubSavedRoleOverride(roleId: Long): PermissionOverride {
+        val override = mock<PermissionOverride>()
+        whenever(override.isRoleOverride).thenReturn(true)
+        whenever(override.idLong).thenReturn(roleId)
+        whenever(override.allowedRaw).thenReturn(0L)
+        whenever(override.deniedRaw).thenReturn(LockdownPlanner.LOCKED_MASK)
+        return override
     }
 
     @Test

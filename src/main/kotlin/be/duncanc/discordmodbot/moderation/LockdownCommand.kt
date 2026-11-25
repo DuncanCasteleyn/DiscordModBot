@@ -96,6 +96,19 @@ class LockdownCommand(
                         LockdownService.LockResult.AlreadyLocked ->
                             hook.editOriginal("${channel.asMention} is already locked down.").queue()
 
+                        LockdownService.LockResult.InProgress -> hook.editOriginal(
+                            "${channel.asMention} is being locked or unlocked right now. Please try again in a moment."
+                        ).queue()
+
+                        is LockdownService.LockResult.PartiallyLocked -> {
+                            hook.editOriginal(
+                                "${channel.asMention} is locked down for everyone, but not completely: " +
+                                        "${result.reason}. Some roles may still be able to talk. " +
+                                        "Use /lockdown off to undo it."
+                            ).queue()
+                            log(event, guild, channel, "Channel partially locked down", Color.RED)
+                        }
+
                         is LockdownService.LockResult.Failed ->
                             hook.editOriginal("Failed to lock ${channel.asMention}: ${result.reason}").queue()
 
@@ -134,6 +147,10 @@ class LockdownCommand(
                     when (result) {
                         LockdownService.UnlockResult.NotLocked ->
                             hook.editOriginal("${channel.asMention} is not locked down.").queue()
+
+                        LockdownService.UnlockResult.InProgress -> hook.editOriginal(
+                            "${channel.asMention} is being locked or unlocked right now. Please try again in a moment."
+                        ).queue()
 
                         is LockdownService.UnlockResult.Unlocked -> {
                             val message = StringBuilder("${channel.asMention} is unlocked.")

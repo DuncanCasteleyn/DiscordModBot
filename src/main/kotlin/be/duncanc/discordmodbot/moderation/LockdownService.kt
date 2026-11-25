@@ -22,16 +22,22 @@ class LockdownService(
         private val LOG = LoggerFactory.getLogger(LockdownService::class.java)
     }
 
-    private val lockingInProgress = ConcurrentHashMap.newKeySet<Pair<Long, Long>>()
+    // Channels that are being locked or unlocked right now, so the two can never interleave on one channel.
+    private val channelsInProgress = ConcurrentHashMap.newKeySet<Pair<Long, Long>>()
 
     sealed interface LockResult {
         data object AlreadyLocked : LockResult
+        data object InProgress : LockResult
         data class Locked(val couldNotLockRoleIds: List<Long>, val couldNotLockMemberIds: List<Long>) : LockResult
         data class Failed(val reason: String) : LockResult
+
+        /** Everyone is locked, but applying the other overrides failed. The saved state is kept for unlocking. */
+        data class PartiallyLocked(val reason: String) : LockResult
     }
 
     sealed interface UnlockResult {
         data object NotLocked : UnlockResult
+        data object InProgress : UnlockResult
         data class Unlocked(val failedTargets: List<ChannelLockdown.ChannelLockdownId>) : UnlockResult
     }
 
@@ -42,13 +48,13 @@ class LockdownService(
         val key = guildId to channelId
 
         // Guards against two moderators locking the same channel at once, which would save the already locked state.
-        if (!lockingInProgress.add(key)) {
-            return CompletableFuture.completedFuture(LockResult.AlreadyLocked)
+        if (!channelsInProgress.add(key)) {
+            return CompletableFuture.completedFuture(LockResult.InProgress)
         }
 
         try {
             if (channelLockdownRepository.existsByGuildIdAndChannelId(guildId, channelId)) {
-                lockingInProgress.remove(key)
+                channelsInProgress.remove(key)
                 return CompletableFuture.completedFuture(LockResult.AlreadyLocked)
             }
 
@@ -62,9 +68,9 @@ class LockdownService(
             })
 
             return lockEveryoneThenOthers(channel, edits)
-                .whenComplete { _, _ -> lockingInProgress.remove(key) }
+                .whenComplete { _, _ -> channelsInProgress.remove(key) }
         } catch (e: Exception) {
-            lockingInProgress.remove(key)
+            channelsInProgress.remove(key)
             throw e
         }
     }
@@ -90,7 +96,7 @@ class LockdownService(
                     lockOthers(channel, otherEdits).exceptionally { throwable ->
                         // Everyone is already locked: keep the saved state so the lockdown can still be undone.
                         LOG.warn("Failed to finish locking channel {} in guild {}", channelId, guildId, throwable)
-                        LockResult.Failed(rootMessage(throwable))
+                        LockResult.PartiallyLocked(rootMessage(throwable))
                     }
                 }
             }
@@ -130,31 +136,47 @@ class LockdownService(
     fun unlock(channel: StandardGuildMessageChannel): CompletableFuture<UnlockResult> {
         val guildId = channel.guild.idLong
         val channelId = channel.idLong
+        val key = guildId to channelId
 
-        val savedStates = channelLockdownRepository.findAllByGuildIdAndChannelId(guildId, channelId)
-        if (savedStates.isEmpty()) {
-            return CompletableFuture.completedFuture(UnlockResult.NotLocked)
+        // A lock that is still applying its overrides must finish first, otherwise its later edits would be applied
+        // after the saved state was already removed.
+        if (!channelsInProgress.add(key)) {
+            return CompletableFuture.completedFuture(UnlockResult.InProgress)
         }
 
+        try {
+            val savedStates = channelLockdownRepository.findAllByGuildIdAndChannelId(guildId, channelId)
+            if (savedStates.isEmpty()) {
+                channelsInProgress.remove(key)
+                return CompletableFuture.completedFuture(UnlockResult.NotLocked)
+            }
+
+            return restoreAll(channel, savedStates).whenComplete { _, _ -> channelsInProgress.remove(key) }
+        } catch (e: Exception) {
+            channelsInProgress.remove(key)
+            throw e
+        }
+    }
+
+    private fun restoreAll(
+        channel: StandardGuildMessageChannel,
+        savedStates: List<ChannelLockdown>
+    ): CompletableFuture<UnlockResult> {
+        val guildId = channel.guild.idLong
+        val channelId = channel.idLong
         val currentOverrides = channel.permissionOverrides
         val attempts = savedStates.map { saved ->
             val id = ChannelLockdown.ChannelLockdownId(guildId, channelId, saved.targetType, saved.targetId)
             val current = currentOverrides.firstOrNull {
                 it.isRoleOverride == (saved.targetType == LockdownTargetType.ROLE) && it.idLong == saved.targetId
             }
-            val restore = LockdownPlanner.planUnlock(
-                LockdownPlanner.SavedState(
-                    saved.targetId, saved.targetType, saved.previousAllow, saved.previousDeny, saved.existed
-                ),
-                current?.let { toSnapshot(it) }
-            )
 
-            val action: CompletableFuture<*> = when (restore) {
-                LockdownPlanner.Restore.NoChange -> CompletableFuture.completedFuture(null)
-                LockdownPlanner.Restore.Delete ->
-                    current?.delete()?.submit() ?: CompletableFuture.completedFuture(null)
-                is LockdownPlanner.Restore.Update ->
-                    applyOverride(channel, saved.targetType, saved.targetId, restore.allow, restore.deny)
+            val action: CompletableFuture<*> = try {
+                restore(channel, saved, current)
+            } catch (e: Exception) {
+                // JDA can throw straight away, for example when permissions are missing. One target failing must not
+                // stop the others from being restored.
+                CompletableFuture.failedFuture<Any>(e)
             }
 
             // The saved state is dropped even when restoring fails, otherwise the channel would stay "locked"
@@ -170,6 +192,28 @@ class LockdownService(
 
         return CompletableFuture.allOf(*attempts.toTypedArray())
             .thenApply { UnlockResult.Unlocked(attempts.mapNotNull { it.join() }) }
+    }
+
+    private fun restore(
+        channel: StandardGuildMessageChannel,
+        saved: ChannelLockdown,
+        current: PermissionOverride?
+    ): CompletableFuture<*> {
+        val restore = LockdownPlanner.planUnlock(
+            LockdownPlanner.SavedState(
+                saved.targetId, saved.targetType, saved.previousAllow, saved.previousDeny, saved.existed
+            ),
+            current?.let { toSnapshot(it) }
+        )
+
+        return when (restore) {
+            LockdownPlanner.Restore.NoChange -> CompletableFuture.completedFuture(null)
+            LockdownPlanner.Restore.Delete ->
+                current?.delete()?.submit() ?: CompletableFuture.completedFuture(null)
+
+            is LockdownPlanner.Restore.Update ->
+                applyOverride(channel, saved.targetType, saved.targetId, restore.allow, restore.deny)
+        }
     }
 
     @Transactional

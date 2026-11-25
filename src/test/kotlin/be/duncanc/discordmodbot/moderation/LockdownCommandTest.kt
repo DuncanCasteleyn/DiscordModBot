@@ -24,7 +24,15 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.*
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.whenever
 import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
 
@@ -162,6 +170,49 @@ class LockdownCommandTest {
         command.onSlashCommandInteraction(event)
 
         verify(hook).editOriginal("<#5> is unlocked.")
+        verify(guildLogger).log(
+            any<EmbedBuilder>(), eq(user), eq(guild), anyOrNull(), eq(GuildLogger.LogTypeAction.MODERATOR), anyOrNull()
+        )
+    }
+
+    @Test
+    fun `lock on reports a busy channel without logging`() {
+        stubAuthorized("on")
+        whenever(lockdownService.lock(channel))
+            .thenReturn(CompletableFuture.completedFuture(LockdownService.LockResult.InProgress))
+
+        command.onSlashCommandInteraction(event)
+
+        verify(hook).editOriginal("<#5> is being locked or unlocked right now. Please try again in a moment.")
+        verifyNoInteractions(guildLogger)
+    }
+
+    @Test
+    fun `lock off reports a busy channel without logging`() {
+        stubAuthorized("off")
+        whenever(lockdownService.unlock(channel))
+            .thenReturn(CompletableFuture.completedFuture(LockdownService.UnlockResult.InProgress))
+
+        command.onSlashCommandInteraction(event)
+
+        verify(hook).editOriginal("<#5> is being locked or unlocked right now. Please try again in a moment.")
+        verifyNoInteractions(guildLogger)
+    }
+
+    @Test
+    fun `lock on tells the moderator when the lockdown is only partly applied and logs it`() {
+        stubAuthorized("on")
+        stubLogging()
+        whenever(lockdownService.lock(channel))
+            .thenReturn(CompletableFuture.completedFuture(LockdownService.LockResult.PartiallyLocked("database down")))
+
+        command.onSlashCommandInteraction(event)
+
+        val reply = argumentCaptor<String>()
+        verify(hook).editOriginal(reply.capture())
+        assertTrue(reply.firstValue.startsWith("<#5> is locked down for everyone, but not completely"))
+        assertTrue(reply.firstValue.contains("database down"))
+        assertTrue(reply.firstValue.contains("/lockdown off"))
         verify(guildLogger).log(
             any<EmbedBuilder>(), eq(user), eq(guild), anyOrNull(), eq(GuildLogger.LogTypeAction.MODERATOR), anyOrNull()
         )
