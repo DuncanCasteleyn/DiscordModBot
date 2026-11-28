@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.22.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.21.0...v2.22.0) (2026-11-28)
+
+
+### Features
+
+* **moderation:** add slowmode and lockdown commands for raids ([#558](https://github.com/DuncanCasteleyn/DiscordModBot/issues/558)) ([cec22dd](https://github.com/DuncanCasteleyn/DiscordModBot/commit/cec22dde452859f09bbdb4001407bbf73ba11e76))
+
+
+### Bug Fixes
+
+* **deps:** update dependency org.springframework.modulith:spring-modulith-bom to v2.1.3 ([#881](https://github.com/DuncanCasteleyn/DiscordModBot/issues/881)) ([45d1619](https://github.com/DuncanCasteleyn/DiscordModBot/commit/45d1619ab915ad2084877dec591d07529a336a92))
+* **deps:** update plugin org.springframework.boot to v4.1.3 ([#883](https://github.com/DuncanCasteleyn/DiscordModBot/issues/883)) ([3765870](https://github.com/DuncanCasteleyn/DiscordModBot/commit/37658700ebef64d95d956c1bea39e8dfce20359a))
+* **moderation:** harden lockdown against races and failed restores ([#558](https://github.com/DuncanCasteleyn/DiscordModBot/issues/558)) ([f19f112](https://github.com/DuncanCasteleyn/DiscordModBot/commit/f19f1121a6b4f3a7954e4d913f7eeb67ab8f50f4))
+* **moderation:** keep lockdown recoverable and work from threads ([#558](https://github.com/DuncanCasteleyn/DiscordModBot/issues/558)) ([6f37eb8](https://github.com/DuncanCasteleyn/DiscordModBot/commit/6f37eb8db8f827fde8033050678d19acfdf3c6c3))
+
 ## [2.21.0](https://github.com/DuncanCasteleyn/DiscordModBot/compare/v2.20.0...v2.21.0) (2026-11-15)
 
 
